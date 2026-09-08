@@ -35,6 +35,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logout } from "@/store/slices/authSlice";
 import { authApi } from "@/lib/authApi";
+import Swal from "sweetalert2";
 import { casesApi, SlaBreach } from "@/lib/casesApi";
 import {
   adminNotificationsApi,
@@ -435,11 +436,46 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
   const bellBadgeCount = breaches.length + unreadCount;
 
   const handleLogout = async () => {
+    setMenuOpen(false);
+
+    const result = await Swal.fire({
+      title: "Log Out?",
+      text: "Are you sure you want to end your session?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, Log Out",
+      cancelButtonText: "Cancel",
+      background: "#1e2433",
+      color: "#e2e8f0",
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#475569",
+      reverseButtons: true,
+    });
+
+    if (!result.isConfirmed) return;
+
+    Swal.fire({
+      toast: true,
+      position: "top-end",
+      icon: "success",
+      title: "Logged out successfully",
+      showConfirmButton: false,
+      timer: 1500,
+      timerProgressBar: true,
+      background: "#1e2433",
+      color: "#e2e8f0",
+      iconColor: "#4ade80",
+    });
+
     if (refreshToken) {
-      await authApi.logout(refreshToken);
+      await authApi.logout(refreshToken).catch(() => {});
     }
 
     dispatch(logout());
+
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("ms_admin_auth");
+    }
 
     router.push("/login");
   };

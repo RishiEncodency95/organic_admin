@@ -25,12 +25,13 @@ import {
 } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setCredentials } from "@/store/slices/authSlice";
+import { setCredentials, logout } from "@/store/slices/authSlice";
 import { authApi } from "@/lib/authApi";
 import { ApiRequestError } from "@/lib/api";
 import { Input } from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import { useLanguage } from "@/contexts/LanguageContext";
+import Swal from "sweetalert2";
 
 type Step =
   | "credentials"
@@ -79,6 +80,7 @@ export default function LoginPage() {
   const [copied, setCopied] = useState(false);
 
   const [forgotEmail, setForgotEmail] = useState("");
+  const [tempToken, setTempToken] = useState("");
 
   /* =========================================================
      QR CODE
@@ -133,98 +135,155 @@ export default function LoginPage() {
         setStep("2fa-setup");
       })
       .catch(() => {
-        /* stale/invalid session */
+        /* stale/invalid session - reset */
+        dispatch(logout());
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("ms_admin_auth");
+        }
       });
   }, [
     hydrated,
     admin,
     router,
     step,
+    dispatch,
   ]);
+
+  /* SweetAlert2 Toast */
+  const Toast = Swal.mixin({
+    toast: true,
+    position: "top-end",
+    showConfirmButton: false,
+    timer: 3500,
+    timerProgressBar: true,
+    background: "#1e2433",
+    color: "#e2e8f0",
+  });
+
+  const showToast = (icon: "success" | "error" | "info" | "warning", title: string) => {
+    Toast.fire({
+      icon,
+      title,
+      iconColor: icon === "success" ? "#4ade80" : icon === "error" ? "#f87171" : "#60a5fa",
+    });
+  };
 
   /* =========================================================
      LOGIN
   ========================================================= */
 
-  const handleSubmit = async (
-    e: React.FormEvent,
-  ) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     setError("");
-
-    if (step === "credentials") {
-      setStep("totp");
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
-      const result =
-        await authApi.login(
-          email,
-          password,
-          totpCode || undefined,
+      if (step === "credentials") {
+        const result = await authApi.login(email, password);
+
+        if (result.requiresTwoFactor) {
+          setTempToken(result.tempToken || "");
+          setStep("totp");
+          showToast("info", "Please enter 6-digit code from Microsoft Authenticator");
+          return;
+        }
+
+        if (result.user.userType !== "INTERNAL") {
+          const msg = "This portal is for Bharat Organic Expo staff accounts only.";
+          setError(msg);
+          showToast("error", msg);
+          return;
+        }
+
+        dispatch(
+          setCredentials({
+            admin: result.user,
+            accessToken: result.accessToken,
+            refreshToken: result.refreshToken,
+          }),
         );
 
-      if (
-        result.user.userType !==
-        "INTERNAL"
-      ) {
-        setError(
-          "This portal is for Bharat Organic Expo staff accounts only.",
-        );
+        if (result.twoFactorSetupRequired) {
+          const setup = await authApi.setupTwoFactor();
+          setSecret(setup.secret);
+          setProvisioningUri(setup.provisioningUri);
+          setStep("2fa-setup");
 
+          Swal.fire({
+            title: "Setup Two-Factor Authentication",
+            text: "Scan the QR code with Microsoft Authenticator to secure your account.",
+            icon: "info",
+            background: "#1e2433",
+            color: "#e2e8f0",
+            confirmButtonColor: "#4B1426",
+            confirmButtonText: "I'm Ready to Scan",
+          });
+          return;
+        }
+
+        showToast("success", `Welcome back, ${result.user.name}!`);
+        router.push("/");
         return;
       }
 
-      dispatch(
-        setCredentials({
-          admin: result.user,
-          accessToken:
-            result.accessToken,
-          refreshToken:
-            result.refreshToken,
-        }),
-      );
+      if (step === "totp") {
+        if (!totpCode || totpCode.length !== 6) {
+          const msg = "Please enter a valid 6-digit code from Microsoft Authenticator.";
+          setError(msg);
+          showToast("error", msg);
+          return;
+        }
 
-      if (
-        result.twoFactorSetupRequired
-      ) {
-        const setup =
-          await authApi.setupTwoFactor();
+        let res: any;
+        if (tempToken) {
+          res = await authApi.verifyTwoFactor(totpCode, tempToken);
+        } else {
+          res = await authApi.login(email, password, totpCode);
+        }
 
-        setSecret(setup.secret);
+        const data = res?.data || res;
+        if (data && data.accessToken && data.admin) {
+          dispatch(
+            setCredentials({
+              admin: {
+                id: data.admin.id || data.admin._id,
+                name: data.admin.name,
+                email: data.admin.email,
+                phone: data.admin.phone || "",
+                userType: "INTERNAL",
+                roleSlug: data.admin.role === "superadmin" ? "SUPER_ADMIN" : "EXPO_ADMIN",
+                permissions: ["*"],
+              },
+              accessToken: data.accessToken,
+              refreshToken: data.refreshToken,
+            }),
+          );
+          showToast("success", "2FA Verified! Logging in...");
+          router.push("/");
+          return;
+        }
 
-        setProvisioningUri(
-          setup.provisioningUri,
-        );
-
-        setStep("2fa-setup");
-
-        return;
+        if (data && data.requiresTwoFactor) {
+          const msg = "Invalid 2FA code. Please check Microsoft Authenticator.";
+          setError(msg);
+          showToast("error", msg);
+          return;
+        }
       }
-
-      router.push("/");
-    } catch (err) {
+    } catch (err: any) {
       if (
         err instanceof ApiRequestError &&
-        err.message ===
-        "Two-factor code required"
+        (err.message.includes("Two-factor") || err.message.includes("2FA"))
       ) {
         setStep("totp");
-
         setError("");
-
+        showToast("info", "Please enter your 2FA code");
         return;
       }
 
-      setError(
-        err instanceof ApiRequestError
-          ? err.message
-          : "Something went wrong. Please try again.",
-      );
+      const msg = err?.message || (err instanceof ApiRequestError ? err.message : "Invalid credentials. Please try again.");
+      setError(msg);
+      showToast("error", msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -234,31 +293,29 @@ export default function LoginPage() {
      CONFIRM 2FA SETUP
   ========================================================= */
 
-  const handleConfirmSetup = async (
-    e: React.FormEvent,
-  ) => {
+  const handleConfirmSetup = async (e: React.FormEvent) => {
     e.preventDefault();
-
     setError("");
     setIsSubmitting(true);
 
     try {
-      const result =
-        await authApi.confirmTwoFactor(
-          setupCode,
-        );
-
-      setBackupCodes(
-        result.backupCodes,
-      );
-
+      const result = await authApi.confirmTwoFactor(setupCode);
+      setBackupCodes(result.backupCodes);
       setStep("backup-codes");
-    } catch (err) {
-      setError(
-        err instanceof ApiRequestError
-          ? err.message
-          : "Could not verify that code. Please try again.",
-      );
+
+      Swal.fire({
+        title: "2FA Activated Successfully!",
+        text: "Microsoft Authenticator is now linked to your account. Please save your backup codes.",
+        icon: "success",
+        background: "#1e2433",
+        color: "#e2e8f0",
+        confirmButtonColor: "#4B1426",
+        confirmButtonText: "View Backup Codes",
+      });
+    } catch (err: any) {
+      const msg = err instanceof ApiRequestError ? err.message : "Could not verify that code. Please try again.";
+      setError(msg);
+      showToast("error", msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -273,7 +330,7 @@ export default function LoginPage() {
       .writeText(secret)
       .then(() => {
         setCopied(true);
-
+        showToast("success", "Secret key copied to clipboard!");
         setTimeout(() => {
           setCopied(false);
         }, 2000);
@@ -284,28 +341,19 @@ export default function LoginPage() {
      FORGOT PASSWORD
   ========================================================= */
 
-  const handleForgotPassword = async (
-    e: React.FormEvent,
-  ) => {
+  const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-
     setError("");
     setIsSubmitting(true);
 
     try {
-      await authApi.forgotPassword(
-        forgotEmail,
-      );
-
-      setStep(
-        "forgot-password-sent",
-      );
-    } catch (err) {
-      setError(
-        err instanceof ApiRequestError
-          ? err.message
-          : "Something went wrong. Please try again.",
-      );
+      await authApi.forgotPassword(forgotEmail);
+      setStep("forgot-password-sent");
+      showToast("success", "Password reset link sent to your email!");
+    } catch (err: any) {
+      const msg = err instanceof ApiRequestError ? err.message : "Something went wrong. Please try again.";
+      setError(msg);
+      showToast("error", msg);
     } finally {
       setIsSubmitting(false);
     }

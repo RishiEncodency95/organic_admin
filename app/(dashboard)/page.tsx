@@ -17,6 +17,7 @@ import {
   dashboardApi,
   type LiveDashboardOverview,
 } from "@/lib/dashboardApi";
+import { useAppSelector } from "@/store/hooks";
 
 import {
   Activity,
@@ -844,6 +845,7 @@ function RangeDropdown({
 ========================================================= */
 
 export default function DashboardPage() {
+  const { admin } = useAppSelector((state) => state.auth);
   const [cachedPageSpeed, setCachedPageSpeed] = useState<LiveDashboardOverview["sources"]["pageSpeed"]["data"]>(null);
   const [
     liveDashboard,
@@ -1840,8 +1842,8 @@ export default function DashboardPage() {
                 }}
               >
                 <h1 className="truncate text-[20px] font-semibold leading-tight tracking-[-0.025em]">
-                  Welcome back,
-                  Vansh!{" "}
+                  Welcome back,{" "}
+                  {admin?.name || "Admin"}!{" "}
 
                   <span className="text-[18px]">
                     👋
