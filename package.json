@@ -36,7 +36,7 @@
     "typescript": "^5"
   },
   "optionalDependencies": {
-    "lightningcss-win32-x64-msvc": "^1.29.1",
-    "lightningcss-darwin-arm64": "^1.29.1"
+    "lightningcss-win32-x64-msvc": "*",
+    "lightningcss-darwin-arm64": "*"
   }
 }
