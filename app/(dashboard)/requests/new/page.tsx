@@ -608,10 +608,10 @@ export default function AddNewRequestPage() {
             <Check size={36} strokeWidth={3} />
           </div>
           <h2 className="mt-[20px] text-[22px] font-semibold text-[#17234A]">
-            Sewa Help Request Submitted Successfully!
+            Stall &amp; Expo Request Submitted Successfully!
           </h2>
           <p className="mt-[8px] max-w-[450px] text-[12px] font-semibold text-[#52607D]">
-            The help request for <span className="font-semibold text-[#17234A]">{form.requesterName || "Requester"}</span> has been recorded in the intake queue.
+            The request for <span className="font-semibold text-[#17234A]">{form.requesterName || "Exhibitor / Buyer"}</span> has been recorded in the intake queue.
           </p>
           <div className="mt-[28px] flex items-center gap-[12px]">
             <button
@@ -632,7 +632,7 @@ export default function AddNewRequestPage() {
               onClick={() => router.push("/requests")}
               className="inline-flex h-[38px] items-center gap-[8px] rounded-[6px] bg-[#005F2E] px-[22px] text-[11px] font-semibold text-white shadow-sm hover:bg-[#004d25] transition"
             >
-              Return to Help Requests Queue
+              Return to Requests Queue
             </button>
           </div>
         </div>
@@ -699,7 +699,7 @@ export default function AddNewRequestPage() {
           />
 
           <span>
-            Sewa Help Requests
+            Stall &amp; Expo Requests
           </span>
 
           <ChevronRight

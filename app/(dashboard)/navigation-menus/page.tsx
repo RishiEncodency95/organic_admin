@@ -18,6 +18,7 @@ import {
   Lightbulb,
   Menu,
   Monitor,
+
   Pencil,
   Plus,
   Search,
@@ -101,8 +102,8 @@ const MENUS: MenuRecord[] = [
   },
   {
     id: 6,
-    name: "Get Involved & Volunteer Menu",
-    description: "Volunteer registration & donation links",
+    name: "Exhibitor & Buyer Menu",
+    description: "Stall booking & buyer registration links",
     location: "Header Dropdown",
     status: "Active",
     items: 6,
@@ -121,7 +122,7 @@ const MENUS: MenuRecord[] = [
   },
   {
     id: 8,
-    name: "Media & Awareness Links",
+    name: "Media & Press Coverage Links",
     description: "Blogs, news, and press coverage items",
     location: "Mega Menu",
     status: "Active",
@@ -131,8 +132,8 @@ const MENUS: MenuRecord[] = [
   },
   {
     id: 9,
-    name: "Emergency Sewa Help Menu",
-    description: "Quick helpline & helpline numbers bar",
+    name: "Expo Helpline & Venue Bar",
+    description: "Quick helpline & venue location bar",
     location: "Top Bar",
     status: "Active",
     items: 3,

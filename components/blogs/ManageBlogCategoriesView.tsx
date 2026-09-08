@@ -312,10 +312,10 @@ export default function ManageCategoriesPage() {
                 <thead>
                   <tr className="h-[40px] border-b border-[#edf0f2] bg-[#fafbfc] text-[9px] font-extrabold uppercase tracking-[0.04em] text-[#44516a]">
                     <th className="w-[42px] px-[12px]"></th>
-                    <th className="px-[12px]">Category</th>
+                    <th className="px-[12px] whitespace-nowrap">Category</th>
                     <th className="px-[12px]">Description</th>
-                    <th className="px-[12px] text-center">Total Posts</th>
-                    <th className="px-[12px] text-center">Status</th>
+                    <th className="px-[12px] text-center whitespace-nowrap">Total Posts</th>
+                    <th className="px-[12px] text-center whitespace-nowrap">Status</th>
                     <th className="px-[12px] text-center">Order</th>
                     <th className="px-[12px] text-center">Actions</th>
                   </tr>
@@ -334,14 +334,14 @@ export default function ManageCategoriesPage() {
                           <MoreVertical className="mx-auto h-[14px] w-[14px] text-[#8a95a8]" />
                         </td>
 
-                        <td className="px-[12px]">
+                        <td className="px-[12px] whitespace-nowrap">
                           <div className="flex min-w-[250px] items-center gap-[14px]">
                             <div className="grid h-[44px] w-[44px] shrink-0 place-items-center rounded-full bg-[#eef7f1] text-[#147044]">
                               <Icon className="h-[21px] w-[21px]" strokeWidth={1.7} />
                             </div>
 
                             <div className="min-w-0">
-                              <p className="text-[11px] font-extrabold text-[#19274a]">
+                              <p className="text-[11px] font-extrabold whitespace-nowrap text-[#19274a]">
                                 {item.name}
                               </p>
                               <p className="mt-[5px] text-[9px] font-semibold text-[#68758d]">
@@ -363,9 +363,9 @@ export default function ManageCategoriesPage() {
                           </span>
                         </td>
 
-                        <td className="px-[12px] text-center">
+                        <td className="px-[12px] text-center whitespace-nowrap">
                           <span
-                            className={`inline-flex rounded-[5px] border px-[10px] py-[5px] text-[9px] font-bold ${item.status === "Published"
+                            className={`inline-flex whitespace-nowrap rounded-[5px] border px-[10px] py-[5px] text-[9px] font-bold ${item.status === "Published"
                                 ? "border-emerald-200 bg-emerald-50 text-emerald-700"
                                 : "border-amber-200 bg-amber-50 text-amber-700"
                               }`}

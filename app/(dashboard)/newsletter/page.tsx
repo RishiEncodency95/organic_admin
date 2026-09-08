@@ -1060,7 +1060,9 @@ export default function NewsletterPage() {
               grid
               w-full
               min-w-0
-              grid-cols-[minmax(220px,1.9fr)_125px_135px_120px_minmax(150px,1.15fr)_78px]
+              overflow-x-auto
+              pb-1
+              grid-cols-[minmax(180px,1.8fr)_115px_125px_110px_minmax(140px,1.1fr)_minmax(84px,auto)]
               gap-[9px]
             "
           >
@@ -1321,6 +1323,8 @@ export default function NewsletterPage() {
               className="
                 flex
                 h-[40px]
+                shrink-0
+                whitespace-nowrap
                 items-center
                 justify-center
                 gap-[5px]
@@ -1328,13 +1332,13 @@ export default function NewsletterPage() {
                 border
                 border-[#E0E5EB]
                 bg-white
-                px-[7px]
+                px-[12px]
                 text-[9px]
                 font-semibold
                 text-[#172762]
               "
             >
-              <RotateCcw size={12} />
+              <RotateCcw size={12} className="shrink-0" />
 
               Reset
             </button>
@@ -1359,20 +1363,20 @@ export default function NewsletterPage() {
             <table
               className="
                 w-full
-                min-w-[1320px]
+                min-w-full
                 table-fixed
                 border-collapse
               "
             >
               <colgroup>
-                <col style={{ width: "38px" }} />
-                <col style={{ width: "220px" }} />
-                <col style={{ width: "260px" }} />
-                <col style={{ width: "110px" }} />
+                <col style={{ width: "36px" }} />
+                <col style={{ width: "175px" }} />
                 <col style={{ width: "210px" }} />
-                <col style={{ width: "180px" }} />
-                <col style={{ width: "130px" }} />
-                <col style={{ width: "70px" }} />
+                <col style={{ width: "95px" }} />
+                <col style={{ width: "140px" }} />
+                <col style={{ width: "140px" }} />
+                <col style={{ width: "100px" }} />
+                <col style={{ width: "55px" }} />
               </colgroup>
 
               <thead>
@@ -1757,27 +1761,28 @@ export default function NewsletterPage() {
                               whitespace-nowrap
                             "
                           >
-                            <span
-                              className="
-                                text-[9px]
-                                font-semibold
-                                text-[#192B66]
-                              "
-                            >
-                              {dateStr}
-                            </span>
-                            {timeStr && (
+                            <div className="flex flex-col leading-tight">
                               <span
                                 className="
-                                  ml-[4px]
-                                  text-[8.5px]
+                                  text-[9px]
                                   font-semibold
-                                  text-[#556586]
+                                  text-[#192B66]
                                 "
                               >
-                                {timeStr}
+                                {dateStr}
                               </span>
-                            )}
+                              {timeStr && (
+                                <span
+                                  className="
+                                    text-[8.5px]
+                                    font-medium
+                                    text-[#556586]
+                                  "
+                                >
+                                  {timeStr}
+                                </span>
+                              )}
+                            </div>
                           </td>
 
                           {/* LOCATION */}
@@ -1920,7 +1925,7 @@ export default function NewsletterPage() {
             <div
               className="
                 flex
-                min-w-[1320px]
+                w-full
                 min-h-[56px]
                 items-center
                 justify-between

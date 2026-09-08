@@ -81,19 +81,15 @@ const SOURCE_OPTIONS = [
   },
   {
     key: "contact",
-    label: "Contact",
+    label: "General Contact",
   },
   {
     key: "csr",
-    label: "CSR",
+    label: "Sponsor & Partner",
   },
   {
     key: "partnership",
-    label: "Partnership",
-  },
-  {
-    key: "unclaimed_body",
-    label: "Unclaimed Body",
+    label: "Institutional Partner",
   },
 ] as const;
 
@@ -101,10 +97,10 @@ const SOURCE_LABELS: Record<
   Enquiry["category"],
   string
 > = {
-  contact: "Contact",
-  csr: "CSR Support",
-  partnership: "Partnership",
-  unclaimed_body: "Unclaimed Body",
+  contact: "General Contact",
+  csr: "Sponsor & Partner",
+  partnership: "Institutional Partner",
+  unclaimed_body: "Expo Delegate",
 };
 
 type DateRangeFilter =
@@ -1123,11 +1119,11 @@ export default function EnquiriesPage() {
             {source === "contact"
               ? "General Enquiries"
               : source === "csr"
-                ? "CSR & Partners Enquiries"
+                ? "Sponsor & Partner Enquiries"
                 : source === "partnership"
                   ? "Partnership Enquiries"
                   : source === "unclaimed_body"
-                    ? "Unclaimed Body Sewa Enquiries"
+                    ? "Expo Delegate Enquiries"
                     : "All Enquiries"}
           </h1>
 
@@ -1143,12 +1139,12 @@ export default function EnquiriesPage() {
             {source === "contact"
               ? "Manage general queries, contact submissions and helpline requests."
               : source === "csr"
-                ? "Manage corporate CSR queries and partnership opportunities in one place."
+                ? "Manage corporate sponsor queries and Expo partnership opportunities in one place."
                 : source === "partnership"
-                  ? "Manage institutional and NGO partnership proposals."
+                  ? "Manage institutional and trade association partnership proposals."
                   : source === "unclaimed_body"
-                    ? "Manage emergency alerts and unclaimed body sewa requests."
-                    : "Manage all general, contact, CSR and partnership enquiries in one place."}
+                    ? "Manage delegate and VIP guest enquiries."
+                    : "Manage all general, contact, sponsor and partnership enquiries in one place."}
           </p>
         </div>
 
@@ -1384,8 +1380,11 @@ export default function EnquiriesPage() {
             className="
               mt-[20px]
               grid
+              w-full
               min-w-0
-              grid-cols-[minmax(245px,2fr)_130px_145px_minmax(145px,1fr)_78px]
+              overflow-x-auto
+              pb-1
+              grid-cols-[minmax(190px,2fr)_120px_130px_minmax(130px,1fr)_minmax(84px,auto)]
               gap-[9px]
             "
           >
@@ -1584,6 +1583,8 @@ export default function EnquiriesPage() {
               className="
                 flex
                 h-[40px]
+                shrink-0
+                whitespace-nowrap
                 items-center
                 justify-center
                 gap-[5px]
@@ -1591,13 +1592,13 @@ export default function EnquiriesPage() {
                 border
                 border-[#E0E5EB]
                 bg-white
-                px-[7px]
+                px-[12px]
                 text-[9px]
                 font-semibold
                 text-[#172762]
               "
             >
-              <RotateCcw size={12} />
+              <RotateCcw size={12} className="shrink-0" />
 
               Reset
             </button>

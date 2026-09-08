@@ -1397,6 +1397,10 @@ export default function GeneralEnquiriesPage() {
             className="
               mt-[14px]
               flex
+              w-full
+              min-w-0
+              overflow-x-auto
+              pb-1
               items-center
               gap-[8px]
             "
@@ -1623,6 +1627,7 @@ export default function GeneralEnquiriesPage() {
                 flex
                 h-[40px]
                 shrink-0
+                whitespace-nowrap
                 items-center
                 justify-center
                 gap-[5px]

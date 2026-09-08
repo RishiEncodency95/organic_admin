@@ -50,8 +50,8 @@ type FAQ = {
 const FAQS: FAQ[] = [
   {
     id: 1,
-    question: "What is Moksha Sewa?",
-    summary: "Learn about our mission, vision and purpose.",
+    question: "What is Bharat Organic Expo 2027?",
+    summary: "Learn about India's premier organic food, agriculture & herbal exposition.",
     category: "General",
     status: "Published",
     visibility: "Public",
@@ -62,20 +62,20 @@ const FAQS: FAQ[] = [
   },
   {
     id: 2,
-    question: "Who can request Sewa help?",
-    summary: "Know who is eligible to request assistance.",
+    question: "How can I register as an Exhibitor?",
+    summary: "Know the stall booking process, floorplan options and pricing.",
     category: "Request Process",
     status: "Published",
     visibility: "Public",
     views: 987,
     votes: 276,
     updatedOn: "29 May 2026",
-    updatedBy: "Seva Team",
+    updatedBy: "Expo Team",
   },
   {
     id: 3,
-    question: "How does Moksha Sewa verify a request?",
-    summary: "Our process of verification and eligibility.",
+    question: "What is included in a Stall Booking package?",
+    summary: "Shell scheme stall amenities, power supply, fascia and badges.",
     category: "Request Process",
     status: "Published",
     visibility: "Public",
@@ -86,20 +86,20 @@ const FAQS: FAQ[] = [
   },
   {
     id: 4,
-    question: "Is Moksha Sewa completely free?",
-    summary: "Information about our free humanitarian services.",
+    question: "What are the B2B Buyer Registration requirements?",
+    summary: "Details for domestic & international trade buyer delegation passes.",
     category: "Services",
     status: "Published",
     visibility: "Public",
     views: 1135,
     votes: 392,
     updatedOn: "28 May 2026",
-    updatedBy: "Seva Team",
+    updatedBy: "Expo Team",
   },
   {
     id: 5,
-    question: "What services does Moksha Sewa provide?",
-    summary: "Details of services we provide with dignity.",
+    question: "Where is the Bharat Organic Expo 2027 venue?",
+    summary: "Yashobhoomi (IICC), Dwarka, Sector 25, New Delhi.",
     category: "Services",
     status: "Published",
     visibility: "Public",
@@ -110,20 +110,20 @@ const FAQS: FAQ[] = [
   },
   {
     id: 6,
-    question: "Do you provide services outside Delhi NCR?",
-    summary: "Areas where our services are currently available.",
+    question: "Can international organic producers & exhibitors participate?",
+    summary: "Guidelines for overseas exhibitors, customs clearance & visas.",
     category: "Services",
     status: "Published",
     visibility: "Public",
     views: 642,
     votes: 184,
     updatedOn: "26 May 2026",
-    updatedBy: "Seva Team",
+    updatedBy: "Expo Team",
   },
   {
     id: 7,
-    question: "Can I become a volunteer?",
-    summary: "How you can join hands and help.",
+    question: "What sponsorship opportunities are available?",
+    summary: "Platinum, Gold, Silver and Pavilion branding options.",
     category: "Volunteer",
     status: "Published",
     visibility: "Public",
@@ -134,8 +134,8 @@ const FAQS: FAQ[] = [
   },
   {
     id: 8,
-    question: "How can I support Moksha Sewa?",
-    summary: "Ways to support our mission and services.",
+    question: "How do I get a Visitor Trade Pass?",
+    summary: "Free online visitor registration and entry badge retrieval.",
     category: "Support",
     status: "Published",
     visibility: "Public",
@@ -146,20 +146,20 @@ const FAQS: FAQ[] = [
   },
   {
     id: 9,
-    question: "How is my donation used?",
-    summary: "Transparency in use of donations and resources.",
+    question: "Are organic certification documents required for stall booking?",
+    summary: "NPOP/APEDA/USDA organic certificate verification requirements.",
     category: "Support",
     status: "Published",
     visibility: "Public",
     views: 512,
     votes: 146,
     updatedOn: "23 May 2026",
-    updatedBy: "Seva Team",
+    updatedBy: "Expo Team",
   },
   {
     id: 10,
-    question: "Whom can I contact for more help?",
-    summary: "Get contact details and support channels.",
+    question: "Whom can I contact for stall & sponsorship enquiries?",
+    summary: "Get direct contact details of our expo management team.",
     category: "General",
     status: "Published",
     visibility: "Public",
@@ -188,11 +188,11 @@ const categoryData = [
 ];
 
 const topViewedFaqs = [
-  ["What is Moksha Sewa?", "1,245"],
-  ["What services does Moksha Sewa provide?", "1,876"],
-  ["Is Moksha Sewa completely free?", "1,135"],
-  ["Who can request Sewa help?", "987"],
-  ["How does Moksha Sewa verify a request?", "856"],
+  ["What is Bharat Organic Expo 2027?", "1,245"],
+  ["Where is the Bharat Organic Expo venue?", "1,876"],
+  ["How can I register as an Exhibitor?", "1,135"],
+  ["What are B2B Buyer Registration requirements?", "987"],
+  ["How do I get a Visitor Trade Pass?", "856"],
 ];
 
 function MetricCard({
@@ -565,7 +565,7 @@ export default function FAQsManagementPage() {
 
                                   <div className="mt-[10px] pl-[30px]">
                                     <p className="text-[10px] font-semibold leading-[1.6] text-[#34435e]">
-                                      {item.summary} Moksha Sewa provides dignified, scripture-guided humanitarian final journey services, cremation assistance, ambulance support, and Vedic rituals with utmost reverence and zero cost for families in need.
+                                      {item.summary} Bharat Organic Expo is India's premier international trade show bringing together organic farmers, producers, global B2B buyers, food processors and herbal brands at Yashobhoomi (IICC), New Delhi.
                                     </p>
 
                                     <div className="mt-[12px] flex items-center justify-between border-t border-[#f0f4f2] pt-[10px]">

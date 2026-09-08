@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 
 type PostStatus = "Published" | "Draft";
-type PostCategory = "Moksha Sewa" | "Stories" | "Awareness" | "Guidance";
+type PostCategory = "Expo News" | "Industry Stories" | "Organic Trends" | "Producer Guidance";
 
 type BlogPost = {
   id: number;
@@ -38,8 +38,8 @@ type BlogPost = {
 const POSTS: BlogPost[] = [
   {
     id: 1,
-    title: "Why Dignified Final Rites Matter for Every Human",
-    category: "Moksha Sewa",
+    title: "Bharat Organic Expo 2027 Announced at Yashobhoomi, Delhi",
+    category: "Expo News",
     status: "Published",
     views: 1245,
     date: "28 May 2026",
@@ -47,8 +47,8 @@ const POSTS: BlogPost[] = [
   },
   {
     id: 2,
-    title: "How Our Volunteers Bring Hope to Families in Need",
-    category: "Stories",
+    title: "How Organic Farmers Are Transforming Sustainable Agriculture",
+    category: "Industry Stories",
     status: "Published",
     views: 980,
     date: "26 May 2026",
@@ -56,8 +56,8 @@ const POSTS: BlogPost[] = [
   },
   {
     id: 3,
-    title: "The Spiritual Significance of Last Rites in Hindu Tradition",
-    category: "Awareness",
+    title: "Global Organic Trade Trends & B2B Buyer Opportunities",
+    category: "Organic Trends",
     status: "Published",
     views: 1560,
     date: "24 May 2026",
@@ -65,8 +65,8 @@ const POSTS: BlogPost[] = [
   },
   {
     id: 4,
-    title: "Supporting Families Beyond Cremation",
-    category: "Guidance",
+    title: "Guide to NPOP Organic Certification & Export Standards",
+    category: "Producer Guidance",
     status: "Draft",
     views: null,
     date: null,
@@ -74,8 +74,8 @@ const POSTS: BlogPost[] = [
   },
   {
     id: 5,
-    title: "Rituals After Cremation: What Families Should Know",
-    category: "Awareness",
+    title: "Sustainable Packaging Trends in Organic Food Industry",
+    category: "Organic Trends",
     status: "Draft",
     views: null,
     date: null,
@@ -84,18 +84,18 @@ const POSTS: BlogPost[] = [
 ];
 
 const CAMPAIGNS = [
-  { title: "Dignity for Every Soul", date: "01 May – 31 May 2026", status: "Active" },
-  { title: "No One Dies Alone", date: "01 Apr – 30 Apr 2026", status: "Completed" },
-  { title: "Help a Family in Their Toughest Time", date: "01 Mar – 31 Mar 2026", status: "Completed" },
-  { title: "Give Dignity, Give Peace", date: "01 Feb – 28 Feb 2026", status: "Completed" },
-  { title: "Winter Support Drive", date: "01 Dec – 31 Dec 2025", status: "Completed" },
+  { title: "Organic Agriculture Awareness Month", date: "01 May – 31 May 2026", status: "Active" },
+  { title: "Global B2B Buyer Outreach Drive", date: "01 Apr – 30 Apr 2026", status: "Completed" },
+  { title: "Sustainable Farming Expo Campaign", date: "01 Mar – 31 Mar 2026", status: "Completed" },
+  { title: "Herbal & Organic Producer Summit", date: "01 Feb – 28 Feb 2026", status: "Completed" },
+  { title: "APEDA Export Awareness Drive", date: "01 Dec – 31 Dec 2025", status: "Completed" },
 ];
 
 const categoryTone: Record<PostCategory, string> = {
-  "Moksha Sewa": "bg-emerald-50 text-emerald-700 border-emerald-200",
-  Stories: "bg-amber-50 text-amber-700 border-amber-200",
-  Awareness: "bg-blue-50 text-blue-700 border-blue-200",
-  Guidance: "bg-violet-50 text-violet-700 border-violet-200",
+  "Expo News": "bg-emerald-50 text-emerald-700 border-emerald-200",
+  "Industry Stories": "bg-amber-50 text-amber-700 border-amber-200",
+  "Organic Trends": "bg-blue-50 text-blue-700 border-blue-200",
+  "Producer Guidance": "bg-violet-50 text-violet-700 border-violet-200",
 };
 
 function MetricCard({
@@ -251,8 +251,8 @@ export default function BlogAwarenessPage() {
                 <thead>
                   <tr className="h-[42px] border-b border-[#edf0f2] text-[8.5px] font-semibold uppercase tracking-[0.04em] text-[#4a566d]">
                     <th className="px-[20px]">Title</th>
-                    <th className="px-[10px]">Category</th>
-                    <th className="px-[10px]">Status</th>
+                    <th className="px-[10px] whitespace-nowrap">Category</th>
+                    <th className="px-[10px] whitespace-nowrap">Status</th>
                     <th className="px-[10px]">Views</th>
                     <th className="px-[10px] whitespace-nowrap">Date</th>
                     <th className="px-[10px]">Action</th>
@@ -270,15 +270,15 @@ export default function BlogAwarenessPage() {
                         </div>
                       </td>
 
-                      <td className="px-[10px]">
-                        <span className={`inline-flex rounded-[5px] border px-[9px] py-[4px] text-[8px] font-semibold ${categoryTone[post.category]}`}>
+                      <td className="px-[10px] whitespace-nowrap">
+                        <span className={`inline-flex whitespace-nowrap rounded-[5px] border px-[9px] py-[4px] text-[8px] font-semibold ${categoryTone[post.category]}`}>
                           {post.category}
                         </span>
                       </td>
 
-                      <td className="px-[10px]">
+                      <td className="px-[10px] whitespace-nowrap">
                         <span
-                          className={`inline-flex rounded-[5px] border px-[9px] py-[4px] text-[8px] font-semibold ${post.status === "Published"
+                          className={`inline-flex whitespace-nowrap rounded-[5px] border px-[9px] py-[4px] text-[8px] font-semibold ${post.status === "Published"
                             ? "border-emerald-200 bg-emerald-50 text-emerald-700"
                             : "border-amber-200 bg-amber-50 text-amber-700"
                             }`}

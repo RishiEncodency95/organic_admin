@@ -55,11 +55,11 @@ const BAR_COLORS: Record<number, string> = { 5: "#00A85A", 4: "#45B97C", 3: "#F4
 
 export const demoReviewsData: ReviewsData = {
   reviews: [
-    { id: "REV-001", customer: "Priya Sharma", subtitle: "Local Guide · 18 reviews", rating: 5, review: "Amazing place! The instructors are very knowledgeable and supportive. My health has improved a lot after joining...", location: "Main Center", city: "New Delhi", date: "22 Dec 2024", time: "10:14 AM", status: "Replied", assignedTo: "Sneha" },
-    { id: "REV-002", customer: "Rahul Verma", subtitle: "Local Guide · 32 reviews", rating: 5, review: "Excellent yoga classes and peaceful environment. Highly recommended for anyone looking to improve their mental...", location: "West Delhi", city: "", date: "21 Dec 2024", time: "6:30 PM", status: "Replied", assignedTo: "Aman" },
-    { id: "REV-003", customer: "Sneha Kapoor", subtitle: "3 reviews", rating: 4, review: "Good experience overall. Trainers are professional. Would be great if class timings were a bit more flexible.", location: "South Delhi", city: "", date: "20 Dec 2024", time: "4:12 PM", status: "Pending Reply", assignedTo: "Ritika" },
-    { id: "REV-004", customer: "Amit Gupta", subtitle: "Local Guide · 45 reviews", rating: 2, review: "Not satisfied with the recent batch. The class was often delayed and the hall was crowded.", location: "Noida", city: "", date: "19 Dec 2024", time: "9:45 AM", status: "Pending Reply", assignedTo: "Vikas" },
-    { id: "REV-005", customer: "Neha Mehta", subtitle: "5 reviews", rating: 5, review: "One of the best yoga centers in Delhi. Clean, calm and very positive atmosphere.", location: "Gurugram", city: "", date: "18 Dec 2024", time: "7:20 PM", status: "Replied", assignedTo: "Sneha" },
+    { id: "REV-001", customer: "Priya Sharma", subtitle: "Local Guide · 18 reviews", rating: 5, review: "Amazing expo! Great selection of organic produce and direct connect with certified farmers & exporters...", location: "Yashobhoomi Hall 1", city: "New Delhi", date: "22 Dec 2026", time: "10:14 AM", status: "Replied", assignedTo: "Sneha" },
+    { id: "REV-002", customer: "Rahul Verma", subtitle: "Local Guide · 32 reviews", rating: 5, review: "Excellent B2B buyer networking event. Highly recommended for organic distributors and food processors...", location: "B2B Buyer Lounge", city: "Delhi", date: "21 Dec 2026", time: "6:30 PM", status: "Replied", assignedTo: "Aman" },
+    { id: "REV-003", customer: "Sneha Kapoor", subtitle: "3 reviews", rating: 4, review: "Good experience overall. Stall layout & exhibitor stalls were well-organized. Great organic products.", location: "Pavilion Hall 2", city: "Noida", date: "20 Dec 2026", time: "4:12 PM", status: "Pending Reply", assignedTo: "Ritika" },
+    { id: "REV-004", customer: "Amit Gupta", subtitle: "Local Guide · 45 reviews", rating: 2, review: "Peak hours entry queue took longer than expected. More registration desks recommended.", location: "Visitor Registration", city: "Delhi", date: "19 Dec 2026", time: "9:45 AM", status: "Pending Reply", assignedTo: "Vikas" },
+    { id: "REV-005", customer: "Neha Mehta", subtitle: "5 reviews", rating: 5, review: "One of the best organic food & herbal expos in India. World-class Yashobhoomi facility.", location: "Yashobhoomi Main Gate", city: "Gurugram", date: "18 Dec 2026", time: "7:20 PM", status: "Replied", assignedTo: "Sneha" },
   ],
   ratingBreakdown: [
     { stars: 5, count: 892, percent: 70, color: BAR_COLORS[5] },
@@ -69,11 +69,11 @@ export const demoReviewsData: ReviewsData = {
     { stars: 1, count: 23, percent: 2, color: BAR_COLORS[1] },
   ],
   locationRatings: [
-    { name: "Moksha Sewa - Delhi", rating: "4.9", count: 642 },
-    { name: "Moksha Sewa - Noida", rating: "4.7", count: 298 },
-    { name: "Moksha Sewa - Ghaziabad", rating: "4.6", count: 184 },
-    { name: "Moksha Sewa - Gurugram", rating: "4.8", count: 118 },
-    { name: "Moksha Sewa - Faridabad", rating: "4.7", count: 42 },
+    { name: "Bharat Organic Expo - Yashobhoomi (Delhi)", rating: "4.9", count: 642 },
+    { name: "Bharat Organic Expo - Pavilion Hall 1", rating: "4.7", count: 298 },
+    { name: "Bharat Organic Expo - Pavilion Hall 2", rating: "4.6", count: 184 },
+    { name: "Bharat Organic Expo - B2B Buyer Lounge", rating: "4.8", count: 118 },
+    { name: "Bharat Organic Expo - Agri Innovation Hub", rating: "4.7", count: 42 },
   ],
   trend: [
     { label: "Jan", value: 3.8 }, { label: "Feb", value: 4.1 }, { label: "Mar", value: 4.1 },

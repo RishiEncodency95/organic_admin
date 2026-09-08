@@ -727,9 +727,9 @@ export default function MediaLibraryPage() {
                   <p className="mb-[6px] text-[9px] font-semibold text-[#34425e]">URL:</p>
                   <div className="flex items-center gap-[8px] rounded-[6px] border border-[#e2e6ea] bg-[#fbfcfd] px-[9px] py-[8px]">
                     <p className="min-w-0 flex-1 break-all text-[8px] font-semibold leading-[1.35] text-[#59657a]">
-                      https://mokshasewa.org/wp-content/uploads/2026/05/{selected.name}
+                      https://bharatorganicexpo.com/uploads/2026/05/{selected.name}
                     </p>
-                    <Copy className="h-[13px] w-[13px] shrink-0 text-[#60708a] cursor-pointer" onClick={() => navigator.clipboard?.writeText(`https://mokshasewa.org/wp-content/uploads/2026/05/${selected.name}`)} />
+                    <Copy className="h-[13px] w-[13px] shrink-0 text-[#60708a] cursor-pointer" onClick={() => navigator.clipboard?.writeText(`https://bharatorganicexpo.com/uploads/2026/05/${selected.name}`)} />
                   </div>
                 </div>
 
@@ -776,7 +776,7 @@ export default function MediaLibraryPage() {
               </p>
 
               <div className="mt-[10px] space-y-[9px]">
-                {["Home", "About Us", "Our Services", "How Sewa Works", "When a Family Needs Help"].map(
+                {["Home", "Exhibitors", "B2B Buyers", "Sponsorships", "Schedule & Venue"].map(
                   (item) => (
                     <div key={item} className="flex items-center gap-[8px]">
                       <span className="h-[7px] w-[7px] rounded-full bg-emerald-600" />

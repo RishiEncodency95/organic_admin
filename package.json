@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3001",
+    "dev": "next dev --webpack -p 3001",
     "build": "next build",
     "start": "next start -p 3001",
     "lint": "eslint"
@@ -35,5 +35,9 @@
     "eslint-config-next": "16.2.12",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "optionalDependencies": {
+    "lightningcss-win32-x64-msvc": "*",
+    "lightningcss-darwin-arm64": "*"
   }
 }
