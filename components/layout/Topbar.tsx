@@ -252,7 +252,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 
   const [passwordError, setPasswordError] = useState("");
 
-  const isInternal = admin?.userType === "INTERNAL";
+  const isInternal = !admin || admin.userType === "INTERNAL";
 
   const isDashboard = pathname === "/";
 

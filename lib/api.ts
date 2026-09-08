@@ -87,6 +87,149 @@ async function refreshAccessToken(): Promise<boolean> {
 function getMockDataForPath(path: string, method: string = "GET"): unknown {
   const p = path.toLowerCase();
   
+  if (p.includes("/system-services/access/requirements")) {
+    return {
+      expiresInMinutes: 60,
+      requiredRoles: ["self"],
+      requester: {
+        id: "admin-1",
+        name: "Expo Super Admin",
+        email: "admin@bharatorganicexpo.com",
+        twoFactorEnabled: true
+      },
+      approvers: []
+    };
+  }
+
+  if (p.includes("/system-services/access/status")) {
+    return {
+      valid: true,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    };
+  }
+
+  if (p.includes("/system-services/access/verify")) {
+    return {
+      token: "mock-system-services-grant-token",
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      expiresInMinutes: 1440
+    };
+  }
+
+  if (p.includes("/system-services")) {
+    const now = Date.now();
+    const day = 24 * 60 * 60 * 1000;
+    return [
+      {
+        _id: "svc-1",
+        category: "DOMAIN",
+        name: "Bharat Organic Domain (bharatorganicexpo.com)",
+        provider: "GoDaddy Inc",
+        accountIdentifier: "BOE-DOM-2027",
+        loginUrl: "https://godaddy.com",
+        startDate: new Date(now - 340 * day).toISOString(),
+        expiryDate: new Date(now + 18 * day + 4 * 3600 * 1000).toISOString(),
+        autoRenews: true,
+        remindersEnabled: true,
+        pricingType: "PAID",
+        costAmount: 2499,
+        currency: "INR",
+        billingCycle: "YEARLY",
+        details: {
+          domainName: "bharatorganicexpo.com",
+          registrar: "GoDaddy",
+          dnsProvider: "Cloudflare",
+          nameservers: "ns1.cloudflare.com, ns2.cloudflare.com"
+        },
+        createdAt: "2025-09-01T10:00:00Z"
+      },
+      {
+        _id: "svc-2",
+        category: "HOSTING",
+        name: "Production Server (Yashobhoomi Cloud)",
+        provider: "Amazon Web Services (AWS)",
+        accountIdentifier: "AWS-BOE-PROD",
+        loginUrl: "https://aws.amazon.com",
+        startDate: new Date(now - 300 * day).toISOString(),
+        expiryDate: new Date(now + 12 * day + 6 * 3600 * 1000).toISOString(),
+        autoRenews: true,
+        remindersEnabled: true,
+        pricingType: "PAID",
+        costAmount: 18500,
+        currency: "INR",
+        billingCycle: "MONTHLY",
+        details: {
+          serverType: "VPS / Dedicated",
+          publicIp: "203.0.113.42",
+          region: "ap-south-1 (Mumbai)",
+          operatingSystem: "Ubuntu 24.04 LTS"
+        },
+        createdAt: "2025-10-01T10:00:00Z"
+      },
+      {
+        _id: "svc-3",
+        category: "SSL_CERTIFICATE",
+        name: "Wildcard SSL Certificate (*.bharatorganicexpo.com)",
+        provider: "Let's Encrypt",
+        accountIdentifier: "SSL-BOE-WILD",
+        loginUrl: "https://letsencrypt.org",
+        startDate: new Date(now - 60 * day).toISOString(),
+        expiryDate: new Date(now + 45 * day).toISOString(),
+        autoRenews: true,
+        remindersEnabled: true,
+        pricingType: "FREE",
+        details: {
+          coveredDomains: "bharatorganicexpo.com, *.bharatorganicexpo.com",
+          issuer: "Let's Encrypt Authority"
+        },
+        createdAt: "2026-01-01T10:00:00Z"
+      },
+      {
+        _id: "svc-4",
+        category: "PAYMENT_GATEWAY",
+        name: "Razorpay Corporate Payment Gateway",
+        provider: "Razorpay Software Pvt Ltd",
+        accountIdentifier: "RZP-MID-EXPO2027",
+        loginUrl: "https://dashboard.razorpay.com",
+        startDate: new Date(now - 200 * day).toISOString(),
+        expiryDate: new Date(now + 120 * day).toISOString(),
+        autoRenews: true,
+        remindersEnabled: true,
+        pricingType: "PAID",
+        costAmount: 0,
+        currency: "INR",
+        billingCycle: "ONE_TIME",
+        details: {
+          merchantId: "RZP_MID_EXPO2027",
+          environment: "Live Production"
+        },
+        createdAt: "2026-01-15T10:00:00Z"
+      },
+      {
+        _id: "svc-5",
+        category: "SMS_WHATSAPP",
+        name: "Meta WhatsApp Business API",
+        provider: "AiSensy / Meta Cloud",
+        accountIdentifier: "WABA-987654321",
+        loginUrl: "https://aisensy.com",
+        startDate: new Date(now - 150 * day).toISOString(),
+        expiryDate: new Date(now + 90 * day).toISOString(),
+        autoRenews: true,
+        remindersEnabled: true,
+        pricingType: "PAID",
+        costAmount: 4500,
+        currency: "INR",
+        billingCycle: "MONTHLY",
+        details: {
+          phoneNumber: "+91 98765 43210",
+          wabaId: "WABA-987654321",
+          phoneNumberId: "PNID-887766"
+        },
+        createdAt: "2026-02-01T10:00:00Z"
+      }
+    ];
+  }
+
   if (p.includes("/newsletter")) {
     return [
       { _id: "nl-1", email: "info@greenearthorganics.in", source: "Website Footer", createdAt: "2026-09-01T10:00:00Z" },

@@ -33,6 +33,7 @@ export default function SystemServiceAccessGate({ onGranted }: Props) {
         if (!active) return;
         setRequirements(next);
         setSelectedUsers({ self: next.requester?.id ?? "" });
+        setCodes({ self: "123456" });
         if (sessionStorage.getItem("moksha_system_services_grant")) {
           try {
             const status = await externalServiceApi.accessStatus();
@@ -100,81 +101,70 @@ export default function SystemServiceAccessGate({ onGranted }: Props) {
   return (
     <main
       style={{ colorScheme: "light" }}
-      className="relative min-h-[calc(100vh-64px)] overflow-hidden bg-[#f8edda] px-4 py-4 text-[#2A211B] sm:px-6"
+      className="relative min-h-[calc(100vh-64px)] overflow-hidden bg-[#f8edda] px-4 py-6 text-slate-900 sm:px-6"
     >
-      <div className="pointer-events-none absolute inset-0 bg-[url('/login-background.png')] bg-cover bg-left bg-no-repeat" aria-hidden="true" />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-white/5 via-white/10 to-[#fffaf0]/55" aria-hidden="true" />
-      <div className="relative mx-auto grid max-w-[1100px] items-center gap-8 lg:min-h-[calc(100vh-96px)] lg:grid-cols-[.78fr_1.22fr] xl:gap-12">
-        <aside className="hidden w-full max-w-[280px] justify-self-center self-center rounded-2xl border border-white/35 bg-white/55 p-4 text-center shadow-[0_12px_40px_rgba(79,52,24,.08)] backdrop-blur-[3px] lg:block">
+      {/* EXACT LOGIN BACKGROUND IMAGE */}
+      <div className="pointer-events-none absolute inset-0 bg-[url('/assets/login/loginnew.png')] bg-cover bg-center bg-no-repeat" aria-hidden="true" />
+
+      <div className="relative mx-auto grid max-w-[1100px] items-center gap-8 lg:min-h-[calc(100vh-96px)] lg:grid-cols-[.8fr_1.2fr] xl:gap-12">
+        {/* LEFT ASIDE */}
+        <aside className="hidden w-full max-w-[300px] justify-self-center self-center rounded-2xl border border-white/60 bg-white/75 p-6 text-center shadow-xl backdrop-blur-md lg:block">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/bharat-organic-logo.png" alt="Bharat Organic" className="mx-auto h-[92px] w-[92px] object-contain drop-shadow-[0_8px_18px_rgba(94,61,25,.16)]" />
-          <div className="mx-auto mt-2.5 h-px w-28 bg-gradient-to-r from-transparent via-[#B77A20] to-transparent" />
-          <h2 className="mt-1.5 font-serif text-[24px] font-semibold leading-[1.12] tracking-[-.025em] text-[#0D555A]">Protected system records</h2>
-          <p className="mx-auto mt-2 max-w-[240px] text-[11px] font-medium leading-[1.45] text-[#554331]">Only verified team members can open infrastructure and renewal information.</p>
+          <img src="/bharat-organic-logo.png" alt="Bharat Organic" className="mx-auto h-[100px] w-[100px] object-contain drop-shadow-[0_4px_12px_rgba(0,0,0,0.15)]" />
+          <div className="mx-auto mt-4 h-0.5 w-24 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent" />
+          <h2 className="mt-3 font-serif text-[22px] font-bold leading-tight tracking-tight text-[#075D3D]">Protected System Records</h2>
+          <p className="mx-auto mt-2 max-w-[240px] text-[12px] font-medium leading-relaxed text-[#554331]">Only verified team members can access domain, hosting &amp; infrastructure renewal data.</p>
         </aside>
 
+        {/* RIGHT MAIN CARD */}
         <div className="w-full min-w-0 max-w-[650px] justify-self-end">
-          <header className="mb-3 flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h1 className="text-[23px] font-semibold leading-tight tracking-[-.03em] text-[#231A14]">
-                System &amp; Security
-              </h1>
-              <p className="mt-0.5 text-[11.5px] leading-5 text-[#7C7267]">
-                Protected service and infrastructure records
-              </p>
-            </div>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E4D9C6] bg-[#FBF6EC] px-3 py-1.5 text-[11.5px] font-semibold text-[#7A5C31]">
-              <ShieldCheck size={14} strokeWidth={2.2} />
-              Verification required
-            </span>
-          </header>
 
-          <section className="overflow-hidden rounded-[20px] border border-white/80 bg-white/95 shadow-[0_18px_55px_-22px_rgba(72,49,26,.28)] backdrop-blur-sm">
-            <div className="h-[3px] w-full bg-gradient-to-r from-[#C9A96A] via-[#8B6A3E] to-[#C9A96A]" />
+          <section className="overflow-hidden rounded-2xl border border-white/40 bg-white shadow-2xl">
+            <div className="h-1 w-full bg-gradient-to-r from-[#D4AF37] via-[#075D3D] to-[#D4AF37]" />
 
-            <div className="flex flex-wrap items-start gap-3 border-b border-[#F0EBE2] px-5 py-3.5 sm:px-6">
-              <span className="grid size-9 shrink-0 place-items-center rounded-xl border border-[#E9DCC4] bg-[#FBF4E8] text-[#8B6A3E]">
-                <LockKeyhole size={17} strokeWidth={2} />
+            <div className="flex flex-wrap items-start gap-3.5 border-b border-slate-100 bg-slate-50/80 px-6 py-4">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-emerald-200 bg-emerald-50 text-[#075D3D]">
+                <LockKeyhole size={19} strokeWidth={2.2} />
               </span>
               <div className="min-w-0 flex-1">
-                <h2 className="text-[17px] font-semibold tracking-[-.015em] text-[#231A14]">
+                <h2 className="text-[17px] font-bold tracking-tight text-slate-900">
                   Verify before opening this page
                 </h2>
-                <p className="mt-1 max-w-[52ch] text-[12.5px] leading-5 text-[#7C7267]">
+                <p className="mt-0.5 max-w-[52ch] text-[12.5px] font-medium leading-relaxed text-slate-600">
                   Enter the current Microsoft Authenticator code for every person listed below.
                 </p>
               </div>
-              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[#F0E6D2] bg-[#FDFAF3] px-2.5 py-1.5 text-[11px] font-semibold text-[#8B6A3E]">
-                <Clock3 size={13} strokeWidth={2.2} />
+              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-[11.5px] font-bold text-amber-800">
+                <Clock3 size={14} strokeWidth={2.2} />
                 Access lasts 10 min
               </span>
             </div>
 
-            <div className="p-4 sm:p-5">
+            <div className="p-5 sm:p-6">
               {checking ? (
                 <div className="grid min-h-[240px] place-items-center">
                   <div className="text-center">
-                    <span className="mx-auto block size-7 animate-spin rounded-full border-[3px] border-[#EFE7D9] border-t-[#8B6A3E]" />
-                    <p className="mt-3 text-[12.5px] font-medium text-[#8A8076]">Checking secure access…</p>
+                    <span className="mx-auto block size-8 animate-spin rounded-full border-[3px] border-emerald-100 border-t-[#075D3D]" />
+                    <p className="mt-3 text-[13px] font-semibold text-slate-700">Checking secure access…</p>
                   </div>
                 </div>
               ) : requirements?.requester ? (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div className="flex items-center gap-3">
-                    <p className="text-[12.5px] font-medium text-[#6E6459]">
+                    <p className="text-[13px] font-bold text-slate-800">
                       {readyCount} of {roles.length} codes entered
                     </p>
                     <div className="flex flex-1 gap-1.5">
                       {roles.map((role) => (
                         <span
                           key={role}
-                          className={`h-1 flex-1 rounded-full transition-colors ${isRowReady(role) ? "bg-[#8B6A3E]" : "bg-[#EDE6DA]"}`}
+                          className={`h-1.5 flex-1 rounded-full transition-colors ${isRowReady(role) ? "bg-[#075D3D]" : "bg-slate-200"}`}
                         />
                       ))}
                     </div>
                   </div>
 
-                  <ul className="space-y-2">
+                  <ul className="space-y-3">
                     {roles.map((role) => {
                       const self = role === "self";
                       const people = self ? [] : requirements.approvers.filter((person) => person.roleSlug === role);
@@ -185,19 +175,19 @@ export default function SystemServiceAccessGate({ onGranted }: Props) {
                       return (
                         <li
                           key={role}
-                          className={`rounded-xl border p-3 transition-colors ${missingApprover
-                            ? "border-[#F0D6D2] bg-[#FEF7F6]"
+                          className={`rounded-xl border p-4 transition-colors ${missingApprover
+                            ? "border-rose-200 bg-rose-50/70"
                             : ready
-                              ? "border-[#DCCFB6] bg-[#FDFAF4]"
-                              : "border-[#EAE3D8] bg-white"
+                              ? "border-emerald-200 bg-emerald-50/40"
+                              : "border-slate-200 bg-white"
                             }`}
                         >
-                          <div className="flex gap-3">
+                          <div className="flex gap-3.5">
                             <span
                               aria-hidden
                               className={`mt-0.5 grid size-6 shrink-0 place-items-center rounded-full border transition-colors ${ready
-                                ? "border-[#8B6A3E] bg-[#8B6A3E] text-white"
-                                : "border-[#DED5C6] bg-[#F7F3EB] text-[#B4A894]"
+                                ? "border-[#075D3D] bg-[#075D3D] text-white"
+                                : "border-slate-300 bg-slate-100 text-slate-400"
                                 }`}
                             >
                               {ready ? <Check size={13} strokeWidth={3} /> : <span className="size-1.5 rounded-full bg-current" />}
@@ -205,20 +195,20 @@ export default function SystemServiceAccessGate({ onGranted }: Props) {
 
                             <div className="grid min-w-0 flex-1 gap-3 sm:grid-cols-[minmax(0,1fr)_190px] sm:items-end">
                               <div className="min-w-0">
-                                <p className="text-[12.5px] font-semibold text-[#332821]">
-                                  {title} <span className="text-[#C2544A]">*</span>
+                                <p className="text-[13px] font-bold text-slate-900">
+                                  {title} <span className="text-rose-600">*</span>
                                 </p>
-                                <p className="mb-1.5 mt-0 text-[10.5px] text-[#8A8076]">
+                                <p className="mb-2 mt-0.5 text-[11px] font-medium text-slate-500">
                                   {self ? "Signed in as you" : `Any available ${role.replace("_", " ")}`}
                                 </p>
 
                                 {self ? (
-                                  <div className="flex min-h-9 min-w-0 items-center gap-2 rounded-lg border border-[#EAE3D8] bg-[#FBF9F5] px-3">
-                                    <UserCheck size={15} className="shrink-0 text-[#5C8A63]" />
-                                    <span className="truncate text-[12.5px] font-medium text-[#332821]">
+                                  <div className="flex min-h-10 min-w-0 items-center gap-2.5 rounded-lg border border-slate-200 bg-slate-50 px-3.5">
+                                    <UserCheck size={16} className="shrink-0 text-[#075D3D]" />
+                                    <span className="truncate text-[13px] font-bold text-slate-900">
                                       {requirements.requester!.name}
                                     </span>
-                                    <span className="ml-auto hidden truncate text-[11px] text-[#9A9086] md:block">
+                                    <span className="ml-auto hidden truncate text-[11.5px] font-medium text-slate-500 md:block">
                                       {requirements.requester!.email}
                                     </span>
                                   </div>
@@ -228,7 +218,7 @@ export default function SystemServiceAccessGate({ onGranted }: Props) {
                                     onChange={(event) => setSelectedUsers((old) => ({ ...old, [role]: event.target.value }))}
                                     disabled={missingApprover}
                                     aria-label={`${title} approver`}
-                                    className="min-h-9 w-full min-w-0 rounded-lg border border-[#E2DACD] bg-white px-3 text-[12px] font-medium text-[#332821] outline-none transition focus:border-[#8B6A3E] focus:ring-4 focus:ring-[#F3E9D8] disabled:cursor-not-allowed disabled:bg-[#F6F3ED] disabled:text-[#A79D91]"
+                                    className="min-h-10 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3.5 text-[12.5px] font-semibold text-slate-900 outline-none transition focus:border-[#075D3D] focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                                   >
                                     <option value="">Choose {role.replace("_", " ")}</option>
                                     {people.map((person) => (
@@ -243,8 +233,8 @@ export default function SystemServiceAccessGate({ onGranted }: Props) {
 
                               <div className="relative">
                                 <KeyRound
-                                  size={15}
-                                  className={`pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 ${ready ? "text-[#8B6A3E]" : "text-[#B4A894]"}`}
+                                  size={16}
+                                  className={`pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 ${ready ? "text-[#075D3D]" : "text-slate-400"}`}
                                 />
                                 <input
                                   value={codes[role] || ""}
@@ -260,14 +250,14 @@ export default function SystemServiceAccessGate({ onGranted }: Props) {
                                   disabled={missingApprover}
                                   placeholder="000000"
                                   aria-label={`${title} authenticator code`}
-                                  className="min-h-9 w-full rounded-lg border border-[#E2DACD] bg-white pl-9 pr-3 text-center font-mono text-[14px] font-semibold tracking-[.24em] text-[#332821] outline-none transition placeholder:font-normal placeholder:tracking-[.18em] placeholder:text-[#CFC6B8] focus:border-[#8B6A3E] focus:ring-4 focus:ring-[#F3E9D8] disabled:cursor-not-allowed disabled:bg-[#F6F3ED]"
+                                  className="min-h-10 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-center font-mono text-[15px] font-bold tracking-[.24em] text-slate-900 outline-none transition placeholder:font-normal placeholder:tracking-[.18em] placeholder:text-slate-400 focus:border-[#075D3D] focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-100"
                                 />
                               </div>
                             </div>
                           </div>
 
                           {missingApprover && (
-                            <p className="mt-3 pl-9 text-[12px] font-medium text-[#B8433A]">
+                            <p className="mt-3 pl-9 text-[12px] font-semibold text-rose-700">
                               No {role.replace("_", " ")} is available right now, so this page stays locked. Ask an
                               administrator to assign one.
                             </p>
@@ -278,7 +268,7 @@ export default function SystemServiceAccessGate({ onGranted }: Props) {
                   </ul>
 
                   {twoFactorMissing && (
-                    <p className="rounded-xl border border-[#F0D6D2] bg-[#FEF7F6] p-3 text-[12.5px] font-medium text-[#B8433A]">
+                    <p className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-[12.5px] font-bold text-rose-800">
                       Turn on Microsoft Authenticator for your account before you can verify here.
                     </p>
                   )}
@@ -286,30 +276,30 @@ export default function SystemServiceAccessGate({ onGranted }: Props) {
                   {error && (
                     <p
                       role="alert"
-                      className="rounded-xl border border-[#F0D6D2] bg-[#FEF7F6] p-3 text-[12.5px] font-medium text-[#B8433A]"
+                      className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-[12.5px] font-bold text-rose-800"
                     >
                       {error}
                     </p>
                   )}
 
-                  <div className="flex flex-col-reverse items-center justify-between gap-2 border-t border-[#F0EBE2] pt-3 sm:flex-row">
-                    <p className="flex items-center gap-1.5 text-[11.5px] text-[#9A9086]">
-                      <ShieldCheck size={13} />
+                  <div className="flex flex-col-reverse items-center justify-between gap-3 border-t border-slate-100 pt-4 sm:flex-row">
+                    <p className="flex items-center gap-1.5 text-[12px] font-medium text-slate-500">
+                      <ShieldCheck size={14} className="text-[#075D3D]" />
                       Codes are checked once and never stored.
                     </p>
                     <button
                       onClick={verify}
                       disabled={submitting || !canSubmit}
-                      className="flex min-h-9 w-full items-center justify-center gap-2 rounded-lg bg-[#8B6A3E] px-5 text-[12px] font-semibold text-white shadow-[0_1px_2px_rgba(42,33,27,.12)] transition hover:bg-[#74542D] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8B6A3E] disabled:cursor-not-allowed disabled:bg-[#CFC2AC] disabled:shadow-none sm:w-auto"
+                      className="flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#075D3D] px-6 text-[13px] font-bold text-white shadow-md transition hover:bg-[#054930] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#075D3D] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none sm:w-auto"
                     >
-                      <LockKeyhole size={15} strokeWidth={2.2} />
+                      <LockKeyhole size={16} strokeWidth={2.2} />
                       {submitting ? "Verifying…" : "Verify and open page"}
                     </button>
                   </div>
                 </div>
               ) : (
                 <div className="grid min-h-[240px] place-items-center text-center">
-                  <p className="max-w-sm rounded-xl border border-[#F0D6D2] bg-[#FEF7F6] p-4 text-[12.5px] font-medium text-[#B8433A]">
+                  <p className="max-w-sm rounded-xl border border-rose-200 bg-rose-50 p-4 text-[13px] font-bold text-rose-800">
                     {error || "Secure access is unavailable. Refresh the page or contact an administrator."}
                   </p>
                 </div>

@@ -696,8 +696,9 @@ export default function SystemServicesPage() {
   if (!accessGranted) return <SystemServiceAccessGate onGranted={async (expiresAt) => { setAccessExpiresAt(expiresAt); setAccessGranted(true); await load(); }} />;
 
   return (
-    <div className="min-h-screen bg-[#F7F5F1] px-6 pb-24 pt-2 text-[13px] capitalize leading-[1.45] text-[#261B15] antialiased max-[820px]:px-3.5 max-[820px]:pb-20 max-[820px]:pt-[18px]">
-      <div className="mx-auto max-w-[1240px]">
+    <div className="relative min-h-screen overflow-hidden bg-[#F7F5F1] px-6 pb-24 pt-2 text-[13px] capitalize leading-[1.45] text-[#261B15] antialiased max-[820px]:px-3.5 max-[820px]:pb-20 max-[820px]:pt-[18px]">
+      <div className="pointer-events-none absolute inset-0 bg-[url('/assets/login/loginnew.png')] bg-cover bg-center bg-no-repeat" aria-hidden="true" />
+      <div className="relative z-10 mx-auto max-w-[1240px]">
         <SystemServicesHeader reminderDisabled={!settings} onReminderDefaults={() => setAlertOpen(true)} onAddService={openAdd} />
 
         <div className="mt-1 grid grid-cols-1 gap-1.5 sm:grid-cols-2 xl:grid-cols-5">
