@@ -1,0 +1,122 @@
+.adminContent {
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.adminContent :global(h1),
+.adminContent :global(.text-lg) {
+  font-size: 19px !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.018em;
+}
+
+.adminContent :global(.text-\[6\.5px\]),
+.adminContent :global(.text-\[6\.8px\]),
+.adminContent :global(.text-\[7px\]),
+.adminContent :global(.text-\[7\.2px\]),
+.adminContent :global(.text-\[7\.5px\]),
+.adminContent :global(.text-\[7\.7px\]),
+.adminContent :global(.text-\[7\.8px\]),
+.adminContent :global(.text-\[8px\]) {
+  font-size: 11px !important;
+}
+
+.adminContent :global(.text-\[8\.5px\]),
+.adminContent :global(.text-\[8\.6px\]),
+.adminContent :global(.text-\[8\.8px\]),
+.adminContent :global(.text-\[9px\]),
+.adminContent :global(.text-\[9\.5px\]),
+.adminContent :global(.text-\[10px\]),
+.adminContent :global(.text-\[10\.5px\]),
+.adminContent :global(.text-\[11px\]),
+.adminContent :global(.text-xs) {
+  font-size: 12px !important;
+}
+
+.adminContent :global(.text-\[11\.5px\]),
+.adminContent :global(.text-\[12px\]),
+.adminContent :global(.text-sm) {
+  font-size: 15px !important;
+}
+
+.adminContent :global(.text-\[13px\]),
+.adminContent :global(.text-\[14px\]) {
+  font-size: 16px !important;
+}
+
+.adminContent :global(.text-\[16px\]),
+.adminContent :global(.text-\[17px\]) {
+  font-size: 18px !important;
+}
+
+.adminContent :global(.text-xl),
+.adminContent :global(.text-\[18px\]),
+.adminContent :global(.text-\[19px\]) {
+  font-size: 19px !important;
+  line-height: 1.2 !important;
+}
+
+.adminContent :global(.space-y-8 > :not([hidden]) ~ :not([hidden])),
+.adminContent :global(.space-y-7 > :not([hidden]) ~ :not([hidden])),
+.adminContent :global(.space-y-6 > :not([hidden]) ~ :not([hidden])) {
+  margin-top: 20px !important;
+}
+
+.adminContent :global(.space-y-5 > :not([hidden]) ~ :not([hidden])) {
+  margin-top: 18px !important;
+}
+
+.adminContent :global(.space-y-4 > :not([hidden]) ~ :not([hidden])) {
+  margin-top: 14px !important;
+}
+
+.adminContent :global(.gap-8),
+.adminContent :global(.gap-7),
+.adminContent :global(.gap-6) {
+  gap: 14px !important;
+}
+
+.adminContent :global(.gap-5),
+.adminContent :global(.gap-4) {
+  gap: 12px !important;
+}
+
+.adminContent :global(.gap-3) {
+  gap: 10px !important;
+}
+
+.adminContent :global(.p-8),
+.adminContent :global(.p-7),
+.adminContent :global(.p-6) {
+  padding: 18px !important;
+}
+
+.adminContent :global(.px-8),
+.adminContent :global(.px-7),
+.adminContent :global(.px-6) {
+  padding-left: 18px !important;
+  padding-right: 18px !important;
+}
+
+.adminContent :global(.py-8),
+.adminContent :global(.py-7),
+.adminContent :global(.py-6) {
+  padding-top: 14px !important;
+  padding-bottom: 14px !important;
+}
+
+.adminContent :global(.mt-8),
+.adminContent :global(.mt-7),
+.adminContent :global(.mt-6) {
+  margin-top: 18px !important;
+}
+
+.adminContent :global(.mb-8),
+.adminContent :global(.mb-7),
+.adminContent :global(.mb-6) {
+  margin-bottom: 18px !important;
+}
+
+.adminContent :global(table) {
+  font-size: 12px;
+}

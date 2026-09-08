@@ -1,0 +1,101 @@
+.dashboard :global(.text-\[6px\]),
+.dashboard :global(.text-\[6\.5px\]),
+.dashboard :global(.text-\[6\.8px\]) { font-size: 8px !important; }
+
+.dashboard :global(.text-\[7px\]) { font-size: 8.5px !important; }
+
+.dashboard :global(.text-\[8px\]),
+.dashboard :global(.text-\[8\.2px\]),
+.dashboard :global(.text-\[8\.5px\]) { font-size: 9px !important; }
+
+.dashboard :global(.text-\[9px\]),
+.dashboard :global(.text-\[9\.5px\]) { font-size: 10px !important; }
+
+.dashboard :global(.text-\[10px\]),
+.dashboard :global(.text-\[11px\]) { font-size: 11px !important; }
+
+.dashboard :global(.text-\[12px\]) { font-size: 12px !important; }
+
+/* Custom Thin Scrollbars */
+.dashboard :global(*::-webkit-scrollbar) {
+  width: 4px !important;
+  height: 4px !important;
+}
+
+.dashboard :global(*::-webkit-scrollbar-track) {
+  background: transparent !important;
+}
+
+.dashboard :global(*::-webkit-scrollbar-thumb) {
+  background: #cbd5e1 !important;
+  border-radius: 9999px !important;
+}
+
+.dashboard :global(*::-webkit-scrollbar-thumb:hover) {
+  background: #94a3b8 !important;
+}
+
+/* Animations for Charts */
+@keyframes drawPath {
+  from {
+    stroke-dashoffset: 1200;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.dashboard :global(.animate-chart-line) {
+  stroke-dasharray: 1200;
+  stroke-dashoffset: 1200;
+  animation: drawPath 2.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+/* Donut Clockwise Fill Animation */
+@keyframes fillDonut {
+  from {
+    stroke-dashoffset: 251.3;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.dashboard :global(.animate-donut-fill) {
+  stroke-dasharray: 251.3;
+  stroke-dashoffset: 251.3;
+  animation: fillDonut 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+/* Chart Growing From Bottom 0 Animation */
+@keyframes growChart {
+  from {
+    transform: scaleY(0.1);
+    transform-origin: bottom center;
+    opacity: 0.2;
+  }
+  to {
+    transform: scaleY(1);
+    transform-origin: bottom center;
+    opacity: 1;
+  }
+}
+
+.dashboard :global(.animate-grow-chart) {
+  transform-origin: bottom center;
+  animation: growChart 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Chart Growing From Left 0% to 100% Animation */
+@keyframes growLeft {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.dashboard :global(.animate-grow-left) {
+  animation: growLeft 2.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}

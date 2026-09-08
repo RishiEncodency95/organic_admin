@@ -1,0 +1,30 @@
+.pages :global(.text-\[6\.8px\]),
+.pages :global(.text-\[7px\]),
+.pages :global(.text-\[7\.2px\]),
+.pages :global(.text-\[7\.5px\]),
+.pages :global(.text-\[7\.7px\]),
+.pages :global(.text-\[7\.8px\]) {
+  font-size: 11px !important;
+}
+
+.pages :global(.text-\[8px\]),
+.pages :global(.text-\[8\.5px\]) {
+  font-size: 12px !important;
+}
+
+.pages :global(.text-\[9px\]),
+.pages :global(.text-\[9\.5px\]) {
+  font-size: 13px !important;
+}
+
+.pages :global(.text-\[11\.5px\]),
+.pages :global(.text-\[12px\]) {
+  font-size: 15px !important;
+}
+
+.pages :global(.text-\[14px\]) { font-size: 16px !important; }
+.pages :global(.text-\[16px\]) { font-size: 18px !important; }
+.pages :global(.text-\[17px\]) { font-size: 19px !important; }
+.pages :global(.text-\[18px\]) { font-size: 20px !important; }
+.pages :global(.text-\[19px\]) { font-size: 22px !important; }
+.pages :global(.text-\[23px\]) { font-size: 26px !important; }
