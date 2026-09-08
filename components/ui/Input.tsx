@@ -1,7 +1,7 @@
 import { InputHTMLAttributes, forwardRef, TextareaHTMLAttributes, SelectHTMLAttributes } from "react";
 
 const FIELD_CLASSES =
-  "w-full rounded-lg border border-surface-border bg-surface-card px-3 py-2 text-sm text-text-primary placeholder:text-text-muted transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/15 disabled:bg-surface-sunken disabled:text-text-muted";
+  "w-full border border-surface-border bg-surface-card px-3 py-2 text-sm text-text-primary placeholder:text-text-muted transition-all hover:border-[#FF9D50] hover:[box-shadow:rgba(255,157,80,0.15)_0px_1px_3px_0px,rgba(255,157,80,0.35)_0px_0px_0px_1px] focus:border-[#FF9D50] focus:outline-none focus:ring-2 focus:ring-[#FF9D50]/20 disabled:bg-surface-sunken disabled:text-text-muted [box-shadow:rgba(0,0,0,0.02)_0px_1px_3px_0px,rgba(27,31,35,0.15)_0px_0px_0px_1px]";
 
 interface FieldWrapperProps {
   label?: string;
@@ -11,7 +11,7 @@ interface FieldWrapperProps {
 }
 
 export const Label = ({ children, required }: { children: React.ReactNode; required?: boolean }) => (
-  <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
+  <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#18233b]">
     {children}
     {required && <span className="ml-0.5 text-red-500">*</span>}
   </label>

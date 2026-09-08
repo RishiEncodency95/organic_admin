@@ -39,7 +39,8 @@ type Step =
   | "2fa-setup"
   | "backup-codes"
   | "forgot-password"
-  | "forgot-password-sent";
+  | "forgot-password-sent"
+  | "reset-password";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -81,6 +82,11 @@ export default function LoginPage() {
 
   const [forgotEmail, setForgotEmail] = useState("");
   const [tempToken, setTempToken] = useState("");
+  const [resetToken, setResetToken] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [resetDone, setResetDone] = useState(false);
 
   /* =========================================================
      QR CODE
@@ -364,11 +370,54 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      await authApi.forgotPassword(forgotEmail);
-      setStep("forgot-password-sent");
-      showToast("success", "Password reset link sent to your email!");
+      const res: any = await authApi.forgotPassword(forgotEmail);
+      if (res?.resetToken) {
+        setResetToken(res.resetToken);
+        if (res.email) setEmail(res.email);
+        setStep("reset-password");
+        showToast("success", "Account verified! Set your new password.");
+      } else {
+        setStep("forgot-password-sent");
+        showToast("success", "Password reset instructions sent!");
+      }
     } catch (err: any) {
       const msg = err instanceof ApiRequestError ? err.message : "Something went wrong. Please try again.";
+      setError(msg);
+      showToast("error", msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (newPassword.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await authApi.resetPassword(resetToken, newPassword);
+      setResetDone(true);
+      showToast("success", "Password reset successfully! Please sign in.");
+      setTimeout(() => {
+        setStep("credentials");
+        setPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+        setResetToken("");
+        setResetDone(false);
+      }, 1500);
+    } catch (err: any) {
+      const msg = err instanceof ApiRequestError ? err.message : "Failed to reset password. Please try again.";
       setError(msg);
       showToast("error", msg);
     } finally {
@@ -452,34 +501,17 @@ export default function LoginPage() {
 
         {/* TITLE */}
 
-        <h1>
-          Bharat Organic Expo
+        <h1 style={{ WebkitTextStroke: "none", textShadow: "none", border: "none" }}>
+          <span style={{ color: "#14532d", fontWeight: 600 }}>Bharat</span>{" "}
+          <span style={{ color: "#3A6806", fontWeight: 600 }}>Organic</span>{" "}
+          <span style={{ color: "#4B1426", fontWeight: 600 }}>Expo</span>
           <br />
 
-          <span>
+          <span style={{ color: "#ffffff", WebkitTextStroke: "none", textShadow: "none" }}>
             {text.portalTitle}
           </span>
         </h1>
 
-        <div className="gold-ornament">
-          <i />
-          <b>◆</b>
-          <i />
-        </div>
-
-        {/* MESSAGE */}
-
-        <p className="brand-message !font-bold">
-          <strong className="!font-bold">{text.compassionLine}</strong>
-
-          <br />
-
-          <strong className="!font-bold">{text.honorLine}</strong>
-
-          <br />
-
-          <strong className="!font-bold">{text.dignityLine}</strong>
-        </p>
 
 
 
@@ -856,21 +888,13 @@ export default function LoginPage() {
                 </div>
 
                 <Input
-                  label={
-                    text.email
-                  }
-                  type="email"
+                  label={text.identifier || "Email / Mobile / Staff ID"}
+                  type="text"
                   required
                   autoFocus
-                  value={
-                    forgotEmail
-                  }
-                  onChange={(e) =>
-                    setForgotEmail(
-                      e.target.value,
-                    )
-                  }
-                  placeholder="admin@bharatorganic.com"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder={text.identifierPlaceholder || "Enter email, mobile number or staff ID"}
                 />
 
                 {error && (
@@ -942,77 +966,141 @@ export default function LoginPage() {
               EMAIL SENT
           ================================================= */}
 
-          {step ===
-            "forgot-password-sent" && (
-              <div className="space-y-6">
-                <div className="text-center">
-                  <div
-                    className="
-                    mx-auto
-                    flex
-                    h-14
-                    w-14
-                    items-center
-                    justify-center
-                    rounded-2xl
-                    bg-emerald-50
-                    text-emerald-600
-                    shadow-sm
-                    ring-1
-                    ring-emerald-100
-                  "
-                  >
-                    <MailCheck className="h-7 w-7" />
-                  </div>
-
-                  <h3
-                    className="
-                    mt-5
-                    text-xl
-                    font-semibold
-                    text-slate-900
-                  "
-                  >
-                    {text.inboxTitle}
-                  </h3>
-
-                  <p className="mt-2 text-sm text-slate-500">
-                    <span className="font-semibold text-slate-700">
-                      {forgotEmail}
-                    </span>
-
-                    {" — "}
-
-                    {text.inboxCopy}
-                  </p>
+          {step === "forgot-password-sent" && (
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 shadow-sm ring-1 ring-emerald-100">
+                  <MailCheck className="h-7 w-7" />
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStep(
-                      "credentials",
-                    );
+                <h3 className="mt-5 text-xl font-semibold text-slate-900">
+                  {text.inboxTitle}
+                </h3>
 
-                    setError("");
-                  }}
-                  className="
-                  flex
-                  w-full
-                  items-center
-                  justify-center
-                  gap-2
-                  text-sm
-                  font-medium
-                  text-slate-500
-                  transition-colors
-                  hover:text-slate-800
-                "
-                >
-                  ← {text.back}
-                </button>
+                <p className="mt-2 text-sm text-slate-500">
+                  <span className="font-semibold text-slate-700">
+                    {forgotEmail}
+                  </span>
+                  {" — "}
+                  {text.inboxCopy}
+                </p>
               </div>
-            )}
+
+              {resetToken && (
+                <Button
+                  type="button"
+                  onClick={() => setStep("reset-password")}
+                  className="h-12 w-full text-[15px] font-semibold text-white shadow-sm"
+                  style={{ background: "#16a34a" }}
+                >
+                  <KeyRound className="mr-2 h-4 w-4" />
+                  Set New Password Now
+                </Button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setStep("credentials");
+                  setError("");
+                }}
+                className="flex w-full items-center justify-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-800"
+              >
+                ← {text.back}
+              </button>
+            </div>
+          )}
+
+          {/* =================================================
+              RESET PASSWORD FORM (NEW)
+          ================================================= */}
+
+          {step === "reset-password" && (
+            <form onSubmit={handleResetPassword} className="space-y-6">
+              <div className="text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 shadow-sm ring-1 ring-blue-100">
+                  <KeyRound className="h-7 w-7" />
+                </div>
+
+                <h3 className="mt-5 text-xl font-semibold text-slate-900">
+                  Set New Password
+                </h3>
+
+                <p className="mt-2 text-sm text-slate-500">
+                  Account verified for{" "}
+                  <strong className="text-slate-800">{forgotEmail}</strong>
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="relative">
+                  <Input
+                    label="New Password"
+                    type={showNewPassword ? "text" : "password"}
+                    required
+                    autoFocus
+                    minLength={8}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="At least 8 characters"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword((v) => !v)}
+                    className="absolute right-3 top-[32px] text-slate-400 hover:text-slate-600"
+                    tabIndex={-1}
+                  >
+                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+
+                <Input
+                  label="Confirm New Password"
+                  type={showNewPassword ? "text" : "password"}
+                  required
+                  minLength={8}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-enter your new password"
+                />
+              </div>
+
+              {error && (
+                <div className="flex items-start gap-3 rounded-xl border border-red-100 bg-red-50/80 p-3.5 text-sm text-red-700">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
+                  <span className="font-medium">{error}</span>
+                </div>
+              )}
+
+              {resetDone ? (
+                <div className="flex items-center justify-center gap-2 rounded-xl bg-emerald-50 p-3 text-sm font-medium text-emerald-700">
+                  <CheckCircle2 className="h-5 w-5" />
+                  Password updated! Returning to sign in...
+                </div>
+              ) : (
+                <Button
+                  type="submit"
+                  loading={isSubmitting}
+                  className="h-12 w-full text-[15px] font-semibold shadow-sm"
+                  style={{ background: "#16a34a" }}
+                >
+                  Update Password
+                </Button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setStep("credentials");
+                  setError("");
+                  setResetToken("");
+                }}
+                className="flex w-full items-center justify-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-800"
+              >
+                ← {text.back}
+              </button>
+            </form>
+          )}
 
           {/* =================================================
               TOTP

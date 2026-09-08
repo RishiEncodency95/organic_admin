@@ -270,112 +270,30 @@ export default function Sidebar({
           z-10
           shrink-0
           px-[16px]
-          pt-[12px]
-          pb-[16px]
+          pt-[16px]
+          pb-[14px]
           text-center
         "
       >
-        {/* LOGO
-            FIX:
-            - wrapper height bada ki
-            - crop kam kiya
-            - waves ab cut nahi hongi
-        */}
-        <div
-          className="
-            relative
-            mx-auto
-            h-[70px]
-            w-full
-            overflow-hidden
-          "
-        >
+        <Link href="/" className="block">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/bharat-organic-logo.png"
-            alt="Bharat Organic Logo"
-            className="
-              absolute
-              left-1/2
-              top-[-2px]
-              h-[75px]
-              w-full
-              max-w-[140px]
-              -translate-x-1/2
-              object-contain
-              object-top
-            "
-          />
-        </div>
-
-        {/* BHARAT ORGANIC */}
-        <div className="mt-[6px] text-center">
-          <p
-            className="
-              font-serif
-              text-[19px]
-              font-semibold
-              leading-[22px]
-              tracking-[0.04em]
-              text-white
-              drop-shadow-[0_1px_2px_rgba(0,0,0,0.30)]
-            "
-          >
-            BHARAT ORGANIC
-          </p>
-
-          <div
+            src="/admin.png"
+            alt="Bharat Organic Expo Admin"
             className="
               mx-auto
-              mt-[3px]
-              flex
-              w-[112px]
-              items-center
-              justify-center
-              gap-[5px]
+              h-auto
+              max-h-[75px]
+              w-auto
+              max-w-[195px]
+              object-contain
+              drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)]
+              transition-transform
+              duration-200
+              hover:scale-[1.02]
             "
-          >
-            <span className="h-px flex-1 bg-[#D9A72E]" />
-            <span
-              className="
-                h-[4px]
-                w-[4px]
-                rotate-45
-                bg-[#D9A72E]
-              "
-            />
-            <span className="h-px flex-1 bg-[#D9A72E]" />
-          </div>
-        </div>
-
-        {/* INITIATIVE */}
-        {/* <div className="mt-[7px] text-center">
-          <p
-            className="
-              font-serif
-              text-[13px]
-              font-medium
-              leading-[16px]
-              tracking-[0.015em]
-              text-white
-            "
-          >
-            An Initiative of
-          </p>
-
-          <p
-            className="
-              mt-[2px]
-              text-[14px]
-              font-bold
-              leading-[17px]
-              tracking-[0.01em]
-              text-[#E7B52B]
-            "
-          >
-            Namo Gange Trust
-          </p>
-        </div> */}
+          />
+        </Link>
       </div>
 
       {/* NAVIGATION */}

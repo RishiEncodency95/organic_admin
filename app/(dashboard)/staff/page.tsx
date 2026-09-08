@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Plus, Copy, Check, Pencil, Camera, Loader2, PowerOff, Power, Trash2, ChevronDown, ExternalLink } from "lucide-react";
+import { Plus, Copy, Check, Pencil, Camera, Loader2, PowerOff, Power, Trash2, ExternalLink, User } from "lucide-react";
 import Swal from "sweetalert2";
 import typography from "../pages/PagesTypography.module.css";
 import Button from "@/components/ui/Button";
@@ -67,19 +67,7 @@ export default function StaffPage() {
   const [copied, setCopied] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
-  const [statusFilter, setStatusFilter] = useState<"ALL" | StaffStatus>("ALL");
-  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
-  const statusDropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
-        setStatusDropdownOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   const load = () => {
     setLoading(true);
@@ -97,7 +85,15 @@ export default function StaffPage() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(load, []);
+  useEffect(() => {
+    load();
+    const interval = setInterval(() => {
+      staffApi.list().then((s) => {
+        if (Array.isArray(s)) setStaff(s);
+      }).catch(() => {});
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const openInvite = () => {
     setEditingId(null);
@@ -178,33 +174,44 @@ export default function StaffPage() {
     }
   };
 
-  const handleToggleStatus = async (member: StaffMember) => {
-    const next = member.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
-    const action = next === "ACTIVE" ? "Activate" : "Deactivate";
+  const handleStatusChange = async (member: StaffMember, newStatus: StaffStatus) => {
+    if (member.status === newStatus) return;
+
+    const label = newStatus === "LOCKED" ? "DEACTIVATED" : newStatus;
+    const action = newStatus === "ACTIVE" ? "Activate" : newStatus === "LOCKED" ? "Deactivate" : "Mark as Inactive";
 
     const confirm = await Swal.fire({
       title: `${action} Account?`,
-      text: `Are you sure you want to ${action.toLowerCase()} ${member.name}'s account?`,
+      html: `<p style="color:#e2e8f0;font-size:0.9rem;">Are you sure you want to <strong>${action.toLowerCase()}</strong> <strong>${member.name}</strong>'s account?</p>`,
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: action,
+      confirmButtonText: `Yes, ${action}!`,
       cancelButtonText: "Cancel",
       background: "#1e2433",
       color: "#e2e8f0",
-      confirmButtonColor: next === "ACTIVE" ? "#22c55e" : "#ef4444",
+      confirmButtonColor: newStatus === "ACTIVE" ? "#16a34a" : newStatus === "LOCKED" ? "#ea580c" : "#64748b",
       cancelButtonColor: "#374151",
     });
 
-    if (!confirm.isConfirmed) return;
+    if (!confirm.isConfirmed) {
+      setStaff((prev) => [...prev]);
+      return;
+    }
 
     try {
-      await staffApi.updateStatus(member._id, next);
-      showInfo(`${member.name}'s account is now ${next}`);
+      await staffApi.updateStatus(member._id, newStatus);
+      showSuccess(`${member.name}'s account is now ${label}`);
       load();
     } catch (err) {
       const msg = err instanceof ApiRequestError ? err.message : "Failed to update status.";
       showError(msg);
+      load();
     }
+  };
+
+  const handleToggleStatus = (member: StaffMember) => {
+    const next: StaffStatus = member.status === "ACTIVE" ? "LOCKED" : "ACTIVE";
+    handleStatusChange(member, next);
   };
 
   const handleDelete = async (member: StaffMember) => {
@@ -264,7 +271,7 @@ export default function StaffPage() {
             <button
               type="button"
               onClick={openInvite}
-              className="flex h-[30px] items-center justify-center gap-[5px] rounded-[6px] bg-[#293681] px-[14px] text-[8.5px] font-semibold text-white shadow-[0_5px_12px_rgba(41,54,129,0.15)] transition hover:bg-[#1f2963]"
+              className="flex h-[30px] items-center justify-center gap-[5px] rounded-[6px] bg-[#4B1426] px-[14px] text-[8.5px] font-semibold text-white shadow-[0_5px_12px_rgba(75,20,38,0.25)] transition hover:bg-[#3a0f1d]"
             >
               <Plus
                 className="h-[12px] w-[12px]"
@@ -301,89 +308,8 @@ export default function StaffPage() {
                   <th className="px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">
                     Role
                   </th>
-                  <th className="relative px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">
-                    {/* Status Dropdown in Thead */}
-                    <div className="relative inline-block text-left" ref={statusDropdownRef}>
-                      <button
-                        type="button"
-                        onClick={() => setStatusDropdownOpen((prev) => !prev)}
-                        className="inline-flex items-center gap-1.5 rounded-[4px] bg-white/10 px-2 py-0.5 text-[8px] font-bold tracking-wider text-white transition hover:bg-white/20 focus:outline-none"
-                      >
-                        <span>
-                          {statusFilter === "ALL" ? "STATUS" : statusFilter === "LOCKED" ? "DEACTIVATED" : statusFilter}
-                        </span>
-                        <ChevronDown className={`h-[10px] w-[10px] transition-transform ${statusDropdownOpen ? "rotate-180" : ""}`} />
-                      </button>
-
-                      {statusDropdownOpen && (
-                        <div className="absolute left-0 top-full z-40 mt-1 min-w-[135px] overflow-hidden rounded-[6px] border border-slate-200 bg-white p-1 text-[8px] font-medium shadow-xl">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setStatusFilter("ALL");
-                              setStatusDropdownOpen(false);
-                            }}
-                            className={`flex w-full items-center justify-between rounded px-2 py-1.5 text-left transition ${
-                              statusFilter === "ALL" ? "bg-[#293681] text-white font-semibold" : "text-slate-700 hover:bg-slate-100"
-                            }`}
-                          >
-                            <span>All Status</span>
-                            <span className="text-[7px] opacity-75">{staff.length}</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setStatusFilter("ACTIVE");
-                              setStatusDropdownOpen(false);
-                            }}
-                            className={`flex w-full items-center justify-between rounded px-2 py-1.5 text-left transition ${
-                              statusFilter === "ACTIVE" ? "bg-[#293681] text-white font-semibold" : "text-slate-700 hover:bg-slate-100"
-                            }`}
-                          >
-                            <span className="flex items-center gap-1.5">
-                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                              Active
-                            </span>
-                            <span className="text-[7px] opacity-75">{staff.filter((s) => s.status === "ACTIVE").length}</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setStatusFilter("INACTIVE");
-                              setStatusDropdownOpen(false);
-                            }}
-                            className={`flex w-full items-center justify-between rounded px-2 py-1.5 text-left transition ${
-                              statusFilter === "INACTIVE" ? "bg-[#293681] text-white font-semibold" : "text-slate-700 hover:bg-slate-100"
-                            }`}
-                          >
-                            <span className="flex items-center gap-1.5">
-                              <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
-                              Inactive
-                            </span>
-                            <span className="text-[7px] opacity-75">{staff.filter((s) => s.status === "INACTIVE").length}</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setStatusFilter("LOCKED");
-                              setStatusDropdownOpen(false);
-                            }}
-                            className={`flex w-full items-center justify-between rounded px-2 py-1.5 text-left transition ${
-                              statusFilter === "LOCKED" ? "bg-[#293681] text-white font-semibold" : "text-amber-700 hover:bg-amber-50"
-                            }`}
-                          >
-                            <span className="flex items-center gap-1.5">
-                              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                              Deactivated
-                            </span>
-                            <span className="text-[7px] opacity-75">{staff.filter((s) => s.status === "LOCKED").length}</span>
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                  <th className="px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">
+                    Status
                   </th>
                   <th className="px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">
                     Last Login
@@ -403,14 +329,14 @@ export default function StaffPage() {
                       </div>
                     </td>
                   </tr>
-                ) : (statusFilter === "ALL" ? staff : staff.filter((s) => s.status === statusFilter)).length === 0 ? (
+                ) : staff.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="py-12 text-center text-[10px] text-[#6c7587]">
-                      {statusFilter !== "ALL" ? `No ${statusFilter.toLowerCase()} staff accounts found.` : "No staff accounts found."}
+                      No staff accounts found.
                     </td>
                   </tr>
                 ) : (
-                  (statusFilter === "ALL" ? staff : staff.filter((s) => s.status === statusFilter)).map((s) => {
+                  staff.map((s) => {
                     const lastLoginStr = s.lastLoginAt ? formatDateTime(s.lastLoginAt) : null;
                     const datePart = lastLoginStr ? lastLoginStr.split(",")[0] : null;
                     const timePart =
@@ -430,7 +356,7 @@ export default function StaffPage() {
                           </span>
                         </td>
 
-                        {/* EMAIL — Blue color + Click opens Outlook/Gmail */}
+                        {/* EMAIL — Blue color + semibold + Click opens Outlook/Gmail */}
                         <td className="px-[12px] py-[8px]">
                           {s.email ? (
                             <a
@@ -438,11 +364,11 @@ export default function StaffPage() {
                               title={`Send email to ${s.email} via Outlook / Gmail`}
                               className="group inline-flex items-center gap-1 text-[8px] font-semibold text-blue-600 transition hover:text-blue-800 hover:underline"
                             >
-                              <span>{s.email}</span>
+                              <span className="font-semibold">{s.email}</span>
                               <ExternalLink className="h-[8px] w-[8px] opacity-60 transition group-hover:opacity-100" />
                             </a>
                           ) : (
-                            <span className="text-[8px] text-[#6c7587]">—</span>
+                            <span className="text-[8px] font-semibold text-[#6c7587]">—</span>
                           )}
                         </td>
 
@@ -467,28 +393,40 @@ export default function StaffPage() {
                           </span>
                         </td>
 
-                        {/* STATUS — Deactivated in Orange when locked */}
+                        {/* STATUS DROPDOWN — Styled Native Select identical to Pages CMS Edit */}
                         <td className="px-[12px] py-[8px]">
-                          <span
-                            className={`inline-flex items-center gap-[4px] rounded-[4px] px-[6px] py-[2.5px] text-[7px] font-semibold ${
-                              s.status === "ACTIVE"
-                                ? "bg-[#edf6ee] text-[#327d50] border border-emerald-200/50"
-                                : s.status === "LOCKED"
-                                ? "bg-amber-50 text-amber-700 border border-amber-300/70"
-                                : "bg-slate-100 text-slate-600 border border-slate-200/60"
-                            }`}
-                          >
-                            <span
-                              className={`h-[4px] w-[4px] rounded-full ${
+                          <div className="flex flex-col gap-0.5 items-start">
+                            <select
+                              key={`${s._id}-${s.status}`}
+                              value={s.status}
+                              onChange={(e) => handleStatusChange(s, e.target.value as StaffStatus)}
+                              className={`h-[24px] cursor-pointer appearance-none rounded-[4px] px-[8px] pr-[22px] text-[8px] font-bold outline-none bg-no-repeat bg-[right_6px_center] shadow-xs transition ${
                                 s.status === "ACTIVE"
-                                  ? "bg-[#308052]"
+                                  ? "bg-[#e8f5e9] text-[#23714a] border border-[#a5d6a7]"
                                   : s.status === "LOCKED"
-                                  ? "bg-amber-500"
-                                  : "bg-slate-500"
+                                  ? "bg-[#fff3e0] text-[#e65100] border border-[#ffb74d]"
+                                  : "bg-[#f1f5f9] text-[#475569] border border-[#cbd5e1]"
                               }`}
-                            />
-                            {s.status === "LOCKED" ? "DEACTIVATED" : s.status}
-                          </span>
+                              style={{
+                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                              }}
+                            >
+                              <option value="ACTIVE" className="bg-white text-[#23714a] font-bold">
+                                ACTIVE
+                              </option>
+                              <option value="INACTIVE" className="bg-white text-[#475569] font-bold">
+                                INACTIVE
+                              </option>
+                              <option value="LOCKED" className="bg-white text-[#e65100] font-bold">
+                                DEACTIVATED
+                              </option>
+                            </select>
+                            {s.status === "LOCKED" && s.lockUntil && new Date(s.lockUntil) > new Date() && (
+                              <span className="text-[6.5px] font-semibold text-[#ea580c] whitespace-nowrap">
+                                Unlocks in {Math.max(1, Math.ceil((new Date(s.lockUntil).getTime() - Date.now()) / 60000))}m
+                              </span>
+                            )}
+                          </div>
                         </td>
 
                         {/* LAST LOGIN */}
@@ -561,13 +499,9 @@ export default function StaffPage() {
 
           {/* Table Footer Stats */}
           {!loading && staff.length > 0 && (
-            <div className="flex items-center justify-between border-t border-[#e8e5df] bg-[#fafafa] px-[12px] py-[6px] text-[8px] text-[#6c7587]">
-              <span>
-                Total Staff Accounts:{" "}
-                <strong className="font-semibold text-[#18233b]">
-                  {statusFilter === "ALL" ? staff.length : staff.filter((s) => s.status === statusFilter).length}
-                </strong>
-                {statusFilter !== "ALL" && ` (filtered from ${staff.length})`}
+            <div className="flex items-center justify-between border-t border-[#e8e5df] bg-[#fafafa] px-[12px] py-[6px] text-[8px]">
+              <span className="font-semibold text-[#2563eb]">
+                Total Staff Accounts: <strong className="font-bold text-[#1d4ed8]">{staff.length}</strong>
               </span>
               <span className="text-[7.5px] text-[#8a92a0]">All members registered on platform</span>
             </div>
@@ -581,17 +515,33 @@ export default function StaffPage() {
         title={createdCredential ? "Staff Account Created" : editingId ? "Edit Staff Account" : "New Staff Account"}
         footer={
           createdCredential ? (
-            <Button size="sm" onClick={() => setModalOpen(false)}>
+            <button
+              onClick={() => setModalOpen(false)}
+              className="inline-flex h-[32px] items-center gap-1.5 px-[14px] text-[12px] font-semibold text-white transition-all hover:opacity-90 active:scale-95"
+              style={{ background: "#16a34a", borderRadius: "4px", boxShadow: "rgba(0,0,0,0.02) 0px 1px 3px 0px, rgba(27,31,35,0.15) 0px 0px 0px 1px" }}
+            >
               Done
-            </Button>
+            </button>
           ) : (
             <>
-              <Button variant="secondary" size="sm" onClick={() => setModalOpen(false)}>
+              <button
+                type="button"
+                onClick={() => setModalOpen(false)}
+                className="inline-flex h-[32px] items-center gap-1.5 px-[14px] text-[12px] font-semibold text-red-600 transition-all hover:bg-red-100 active:scale-95"
+                style={{ background: "#fff1f2", borderRadius: "4px", boxShadow: "rgba(0,0,0,0.02) 0px 1px 3px 0px, rgba(220,38,38,0.15) 0px 0px 0px 1px" }}
+              >
                 Cancel
-              </Button>
-              <Button size="sm" onClick={editingId ? handleSaveEdit : handleInvite} loading={saving}>
+              </button>
+              <button
+                type="button"
+                onClick={editingId ? handleSaveEdit : handleInvite}
+                disabled={saving}
+                className="inline-flex h-[32px] items-center gap-1.5 px-[14px] text-[12px] font-semibold text-white transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 active:scale-95"
+                style={{ background: "#16a34a", borderRadius: "4px", boxShadow: "rgba(0,0,0,0.02) 0px 1px 3px 0px, rgba(22,163,74,0.2) 0px 0px 0px 1px" }}
+              >
+                {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 {editingId ? "Save Changes" : "Create Account"}
-              </Button>
+              </button>
             </>
           )
         }
@@ -615,19 +565,21 @@ export default function StaffPage() {
           <div className="space-y-3">
             <div className="flex justify-center pb-1">
               <div className="relative">
-                <span className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-surface-border bg-accent-soft text-lg font-semibold text-accent">
+                <span className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-[#cbd5e1] bg-[#f1f5f9] text-lg font-semibold text-[#334155] shadow-xs">
                   {form.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element -- user-supplied Cloudinary URL
                     <img src={form.avatarUrl} alt="" className="h-full w-full object-cover" />
+                  ) : form.name.trim() ? (
+                    form.name.trim()[0].toUpperCase()
                   ) : (
-                    (form.name.trim()[0] ?? "?").toUpperCase()
+                    <User className="h-7 w-7 text-[#94a3b8]" />
                   )}
                 </span>
                 <button
                   type="button"
                   onClick={() => avatarInputRef.current?.click()}
                   disabled={uploadingAvatar}
-                  className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border border-surface-border bg-surface-card text-text-secondary hover:text-accent"
+                  className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border border-[#cbd5e1] bg-white text-[#475569] shadow-xs transition hover:border-[#94a3b8] hover:bg-[#f8fafc] hover:text-[#0f172a]"
                   aria-label="Change photo"
                 >
                   {uploadingAvatar ? <Loader2 className="h-3 w-3 animate-spin" /> : <Camera className="h-3 w-3" />}
