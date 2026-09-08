@@ -181,7 +181,9 @@ export const dashboardApi = {
           seoChecks: [
             { key: "title", label: "Page title present", status: "good" as const, score: 100 },
             { key: "meta-description", label: "Meta description present", status: "good" as const, score: 100 },
-            { key: "canonical", label: "Canonical tag valid", status: "good" as const, score: 100 }
+            { key: "canonical", label: "Canonical tag valid", status: "good" as const, score: 100 },
+            { key: "og-tags", label: "Open Graph (OG) social tags active", status: "good" as const, score: 100 },
+            { key: "sitemap-robots", label: "Robots.txt & XML sitemap indexed", status: "good" as const, score: 100 }
           ]
         }
       },
@@ -233,7 +235,11 @@ export const dashboardApi = {
       ttfb: 0.1,
       tbt: 20,
       seoChecks: [
-        { key: "title", label: "Page title present", status: "good" as const, score: 100 }
+        { key: "title", label: "Page title present", status: "good" as const, score: 100 },
+        { key: "meta-description", label: "Meta description present", status: "good" as const, score: 100 },
+        { key: "canonical", label: "Canonical tag valid", status: "good" as const, score: 100 },
+        { key: "og-tags", label: "Open Graph (OG) social tags active", status: "good" as const, score: 100 },
+        { key: "sitemap-robots", label: "Robots.txt & XML sitemap indexed", status: "good" as const, score: 100 }
       ]
     }
   }),

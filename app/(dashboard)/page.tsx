@@ -1149,122 +1149,36 @@ export default function DashboardPage() {
      ACTION REQUIRED
   ========================================================= */
 
-  const liveIssues: DashboardIssue[] =
-    pageSpeed
-      ? [
-        ...(pageSpeed.seoScore <
-          90
-          ? [
-            {
-              label: `SEO score is ${pageSpeed.seoScore}/100`,
-              level:
-                "High" as const,
-              count: 1,
-              icon: FileSearch,
-              tone:
-                "rose" as const,
-            },
-          ]
-          : []),
-
-        ...(pageSpeed.lcp !=
-          null &&
-          pageSpeed.lcp >
-          2500
-          ? [
-            {
-              label: `LCP is ${(
-                pageSpeed.lcp /
-                1000
-              ).toFixed(
-                1,
-              )}s`,
-
-              level:
-                "High" as const,
-
-              count: 1,
-
-              icon:
-                CircleGauge,
-
-              tone:
-                "rose" as const,
-            },
-          ]
-          : []),
-
-        ...(pageSpeed.inp !=
-          null &&
-          pageSpeed.inp >
-          200
-          ? [
-            {
-              label: `INP is ${Math.round(
-                pageSpeed.inp,
-              )}ms`,
-
-              level:
-                "Medium" as const,
-
-              count: 1,
-
-              icon: Activity,
-
-              tone:
-                "amber" as const,
-            },
-          ]
-          : []),
-
-        ...(pageSpeed.cls !=
-          null &&
-          pageSpeed.cls >
-          0.1
-          ? [
-            {
-              label: `CLS is ${pageSpeed.cls.toFixed(
-                2,
-              )}`,
-
-              level:
-                "Medium" as const,
-
-              count: 1,
-
-              icon:
-                AlertCircle,
-
-              tone:
-                "amber" as const,
-            },
-          ]
-          : []),
-
-        ...(pageSpeed.tbt !=
-          null &&
-          pageSpeed.tbt >
-          200
-          ? [
-            {
-              label: `TBT is ${Math.round(
-                pageSpeed.tbt,
-              )}ms`,
-
-              level:
-                "Low" as const,
-
-              count: 1,
-
-              icon: Timer,
-
-              tone:
-                "violet" as const,
-            },
-          ]
-          : []),
-      ]
-      : [];
+  const liveIssues: DashboardIssue[] = [
+    {
+      label: "3 Exhibitor Stall Bookings pending approval",
+      level: "High" as const,
+      count: 3,
+      icon: FileSearch,
+      tone: "rose" as const,
+    },
+    {
+      label: "12 International Buyer Registrations requiring verification",
+      level: "Medium" as const,
+      count: 12,
+      icon: Activity,
+      tone: "amber" as const,
+    },
+    {
+      label: "2 Sponsorship Enquiries for Premium Pavilion",
+      level: "Medium" as const,
+      count: 2,
+      icon: AlertCircle,
+      tone: "amber" as const,
+    },
+    {
+      label: "5 Trade Visitor Pass Requests queued",
+      level: "Low" as const,
+      count: 5,
+      icon: Timer,
+      tone: "violet" as const,
+    },
+  ];
 
   const number = (
     value: number,
