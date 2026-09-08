@@ -281,6 +281,23 @@ export default function LoginPage() {
         return;
       }
 
+      // 429 — Too Many Login Attempts → show prominent lock alert
+      if (err instanceof ApiRequestError && err.status === 429) {
+        const lockMsg = "Account temporarily locked. Too many failed login attempts. Please try again in 15 minutes.";
+        setError(lockMsg);
+        Swal.fire({
+          title: "🔒 Account Locked",
+          html: `<p style="color:#e2e8f0;font-size:0.95rem;">Too many incorrect password attempts.<br/><br/>Your account has been <strong style="color:#f87171;">temporarily deactivated</strong> for <strong>15 minutes</strong>.<br/><br/>Please wait and try again later.</p>`,
+          icon: "error",
+          background: "#1e2433",
+          color: "#e2e8f0",
+          confirmButtonColor: "#4B1426",
+          confirmButtonText: "OK, I'll wait",
+          showClass: { popup: "animate__animated animate__shakeX" },
+        });
+        return;
+      }
+
       const msg = err?.message || (err instanceof ApiRequestError ? err.message : "Invalid credentials. Please try again.");
       setError(msg);
       showToast("error", msg);

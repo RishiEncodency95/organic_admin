@@ -122,7 +122,16 @@ strong, b, .font-bold, .font-semibold {
 /* Moksha Sewa login */
 .login-page{--teal:#00575b;--gold:#efa600;position:relative;display:grid;grid-template-columns:52% 48%;min-height:100svh;padding-bottom:64px;overflow-x:hidden;overflow-y:auto;color:#102036;background:#f8edda}
 .login-page,.login-page *{box-sizing:border-box}
-.login-bg{position:absolute;inset:0;background:url('/assets/login/loginnew.png') center/cover no-repeat;z-index:0}
+.login-bg{position:fixed!important;inset:0;background:url('/assets/login/loginnew.png') center/cover no-repeat;z-index:0;transform:none!important;transition:none!important}
+
+/* Prevent SweetAlert2 from zooming or shifting background */
+html.swal2-shown, body.swal2-shown, html.swal2-height-auto, body.swal2-height-auto {
+  height: 100% !important;
+  padding-right: 0px !important;
+}
+.swal2-container {
+  overflow-y: auto !important;
+}
 .language-switch{position:absolute;z-index:5;right:2.5%;top:16px;display:flex;align-items:center;gap:10px;height:44px;padding:0 16px;border:1px solid #e1e7ec;border-radius:10px;background:#fff;color:#263449;font-weight:600;box-shadow:0 3px 12px #11223314}
 .language-switch svg{width:18px;height:18px}.language-switch svg:last-child{width:14px}
 .login-brand,.login-auth{position:relative;z-index:1;min-width:0;min-height:calc(100svh - 64px)}

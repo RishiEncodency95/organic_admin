@@ -12,7 +12,7 @@ import contentScale from "./AdminContentScale.module.css";
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const pathname = usePathname();
-  const useCompactReadableScale = pathname !== "/" && !pathname.startsWith("/pages");
+  const useCompactReadableScale = pathname !== "/" && !pathname.startsWith("/pages") && !pathname.startsWith("/staff");
 
   return (
     <RequireAdminAuth>
