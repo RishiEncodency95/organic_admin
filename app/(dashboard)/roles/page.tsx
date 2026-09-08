@@ -161,7 +161,7 @@ export default function RolesPage() {
                     {r.isSystem ? <Lock className="h-3 w-3 text-text-muted" /> : <ShieldCheck className="h-3 w-3 text-accent" />}
                     {r.name}
                   </span>
-                  <Badge tone={r.status === "ACTIVE" ? "success" : "neutral"}>{r.permissions.length}</Badge>
+                  <Badge tone={r.status === "ACTIVE" ? "success" : "neutral"}>{r.permissions?.length ?? r.permissionIds?.length ?? 0}</Badge>
                 </button>
               ))}
             </div>

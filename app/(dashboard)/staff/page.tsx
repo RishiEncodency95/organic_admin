@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Plus, Copy, Check, Pencil, Camera, Loader2 } from "lucide-react";
+import Swal from "sweetalert2";
 import Table, { Column } from "@/components/ui/Table";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
@@ -24,6 +25,34 @@ const STATUS_TONE: Record<StaffStatus, "success" | "neutral" | "danger"> = {
   LOCKED: "danger",
 };
 
+// SweetAlert2 theme matching admin portal dark style
+const Toast = Swal.mixin({
+  toast: true,
+  position: "top-end",
+  showConfirmButton: false,
+  timer: 3500,
+  timerProgressBar: true,
+  background: "#1e2433",
+  color: "#e2e8f0",
+  iconColor: "#4ade80",
+  customClass: {
+    popup: "swal-toast-popup",
+    title: "swal-toast-title",
+  },
+});
+
+function showSuccess(message: string) {
+  Toast.fire({ icon: "success", title: message });
+}
+
+function showError(message: string) {
+  Toast.fire({ icon: "error", title: message, iconColor: "#f87171" });
+}
+
+function showInfo(message: string) {
+  Toast.fire({ icon: "info", title: message, iconColor: "#60a5fa" });
+}
+
 export default function StaffPage() {
   const dispatch = useAppDispatch();
   const currentAdmin = useAppSelector((state) => state.auth.admin);
@@ -44,10 +73,15 @@ export default function StaffPage() {
     setLoading(true);
     Promise.all([staffApi.list(), rolesApi.list()])
       .then(([s, r]) => {
-        setStaff(s);
-        setRoles(r);
+        setStaff(Array.isArray(s) ? s : []);
+        setRoles(Array.isArray(r) ? r : []);
       })
-      .catch(() => {})
+      .catch((err) => {
+        const msg = err instanceof ApiRequestError ? err.message : "Failed to load staff data.";
+        showError(msg);
+        setStaff([]);
+        setRoles([]);
+      })
       .finally(() => setLoading(false));
   };
 
@@ -70,14 +104,23 @@ export default function StaffPage() {
   };
 
   const handleInvite = async () => {
+    if (!form.name.trim() || !form.email.trim() || !form.phone.trim()) {
+      setError("Name, Email, and Phone are required.");
+      return;
+    }
     setSaving(true);
     setError("");
     try {
       const result = await staffApi.invite(form);
-      setCreatedCredential({ email: form.email, password: result.temporaryPassword });
+      // result contains { user, temporaryPassword }
+      const password = result.temporaryPassword ?? (result as any)?.data?.temporaryPassword ?? "";
+      setCreatedCredential({ email: form.email, password });
+      showSuccess(`Account created for ${form.name}!`);
       load();
     } catch (err) {
-      setError(err instanceof ApiRequestError ? err.message : "Could not create this staff account.");
+      const msg = err instanceof ApiRequestError ? err.message : "Could not create this staff account.";
+      setError(msg);
+      showError(msg);
     } finally {
       setSaving(false);
     }
@@ -89,15 +132,16 @@ export default function StaffPage() {
     setError("");
     try {
       await staffApi.update(editingId, form);
-      // Editing your own account here doesn't refetch the session — without this, the
-      // Topbar/dashboard greeting would keep showing the old name until next login.
       if (currentAdmin && editingId === currentAdmin.id) {
         dispatch(updateAdmin({ name: form.name, email: form.email, phone: form.phone, avatarUrl: form.avatarUrl }));
       }
+      showSuccess(`Updated staff details for ${form.name}`);
       setModalOpen(false);
       load();
     } catch (err) {
-      setError(err instanceof ApiRequestError ? err.message : "Could not update this staff account.");
+      const msg = err instanceof ApiRequestError ? err.message : "Could not update this staff account.";
+      setError(msg);
+      showError(msg);
     } finally {
       setSaving(false);
     }
@@ -112,8 +156,11 @@ export default function StaffPage() {
     try {
       const result = await uploadApi.file(file);
       setForm((f) => ({ ...f, avatarUrl: result.url }));
+      showSuccess("Avatar image uploaded!");
     } catch {
-      setError("Could not upload that image. Try a different file.");
+      const msg = "Could not upload that image. Try a different file.";
+      setError(msg);
+      showError(msg);
     } finally {
       setUploadingAvatar(false);
     }
@@ -121,18 +168,38 @@ export default function StaffPage() {
 
   const handleToggleStatus = async (member: StaffMember) => {
     const next = member.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+    const action = next === "ACTIVE" ? "Activate" : "Deactivate";
+
+    const confirm = await Swal.fire({
+      title: `${action} Account?`,
+      text: `Are you sure you want to ${action.toLowerCase()} ${member.name}'s account?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: action,
+      cancelButtonText: "Cancel",
+      background: "#1e2433",
+      color: "#e2e8f0",
+      confirmButtonColor: next === "ACTIVE" ? "#22c55e" : "#ef4444",
+      cancelButtonColor: "#374151",
+    });
+
+    if (!confirm.isConfirmed) return;
+
     try {
       await staffApi.updateStatus(member._id, next);
+      showInfo(`${member.name}'s account is now ${next}`);
       load();
-    } catch {
-      /* surfaced via reload showing the unchanged state */
+    } catch (err) {
+      const msg = err instanceof ApiRequestError ? err.message : "Failed to update status.";
+      showError(msg);
     }
   };
 
   const copyPassword = () => {
-    if (!createdCredential) return;
+    if (!createdCredential?.password) return;
     navigator.clipboard.writeText(createdCredential.password).then(() => {
       setCopied(true);
+      showSuccess("Password copied to clipboard!");
       setTimeout(() => setCopied(false), 2000);
     });
   };
@@ -210,8 +277,10 @@ export default function StaffPage() {
               also emailed to them. They should change it after logging in.
             </p>
             <div className="flex items-center gap-2 rounded-lg border border-surface-border bg-surface-sunken px-3 py-2 font-mono text-sm">
-              <span className="flex-1 select-all">{createdCredential.password}</span>
-              <button onClick={copyPassword} className="text-text-muted hover:text-text-primary">
+              <span className="flex-1 select-all text-text-primary">
+                {createdCredential.password || <span className="text-text-muted italic">Generating…</span>}
+              </span>
+              <button onClick={copyPassword} className="text-text-muted hover:text-text-primary" disabled={!createdCredential.password}>
                 {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
               </button>
             </div>
@@ -222,7 +291,7 @@ export default function StaffPage() {
               <div className="relative">
                 <span className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-surface-border bg-accent-soft text-lg font-semibold text-accent">
                   {form.avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- user-supplied Cloudinary URL, not a local/static asset
+                    // eslint-disable-next-line @next/next/no-img-element -- user-supplied Cloudinary URL
                     <img src={form.avatarUrl} alt="" className="h-full w-full object-cover" />
                   ) : (
                     (form.name.trim()[0] ?? "?").toUpperCase()
@@ -252,7 +321,7 @@ export default function StaffPage() {
                 </option>
               ))}
             </Select>
-            {error && <p className="text-xs font-medium text-red-600">{error}</p>}
+            {error && <p className="text-xs font-medium text-red-500">{error}</p>}
           </div>
         )}
       </Modal>
