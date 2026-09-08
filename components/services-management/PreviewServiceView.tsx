@@ -254,13 +254,12 @@ export default function PreviewServiceView() {
               </h3>
 
               <p className="mt-[10px] max-w-[900px] text-[10.5px] font-semibold leading-[1.65] text-[#44516a]">
-                Moksha Sewa provides complete support for the final journey with
-                dignity and respect.
+                Bharat Organic Expo provides complete support for exhibitor stall booking,
+                B2B buyer matchmaking, and sponsor delegations.
                 <br />
-                Our team handles transportation, cremation arrangements, priest
-                services, and all necessary rituals,
+                Our team handles stall allocation, VIP lounge entry, seminars, and technical workshops,
                 <br />
-                ensuring a hassle-free experience for the family.
+                ensuring a seamless and high-value experience for all participants.
               </p>
             </div>
 

@@ -419,7 +419,7 @@ export default function TestimonialsSettingsPage() {
                 <Quote className="mx-auto h-[32px] w-[32px] fill-[#0b6a3b] text-[#0b6a3b]" />
 
                 <p className="mx-auto mt-[10px] max-w-[280px] text-[11px] font-semibold leading-[1.85] text-[#252d39]">
-                  Moksha Sewa stands as a beacon of compassion and dignity. Their support during our difficult time was truly commendable. Thank you for bringing humanity back to life.
+                  Bharat Organic Expo provided incredible exposure for our organic spice brand. We secured 15+ international trade contracts at Yashobhoomi, Delhi.
                 </p>
 
                 <div className="mx-auto mt-[18px] h-px w-[80px] bg-[#d7dce2]" />

@@ -84,7 +84,7 @@ const recentEnquiries = [
     initials: "RS",
     name: "Ramesh Sharma",
     email: "rameshsharma@email.com",
-    type: "Sewa Help Request",
+    type: "Exhibitor Stall",
     source: "Organic Search",
     date: "31 May 2026",
     time: "10:30 AM",
@@ -104,7 +104,7 @@ const recentEnquiries = [
     initials: "AN",
     name: "Ankit Nair",
     email: "ankitnair@gmail.com",
-    type: "Volunteer",
+    type: "B2B Buyer",
     source: "Social Media",
     date: "31 May 2026",
     time: "09:20 AM",
@@ -114,7 +114,7 @@ const recentEnquiries = [
     initials: "SC",
     name: "Sunita Chauhan",
     email: "sunitac@gmail.com",
-    type: "CSR / Partner",
+    type: "Sponsor / Partner",
     source: "Referral",
     date: "31 May 2026",
     time: "08:55 AM",
@@ -135,7 +135,7 @@ const recentEnquiries = [
 const followUps = [
   {
     name: "Rajesh Verma",
-    type: "Sewa Help Request",
+    type: "Exhibitor Stall Request",
     assigned: "Vikram Singh",
     due: "1 Jun 2026",
     priority: "High" as Priority,
@@ -154,8 +154,8 @@ const followUps = [
     iconColor: "#3985A8",
   },
   {
-    name: "Green Earth Pvt. Ltd.",
-    type: "CSR / Partner",
+    name: "Green Earth Organics Ltd.",
+    type: "Sponsor & Partner",
     assigned: "Vikram Singh",
     due: "3 Jun 2026",
     priority: "High" as Priority,
@@ -165,7 +165,7 @@ const followUps = [
   },
   {
     name: "Amitabh Singh",
-    type: "Volunteer Lead",
+    type: "B2B Buyer Lead",
     assigned: "Anjali Verma",
     due: "4 Jun 2026",
     priority: "Medium" as Priority,
@@ -245,7 +245,7 @@ export default function EngagementLeadsOverviewPage() {
               text-[#354675]
             "
           >
-            Track enquiries, requests, volunteers and all leads from your website.
+            Track enquiries, stall bookings, B2B buyers and all leads for Bharat Organic Expo.
           </p>
         </div>
 
@@ -347,7 +347,7 @@ export default function EngagementLeadsOverviewPage() {
           />
 
           <StatCard
-            label="Sewa Help Requests"
+            label="Exhibitor Stall Enquiries"
             value="58"
             icon={HandHeart}
             iconBg="#F2EAFD"
@@ -356,7 +356,7 @@ export default function EngagementLeadsOverviewPage() {
           />
 
           <StatCard
-            label="Volunteer Leads"
+            label="B2B Buyer Registrations"
             value="32"
             icon={Users}
             iconBg="#FDE8ED"
@@ -365,7 +365,7 @@ export default function EngagementLeadsOverviewPage() {
           />
 
           <StatCard
-            label="CSR / Partner Leads"
+            label="Sponsor & Partner Leads"
             value="21"
             icon={Building2}
             iconBg="#E3F6F3"
@@ -554,45 +554,45 @@ export default function EngagementLeadsOverviewPage() {
 
           <DashboardCard>
             <h2 className={sectionHeading}>
-              Enquiry to Sewa Conversion Funnel
+              Exhibitor & Buyer Conversion Funnel
             </h2>
 
             <div className="mt-[14px] min-w-0 space-y-[4px]">
               <FunnelRow
                 width="100%"
                 bg="#5274E7"
-                label="Total Enquiries"
+                label="Enquiries"
                 value="1,248"
               />
 
               <FunnelRow
-                width="84%"
+                width="87%"
                 bg="#42AF89"
-                label="Qualified Enquiries"
+                label="Qualified"
                 value="342"
                 extra="27.4%"
               />
 
               <FunnelRow
-                width="69%"
+                width="74%"
                 bg="#F7B942"
-                label="Sewa Help Requests"
+                label="Proposals"
                 value="58"
                 extra="17.0%"
               />
 
               <FunnelRow
-                width="55%"
+                width="61%"
                 bg="#9E61CE"
-                label="Sewa Cases"
+                label="Allocations"
                 value="38"
                 extra="65.5%"
               />
 
               <FunnelRow
-                width="40%"
+                width="50%"
                 bg="#EF5B8A"
-                label="Completed"
+                label="Confirmed"
                 value="22"
                 extra="57.9%"
               />
@@ -1011,9 +1011,9 @@ export default function EngagementLeadsOverviewPage() {
               iconColor="#E99A29"
               count="127"
             >
-              View All Sewa
+              View All Stall
               <br />
-              Help Requests
+              Exhibitor Enquiries
             </QuickAction>
 
             <QuickAction
@@ -1032,9 +1032,9 @@ export default function EngagementLeadsOverviewPage() {
               iconBg="#EAF5EF"
               iconColor="#397F68"
             >
-              Manage
+              Manage B2B
               <br />
-              Volunteers
+              Buyers
             </QuickAction>
 
             <QuickAction
@@ -1043,7 +1043,7 @@ export default function EngagementLeadsOverviewPage() {
               iconColor="#2C7D4E"
               count="21"
             >
-              CSR &amp; Partner
+              Sponsor &amp; Partner
               <br />
               Enquiries
             </QuickAction>
@@ -1136,13 +1136,13 @@ function StatCard({
         border
         border-[#E3E7EB]
         bg-white
-        px-[12px]
-        py-[11px]
+        px-[10px]
+        py-[10px]
       "
     >
-      {/* TOP: Full Label Content - Only label shifted left */}
-      <div className="w-full text-left">
-        <p className="-ml-[2px] whitespace-nowrap text-[8.5px] font-semibold uppercase tracking-wider text-[#182A65] text-left">
+      {/* TOP: Full Label Content - Left Aligned with font scale */}
+      <div className="w-full text-left overflow-hidden">
+        <p className="truncate text-[7.5px] font-bold uppercase tracking-wider text-[#182A65] text-left">
           {label}
         </p>
       </div>
@@ -1176,7 +1176,7 @@ function StatCard({
           className="
             whitespace-nowrap
             text-2xl
-            font-semibold
+            font-bold
             leading-none
             text-[#152965]
             text-left
@@ -1186,16 +1186,16 @@ function StatCard({
         </div>
       </div>
 
-      <div className="flex w-full items-center justify-start gap-[4px] whitespace-nowrap text-left">
+      <div className="flex w-full items-center justify-start gap-[3px] whitespace-nowrap text-left">
         {negative ? (
           <ArrowDown
-            size={10}
+            size={9}
             strokeWidth={3}
             className="text-[#E44747]"
           />
         ) : (
           <ArrowUp
-            size={10}
+            size={9}
             strokeWidth={3}
             className="text-[#15944B]"
           />
@@ -1203,8 +1203,8 @@ function StatCard({
 
         <span
           className={`
-            text-[9px]
-            font-semibold
+            text-[8.5px]
+            font-bold
 
             ${negative ? "text-[#E44747]" : "text-[#15944B]"}
           `}
@@ -1212,7 +1212,7 @@ function StatCard({
           {change}
         </span>
 
-        <span className="text-[9px] font-semibold text-[#596685]">
+        <span className="text-[8px] font-semibold text-[#596685]">
           vs last 7 days
         </span>
       </div>
@@ -1323,22 +1323,26 @@ function FunnelRow({
         gap-[8px]
       "
     >
-      <div className="flex h-[36px] justify-center">
+      <div className="flex h-[34px] justify-center">
         <div
           className="
             flex
             h-full
             items-center
             justify-center
-            text-[7px]
-            font-semibold
+            px-[4px]
+            text-[8px]
+            font-bold
+            uppercase
+            tracking-wider
             text-white
             whitespace-nowrap
+            overflow-hidden
           "
           style={{
             width,
             backgroundColor: bg,
-            clipPath: "polygon(4% 0, 96% 0, 86% 100%, 14% 100%)",
+            clipPath: "polygon(0% 0, 100% 0, 94% 100%, 6% 100%)",
           }}
         >
           {label}

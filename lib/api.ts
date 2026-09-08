@@ -123,8 +123,218 @@ function getMockDataForPath(path: string, method: string = "GET"): unknown {
         message: "Interested in stall booking options in Hall 1 for organic spices.",
         category: "contact",
         organization: "Nature Organic Spices",
+        designation: "Marketing Director",
+        interest: "Stall Booking Hall 1",
         status: "new",
         createdAt: "2026-09-07T12:00:00Z"
+      },
+      {
+        _id: "enq-2",
+        name: "Priya Sharma",
+        phone: "+91 9811223344",
+        email: "psharma@greenearthcsr.org",
+        message: "Requesting CSR sponsorship details for Organic Farmer Pavilion.",
+        category: "csr",
+        organization: "Green Earth Foundation",
+        designation: "CSR Head",
+        interest: "Farmer Pavilion Sponsorship",
+        status: "new",
+        createdAt: "2026-09-06T15:30:00Z"
+      },
+      {
+        _id: "enq-3",
+        name: "Tariq Mansoor",
+        phone: "+971 50 123 4567",
+        email: "tariq@dubaiimports.ae",
+        message: "Looking for B2B buyer lounge access and VIP delegation entry.",
+        category: "partnership",
+        organization: "Dubai Bio Trade LLC",
+        designation: "Procurement Manager",
+        interest: "B2B Trade Buyer Lounge",
+        status: "contacted",
+        createdAt: "2026-09-05T10:15:00Z"
+      },
+      {
+        _id: "enq-4",
+        name: "Dr. Ananya Roy",
+        phone: "+91 9717001122",
+        email: "aroy@herbalresearch.in",
+        message: "Proposal to host a technical workshop on organic certification.",
+        category: "csr",
+        organization: "National Herbal Research Council",
+        designation: "Chief Scientist",
+        interest: "Workshop & Seminar Partner",
+        status: "contacted",
+        createdAt: "2026-09-04T16:45:00Z"
+      },
+      {
+        _id: "enq-5",
+        name: "Sanjay Gupta",
+        phone: "+91 9988776655",
+        email: "sanjay@bioagro.co.in",
+        message: "Sponsorship enquiry for Eco-Friendly Packaging Pavilion.",
+        category: "csr",
+        organization: "BioAgro Tech Ltd",
+        designation: "VP Business Development",
+        interest: "Eco Pavilion Sponsorship",
+        status: "closed",
+        createdAt: "2026-09-02T11:20:00Z"
+      }
+    ];
+  }
+
+  if (p.includes("/requests")) {
+    return [
+      {
+        _id: "req-101",
+        requestNo: "EXPO-2027-001",
+        type: "EMERGENCY",
+        status: "SUBMITTED",
+        priority: "HIGH",
+        requester: {
+          name: "Ramesh Sharma",
+          phone: "+91 9810192837",
+          email: "ramesh.sharma@natureherbs.in",
+          relation: "Exhibitor"
+        },
+        deceased: {
+          name: "Nature Herbs & Organics Pvt Ltd",
+          gender: "CORPORATE",
+          age: "12 Years",
+          dateOfPassing: "2026-09-07T00:00:00Z",
+          placeOfPassing: "Yashobhoomi Hall 1",
+          isUnclaimed: false
+        },
+        location: {
+          address: "Sector 25, Dwarka",
+          city: "New Delhi",
+          state: "Delhi",
+          pincode: "110077"
+        },
+        assistanceTypes: ["Stall Booking", "36 Sqm Island Stall"],
+        notes: "Urgent stall allocation required near main entrada entrance for organic tea & spices.",
+        createdAt: "2026-09-07T10:30:00Z"
+      },
+      {
+        _id: "req-102",
+        requestNo: "EXPO-2027-002",
+        type: "NORMAL",
+        status: "SUBMITTED",
+        priority: "NORMAL",
+        requester: {
+          name: "Priya Kapoor",
+          phone: "+91 9899112233",
+          email: "priya@greenharvest.com",
+          relation: "Buyer Delegate"
+        },
+        deceased: {
+          name: "Green Harvest Global Ltd",
+          gender: "CORPORATE",
+          age: "8 Years",
+          dateOfPassing: "2026-09-06T00:00:00Z",
+          placeOfPassing: "B2B Lounge Hall 2",
+          isUnclaimed: false
+        },
+        location: {
+          address: "Bandra Kurla Complex",
+          city: "Mumbai",
+          state: "Maharashtra",
+          pincode: "400051"
+        },
+        assistanceTypes: ["B2B Buyer Pass", "VIP Lounge Access"],
+        notes: "Registered international buyer delegation of 5 representatives.",
+        createdAt: "2026-09-06T14:15:00Z"
+      },
+      {
+        _id: "req-103",
+        requestNo: "EXPO-2027-003",
+        type: "NORMAL",
+        status: "CONVERTED",
+        priority: "HIGH",
+        requester: {
+          name: "Ankit Nair",
+          phone: "+91 9744556677",
+          email: "ankit@keralaorganics.co.in",
+          relation: "Exhibitor"
+        },
+        deceased: {
+          name: "Kerala Organic Farmers Federation",
+          gender: "COOPERATIVE",
+          age: "15 Years",
+          dateOfPassing: "2026-09-05T00:00:00Z",
+          placeOfPassing: "State Pavilion Hall 3",
+          isUnclaimed: false
+        },
+        location: {
+          address: "MG Road",
+          city: "Kochi",
+          state: "Kerala",
+          pincode: "682016"
+        },
+        assistanceTypes: ["State Pavilion", "Bare Space 54 Sqm"],
+        notes: "Confirmed stall allocation for 18 farmer co-operatives.",
+        createdAt: "2026-09-05T09:45:00Z"
+      },
+      {
+        _id: "req-104",
+        requestNo: "EXPO-2027-004",
+        type: "EMERGENCY",
+        status: "SUBMITTED",
+        priority: "CRITICAL",
+        requester: {
+          name: "Sunita Chauhan",
+          phone: "+91 9650011223",
+          email: "sunita@biofertilizers.in",
+          relation: "Sponsor"
+        },
+        deceased: {
+          name: "BioFertilizers India Corp",
+          gender: "CORPORATE",
+          age: "20 Years",
+          dateOfPassing: "2026-09-04T00:00:00Z",
+          placeOfPassing: "Main Convention Centre",
+          isUnclaimed: false
+        },
+        location: {
+          address: "Sector 62",
+          city: "Noida",
+          state: "Uttar Pradesh",
+          pincode: "201301"
+        },
+        assistanceTypes: ["Gold Sponsor", "Lanyard Branding"],
+        notes: "Sponsorship agreement finalization for main plenary session.",
+        createdAt: "2026-09-04T16:20:00Z"
+      },
+      {
+        _id: "req-105",
+        requestNo: "EXPO-2027-005",
+        type: "NORMAL",
+        status: "REJECTED",
+        priority: "LOW",
+        requester: {
+          name: "Meera Das",
+          phone: "+91 9830044556",
+          email: "meera@pureayurveda.com",
+          relation: "Exhibitor"
+        },
+        deceased: {
+          name: "Pure Ayurveda Remedies",
+          gender: "FIRM",
+          age: "3 Years",
+          dateOfPassing: "2026-09-03T00:00:00Z",
+          placeOfPassing: "Hall 1",
+          isUnclaimed: false
+        },
+        location: {
+          address: "Salt Lake Sector V",
+          city: "Kolkata",
+          state: "West Bengal",
+          pincode: "700091"
+        },
+        assistanceTypes: ["Shell Scheme 9 Sqm"],
+        notes: "Duplicate submission - merged with request EXPO-2027-001.",
+        duplicateOfRequestId: "req-101",
+        createdAt: "2026-09-03T11:10:00Z"
       }
     ];
   }

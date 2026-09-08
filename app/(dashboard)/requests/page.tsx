@@ -658,8 +658,7 @@ export default function RequestsPage() {
                 text-[#005E2E]
               "
             >
-              Sewa Help
-              Requests
+              Stall &amp; Expo Requests
             </h1>
 
             <HandHeart
@@ -680,12 +679,7 @@ export default function RequestsPage() {
               text-[#263A70]
             "
           >
-            Requests for free
-            sewa, assistance
-            and guidance —
-            Handle with
-            compassion &amp;
-            responsibility.
+            Manage exhibitor stall bookings, B2B buyer registrations and expo participation requests for Bharat Organic Expo 2027.
           </p>
 
           <div
@@ -717,8 +711,7 @@ export default function RequestsPage() {
             />
 
             <span>
-              Sewa Help
-              Requests
+              Stall &amp; Expo Requests
             </span>
           </div>
         </div>
@@ -816,7 +809,7 @@ export default function RequestsPage() {
           "
         >
         <StatCard
-          label="Total Sewa Requests"
+          label="Total Expo Requests"
           value={total}
           icon={HandHeart}
           iconBg="#DFF5ED"
@@ -1240,7 +1233,7 @@ export default function RequestsPage() {
           <table
             className="
               w-full
-              min-w-[1300px]
+              min-w-[1020px]
               table-fixed
               border-collapse
             "
@@ -1248,7 +1241,31 @@ export default function RequestsPage() {
             <colgroup>
               <col
                 style={{
-                  width: "40px",
+                  width: "36px",
+                }}
+              />
+
+              <col
+                style={{
+                  width: "125px",
+                }}
+              />
+
+              <col
+                style={{
+                  width: "145px",
+                }}
+              />
+
+              <col
+                style={{
+                  width: "160px",
+                }}
+              />
+
+              <col
+                style={{
+                  width: "160px",
                 }}
               />
 
@@ -1260,37 +1277,13 @@ export default function RequestsPage() {
 
               <col
                 style={{
-                  width: "155px",
+                  width: "110px",
                 }}
               />
 
               <col
                 style={{
-                  width: "180px",
-                }}
-              />
-
-              <col
-                style={{
-                  width: "260px",
-                }}
-              />
-
-              <col
-                style={{
-                  width: "135px",
-                }}
-              />
-
-              <col
-                style={{
-                  width: "140px",
-                }}
-              />
-
-              <col
-                style={{
-                  width: "65px",
+                  width: "60px",
                 }}
               />
 
@@ -1425,7 +1418,7 @@ export default function RequestsPage() {
                           )
                         }
                         className={`
-                          h-[55px]
+                          h-[66px]
                           cursor-pointer
                           border-t
                           border-[#E7EAEE]

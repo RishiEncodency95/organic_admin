@@ -270,7 +270,7 @@ export default function FAQSettingsPage() {
                 </div>
 
                 <textarea
-                  defaultValue={"Find answers to common questions\nabout Moksha Sewa\nservices and how we help."}
+                  defaultValue={"Find answers to common questions\nabout Bharat Organic Expo\nevent, stall booking & participation."}
                   className="h-[66px] resize-none rounded-[6px] border border-[#dfe4e8] bg-white px-[11px] py-[9px] text-[9px] font-semibold leading-[1.45] text-[#394760] outline-none"
                 />
               </div>
@@ -502,8 +502,8 @@ export default function FAQSettingsPage() {
                     Frequently Asked Questions
                   </h3>
                   <p className="mx-auto mt-[7px] max-w-[270px] text-[9px] font-semibold leading-[1.5] text-[#66738b]">
-                    Find answers to common questions about Moksha Sewa services
-                    and how we help.
+                    Find answers to common questions about Bharat Organic Expo
+                    stall booking and visitor passes.
                   </p>
                 </div>
 
@@ -516,7 +516,7 @@ export default function FAQSettingsPage() {
                 </div>
 
                 <div className="mt-[12px] flex items-center gap-[6px] overflow-x-auto">
-                  {["All", "General", "Request Process", "Services", "Volunteer"].map(
+                  {["All", "General", "Exhibitors", "Buyers", "Passes"].map(
                     (item, index) => (
                       <button
                         key={item}
@@ -541,10 +541,10 @@ export default function FAQSettingsPage() {
 
                 <div className="mt-[12px] overflow-hidden rounded-[7px] border border-[#e5e8eb]">
                   {[
-                    "What is Moksha Sewa?",
-                    "Who can request Sewa help?",
-                    "How does Moksha Sewa verify a request?",
-                    "Is Moksha Sewa completely free?",
+                    "What is Bharat Organic Expo 2027?",
+                    "How to register as an exhibitor?",
+                    "Are visitor passes free or paid?",
+                    "How do B2B buyer meetings work?",
                   ].map((question) => (
                     <button
                       key={question}

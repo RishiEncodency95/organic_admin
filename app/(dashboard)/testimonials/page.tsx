@@ -23,11 +23,11 @@ import {
 
 type TestimonialStatus = "Published" | "Pending Review" | "Hidden";
 type TestimonialCategory =
-  | "Family Member"
-  | "Beneficiary Family"
-  | "Volunteer"
-  | "Community Partner"
-  | "Donor";
+  | "Exhibitor"
+  | "B2B Buyer"
+  | "Trade Visitor"
+  | "Sponsor"
+  | "Agro Partner";
 
 type Testimonial = {
   id: number;
@@ -46,10 +46,10 @@ const TESTIMONIALS: Testimonial[] = [
   {
     id: 1,
     name: "Dr. Meera Sharma",
-    role: "Family Member",
+    role: "Exhibitor",
     message:
-      "Moksha Sewa stands as a beacon of compassion. Their support during a difficult time was invaluable.",
-    category: "Family Member",
+      "Bharat Organic Expo provided incredible exposure for our organic spice brand. We secured 15+ international trade contracts!",
+    category: "Exhibitor",
     rating: 5,
     status: "Published",
     date: "30 May 2026",
@@ -59,23 +59,23 @@ const TESTIMONIALS: Testimonial[] = [
   {
     id: 2,
     name: "Ramesh Patel",
-    role: "Beneficiary Family",
+    role: "B2B Buyer",
     message:
-      "A truly selfless initiative. The team handled everything with respect and dignity.",
-    category: "Beneficiary Family",
+      "Exceptional platform for sourcing certified organic produce directly from Indian farmers and exporters.",
+    category: "B2B Buyer",
     rating: 5,
     status: "Published",
     date: "29 May 2026",
-    author: "Seva Team",
+    author: "Expo Team",
     avatar: "https://i.pravatar.cc/100?img=12",
   },
   {
     id: 3,
     name: "Vikram Singh",
-    role: "Volunteer",
+    role: "Trade Visitor",
     message:
-      "The volunteers are very supportive and responsive. Highly appreciate their dedication.",
-    category: "Volunteer",
+      "World-class facilities at Yashobhoomi, Delhi. The B2B matchmaking lounge and pavilion organization were top notch.",
+    category: "Trade Visitor",
     rating: 4.5,
     status: "Published",
     date: "28 May 2026",
@@ -85,23 +85,23 @@ const TESTIMONIALS: Testimonial[] = [
   {
     id: 4,
     name: "Anjali Jain",
-    role: "Family Member",
+    role: "Exhibitor",
     message:
-      "Thank you for giving my father a dignified farewell. We are forever grateful.",
-    category: "Family Member",
+      "Outstanding visitor footfall and genuine trade buyers. Looking forward to booking a bigger stall for 2027!",
+    category: "Exhibitor",
     rating: 5,
     status: "Published",
     date: "27 May 2026",
-    author: "Seva Team",
+    author: "Expo Team",
     avatar: "https://i.pravatar.cc/100?img=32",
   },
   {
     id: 5,
     name: "Dr. Arvind Kumar",
-    role: "Community Partner",
+    role: "Sponsor",
     message:
-      "Moksha Sewa is setting an example of humanity. Keep up the amazing work!",
-    category: "Community Partner",
+      "Proud to sponsor Bharat Organic Expo. High-quality delegates, trade visitors and great brand visibility!",
+    category: "Sponsor",
     rating: 4.5,
     status: "Pending Review",
     date: "26 May 2026",
@@ -111,23 +111,23 @@ const TESTIMONIALS: Testimonial[] = [
   {
     id: 6,
     name: "Neha Agarwal",
-    role: "Donor",
+    role: "Agro Partner",
     message:
-      "Professional, compassionate and trustworthy. This initiative is truly needed in our society.",
-    category: "Donor",
+      "Professional organization, seamless stall setup and excellent support from the organizing committee.",
+    category: "Agro Partner",
     rating: 4,
     status: "Pending Review",
     date: "25 May 2026",
-    author: "Seva Team",
+    author: "Expo Team",
     avatar: "https://i.pravatar.cc/100?img=45",
   },
   {
     id: 7,
     name: "Suresh Gupta",
-    role: "Beneficiary Family",
+    role: "B2B Buyer",
     message:
-      "Their help came at the right moment when we had no one to turn to.",
-    category: "Beneficiary Family",
+      "Connected with top herbal producers and organic tea growers in one place. Highly productive event.",
+    category: "B2B Buyer",
     rating: 5,
     status: "Published",
     date: "24 May 2026",
@@ -137,10 +137,10 @@ const TESTIMONIALS: Testimonial[] = [
   {
     id: 8,
     name: "Pooja Verma",
-    role: "Volunteer",
+    role: "Trade Visitor",
     message:
-      "Grateful to the entire team for their timely support and kindness.",
-    category: "Volunteer",
+      "Insightful organic farming seminars and innovation showcases. Must-visit event for agricultural trade.",
+    category: "Trade Visitor",
     rating: 4.5,
     status: "Hidden",
     date: "23 May 2026",
@@ -150,11 +150,11 @@ const TESTIMONIALS: Testimonial[] = [
 ];
 
 const categoryStyle: Record<TestimonialCategory, string> = {
-  "Family Member": "bg-emerald-50 text-emerald-700",
-  "Beneficiary Family": "bg-blue-50 text-blue-700",
-  Volunteer: "bg-violet-50 text-violet-700",
-  "Community Partner": "bg-orange-50 text-orange-700",
-  Donor: "bg-rose-50 text-rose-700",
+  Exhibitor: "bg-emerald-50 text-emerald-700",
+  "B2B Buyer": "bg-blue-50 text-blue-700",
+  "Trade Visitor": "bg-violet-50 text-violet-700",
+  Sponsor: "bg-orange-50 text-orange-700",
+  "Agro Partner": "bg-rose-50 text-rose-700",
 };
 
 const statusStyle: Record<TestimonialStatus, string> = {

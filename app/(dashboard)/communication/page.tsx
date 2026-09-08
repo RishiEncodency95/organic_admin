@@ -106,13 +106,13 @@ const stats = [
 const communications = [
   {
     id: "COM-2026-0562",
-    name: "TechNova Solutions Pvt. Ltd.",
-    email: "rohit.mehra@technova.com",
+    name: "GreenEarth Organics Pvt. Ltd.",
+    email: "rohit.mehra@greenearth.com",
     phone: "+91 98765 43210",
     channel: "Email",
-    subject: "CSR Partnership Opportunity",
-    description: "Shared proposal & brochure",
-    enquiry: "CSR & Partners",
+    subject: "Exhibitor Stall Booking Proposal",
+    description: "Shared floorplan & stall booking kit",
+    enquiry: "Exhibitors",
     status: "Replied",
     lastDate: "31 May 2026",
     lastTime: "10:25 AM",
@@ -121,13 +121,13 @@ const communications = [
   },
   {
     id: "COM-2026-0561",
-    name: "Priya Patel",
-    email: "priya.patel@gmail.com",
+    name: "Al-Baraka Trading (Dubai)",
+    email: "priya.patel@albaraka.ae",
     phone: "+91 91234 56789",
     channel: "WhatsApp",
-    subject: "Volunteer Registration",
-    description: "Interested in volunteering",
-    enquiry: "Volunteers",
+    subject: "International Buyer Registration",
+    description: "Interested in B2B matchmaking",
+    enquiry: "Buyers",
     status: "Pending",
     lastDate: "30 May 2026",
     lastTime: "04:15 PM",
@@ -136,13 +136,13 @@ const communications = [
   },
   {
     id: "COM-2026-0560",
-    name: "GreenFuture Foundation",
-    email: "info@greenfuture.org",
+    name: "APEDA India Foundation",
+    email: "info@apeda.org",
     phone: "+91 98711 44556",
     channel: "Call",
-    subject: "Community Outreach Support",
-    description: "Discussion on collaboration",
-    enquiry: "CSR & Partners",
+    subject: "Government Pavilion Sponsorship",
+    description: "Discussion on pavilion space",
+    enquiry: "Sponsorship",
     status: "Completed",
     lastDate: "29 May 2026",
     lastTime: "02:05 PM",
@@ -151,12 +151,12 @@ const communications = [
   },
   {
     id: "COM-2026-0559",
-    name: "Sunrise Pharma Ltd.",
-    email: "vikram.kapoor@sunrisepharma.com",
+    name: "BioHerbal Products Ltd.",
+    email: "vikram.kapoor@bioherbal.com",
     phone: "+91 98123 66789",
     channel: "Email",
-    subject: "Request for Assistance",
-    description: "Ambulance support enquiry",
+    subject: "Organic Spices Stall Space",
+    description: "Stall booking enquiry in Hall 2",
     enquiry: "General Enquiry",
     status: "Replied",
     lastDate: "28 May 2026",
@@ -166,13 +166,13 @@ const communications = [
   },
   {
     id: "COM-2026-0558",
-    name: "Neha Sinha",
-    email: "neha.sinha@carewell.org",
+    name: "Dr. Rajesh Sinha",
+    email: "neha.sinha@naturals.org",
     phone: "+91 93456 77889",
     channel: "WhatsApp",
-    subject: "Sewa Help Request Follow-up",
-    description: "Case verification update",
-    enquiry: "Sewa Help",
+    subject: "Corporate Visitor Pass Request",
+    description: "Delegation pass confirmation",
+    enquiry: "Visitors",
     status: "Pending",
     lastDate: "27 May 2026",
     lastTime: "03:10 PM",
@@ -181,13 +181,13 @@ const communications = [
   },
   {
     id: "COM-2026-0557",
-    name: "Amit Rawat",
-    email: "amit.rawat@outlook.com",
+    name: "Organic Trade Council",
+    email: "amit.rawat@organictx.com",
     phone: "+91 99887 66554",
     channel: "Call",
-    subject: "Ritual & Priest Support",
-    description: "Details about arrangements",
-    enquiry: "Sewa Help",
+    subject: "Platinum Sponsorship Package",
+    description: "Details about branding & booth",
+    enquiry: "Sponsorship",
     status: "Completed",
     lastDate: "26 May 2026",
     lastTime: "01:25 PM",
@@ -196,13 +196,13 @@ const communications = [
   },
   {
     id: "COM-2026-0556",
-    name: "LifeLine Industries Ltd.",
-    email: "pooja.nair@lifelineind.com",
+    name: "Naturals Food Co.",
+    email: "pooja.nair@naturalsfood.com",
     phone: "+91 98111 22334",
     channel: "Email",
-    subject: "CSR Funding Discussion",
-    description: "Budget & scope discussion",
-    enquiry: "CSR & Partners",
+    subject: "Exhibitor Booth Logistics",
+    description: "Custom booth design approval",
+    enquiry: "Exhibitors",
     status: "Replied",
     lastDate: "25 May 2026",
     lastTime: "12:50 PM",
@@ -211,13 +211,13 @@ const communications = [
   },
   {
     id: "COM-2026-0555",
-    name: "Deepak Bansal",
-    email: "deepak.bansal@rediffmail.com",
+    name: "Singapore Agro Imports",
+    email: "deepak.bansal@sgagro.sg",
     phone: "+91 98711 44556",
     channel: "WhatsApp",
-    subject: "Support for Moksha Sewa",
-    description: "General contribution enquiry",
-    enquiry: "Donation / Support",
+    subject: "Buyer Registration Support",
+    description: "General buyer badge inquiry",
+    enquiry: "Buyers",
     status: "Pending",
     lastDate: "24 May 2026",
     lastTime: "09:40 AM",
@@ -435,20 +435,20 @@ function StatCard({
         py-[10px]
       "
     >
-      {/* TOP: Full Label Content - Only label shifted left */}
-      <div className="w-full text-left">
-        <p className="-ml-[2px] whitespace-nowrap text-[8.5px] font-semibold text-[#172863] text-left">
+      {/* TOP: Full Label Content */}
+      <div className="w-full min-w-0 overflow-hidden text-left">
+        <p className="truncate text-[8.5px] font-semibold text-[#172863]" title={item.label}>
           {item.label}
         </p>
       </div>
 
-      {/* MIDDLE ROW: Icon + Number Value (Strict Left Aligned) */}
-      <div className="mt-[4px] flex w-full items-center justify-start gap-[6px]">
+      {/* MIDDLE ROW: Icon + Number Value */}
+      <div className="mt-[4px] flex w-full min-w-0 items-center justify-start gap-[6px] overflow-hidden">
         <div
           className="
             flex
-            h-[32px]
-            w-[32px]
+            h-[34px]
+            w-[34px]
             shrink-0
             items-center
             justify-center
@@ -469,9 +469,9 @@ function StatCard({
 
         <div
           className="
-            whitespace-nowrap
-            text-[22px]
-            font-semibold
+            truncate
+            text-2xl
+            font-bold
             leading-none
             text-[#00642F]
             text-left
@@ -481,8 +481,8 @@ function StatCard({
         </div>
       </div>
 
-      {/* BOTTOM ROW: LEFT-ALIGNED SUBTEXT */}
-      <div className="flex w-full items-center justify-start gap-[4px] whitespace-nowrap text-left">
+      {/* BOTTOM ROW: SUBTEXT */}
+      <div className="flex w-full min-w-0 items-center justify-start gap-[3px] overflow-hidden text-left">
         {item.direction === "up" ? (
           <ArrowUp
             size={10}
@@ -500,7 +500,7 @@ function StatCard({
         <span
           className={`
             shrink-0
-            text-[9px]
+            text-[8.5px]
             font-semibold
             ${item.direction === "up"
               ? "text-[#169248]"
@@ -513,9 +513,8 @@ function StatCard({
 
         <span
           className="
-            shrink-0
-            whitespace-nowrap
-            text-[9px]
+            truncate
+            text-[8.5px]
             font-semibold
             text-[#506083]
           "
@@ -874,7 +873,9 @@ export default function CommunicationsFollowUps() {
               grid
               w-full
               min-w-0
-              grid-cols-[minmax(190px,1.7fr)_122px_112px_133px_minmax(150px,1.15fr)_76px]
+              overflow-x-auto
+              pb-1
+              grid-cols-[minmax(160px,1.7fr)_115px_105px_125px_minmax(140px,1.1fr)_minmax(84px,auto)]
               gap-[9px]
             "
           >
@@ -1037,6 +1038,8 @@ export default function CommunicationsFollowUps() {
               className="
                 flex
                 h-[40px]
+                shrink-0
+                whitespace-nowrap
                 items-center
                 justify-center
                 gap-[5px]
@@ -1044,14 +1047,14 @@ export default function CommunicationsFollowUps() {
                 border
                 border-[#E0E5EB]
                 bg-white
-                px-[7px]
+                px-[12px]
                 text-[9px]
                 font-semibold
                 text-[#172762]
                 hover:bg-[#F8FAFC]
               "
             >
-              <RotateCcw size={12} />
+              <RotateCcw size={12} className="shrink-0" />
 
               Reset
             </button>
