@@ -315,8 +315,7 @@ export default function LoginPage() {
     <main
       className="login-page"
       style={{
-        fontFamily:
-          'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        fontFamily: '"Inter", ui-sans-serif, system-ui, sans-serif',
       }}
     >
       {/* =====================================================
@@ -374,6 +373,7 @@ export default function LoginPage() {
             brand-initiative
             !text-[18px]
             xl:!text-[20px]
+            !font-semibold
           "
         >
           {text.initiative}
@@ -416,110 +416,9 @@ export default function LoginPage() {
           <strong className="!font-bold">{text.dignityLine}</strong>
         </p>
 
-        {/* ===================================================
-            VALUES
-            LEFT ALIGNED
-        =================================================== */}
 
-        <div
-          className="
-            value-grid
-            !ml-0
-            !mr-auto
-            !self-start
-            !justify-self-start
-            !rounded-none
-            !border-0
-          "
-        >
-          {[
-            [
-              HeartHandshake,
-              text.values.compassion,
-              text.values.compassionCopy,
-            ],
 
-            [
-              ShieldCheck,
-              text.values.dignity,
-              text.values.dignityCopy,
-            ],
 
-            [
-              UsersRound,
-              text.values.service,
-              text.values.serviceCopy,
-            ],
-
-            [
-              Flower2,
-              text.values.trust,
-              text.values.trustCopy,
-            ],
-          ].map(
-            ([
-              Icon,
-              title,
-              copy,
-            ]) => {
-              const ValueIcon =
-                Icon as typeof ShieldCheck;
-
-              return (
-                <article
-                  key={String(title)}
-                >
-                  <ValueIcon />
-
-                  <strong>
-                    {String(title)}
-                  </strong>
-
-                  <small>
-                    {String(copy)}
-                  </small>
-                </article>
-              );
-            },
-          )}
-        </div>
-
-        {/* ===================================================
-            SECURE TRUST BLOCK
-            SAME LEFT ALIGNMENT
-        =================================================== */}
-
-        <div
-          className="
-            trust-card
-            !ml-0
-            !mr-auto
-            !w-fit
-            !self-start
-            !justify-self-start
-            !justify-start
-            !rounded-none
-            !border-0
-            !text-left
-
-            [&>p]:!m-0
-            [&>p]:!text-left
-          "
-        >
-          <span>
-            <Lock />
-          </span>
-
-          <p className="!text-left">
-            <strong>
-              {text.secureTitle}
-            </strong>
-
-            <br />
-
-            {text.secureCopy}
-          </p>
-        </div>
       </section>
 
       {/* =====================================================
@@ -537,19 +436,31 @@ export default function LoginPage() {
           {/* HEADING */}
 
           <div className="auth-heading">
-            <span>
-              <ShieldCheck />
-            </span>
+            <div
+              style={{
+                width: 72,
+                height: 72,
+                margin: "0 auto 6px",
+                overflow: "visible",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                mixBlendMode: "multiply",
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/admin.png"
+                alt="Bharat Organic"
+                style={{ width: "100%", height: "100%", objectFit: "contain", transform: "scale(2.2)" }}
+              />
+            </div>
 
             <h2>
               {text.welcome}
             </h2>
 
             <p>
-              {text.continue}
-
-              <br />
-
               <strong>
                 {text.portalName}
               </strong>
@@ -641,9 +552,8 @@ export default function LoginPage() {
                         className="
                         text-[11px]
                         font-semibold
-                        text-blue-600
-                        hover:text-blue-700
                       "
+                        style={{ color: "#4B1426" }}
                       >
                         {text.forgot}
                       </button>
@@ -783,7 +693,7 @@ export default function LoginPage() {
                   gap-1.5
                   text-[13px]
                   font-semibold
-                  text-teal-800
+                  text-red-600
                 "
                 >
                   <ShieldCheck className="h-4 w-4" />
@@ -1599,7 +1509,9 @@ export default function LoginPage() {
                   title,
                 )}
               >
-                <StripIcon />
+                <div className="icon-wrap">
+                  <StripIcon />
+                </div>
 
                 <p>
                   <strong>

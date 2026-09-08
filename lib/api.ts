@@ -185,20 +185,7 @@ function getMockDataForPath(path: string, method: string = "GET"): unknown {
     };
   }
 
-  if (p.includes("/staff") || p.includes("/roles")) {
-    return [
-      {
-        _id: "staff-1",
-        name: "Expo Super Admin",
-        email: "admin@bharatorganicexpo.com",
-        phone: "+91 9999999999",
-        status: "ACTIVE",
-        isEmailVerified: true,
-        roleName: "Super Admin",
-        createdAt: "2026-01-01T10:00:00Z"
-      }
-    ];
-  }
+  // Staff and Roles have a real backend — no mock fallback
 
   if (p.includes("/redirects") || p.includes("/audit")) {
     return [];
@@ -236,6 +223,9 @@ async function request<T>(path: string, options?: ApiRequestOptions, isRetry = f
   const timeoutId = setTimeout(() => timeoutController.abort(), options?.timeoutMs ?? REQUEST_TIMEOUT_MS);
   const { timeoutMs: _timeoutMs, ...fetchOptions } = options ?? {};
   let res: Response;
+  // Paths that have real backends — errors should be thrown, not mocked
+  const isRealBackendPath = path.includes("/staff") || path.includes("/roles") || path.includes("/auth");
+
   try {
     res = await fetch(`${API_BASE_URL}${path}`, {
       ...fetchOptions,
@@ -244,6 +234,9 @@ async function request<T>(path: string, options?: ApiRequestOptions, isRetry = f
     });
   } catch (_error) {
     clearTimeout(timeoutId);
+    if (isRealBackendPath) {
+      throw new ApiRequestError(0, "Cannot connect to the server. Please make sure the backend is running.");
+    }
     return getMockDataForPath(path, options?.method ?? "GET") as T;
   } finally {
     clearTimeout(timeoutId);
@@ -258,10 +251,17 @@ async function request<T>(path: string, options?: ApiRequestOptions, isRetry = f
   try {
     const body: ApiEnvelope<T> = await res.json();
     if (!res.ok || !body.success) {
+      if (isRealBackendPath) {
+        throw new ApiRequestError(res.status, body.message || `Request failed with status ${res.status}`);
+      }
       return getMockDataForPath(path, options?.method ?? "GET") as T;
     }
     return body.data;
-  } catch (_e) {
+  } catch (e) {
+    if (e instanceof ApiRequestError) throw e;
+    if (isRealBackendPath) {
+      throw new ApiRequestError(res.status, "An unexpected server error occurred.");
+    }
     return getMockDataForPath(path, options?.method ?? "GET") as T;
   }
 }
