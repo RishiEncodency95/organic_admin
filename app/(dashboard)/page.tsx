@@ -284,7 +284,7 @@ const defaultTopStats = [
 
   {
     title:
-      "SEWA ENQUIRIES (MTD)",
+      "EXPO ENQUIRIES (MTD)",
     value: "—",
     note: "Loading",
     icon: Users,
@@ -1636,7 +1636,7 @@ export default function DashboardPage() {
 
         if (
           item.title ===
-          "SEWA ENQUIRIES (MTD)" &&
+          "EXPO ENQUIRIES (MTD)" &&
           internal
         ) {
           return {

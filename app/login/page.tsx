@@ -404,16 +404,16 @@ export default function LoginPage() {
 
         {/* MESSAGE */}
 
-        <p className="brand-message">
-          {text.compassionLine}
+        <p className="brand-message !font-bold">
+          <strong className="!font-bold">{text.compassionLine}</strong>
 
           <br />
 
-          {text.honorLine}
+          <strong className="!font-bold">{text.honorLine}</strong>
 
           <br />
 
-          {text.dignityLine}
+          <strong className="!font-bold">{text.dignityLine}</strong>
         </p>
 
         {/* ===================================================

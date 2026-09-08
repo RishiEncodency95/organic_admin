@@ -5,6 +5,7 @@ export interface LandingSectionItem {
   value?: string;
   description?: string;
   image?: string;
+  icon?: string;
   href?: string;
   buttonLabel?: string;
   buttonHref?: string;

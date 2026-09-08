@@ -10,8 +10,8 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Moksha Sewa Admin",
-  description: "Admin dashboard for Moksha Sewa — bookings, donations, and content management.",
+  title: "Organic Admin",
+  description: "Admin dashboard for Organic Bharat — bookings, donations, and content management.",
 };
 
 export default function RootLayout({

@@ -85,19 +85,18 @@ body {
   color: var(--text-primary);
 }
 
-/* Lightened typography across ALL dashboard pages to prevent eye strain */
+/* Dashboard typography */
 *,
 *::before,
 *::after,
 h1, h2, h3, h4, h5, h6,
 th, td, dt, dd,
-button, input, select, textarea,
-.font-semibold,
-.font-bold,
-.font-medium,
-strong,
-b {
-  font-weight: 400 !important;
+button, input, select, textarea {
+  font-weight: 400;
+}
+
+strong, b, .font-semibold, .font-bold, .font-medium {
+  font-weight: 700 !important;
 }
 
 /* Compact scrollbars fit the dense, data-heavy layout better than the OS default. */
@@ -119,7 +118,7 @@ b {
 /* Moksha Sewa login */
 .login-page{--teal:#00575b;--gold:#efa600;position:relative;display:grid;grid-template-columns:52% 48%;min-height:100svh;padding-bottom:64px;overflow-x:hidden;overflow-y:auto;color:#102036;background:#f8edda}
 .login-page,.login-page *{box-sizing:border-box}
-.login-bg{position:absolute;inset:0;background:url('/login-background.png') center/cover no-repeat;z-index:0}
+.login-bg{position:absolute;inset:0;background:url('/assets/login/loginnew.png') center/cover no-repeat;z-index:0}
 .language-switch{position:absolute;z-index:5;right:2.5%;top:16px;display:flex;align-items:center;gap:10px;height:44px;padding:0 16px;border:1px solid #e1e7ec;border-radius:10px;background:#fff;color:#263449;font-weight:600;box-shadow:0 3px 12px #11223314}
 .language-switch svg{width:18px;height:18px}.language-switch svg:last-child{width:14px}
 .login-brand,.login-auth{position:relative;z-index:1;min-width:0;min-height:calc(100svh - 64px)}
@@ -129,7 +128,8 @@ b {
 .brand-initiative{margin-top:0;font-size:clamp(14px,1.1vw,18px);line-height:1.2;font-weight:600}
 .gold-ornament{display:flex;align-items:center;justify-content:center;gap:9px;margin:3px 0;color:var(--gold);font-size:10px}.gold-ornament i{display:block;width:44px;height:1px;background:linear-gradient(90deg,transparent,var(--gold))}.gold-ornament i:last-child{transform:scaleX(-1)}
 .login-brand h1{margin-top:0;font-family:Georgia,serif;font-size:clamp(28px,2.45vw,44px);line-height:1.06;font-weight:700;letter-spacing:-.02em}.login-brand h1 span{font-size:.95em}
-.brand-message{margin-top:2px;font-size:clamp(15px,1.25vw,20px);line-height:1.4;font-weight:500}
+.brand-message{margin-top:8px;padding:8px 16px;border-radius:10px;background:rgba(0,40,43,0.28);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);font-size:clamp(15px,1.25vw,20px);line-height:1.45;font-weight:700!important;color:#ffffff!important;text-shadow:0 1px 2px rgba(0,0,0,0.4)}
+.brand-message strong{color:#ffffff!important;font-weight:700!important}
 .value-grid{margin-top:1.2vh;width:min(92%,620px);display:grid;grid-template-columns:repeat(4,1fr);border:1px solid #ffffffcc;border-radius:14px;background:#fffffff0;box-shadow:0 8px 24px #533a191c;overflow:hidden;backdrop-filter:blur(8px)}
 .value-grid article{min-width:0;padding:14px 8px 13px}.value-grid article+article{border-left:1px solid #d6dce1}.value-grid svg{width:38px;height:38px;margin:0 auto 7px;stroke-width:1.6}.value-grid strong,.value-grid small{display:block}.value-grid strong{font-size:13px;color:#111827}.value-grid small{margin-top:5px;font-size:10px;line-height:1.35;color:#263449}
 .trust-card{display:flex;align-items:center;gap:14px;width:min(67%,420px);margin-top:9px;padding:9px 18px;border:1px solid #ffffffcc;border-radius:13px;background:#fffffff2;text-align:left;box-shadow:0 7px 20px #533a1917}.trust-card>span{display:grid;flex:0 0 50px;height:50px;place-items:center;border-radius:50%;background:var(--teal);color:white}.trust-card svg{width:23px}.trust-card p{font-size:12px;line-height:1.45}.trust-card strong{font-size:13px}

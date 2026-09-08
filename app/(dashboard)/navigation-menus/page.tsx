@@ -287,7 +287,7 @@ export default function NavigationMenusPage() {
           <div className="flex items-center gap-[8px]">
             <button
               type="button"
-              onClick={() => router.push("/website")}
+              onClick={() => router.push("/pages")}
               className="inline-flex h-[34px] items-center gap-[6px] rounded-[6px] border border-[#cfe4d7] bg-[#f0f9f4] px-[14px] text-[10px] font-semibold text-[#075b33] transition hover:bg-[#e4f3eb]"
             >
               <FileText className="h-[14px] w-[14px]" />
