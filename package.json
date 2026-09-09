@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "@babel/parser": "^8.0.4",
+    "@lottiefiles/dotlottie-react": "^0.19.16",
     "@reduxjs/toolkit": "^2.12.0",
+    "framer-motion": "^13.2.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.28.0",
     "next": "^16.3.1",
@@ -18,6 +20,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-icons": "^5.7.0",
+    "react-is": "^19.2.8",
     "react-leaflet": "^5.0.0",
     "react-redux": "^9.3.0",
     "react-toastify": "^11.1.0",
@@ -37,7 +40,7 @@
     "typescript": "^5"
   },
   "optionalDependencies": {
-    "lightningcss-win32-x64-msvc": "*",
-    "lightningcss-darwin-arm64": "*"
+    "lightningcss-darwin-arm64": "*",
+    "lightningcss-win32-x64-msvc": "*"
   }
 }

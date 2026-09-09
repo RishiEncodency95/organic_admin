@@ -6,13 +6,14 @@ const scriptSrcEval = process.env.NODE_ENV === "production" ? "" : " 'unsafe-eva
 
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${scriptSrcEval}`,
+  `script-src 'self' 'unsafe-inline'${scriptSrcEval} 'wasm-unsafe-eval'`,
+  "worker-src 'self' blob: data:",
   "style-src 'self' 'unsafe-inline'",
   // https: (not just 'self') for map tiles (react-leaflet / OpenStreetMap) and Cloudinary media.
   "img-src 'self' data: https:",
   "media-src 'self' https://res.cloudinary.com",
   "font-src 'self' data:",
-  `connect-src 'self' ${apiOrigin} https://res.cloudinary.com`,
+  `connect-src 'self' ${apiOrigin} https://res.cloudinary.com https://lottie.host https://cdn.jsdelivr.net blob: data:`,
   // Live-preview iframe embeds the public site (moksha_clone_voyage).
   `frame-src ${siteOrigin}`,
   "object-src 'none'",

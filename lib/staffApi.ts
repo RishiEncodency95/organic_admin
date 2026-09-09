@@ -21,4 +21,5 @@ export const staffApi = {
   update: (id: string, input: InviteStaffInput) => api.patch<StaffMember>(`/users/admin/staff/${id}`, input),
   updateStatus: (id: string, status: StaffStatus) => api.patch<StaffMember>(`/users/admin/staff/${id}/status`, { status }),
   updateRole: (id: string, roleId: string) => api.patch<StaffMember>(`/users/admin/staff/${id}/role`, { roleId }),
+  delete: (id: string) => api.delete<{ deleted: boolean }>(`/users/admin/staff/${id}`),
 };

@@ -568,6 +568,7 @@ export interface StaffMember {
   roleId?: string;
   roleName?: string;
   status: StaffStatus;
+  lockUntil?: string | null;
   isEmailVerified: boolean;
   lastLoginAt?: string;
   createdAt: string;

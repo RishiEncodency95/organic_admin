@@ -95,7 +95,7 @@ export default function Sidebar({
                 items-center
                 justify-center
                 rounded-[4px]
-                bg-[linear-gradient(180deg,#F1A11A_0%,#D68208_100%)]
+                bg-[#8B2626]
                 px-[5px]
                 text-[9px]
                 font-bold
@@ -180,9 +180,9 @@ export default function Sidebar({
 
           ${active
             ? `
-                bg-[linear-gradient(90deg,#A88E3C_0%,#84773A_50%,#69643A_100%)]
+                bg-[linear-gradient(90deg,#1e5e1a_0%,#2a6d21_48%,#66871c_68%,#cb620c_92%,#b85208_100%)]
                 text-white
-                shadow-[0_3px_10px_rgba(0,0,0,0.28)]
+                shadow-[0_3px_10px_rgba(0,0,0,0.32)]
               `
             : `
                 text-[#F2F5F7]
@@ -270,112 +270,30 @@ export default function Sidebar({
           z-10
           shrink-0
           px-[16px]
-          pt-[12px]
-          pb-[16px]
+          pt-[16px]
+          pb-[14px]
           text-center
         "
       >
-        {/* LOGO
-            FIX:
-            - wrapper height bada ki
-            - crop kam kiya
-            - waves ab cut nahi hongi
-        */}
-        <div
-          className="
-            relative
-            mx-auto
-            h-[70px]
-            w-full
-            overflow-hidden
-          "
-        >
+        <Link href="/" className="block">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/bharat-organic-logo.png"
-            alt="Bharat Organic Logo"
-            className="
-              absolute
-              left-1/2
-              top-[-2px]
-              h-[75px]
-              w-full
-              max-w-[140px]
-              -translate-x-1/2
-              object-contain
-              object-top
-            "
-          />
-        </div>
-
-        {/* BHARAT ORGANIC */}
-        <div className="mt-[6px] text-center">
-          <p
-            className="
-              font-serif
-              text-[19px]
-              font-semibold
-              leading-[22px]
-              tracking-[0.04em]
-              text-white
-              drop-shadow-[0_1px_2px_rgba(0,0,0,0.30)]
-            "
-          >
-            BHARAT ORGANIC
-          </p>
-
-          <div
+            src="/admin.png"
+            alt="Bharat Organic Expo Admin"
             className="
               mx-auto
-              mt-[3px]
-              flex
-              w-[112px]
-              items-center
-              justify-center
-              gap-[5px]
+              h-auto
+              max-h-[75px]
+              w-auto
+              max-w-[195px]
+              object-contain
+              drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)]
+              transition-transform
+              duration-200
+              hover:scale-[1.02]
             "
-          >
-            <span className="h-px flex-1 bg-[#D9A72E]" />
-            <span
-              className="
-                h-[4px]
-                w-[4px]
-                rotate-45
-                bg-[#D9A72E]
-              "
-            />
-            <span className="h-px flex-1 bg-[#D9A72E]" />
-          </div>
-        </div>
-
-        {/* INITIATIVE */}
-        {/* <div className="mt-[7px] text-center">
-          <p
-            className="
-              font-serif
-              text-[13px]
-              font-medium
-              leading-[16px]
-              tracking-[0.015em]
-              text-white
-            "
-          >
-            An Initiative of
-          </p>
-
-          <p
-            className="
-              mt-[2px]
-              text-[14px]
-              font-bold
-              leading-[17px]
-              tracking-[0.01em]
-              text-[#E7B52B]
-            "
-          >
-            Namo Gange Trust
-          </p>
-        </div> */}
+          />
+        </Link>
       </div>
 
       {/* NAVIGATION */}
@@ -426,8 +344,9 @@ export default function Sidebar({
                     uppercase
                     leading-[13px]
                     tracking-[0.035em]
-                    text-[#E8B83E]
+                    text-[#facc15]
                   "
+                  style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.4)" }}
                 >
                   {section.title}
                 </h2>
@@ -473,11 +392,11 @@ export default function Sidebar({
             overflow-hidden
             rounded-[9px]
             border
-            border-[#B0A14B]/25
-            bg-[linear-gradient(90deg,#6E6C38_0%,#72723C_55%,#62663A_100%)]
+            border-emerald-500/30
+            bg-[linear-gradient(90deg,#14532d_0%,#16a34a_55%,#15803d_100%)]
             px-[13px]
             text-white
-            shadow-[0_4px_12px_rgba(0,0,0,0.24)]
+            shadow-[0_4px_14px_rgba(0,0,0,0.24)]
             transition
             hover:brightness-110
           "
@@ -487,7 +406,7 @@ export default function Sidebar({
               pointer-events-none
               absolute
               inset-0
-              bg-[linear-gradient(180deg,rgba(255,255,255,0.08),transparent)]
+              bg-[linear-gradient(180deg,rgba(255,255,255,0.12),transparent)]
             "
           />
 
@@ -498,6 +417,7 @@ export default function Sidebar({
               h-[29px]
               w-[29px]
               shrink-0
+              text-white
             "
             strokeWidth={1.45}
           />
@@ -507,8 +427,9 @@ export default function Sidebar({
               className="
                 block
                 text-[11px]
-                font-semibold
+                font-bold
                 leading-[15px]
+                text-white
               "
             >
               Need Help?
@@ -519,9 +440,9 @@ export default function Sidebar({
                 mt-[1px]
                 block
                 text-[9.5px]
-                font-medium
+                font-semibold
                 leading-[13px]
-                text-white/85
+                text-white
               "
             >
               Contact IT Support
