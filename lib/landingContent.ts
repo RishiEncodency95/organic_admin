@@ -13,6 +13,7 @@ export interface LandingSectionItem {
   secondaryImage?: string;
   tertiaryImage?: string;
   quaternaryImage?: string;
+  videoUrl?: string;
 }
 
 export interface LandingHeroSlide {

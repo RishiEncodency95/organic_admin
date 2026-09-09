@@ -55,8 +55,11 @@ import {
   PUBLIC_SITE_URL,
 } from "@/lib/cmsPages";
 import { settingsApi } from "@/lib/settingsApi";
+import { defaultLandingSections } from "@/lib/landingContent";
+import { defaultAboutSections } from "@/lib/aboutContent";
+import { defaultAdvisorySections } from "@/lib/advisoryContent";
+import { defaultBlogSections } from "@/lib/blogContent";
 import typography from "../../PagesTypography.module.css";
-import { defaultLandingSections, defaultAboutSections } from "@/lib/landingContent";
 import Swal from "sweetalert2";
 
 /* =========================================================
@@ -876,6 +879,10 @@ export default function CmsEditPage() {
             ? "Homepage"
             : page.configKey === "aboutPage"
             ? "About Page"
+            : page.configKey === "advisoryPage"
+            ? "Advisory Board"
+            : page.configKey === "blogPage"
+            ? "Blogs & News"
             : "Standard Page",
 
         parent:
@@ -952,7 +959,14 @@ export default function CmsEditPage() {
 
   useEffect(() => {
     const cfg = page.configKey && settings ? settings[page.configKey] : undefined;
-    const fallbackSections = page.configKey === "aboutPage" ? defaultAboutSections : defaultLandingSections;
+    const fallbackSections =
+      page.configKey === "aboutPage"
+        ? defaultAboutSections
+        : page.configKey === "advisoryPage"
+        ? defaultAdvisorySections
+        : page.configKey === "blogPage"
+        ? defaultBlogSections
+        : defaultLandingSections;
     const rawSections = cfg?.sections && cfg.sections.length > 0 ? cfg.sections : fallbackSections;
     setSectionsDraft(rawSections.map((section: Record<string, any>) => ({ ...section })));
     setOpenSectionIndices(new Set([0]));
@@ -1400,6 +1414,10 @@ export default function CmsEditPage() {
                       updateField("template", value);
                       if (value === "About Page") {
                         setSectionsDraft(defaultAboutSections.map((s) => ({ ...s })));
+                      } else if (value === "Advisory Board") {
+                        setSectionsDraft(defaultAdvisorySections.map((s) => ({ ...s })));
+                      } else if (value === "Blogs & News") {
+                        setSectionsDraft(defaultBlogSections.map((s) => ({ ...s })));
                       } else if (value === "Homepage" || value === "Landing Page") {
                         setSectionsDraft(defaultLandingSections.map((s) => ({ ...s })));
                       }
@@ -1407,6 +1425,8 @@ export default function CmsEditPage() {
                     options={[
                       "Homepage",
                       "About Page",
+                      "Advisory Board",
+                      "Blogs & News",
                       "Landing Page",
                       "Default",
                       "Service Page",
@@ -1435,6 +1455,8 @@ export default function CmsEditPage() {
                       "— No Parent (Top Level) —",
                       "Home",
                       "About Us",
+                      "Advisory Board",
+                      "Blogs & News",
                       "Our Services",
                     ]}
                   />
