@@ -17,6 +17,7 @@ import {
   dashboardApi,
   type LiveDashboardOverview,
 } from "@/lib/dashboardApi";
+import { useAppSelector } from "@/store/hooks";
 
 import {
   Activity,
@@ -232,8 +233,9 @@ const defaultTopStats = [
     icon: TrendingUp,
     tone: "emerald",
     gradient:
-      "linear-gradient(135deg, #ffffff 0%, #ffffff 55%, #f0fdf4 100%)",
-    numColor: "#047857",
+      "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #dcfce7 100%)",
+    borderColor: "#d1fae5",
+    numColor: "#15803d",
     footer:
       "View full SEO report",
     href: "/pages",
@@ -246,7 +248,8 @@ const defaultTopStats = [
     icon: FileText,
     tone: "violet",
     gradient:
-      "linear-gradient(135deg, #ffffff 0%, #ffffff 55%, #f8f5ff 100%)",
+      "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #ede9fe 100%)",
+    borderColor: "#e9d5ff",
     numColor: "#6d28d9",
     footer:
       "View all pages",
@@ -260,7 +263,8 @@ const defaultTopStats = [
     icon: FileSearch,
     tone: "amber",
     gradient:
-      "linear-gradient(135deg, #ffffff 0%, #ffffff 55%, #fffdf0 100%)",
+      "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #fef3c7 100%)",
+    borderColor: "#fde68a",
     numColor: "#b45309",
     footer:
       "View all posts",
@@ -275,7 +279,8 @@ const defaultTopStats = [
     icon: Search,
     tone: "blue",
     gradient:
-      "linear-gradient(135deg, #ffffff 0%, #ffffff 55%, #f0f7ff 100%)",
+      "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #dbeafe 100%)",
+    borderColor: "#bfdbfe",
     numColor: "#1d4ed8",
     footer:
       "View details",
@@ -290,7 +295,8 @@ const defaultTopStats = [
     icon: Users,
     tone: "rose",
     gradient:
-      "linear-gradient(135deg, #ffffff 0%, #ffffff 55%, #fff5f6 100%)",
+      "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #ffe4e6 100%)",
+    borderColor: "#fecdd3",
     numColor: "#be123c",
     footer:
       "View all submissions",
@@ -305,7 +311,8 @@ const defaultTopStats = [
     icon: Target,
     tone: "emerald",
     gradient:
-      "linear-gradient(135deg, #ffffff 0%, #ffffff 55%, #f0fdfa 100%)",
+      "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #ccfbf1 100%)",
+    borderColor: "#a7f3d0",
     numColor: "#0f766e",
     footer:
       "View analytics",
@@ -563,11 +570,13 @@ function PanelTitle({
       <h2
         className="
           text-[10.5px]
+          font-semibold
           tracking-[-0.01em]
-          text-slate-900
+          text-black
         "
         style={{
-          color: "#0f172a",
+          color: "#000000",
+          fontWeight: 600,
         }}
       >
         {children}
@@ -844,6 +853,7 @@ function RangeDropdown({
 ========================================================= */
 
 export default function DashboardPage() {
+  const { admin } = useAppSelector((state) => state.auth);
   const [cachedPageSpeed, setCachedPageSpeed] = useState<LiveDashboardOverview["sources"]["pageSpeed"]["data"]>(null);
   const [
     liveDashboard,
@@ -1840,15 +1850,15 @@ export default function DashboardPage() {
                 }}
               >
                 <h1 className="truncate text-[20px] font-semibold leading-tight tracking-[-0.025em]">
-                  Welcome back,
-                  Vansh!{" "}
+                  Welcome back,{" "}
+                  {admin?.name || "Admin"}!{" "}
 
                   <span className="text-[18px]">
                     👋
                   </span>
                 </h1>
 
-                <p className="truncate text-[11px] font-medium leading-tight text-[#4a5261]">
+                <p className="truncate text-[11px] font-semibold leading-tight text-[#4a5261]">
                   Here&apos;s an
                   overview of your
                   website today{" "}
@@ -1921,6 +1931,9 @@ export default function DashboardPage() {
                         background:
                           item.gradient,
 
+                        borderColor:
+                          (item as any).borderColor || undefined,
+
                         boxShadow:
                           "rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px",
                       }}
@@ -1935,6 +1948,8 @@ export default function DashboardPage() {
                             place-items-center
                             rounded-full
                             ring-1
+                            bg-white/80
+                            shadow-xs
 
                             ${toneClass[
                             item.tone as keyof typeof toneClass
@@ -2124,12 +2139,12 @@ export default function DashboardPage() {
                   </div>
 
                   <div
-                    className="space-y-[5px] text-[11.5px] font-medium text-slate-900"
+                    className="space-y-[5px] text-[11.5px] font-semibold text-slate-900"
                     style={{
                       fontSize:
                         "11.5px",
 
-                      fontWeight: 500,
+                      fontWeight: 600,
 
                       color:
                         "#0f172a",
@@ -2158,12 +2173,12 @@ export default function DashboardPage() {
                           )}
 
                           <span
-                            className="font-medium text-slate-900"
+                            className="font-semibold text-slate-900"
                             style={{
                               color:
                                 "#0f172a",
 
-                              fontWeight: 500,
+                              fontWeight: 600,
                             }}
                           >
                             {check.label}
@@ -3407,12 +3422,12 @@ export default function DashboardPage() {
                           className="contents"
                         >
                           <div
-                            className="px-2 py-1 font-medium text-slate-900"
+                            className="px-2 py-1 font-semibold text-slate-900"
                             style={{
                               color:
                                 "#0f172a",
 
-                              fontWeight: 500,
+                              fontWeight: 600,
                             }}
                           >
                             {
@@ -3968,7 +3983,7 @@ export default function DashboardPage() {
 
           <div className="relative z-10 flex h-full items-center px-4 pr-[390px]">
             <div className="flex w-full items-center justify-center">
-              <p className="text-center text-[11px] font-medium text-slate-600">
+              <p className="text-center text-[11px] font-semibold text-slate-600">
                 &copy;{" "}
                 {new Date().getFullYear()}{" "}
 

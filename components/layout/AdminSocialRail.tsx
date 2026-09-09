@@ -212,25 +212,25 @@ export default function AdminSocialRail() {
           border-2
           border-white
           text-white
-          shadow-[0_6px_16px_rgba(155,116,62,.45)]
+          shadow-[0_6px_16px_rgba(245,158,11,.45)]
           ring-1
           ring-black/5
           transition-all
           duration-300
           ease-out
 
-          hover:shadow-[0_9px_22px_rgba(155,116,62,.55)]
+          hover:shadow-[0_9px_22px_rgba(234,88,12,.55)]
           hover:ring-2
           hover:ring-white
           hover:brightness-105
 
           focus-visible:outline-2
           focus-visible:outline-offset-2
-          focus-visible:outline-[#9b743e]
+          focus-visible:outline-[#f59e0b]
         "
         style={{
           backgroundImage:
-            "linear-gradient(135deg, #e8c779, #b1863f 55%, #9b743e)",
+            "linear-gradient(135deg, #facc15, #f59e0b 50%, #ea580c)",
         }}
       >
         {/* SHINE */}
@@ -543,7 +543,7 @@ export default function AdminSocialRail() {
 
               bg-gradient-to-r
               from-transparent
-              via-[#b18a50]
+              via-[#f59e0b]
               to-transparent
             "
             aria-hidden

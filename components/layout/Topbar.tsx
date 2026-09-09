@@ -2,13 +2,23 @@
 
 import { useCallback, useEffect, useState, type ComponentType } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import dynamic from "next/dynamic";
+import { motion } from "framer-motion";
+import { FaUserAstronaut } from "react-icons/fa";
 import {
   Menu,
+  X,
   LogOut,
   ChevronDown,
   ChevronRight,
   KeyRound,
   Bell,
+  BellRing,
+  HelpCircle,
+  Sun,
+  Moon,
+  Sunrise,
+  Search,
   AlertTriangle,
   HeartHandshake,
   Mail,
@@ -31,10 +41,15 @@ import {
   Share2,
   Plug,
   Package,
+  Loader2,
+  Key,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logout } from "@/store/slices/authSlice";
+
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { authApi } from "@/lib/authApi";
+import Swal from "sweetalert2";
 import { casesApi, SlaBreach } from "@/lib/casesApi";
 import {
   adminNotificationsApi,
@@ -249,8 +264,37 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
   const [newPassword, setNewPassword] = useState("");
 
   const [passwordSaving, setPasswordSaving] = useState(false);
-
   const [passwordError, setPasswordError] = useState("");
+  const [activeTitle, setActiveTitle] = useState<string | null>(null);
+  const [greeting, setGreeting] = useState<{ text: string; icon: React.ReactNode }>({
+    text: "Good Day",
+    icon: <Sun size={18} className="text-orange-500" />,
+  });
+
+  useEffect(() => {
+    const updateGreeting = () => {
+      const hour = new Date().getHours();
+      if (hour >= 5 && hour < 12) {
+        setGreeting({
+          text: "Good Morning",
+          icon: <Sunrise size={18} className="text-amber-500" />,
+        });
+      } else if (hour >= 12 && hour < 17) {
+        setGreeting({
+          text: "Good Afternoon",
+          icon: <Sun size={18} className="text-orange-500" />,
+        });
+      } else {
+        setGreeting({
+          text: "Good Evening",
+          icon: <Moon size={18} className="text-indigo-400" />,
+        });
+      }
+    };
+    updateGreeting();
+    const interval = setInterval(updateGreeting, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   const isInternal = !admin || admin.userType === "INTERNAL";
 
@@ -435,13 +479,47 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
   const bellBadgeCount = breaches.length + unreadCount;
 
   const handleLogout = async () => {
-    if (refreshToken) {
-      await authApi.logout(refreshToken);
+    setMenuOpen(false);
+
+    const result = await Swal.fire({
+      title: "Logout?",
+      text: "You will be logged out from admin panel",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#475569",
+      confirmButtonText: "Yes, Logout",
+      cancelButtonText: "Cancel",
+      background: "#1e2433",
+      color: "#e2e8f0",
+      customClass: {
+        popup: "rounded-xl border border-slate-700/60 shadow-2xl",
+      },
+    });
+
+    if (result.isConfirmed) {
+      await Swal.fire({
+        title: "Logged Out!",
+        text: "You have been successfully logged out",
+        icon: "success",
+        timer: 1500,
+        showConfirmButton: false,
+        background: "#1e2433",
+        color: "#e2e8f0",
+      });
+
+      if (refreshToken) {
+        await authApi.logout(refreshToken).catch(() => {});
+      }
+
+      dispatch(logout());
+
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("ms_admin_auth");
+      }
+
+      router.push("/login");
     }
-
-    dispatch(logout());
-
-    router.push("/login");
   };
 
   const handleChangePassword = async () => {
@@ -467,7 +545,8 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 
   return (
     <>
-      <header className="relative z-30 flex h-[62px] shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/90 px-4 backdrop-blur-xl">
+      <header className="relative z-30 flex h-[62px] shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/90 px-4 sm:px-6 backdrop-blur-xl shadow-xs">
+        {/* LEFT – MOBILE TOGGLE, CURRENT PAGE TITLE / BREADCRUMB & SEARCH */}
         <div className="flex min-w-0 items-center gap-3">
           <button
             onClick={onMenuClick}
@@ -477,219 +556,160 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
             <Menu className="h-[18px] w-[18px]" />
           </button>
 
+          {/* ACTIVE PAGE TITLE / BREADCRUMB */}
           {isDashboard ? (
-            <div className="min-w-[238px]">
-              <div className="rounded-none border border-blue-100 bg-gradient-to-r from-blue-50/90 via-sky-50/50 to-white px-3 py-1.5 shadow-[0_4px_14px_rgba(15,23,42,0.06)]">
-                <h1 className="truncate text-[14px] font-semibold leading-none tracking-tight text-slate-900">
-                  Welcome back, <span className="text-[#118AB2]">{firstName}</span>
-                </h1>
-                <p className="mt-1 hidden truncate text-[9.5px] font-semibold leading-none text-[#133458] sm:block">
-                  Everything is ready for you
-                </p>
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="flex items-center gap-2.5 bg-slate-50/80 px-3 py-1 rounded-xl border border-[#23471d]/25 group transition-all duration-300 hover:bg-white hover:border-[#23471d]/50 shadow-xs"
+            >
+              {/* Icon Circle */}
+              <div className="flex items-center justify-center w-7 h-7 rounded-full bg-white border border-slate-100 shadow-xs">
+                {greeting.icon}
               </div>
-            </div>
+
+              {/* Text Content */}
+              <div className="flex flex-col leading-tight">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[12px] font-medium text-slate-700 tracking-tight">
+                    {greeting.text},
+                  </span>
+                  <span className="text-[12px] font-bold text-[#23471d] tracking-tight">
+                    {admin?.name || displayName}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <div className="relative flex items-center justify-center">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                    <div className="absolute inset-0 w-1.5 h-1.5 rounded-full bg-green-500 animate-ping opacity-75" />
+                  </div>
+                  <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest">
+                    {displayRole}
+                  </span>
+                </div>
+              </div>
+            </motion.div>
           ) : pagesSubRouteLabel(pathname) ? (
             <h1 className="flex min-w-0 items-center gap-1.5 text-[15px] font-semibold tracking-tight">
-              <span className="truncate text-slate-500">
+              <span
+                className={`truncate ${
+                  pathname.startsWith("/staff") || currentPageTitle(pathname) === "Staff Management"
+                    ? "text-[#4B1426]"
+                    : "text-slate-500"
+                }`}
+                style={{
+                  color:
+                    pathname.startsWith("/staff") || currentPageTitle(pathname) === "Staff Management"
+                      ? "#4B1426"
+                      : undefined,
+                }}
+              >
                 {currentPageTitle(pathname)}
               </span>
               <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" />
-              <span className="truncate text-slate-900">
+              <span className="truncate text-slate-900 font-bold text-[#23471d]">
                 {pagesSubRouteLabel(pathname)}
               </span>
             </h1>
           ) : (
-            <h1 className="truncate text-[15px] font-semibold tracking-tight text-slate-900">
+            <h1
+              className={`truncate text-[15px] font-bold tracking-tight ${
+                pathname.startsWith("/staff") || currentPageTitle(pathname) === "Staff Management"
+                  ? "text-[#4B1426]"
+                  : "text-slate-900"
+              }`}
+              style={{
+                color:
+                  pathname.startsWith("/staff") || currentPageTitle(pathname) === "Staff Management"
+                    ? "#4B1426"
+                    : undefined,
+              }}
+            >
               {currentPageTitle(pathname)}
             </h1>
           )}
+
+          {/* SEARCH BOX */}
+          <div className="hidden lg:flex items-center relative ml-3">
+            <Search className="absolute left-3 text-slate-400 pointer-events-none" size={14} />
+            <input
+              type="text"
+              placeholder="Search..."
+              className="pl-8 pr-3 py-1 w-44 xl:w-56 bg-white border-2 border-slate-300 shadow-xs rounded-full text-xs font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#23471d] focus:ring-4 focus:ring-[#23471d]/10 transition-all focus:w-52 xl:focus:w-64"
+            />
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Renewal clocks + everything else that expires, in one quiet cluster. */}
-          {hasClusterContent && (
-            <div className="relative hidden items-center gap-1 lg:flex">
-              {domainService && (
-                <ServiceClock
-                  label="Domain"
-                  name={domainService.name}
-                  icon={Globe2}
-                  countdown={domainCountdown}
-                  expiryDate={domainService.expiryDate}
-                  onClick={goToServices}
-                />
-              )}
-
-              {domainService && hostingService && (
-                <span className="h-6 w-px bg-slate-200" />
-              )}
-
-              {hostingService && (
-                <ServiceClock
-                  label="Hosting"
-                  name={hostingService.name}
-                  icon={Server}
-                  countdown={hostingCountdown}
-                  expiryDate={hostingService.expiryDate}
-                  onClick={goToServices}
-                />
-              )}
-
-              {otherServices.length > 0 && (
-                <>
-                  {(domainService || hostingService) && (
-                    <span className="h-6 w-px bg-slate-200" />
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={handleExpiringClick}
-                    aria-label={`Other services (${otherServices.length})`}
-                    aria-expanded={expiringOpen}
-                    title={`${otherServices.length} other services`}
-                    className={`relative flex h-8 w-8 items-center justify-center rounded-lg transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent ${expiringOpen
-                      ? "bg-slate-900/5 text-slate-900"
-                      : "text-slate-500 hover:bg-slate-900/5 hover:text-slate-900"
-                      }`}
-                  >
-                    <LayoutGrid className="h-4 w-4" />
-                    <span
-                      className={`absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full border border-white px-1 text-[9px] font-semibold text-white ${expiredOtherCount > 0 ? "bg-red-600" : urgentOtherCount > 0 ? "bg-amber-500" : "bg-slate-400"
-                        }`}
-                    >
-                      {otherServices.length > 9 ? "9+" : otherServices.length}
-                    </span>
-                  </button>
-                </>
-              )}
-
-              {expiringOpen && (
-                <>
-                  <button
-                    type="button"
-                    className="fixed inset-0 z-10 cursor-default"
-                    aria-label="Close services menu"
-                    onClick={() => setExpiringOpen(false)}
-                  />
-
-                  <div className="absolute right-0 top-full z-20 mt-2 w-72 overflow-hidden rounded-[10px] border border-[#e5e2da] bg-white py-1 shadow-[0_12px_35px_rgba(15,23,42,0.15)]">
-                    <p className="px-3 py-2 text-[11px] font-semibold text-slate-900">
-                      Other services
-                    </p>
-
-                    <div className="max-h-72 overflow-y-auto">
-                      {otherServices.map((service) => {
-                        const days = daysRemaining(service.expiryDate);
-                        const categoryMeta = SERVICE_CATEGORY_META[service.category] ?? SERVICE_CATEGORY_META.OTHER;
-                        const ServiceIcon = categoryMeta.icon;
-
-                        return (
-                          <button
-                            key={service._id}
-                            type="button"
-                            onClick={goToServices}
-                            className={`flex w-full items-center justify-between gap-3 border-l-[3px] px-3 py-2 text-left text-xs font-medium text-slate-600 transition-colors ${days < 0 ? "border-l-red-500 bg-red-50/80 hover:bg-red-100/70" : days <= URGENT_DAYS ? "border-l-amber-400 bg-amber-50/80 hover:bg-amber-100/70" : "border-l-transparent hover:bg-slate-900/5"}`}
-                          >
-                            <span className="flex min-w-0 items-center gap-2.5">
-                              <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ring-1 ring-inset ${categoryMeta.tone}`}>
-                                <ServiceIcon className="h-3.5 w-3.5" />
-                              </span>
-                              <span className="min-w-0">
-                                <span className={`block truncate font-semibold ${days < 0 ? "text-red-800" : days <= URGENT_DAYS ? "text-amber-900" : "text-slate-800"}`}>{service.name}</span>
-                                <span className="mt-0.5 block text-[9px] font-medium capitalize text-slate-400">{service.category.replaceAll("_", " ").toLowerCase()}</span>
-                              </span>
-                            </span>
-                            <span
-                              className={`shrink-0 font-mono tabular-nums ${days < 0
-                                ? "text-red-600"
-                                : days <= URGENT_DAYS
-                                  ? "text-amber-700"
-                                  : "text-slate-400"
-                                }`}
-                            >
-                              {days < 0 ? `${Math.abs(days)}d over` : `${days}d`}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={goToServices}
-                      className="mt-1 flex w-full items-center gap-2 border-t border-slate-100 px-3 py-2.5 text-left text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-900/5 hover:text-slate-900"
-                    >
-                      <ArrowUpRight className="h-4 w-4" />
-                      Open System &amp; Security
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-
-          <div className="relative hidden md:block">
+        {/* RIGHT – ICONS & PROFILE */}
+        <div className="flex items-center gap-2 sm:gap-3 relative">
+          {/* Help & Support */}
+          <div className="relative">
             <button
               type="button"
-              onClick={handleDateClick}
-              aria-expanded={dateOpen}
-              className="flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-medium text-slate-700 transition-colors hover:bg-slate-50"
+              onClick={() => setActiveTitle(activeTitle === "help" ? null : "help")}
+              className="p-2 rounded-lg hover:bg-[#23471d]/10 transition-all duration-200 hover:scale-105"
+              title="Help & Support"
             >
-              <CalendarDays className="h-4 w-4 text-slate-400" />
-              {selectedDate}
-              <ChevronDown
-                className={`h-3.5 w-3.5 text-slate-400 transition ${dateOpen ? "rotate-180" : ""
-                  }`}
-              />
+              <HelpCircle size={18} className="text-[#23471d]" />
             </button>
-
-            {dateOpen && (
-              <>
-                <button
-                  type="button"
-                  className="fixed inset-0 z-10 cursor-default"
-                  aria-label="Close date menu"
-                  onClick={() => setDateOpen(false)}
-                />
-
-                <div className="absolute right-0 top-full z-20 mt-2 w-44 overflow-hidden rounded-[10px] border border-[#e5e2da] bg-white py-1 shadow-[0_12px_35px_rgba(15,23,42,0.15)]">
-                  {DATE_OPTIONS.map((date) => (
-                    <button
-                      key={date}
-                      type="button"
-                      onClick={() => {
-                        setSelectedDate(date);
-                        setDateOpen(false);
-                      }}
-                      className={`flex w-full items-center justify-between px-3 py-2 text-left text-xs font-medium transition-colors ${selectedDate === date
-                        ? "text-slate-900"
-                        : "text-slate-600 hover:bg-slate-900/5"
-                        }`}
-                    >
-                      {date}
-                      {selectedDate === date && (
-                        <Check className="h-4 w-4 text-accent" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </>
+            {activeTitle === "help" && (
+              <motion.div
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="whitespace-nowrap absolute top-12 right-0 bg-slate-900 text-white text-xs px-3 py-1.5 rounded-lg shadow-lg z-50"
+              >
+                Help &amp; Support
+                <div className="absolute -top-1 right-2 w-2 h-2 bg-slate-900 rotate-45" />
+              </motion.div>
             )}
           </div>
 
+          {/* Reminder List */}
           <div className="relative">
             <button
-              onClick={handleBellClick}
-              className="relative flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-900/5"
-              aria-label="Notifications"
-              aria-expanded={notifOpen}
+              type="button"
+              onClick={() => {
+                setActiveTitle(activeTitle === "reminder" ? null : "reminder");
+                if (hasClusterContent) handleExpiringClick();
+              }}
+              className="p-2 rounded-lg hover:bg-[#23471d]/10 transition-all duration-200 hover:scale-105"
+              title="Reminder List"
             >
-              <Bell className="h-4 w-4" />
-              {bellBadgeCount > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full border border-white bg-status-danger-text px-1 text-[9px] font-semibold text-white">
-                  {bellBadgeCount > 9 ? "9+" : bellBadgeCount}
-                </span>
-              )}
+              <BellRing size={18} className="text-[#23471d]" />
+            </button>
+            {activeTitle === "reminder" && !expiringOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="whitespace-nowrap absolute top-12 right-0 bg-slate-900 text-white text-xs px-3 py-1.5 rounded-lg shadow-lg z-50"
+              >
+                Reminder List
+                <div className="absolute -top-1 right-2 w-2 h-2 bg-slate-900 rotate-45" />
+              </motion.div>
+            )}
+          </div>
+
+          {/* Notifications */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTitle(null);
+                handleBellClick();
+              }}
+              className="relative p-2 rounded-lg hover:bg-[#23471d]/10 transition-all duration-200 hover:scale-105"
+              title="Notifications"
+            >
+              <Bell size={18} className="text-[#23471d]" />
+              <motion.span
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-rose-600 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-semibold shadow-lg"
+              >
+                {bellBadgeCount > 9 ? "9+" : bellBadgeCount || 3}
+              </motion.span>
             </button>
 
             {notifOpen && (
@@ -701,7 +721,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
                   onClick={() => setNotifOpen(false)}
                 />
 
-                <div className="absolute right-0 top-full z-20 mt-2 w-80 overflow-hidden rounded-[10px] border border-[#e5e2da] bg-white shadow-[0_12px_35px_rgba(15,23,42,0.15)]">
+                <div className="absolute right-0 top-full z-20 mt-2 w-80 overflow-hidden rounded-[12px] border border-slate-200 bg-white shadow-2xl">
                   <div className="max-h-[28rem] overflow-y-auto">
                     {breaches.length > 0 && (
                       <div className="border-b border-slate-200/70 pb-1">
@@ -715,18 +735,15 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
                             key={`${breach._id}-${breach.breachReason}`}
                             onClick={() => {
                               setNotifOpen(false);
-
                               router.push(`/cases/${breach._id}`);
                             }}
                             className="flex w-full items-start gap-2 px-3 py-2.5 text-left text-xs transition-colors hover:bg-slate-900/5"
                           >
                             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
-
                             <span>
                               <span className="font-semibold text-slate-900">
                                 {breach.caseId}
                               </span>
-
                               <span className="mt-0.5 block text-[11px] font-medium text-slate-500">
                                 {breach.breachReason}
                               </span>
@@ -760,7 +777,6 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
                     ) : (
                       notifications.map((notification) => {
                         const Icon = NOTIFICATION_ICONS[notification.type];
-
                         return (
                           <button
                             type="button"
@@ -776,11 +792,9 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
                               <span className="block font-semibold text-slate-900">
                                 {notification.title}
                               </span>
-
                               <span className="block truncate text-[11px] font-medium text-slate-500">
                                 {notification.message}
                               </span>
-
                               <span className="mt-0.5 block text-[10px] text-slate-400">
                                 {timeAgo(notification.createdAt)}
                               </span>
@@ -797,66 +811,95 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
             )}
           </div>
 
-          {/* ============================
-                ADMIN PROFILE
-            ============================ */}
-
+          {/* Profile */}
           <div className="relative">
             <button
               type="button"
-              onClick={handleProfileClick}
-              aria-expanded={menuOpen}
-              className="flex items-center gap-2 rounded-[9px] px-1.5 py-1 transition-colors hover:bg-slate-900/5"
+              onClick={() => {
+                setMenuOpen(!menuOpen);
+                setActiveTitle(null);
+              }}
+              className="relative flex items-center gap-2 p-1 sm:pr-3 bg-white border-2 border-slate-300 shadow-xs rounded-full hover:bg-slate-50 transition-all duration-200"
             >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/60 bg-[#edf3f6] text-[11px] font-semibold text-accent shadow-sm">
-                {admin?.avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={admin.avatarUrl}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  initials || "AU"
-                )}
-              </span>
+              {/* Profile Avatar: image if uploaded, Lottie animation if not */}
+              <div className="relative flex-shrink-0">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden border-2 border-slate-200 flex-shrink-0 flex items-center justify-center shadow-xs bg-white">
+                  {admin?.avatarUrl && admin.avatarUrl.trim() !== "" && admin.avatarUrl !== "null" ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={admin.avatarUrl}
+                      alt={admin?.name || displayName}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <DotLottieReact
+                      src="/avatar-lottie.lottie"
+                      loop
+                      autoplay
+                      style={{ width: "100%", height: "100%", transform: "scale(1.2)" }}
+                    />
+                  )}
+                </div>
 
-              <span className="hidden text-left sm:block">
-                <span className="block text-[12px] font-semibold leading-tight tracking-tight text-slate-900">
-                  {displayName}
+                {/* Online Status Dot */}
+                <div className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 border-2 border-white rounded-full z-10 flex items-center justify-center">
+                  <div className="absolute inset-0 w-full h-full bg-green-500 rounded-full animate-ping opacity-75" />
+                </div>
+              </div>
+
+              {/* User Info */}
+              <div className="hidden sm:flex flex-col text-left leading-none ml-1">
+                <span className="text-[12px] font-bold text-slate-800">
+                  {admin?.name || displayName}
                 </span>
 
-                <span className="mt-0.5 block text-[10px] font-medium capitalize leading-tight text-slate-500">
+                <span className="text-[10px] font-bold uppercase tracking-wide mt-0.5" style={{ color: "#4B1426" }}>
                   {displayRole}
                 </span>
-              </span>
+              </div>
 
               <ChevronDown
-                className={`ml-1 h-3.5 w-3.5 text-slate-400 transition-transform duration-200 ${menuOpen ? "rotate-180" : ""
-                  }`}
+                size={14}
+                className={`text-slate-500 transition-transform duration-200 ${menuOpen ? "rotate-180" : ""}`}
               />
             </button>
 
+            {/* PROFILE DROPDOWN */}
             {menuOpen && (
               <>
                 <button
                   type="button"
-                  aria-label="Close profile menu"
                   className="fixed inset-0 z-10 cursor-default"
+                  aria-label="Close profile menu"
                   onClick={() => setMenuOpen(false)}
                 />
 
-                <div className="absolute right-0 top-full z-20 mt-2 w-52 overflow-hidden rounded-[10px] border border-[#e5e2da] bg-white py-1 shadow-[0_12px_35px_rgba(15,23,42,0.15)]">
-                  <div className="border-b border-slate-100 px-3 py-2.5">
-                    <p className="truncate text-[12px] font-semibold text-slate-900">
-                      {admin?.name || displayName}
-                    </p>
-
-                    <p className="mt-0.5 text-[10px] font-medium capitalize text-slate-500">
-                      {displayRole}
-                    </p>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="whitespace-nowrap absolute right-0 top-full mt-2 w-52 bg-white border border-slate-200 shadow-2xl rounded-xl overflow-hidden z-50"
+                >
+                  {/* Header */}
+                  <div className="px-4 py-3 bg-gradient-to-r from-slate-50 to-white border-b border-slate-200">
+                    <p className="text-[10px] text-slate-500 font-medium">Admin Panel</p>
+                    <p className="text-[12px] font-bold text-slate-800">{admin?.name || displayName}</p>
                   </div>
 
+                  {/* Manage Admin Users */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      router.push("/staff");
+                      setMenuOpen(false);
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-xs text-slate-700 hover:bg-slate-50 transition-colors duration-150"
+                  >
+                    <FaUserAstronaut size={14} className="text-blue-600" />
+                    <span className="font-medium">Manage Admin Users</span>
+                  </button>
+
+                  {/* Change Password */}
                   <button
                     type="button"
                     onClick={() => {
@@ -866,21 +909,24 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
                       setPasswordError("");
                       setPasswordModalOpen(true);
                     }}
-                    className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-900/5 hover:text-slate-900"
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-xs text-slate-700 hover:bg-slate-50 transition-colors duration-150"
                   >
-                    <KeyRound className="h-4 w-4" />
-                    Change password
+                    <Key size={14} className="text-slate-600" />
+                    <span className="font-medium">Change Password</span>
                   </button>
 
+                  <div className="border-t border-slate-200" />
+
+                  {/* Logout */}
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="flex w-full items-center gap-2.5 border-t border-slate-100 px-3 py-2.5 text-left text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 hover:text-red-700"
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-xs text-red-600 hover:bg-red-50 transition-colors duration-150"
                   >
-                    <LogOut className="h-4 w-4" />
-                    Log out
+                    <LogOut size={14} />
+                    <span className="font-semibold">Logout</span>
                   </button>
-                </div>
+                </motion.div>
               </>
             )}
           </div>
@@ -945,21 +991,32 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
         title="Change password"
         footer={
           <>
-            <Button
-              variant="secondary"
-              size="sm"
+            <button
+              type="button"
               onClick={() => setPasswordModalOpen(false)}
+              className="inline-flex h-[32px] items-center gap-1.5 px-[14px] text-[12px] font-semibold text-red-600 transition-all hover:bg-red-100 active:scale-95"
+              style={{
+                background: "#fff1f2",
+                borderRadius: "4px",
+                boxShadow: "rgba(0,0,0,0.02) 0px 1px 3px 0px, rgba(220,38,38,0.15) 0px 0px 0px 1px",
+              }}
             >
               Cancel
-            </Button>
-
-            <Button
-              size="sm"
+            </button>
+            <button
+              type="button"
               onClick={handleChangePassword}
-              loading={passwordSaving}
+              disabled={passwordSaving}
+              className="inline-flex h-[32px] items-center gap-1.5 px-[14px] text-[12px] font-semibold text-white transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 active:scale-95"
+              style={{
+                background: "#16a34a",
+                borderRadius: "4px",
+                boxShadow: "rgba(0,0,0,0.02) 0px 1px 3px 0px, rgba(22,163,74,0.2) 0px 0px 0px 1px",
+              }}
             >
+              {passwordSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               Change password
-            </Button>
+            </button>
           </>
         }
       >

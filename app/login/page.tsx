@@ -25,12 +25,13 @@ import {
 } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setCredentials } from "@/store/slices/authSlice";
+import { setCredentials, logout } from "@/store/slices/authSlice";
 import { authApi } from "@/lib/authApi";
 import { ApiRequestError } from "@/lib/api";
 import { Input } from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import { useLanguage } from "@/contexts/LanguageContext";
+import Swal from "sweetalert2";
 
 type Step =
   | "credentials"
@@ -38,7 +39,8 @@ type Step =
   | "2fa-setup"
   | "backup-codes"
   | "forgot-password"
-  | "forgot-password-sent";
+  | "forgot-password-sent"
+  | "reset-password";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -79,6 +81,12 @@ export default function LoginPage() {
   const [copied, setCopied] = useState(false);
 
   const [forgotEmail, setForgotEmail] = useState("");
+  const [tempToken, setTempToken] = useState("");
+  const [resetToken, setResetToken] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [resetDone, setResetDone] = useState(false);
 
   /* =========================================================
      QR CODE
@@ -133,98 +141,169 @@ export default function LoginPage() {
         setStep("2fa-setup");
       })
       .catch(() => {
-        /* stale/invalid session */
+        /* stale/invalid session - reset */
+        dispatch(logout());
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("ms_admin_auth");
+        }
       });
   }, [
     hydrated,
     admin,
     router,
     step,
+    dispatch,
   ]);
+
+  /* SweetAlert2 Toast */
+  const Toast = Swal.mixin({
+    toast: true,
+    position: "top-end",
+    showConfirmButton: false,
+    timer: 3500,
+    timerProgressBar: true,
+    background: "#1e2433",
+    color: "#e2e8f0",
+  });
+
+  const showToast = (icon: "success" | "error" | "info" | "warning", title: string) => {
+    Toast.fire({
+      icon,
+      title,
+      iconColor: icon === "success" ? "#4ade80" : icon === "error" ? "#f87171" : "#60a5fa",
+    });
+  };
 
   /* =========================================================
      LOGIN
   ========================================================= */
 
-  const handleSubmit = async (
-    e: React.FormEvent,
-  ) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     setError("");
-
-    if (step === "credentials") {
-      setStep("totp");
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
-      const result =
-        await authApi.login(
-          email,
-          password,
-          totpCode || undefined,
+      if (step === "credentials") {
+        const result = await authApi.login(email, password);
+
+        if (result.requiresTwoFactor) {
+          setTempToken(result.tempToken || "");
+          setStep("totp");
+          showToast("info", "Please enter 6-digit code from Microsoft Authenticator");
+          return;
+        }
+
+        if (result.user.userType !== "INTERNAL") {
+          const msg = "This portal is for Bharat Organic Expo staff accounts only.";
+          setError(msg);
+          showToast("error", msg);
+          return;
+        }
+
+        dispatch(
+          setCredentials({
+            admin: result.user,
+            accessToken: result.accessToken,
+            refreshToken: result.refreshToken,
+          }),
         );
 
-      if (
-        result.user.userType !==
-        "INTERNAL"
-      ) {
-        setError(
-          "This portal is for Bharat Organic Expo staff accounts only.",
-        );
+        if (result.twoFactorSetupRequired) {
+          const setup = await authApi.setupTwoFactor();
+          setSecret(setup.secret);
+          setProvisioningUri(setup.provisioningUri);
+          setStep("2fa-setup");
 
+          Swal.fire({
+            title: "Setup Two-Factor Authentication",
+            text: "Scan the QR code with Microsoft Authenticator to secure your account.",
+            icon: "info",
+            confirmButtonColor: "#4B1426",
+            confirmButtonText: "I'm Ready to Scan",
+          });
+          return;
+        }
+
+        showToast("success", `Welcome back, ${result.user.name}!`);
+        router.push("/");
         return;
       }
 
-      dispatch(
-        setCredentials({
-          admin: result.user,
-          accessToken:
-            result.accessToken,
-          refreshToken:
-            result.refreshToken,
-        }),
-      );
+      if (step === "totp") {
+        if (!totpCode || totpCode.length !== 6) {
+          const msg = "Please enter a valid 6-digit code from Microsoft Authenticator.";
+          setError(msg);
+          showToast("error", msg);
+          return;
+        }
 
-      if (
-        result.twoFactorSetupRequired
-      ) {
-        const setup =
-          await authApi.setupTwoFactor();
+        let res: any;
+        if (tempToken) {
+          res = await authApi.verifyTwoFactor(totpCode, tempToken);
+        } else {
+          res = await authApi.login(email, password, totpCode);
+        }
 
-        setSecret(setup.secret);
+        const data = res?.data || res;
+        if (data && data.accessToken && data.admin) {
+          dispatch(
+            setCredentials({
+              admin: {
+                id: data.admin.id || data.admin._id,
+                name: data.admin.name,
+                email: data.admin.email,
+                phone: data.admin.phone || "",
+                avatarUrl: data.admin.avatarUrl || undefined,
+                userType: "INTERNAL",
+                roleSlug: data.admin.role === "superadmin" ? "SUPER_ADMIN" : "EXPO_ADMIN",
+                permissions: ["*"],
+              },
+              accessToken: data.accessToken,
+              refreshToken: data.refreshToken,
+            }),
+          );
+          showToast("success", "2FA Verified! Logging in...");
+          router.push("/");
+          return;
+        }
 
-        setProvisioningUri(
-          setup.provisioningUri,
-        );
-
-        setStep("2fa-setup");
-
-        return;
+        if (data && data.requiresTwoFactor) {
+          const msg = "Invalid 2FA code. Please check Microsoft Authenticator.";
+          setError(msg);
+          showToast("error", msg);
+          return;
+        }
       }
-
-      router.push("/");
-    } catch (err) {
+    } catch (err: any) {
       if (
         err instanceof ApiRequestError &&
-        err.message ===
-        "Two-factor code required"
+        (err.message.includes("Two-factor") || err.message.includes("2FA"))
       ) {
         setStep("totp");
-
         setError("");
-
+        showToast("info", "Please enter your 2FA code");
         return;
       }
 
-      setError(
-        err instanceof ApiRequestError
-          ? err.message
-          : "Something went wrong. Please try again.",
-      );
+      // 429 — Too Many Login Attempts → show prominent lock alert
+      if (err instanceof ApiRequestError && err.status === 429) {
+        const lockMsg = "Account temporarily locked. Too many failed login attempts. Please try again in 15 minutes.";
+        setError(lockMsg);
+        Swal.fire({
+          title: "🔒 Account Locked",
+          html: `<p style="font-size:0.95rem;">Too many incorrect password attempts.<br/><br/>Your account has been <strong style="color:#ef4444;">temporarily deactivated</strong> for <strong>15 minutes</strong>.<br/><br/>Please wait and try again later.</p>`,
+          icon: "error",
+          confirmButtonColor: "#4B1426",
+          confirmButtonText: "OK, I'll wait",
+          showClass: { popup: "animate__animated animate__shakeX" },
+        });
+        return;
+      }
+
+      const msg = err?.message || (err instanceof ApiRequestError ? err.message : "Invalid credentials. Please try again.");
+      setError(msg);
+      showToast("error", msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -234,31 +313,27 @@ export default function LoginPage() {
      CONFIRM 2FA SETUP
   ========================================================= */
 
-  const handleConfirmSetup = async (
-    e: React.FormEvent,
-  ) => {
+  const handleConfirmSetup = async (e: React.FormEvent) => {
     e.preventDefault();
-
     setError("");
     setIsSubmitting(true);
 
     try {
-      const result =
-        await authApi.confirmTwoFactor(
-          setupCode,
-        );
-
-      setBackupCodes(
-        result.backupCodes,
-      );
-
+      const result = await authApi.confirmTwoFactor(setupCode);
+      setBackupCodes(result.backupCodes);
       setStep("backup-codes");
-    } catch (err) {
-      setError(
-        err instanceof ApiRequestError
-          ? err.message
-          : "Could not verify that code. Please try again.",
-      );
+
+      Swal.fire({
+        title: "2FA Activated Successfully!",
+        text: "Microsoft Authenticator is now linked to your account. Please save your backup codes.",
+        icon: "success",
+        confirmButtonColor: "#4B1426",
+        confirmButtonText: "View Backup Codes",
+      });
+    } catch (err: any) {
+      const msg = err instanceof ApiRequestError ? err.message : "Could not verify that code. Please try again.";
+      setError(msg);
+      showToast("error", msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -273,7 +348,7 @@ export default function LoginPage() {
       .writeText(secret)
       .then(() => {
         setCopied(true);
-
+        showToast("success", "Secret key copied to clipboard!");
         setTimeout(() => {
           setCopied(false);
         }, 2000);
@@ -284,28 +359,62 @@ export default function LoginPage() {
      FORGOT PASSWORD
   ========================================================= */
 
-  const handleForgotPassword = async (
-    e: React.FormEvent,
-  ) => {
+  const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-
     setError("");
     setIsSubmitting(true);
 
     try {
-      await authApi.forgotPassword(
-        forgotEmail,
-      );
+      const res: any = await authApi.forgotPassword(forgotEmail);
+      if (res?.resetToken) {
+        setResetToken(res.resetToken);
+        if (res.email) setEmail(res.email);
+        setStep("reset-password");
+        showToast("success", "Account verified! Set your new password.");
+      } else {
+        setStep("forgot-password-sent");
+        showToast("success", "Password reset instructions sent!");
+      }
+    } catch (err: any) {
+      const msg = err instanceof ApiRequestError ? err.message : "Something went wrong. Please try again.";
+      setError(msg);
+      showToast("error", msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-      setStep(
-        "forgot-password-sent",
-      );
-    } catch (err) {
-      setError(
-        err instanceof ApiRequestError
-          ? err.message
-          : "Something went wrong. Please try again.",
-      );
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (newPassword.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await authApi.resetPassword(resetToken, newPassword);
+      setResetDone(true);
+      showToast("success", "Password reset successfully! Please sign in.");
+      setTimeout(() => {
+        setStep("credentials");
+        setPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+        setResetToken("");
+        setResetDone(false);
+      }, 1500);
+    } catch (err: any) {
+      const msg = err instanceof ApiRequestError ? err.message : "Failed to reset password. Please try again.";
+      setError(msg);
+      showToast("error", msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -387,34 +496,17 @@ export default function LoginPage() {
 
         {/* TITLE */}
 
-        <h1>
-          Bharat Organic Expo
+        <h1 style={{ WebkitTextStroke: "none", textShadow: "none", border: "none" }}>
+          <span style={{ color: "#14532d", fontWeight: 600 }}>Bharat</span>{" "}
+          <span style={{ color: "#3A6806", fontWeight: 600 }}>Organic</span>{" "}
+          <span style={{ color: "#4B1426", fontWeight: 600 }}>Expo</span>
           <br />
 
-          <span>
+          <span style={{ color: "#ffffff", WebkitTextStroke: "none", textShadow: "none" }}>
             {text.portalTitle}
           </span>
         </h1>
 
-        <div className="gold-ornament">
-          <i />
-          <b>◆</b>
-          <i />
-        </div>
-
-        {/* MESSAGE */}
-
-        <p className="brand-message !font-bold">
-          <strong className="!font-bold">{text.compassionLine}</strong>
-
-          <br />
-
-          <strong className="!font-bold">{text.honorLine}</strong>
-
-          <br />
-
-          <strong className="!font-bold">{text.dignityLine}</strong>
-        </p>
 
 
 
@@ -613,21 +705,13 @@ export default function LoginPage() {
 
                 {/* REMEMBER */}
 
-                <label className="remember-option">
+                <label className="remember-option" style={{ color: "#2563eb" }}>
                   <input
                     type="checkbox"
-                    checked={
-                      rememberMe
-                    }
-                    onChange={(e) =>
-                      setRememberMe(
-                        e.target.checked,
-                      )
-                    }
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
                   />
-
                   {" "}
-
                   {text.remember}
                 </label>
 
@@ -791,21 +875,13 @@ export default function LoginPage() {
                 </div>
 
                 <Input
-                  label={
-                    text.email
-                  }
-                  type="email"
+                  label={text.identifier || "Email / Mobile / Staff ID"}
+                  type="text"
                   required
                   autoFocus
-                  value={
-                    forgotEmail
-                  }
-                  onChange={(e) =>
-                    setForgotEmail(
-                      e.target.value,
-                    )
-                  }
-                  placeholder="admin@bharatorganic.com"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder={text.identifierPlaceholder || "Enter email, mobile number or staff ID"}
                 />
 
                 {error && (
@@ -877,77 +953,141 @@ export default function LoginPage() {
               EMAIL SENT
           ================================================= */}
 
-          {step ===
-            "forgot-password-sent" && (
-              <div className="space-y-6">
-                <div className="text-center">
-                  <div
-                    className="
-                    mx-auto
-                    flex
-                    h-14
-                    w-14
-                    items-center
-                    justify-center
-                    rounded-2xl
-                    bg-emerald-50
-                    text-emerald-600
-                    shadow-sm
-                    ring-1
-                    ring-emerald-100
-                  "
-                  >
-                    <MailCheck className="h-7 w-7" />
-                  </div>
-
-                  <h3
-                    className="
-                    mt-5
-                    text-xl
-                    font-semibold
-                    text-slate-900
-                  "
-                  >
-                    {text.inboxTitle}
-                  </h3>
-
-                  <p className="mt-2 text-sm text-slate-500">
-                    <span className="font-semibold text-slate-700">
-                      {forgotEmail}
-                    </span>
-
-                    {" — "}
-
-                    {text.inboxCopy}
-                  </p>
+          {step === "forgot-password-sent" && (
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 shadow-sm ring-1 ring-emerald-100">
+                  <MailCheck className="h-7 w-7" />
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStep(
-                      "credentials",
-                    );
+                <h3 className="mt-5 text-xl font-semibold text-slate-900">
+                  {text.inboxTitle}
+                </h3>
 
-                    setError("");
-                  }}
-                  className="
-                  flex
-                  w-full
-                  items-center
-                  justify-center
-                  gap-2
-                  text-sm
-                  font-medium
-                  text-slate-500
-                  transition-colors
-                  hover:text-slate-800
-                "
-                >
-                  ← {text.back}
-                </button>
+                <p className="mt-2 text-sm text-slate-500">
+                  <span className="font-semibold text-slate-700">
+                    {forgotEmail}
+                  </span>
+                  {" — "}
+                  {text.inboxCopy}
+                </p>
               </div>
-            )}
+
+              {resetToken && (
+                <Button
+                  type="button"
+                  onClick={() => setStep("reset-password")}
+                  className="h-12 w-full text-[15px] font-semibold text-white shadow-sm"
+                  style={{ background: "#16a34a" }}
+                >
+                  <KeyRound className="mr-2 h-4 w-4" />
+                  Set New Password Now
+                </Button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setStep("credentials");
+                  setError("");
+                }}
+                className="flex w-full items-center justify-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-800"
+              >
+                ← {text.back}
+              </button>
+            </div>
+          )}
+
+          {/* =================================================
+              RESET PASSWORD FORM (NEW)
+          ================================================= */}
+
+          {step === "reset-password" && (
+            <form onSubmit={handleResetPassword} className="space-y-6">
+              <div className="text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 shadow-sm ring-1 ring-blue-100">
+                  <KeyRound className="h-7 w-7" />
+                </div>
+
+                <h3 className="mt-5 text-xl font-semibold text-slate-900">
+                  Set New Password
+                </h3>
+
+                <p className="mt-2 text-sm text-slate-500">
+                  Account verified for{" "}
+                  <strong className="text-slate-800">{forgotEmail}</strong>
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="relative">
+                  <Input
+                    label="New Password"
+                    type={showNewPassword ? "text" : "password"}
+                    required
+                    autoFocus
+                    minLength={8}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="At least 8 characters"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword((v) => !v)}
+                    className="absolute right-3 top-[32px] text-slate-400 hover:text-slate-600"
+                    tabIndex={-1}
+                  >
+                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+
+                <Input
+                  label="Confirm New Password"
+                  type={showNewPassword ? "text" : "password"}
+                  required
+                  minLength={8}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-enter your new password"
+                />
+              </div>
+
+              {error && (
+                <div className="flex items-start gap-3 rounded-xl border border-red-100 bg-red-50/80 p-3.5 text-sm text-red-700">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
+                  <span className="font-medium">{error}</span>
+                </div>
+              )}
+
+              {resetDone ? (
+                <div className="flex items-center justify-center gap-2 rounded-xl bg-emerald-50 p-3 text-sm font-medium text-emerald-700">
+                  <CheckCircle2 className="h-5 w-5" />
+                  Password updated! Returning to sign in...
+                </div>
+              ) : (
+                <Button
+                  type="submit"
+                  loading={isSubmitting}
+                  className="h-12 w-full text-[15px] font-semibold shadow-sm"
+                  style={{ background: "#16a34a" }}
+                >
+                  Update Password
+                </Button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setStep("credentials");
+                  setError("");
+                  setResetToken("");
+                }}
+                className="flex w-full items-center justify-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-800"
+              >
+                ← {text.back}
+              </button>
+            </form>
+          )}
 
           {/* =================================================
               TOTP
@@ -955,144 +1095,80 @@ export default function LoginPage() {
 
           {step === "totp" && (
             <form
-              onSubmit={
-                handleSubmit
-              }
-              className="space-y-6"
+              onSubmit={handleSubmit}
+              className="space-y-5 [&_label]:!text-[13px]"
             >
+              {/* Header */}
               <div className="text-center">
                 <div
-                  className="
-                    mx-auto
-                    flex
-                    h-14
-                    w-14
-                    items-center
-                    justify-center
-                    rounded-2xl
-                    bg-blue-50
-                    text-blue-600
-                    shadow-sm
-                    ring-1
-                    ring-blue-100
-                  "
+                  className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl shadow-sm ring-1"
+                  style={{ backgroundColor: "#4B142610", color: "#4B1426", borderColor: "#4B142630" }}
                 >
                   <ShieldCheck className="h-7 w-7" />
                 </div>
 
-                <h3
-                  className="
-                    mt-5
-                    text-xl
-                    font-semibold
-                    text-slate-900
-                  "
-                >
+                <h3 className="mt-4 text-xl font-semibold text-slate-900">
                   {text.twoStepTitle}
                 </h3>
 
-                <p
-                  className="
-                    mt-2
-                    text-sm
-                    text-slate-500
-                  "
-                >
+                <p className="mt-1.5 text-sm font-medium" style={{ color: "#4B1426" }}>
                   {text.twoStepCopy}
                 </p>
               </div>
 
+              {/* OTP Input */}
               <Input
-                label={
-                  text.authCode
-                }
+                label={text.authCode}
                 required
                 autoFocus
                 inputMode="numeric"
                 maxLength={6}
-                value={
-                  totpCode
-                }
+                value={totpCode}
                 onChange={(e) =>
-                  setTotpCode(
-                    e.target.value.replace(
-                      /\D/g,
-                      "",
-                    ),
-                  )
+                  setTotpCode(e.target.value.replace(/\D/g, ""))
                 }
                 placeholder="123456"
-                className="
-                  h-14
-                  text-center
-                  font-mono
-                  text-2xl
-                  tracking-[0.25em]
-                  shadow-sm
-                "
+                className="h-14 text-center font-mono text-2xl tracking-[0.25em] shadow-sm"
               />
 
+              {/* Error */}
               {error && (
-                <div
-                  className="
-                    flex
-                    items-start
-                    gap-3
-                    rounded-xl
-                    border
-                    border-red-100
-                    bg-red-50/80
-                    p-3.5
-                    text-sm
-                    text-red-700
-                  "
-                >
+                <div className="flex items-start gap-3 rounded-xl border border-red-100 bg-red-50/80 p-3.5 text-sm text-red-700">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
-
-                  <span className="font-medium">
-                    {error}
-                  </span>
+                  <span className="font-medium">{error}</span>
                 </div>
               )}
 
-              <Button
+              {/* Submit */}
+              <button
                 type="submit"
-                loading={
-                  isSubmitting
-                }
-                className="
-                  h-12
-                  w-full
-                  text-[15px]
-                  shadow-sm
-                "
+                disabled={isSubmitting}
+                className="flex w-full items-center justify-center gap-2 text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-60 uppercase tracking-wide"
+                style={{ backgroundColor: "#1b5e20", height: "40px", borderRadius: "7px", fontSize: "12px", fontWeight: 600 }}
               >
-                {text.verify}
-              </Button>
+                {isSubmitting ? (
+                  <>
+                    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Verifying…
+                  </>
+                ) : (
+                  text.verify
+                )}
+              </button>
 
+              {/* Back link */}
               <button
                 type="button"
                 onClick={() => {
-                  setStep(
-                    "credentials",
-                  );
-
+                  setStep("credentials");
                   setTotpCode("");
-
                   setError("");
                 }}
-                className="
-                  flex
-                  w-full
-                  items-center
-                  justify-center
-                  gap-2
-                  text-sm
-                  font-medium
-                  text-slate-500
-                  transition-colors
-                  hover:text-slate-800
-                "
+                className="flex w-full items-center justify-center gap-1.5 text-[13px] font-semibold transition-colors hover:opacity-80"
+                style={{ color: "#4B1426" }}
               >
                 ← {text.back}
               </button>
@@ -1435,33 +1511,7 @@ export default function LoginPage() {
               </div>
             )}
 
-          {/* =================================================
-              HELP
-          ================================================= */}
 
-          <div
-            className="
-              auth-help
-              !text-[14px]
-
-              [&>svg]:!h-[18px]
-              [&>svg]:!w-[18px]
-            "
-          >
-            <Headphones />
-
-            {text.needHelp}
-
-            {" "}
-
-            {text.contact}
-
-            {" "}
-
-            <a href="mailto:support@mokshasewa.com">
-              {text.itSupport}
-            </a>
-          </div>
         </div>
       </section>
 
