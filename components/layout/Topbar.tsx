@@ -594,38 +594,20 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
           ) : pagesSubRouteLabel(pathname) ? (
             <h1 className="flex min-w-0 items-center gap-1.5 text-[15px] font-semibold tracking-tight">
               <span
-                className={`truncate ${
-                  pathname.startsWith("/staff") || currentPageTitle(pathname) === "Staff Management"
-                    ? "text-[#4B1426]"
-                    : "text-slate-500"
-                }`}
-                style={{
-                  color:
-                    pathname.startsWith("/staff") || currentPageTitle(pathname) === "Staff Management"
-                      ? "#4B1426"
-                      : undefined,
-                }}
+                className="truncate"
+                style={{ color: "#4B1426" }}
               >
                 {currentPageTitle(pathname)}
               </span>
               <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" />
-              <span className="truncate text-slate-900 font-bold text-[#23471d]">
+              <span className="truncate font-bold" style={{ color: "#23471d" }}>
                 {pagesSubRouteLabel(pathname)}
               </span>
             </h1>
           ) : (
             <h1
-              className={`truncate text-[15px] font-bold tracking-tight ${
-                pathname.startsWith("/staff") || currentPageTitle(pathname) === "Staff Management"
-                  ? "text-[#4B1426]"
-                  : "text-slate-900"
-              }`}
-              style={{
-                color:
-                  pathname.startsWith("/staff") || currentPageTitle(pathname) === "Staff Management"
-                    ? "#4B1426"
-                    : undefined,
-              }}
+              className="truncate text-[15px] font-bold tracking-tight"
+              style={{ color: "#4B1426" }}
             >
               {currentPageTitle(pathname)}
             </h1>
