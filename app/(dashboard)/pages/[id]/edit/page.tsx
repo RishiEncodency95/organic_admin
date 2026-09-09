@@ -1605,6 +1605,56 @@ export default function CmsEditPage() {
                     onFieldChange={updateSectionField}
                   />
 
+                  {Array.isArray(activeSection.slides) && (
+                    <div className="flex flex-col gap-[8px] pt-[8px] border-t border-[#e8e9e5]">
+                      <p className="text-[11px] font-bold text-[#1c5033]">
+                        Hero Carousel Slides ({activeSection.slides.length})
+                      </p>
+                      <SectionItemsEditor
+                        items={activeSection.slides}
+                        onChangeItem={(itemIndex, key, value) => {
+                          setSectionsDraft((previous) =>
+                            previous.map((section, index) => {
+                              if (index !== activeSectionIndex) return section;
+                              const slides = [...(section.slides ?? [])];
+                              slides[itemIndex] = { ...slides[itemIndex], [key]: value };
+                              return { ...section, slides };
+                            }),
+                          );
+                        }}
+                        onAddItem={() => {
+                          setSectionsDraft((previous) =>
+                            previous.map((section, index) => {
+                              if (index !== activeSectionIndex) return section;
+                              const slides = [...(section.slides ?? [])];
+                              const blank = {
+                                title: "NEW HERO SLIDE",
+                                description: "Enter slide description...",
+                                image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
+                                alt: "Hero Banner Slide",
+                                buttonLabel: "Book Your Stall",
+                                buttonHref: "/registration/book-a-stand",
+                                secondaryButtonLabel: "Register as Visitor",
+                                secondaryButtonHref: "/registration/visitor-registration",
+                              };
+                              return { ...section, slides: [...slides, blank] };
+                            }),
+                          );
+                        }}
+                        onRemoveItem={(itemIndex) => {
+                          setSectionsDraft((previous) =>
+                            previous.map((section, index) => {
+                              if (index !== activeSectionIndex) return section;
+                              const slides = (section.slides ?? []).filter((_: unknown, i: number) => i !== itemIndex);
+                              return { ...section, slides };
+                            }),
+                          );
+                        }}
+                        sectionId={activeSection.key}
+                      />
+                    </div>
+                  )}
+
                   {Array.isArray(activeSection.items) && (
                     <SectionItemsEditor
                       items={activeSection.items}
