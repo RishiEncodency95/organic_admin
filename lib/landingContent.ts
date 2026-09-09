@@ -104,7 +104,7 @@ export interface LandingSectionContent {
 export const defaultLandingSections: LandingSectionContent[] = [
   {
     key: "hero",
-    name: "Hero Banner",
+    name: "HeroSection",
     enabled: true,
     tagline: "ORGANIC FOOD & BEVERAGES",
     titlePrimary: "PURE & CERTIFIED",
@@ -190,7 +190,7 @@ export const defaultLandingSections: LandingSectionContent[] = [
   },
   {
     key: "audience-strip",
-    name: "Target Audience Strip",
+    name: "AudienceStrip",
     enabled: true,
     title: "WHO SHOULD VISIT & EXHIBIT",
     items: [
@@ -203,7 +203,7 @@ export const defaultLandingSections: LandingSectionContent[] = [
   },
   {
     key: "introduction-section",
-    name: "About Expo",
+    name: "IntroductionSection",
     enabled: true,
     eyebrow: "WELCOME TO BHARAT ORGANIC EXPO",
     titlePrimary: "INDIA'S LARGEST ORGANIC",
@@ -222,7 +222,7 @@ export const defaultLandingSections: LandingSectionContent[] = [
   },
   {
     key: "global-platform",
-    name: "Global Platform",
+    name: "GlobalPlatform",
     enabled: true,
     title: "GLOBAL PLATFORM FOR ORGANIC TRADE",
     subtitle: "Connecting over 25+ countries in India's premier organic gathering.",
@@ -237,7 +237,7 @@ export const defaultLandingSections: LandingSectionContent[] = [
   },
   {
     key: "why-participate",
-    name: "Why Participate",
+    name: "WhyParticipate",
     enabled: true,
     title: "WHY PARTICIPATE & EXHIBIT",
     subtitle: "Unlock massive growth opportunities for your organic brand.",
@@ -252,7 +252,7 @@ export const defaultLandingSections: LandingSectionContent[] = [
   },
   {
     key: "conference-section",
-    name: "Conferences",
+    name: "ConferenceSection",
     enabled: true,
     title: "CONFERENCES, SEMINARS & WORKSHOPS",
     subtitle: "3 Days of Knowledge Exchange and Expert Keynotes",
@@ -269,7 +269,7 @@ export const defaultLandingSections: LandingSectionContent[] = [
   },
   {
     key: "expo-categories",
-    name: "Categories Grid",
+    name: "ExpoCategories",
     enabled: true,
     sectionTag: "EXPO CATEGORIES",
     titleMain: "Explore Diverse",
@@ -291,7 +291,7 @@ export const defaultLandingSections: LandingSectionContent[] = [
   },
   {
     key: "beyond-exhibition",
-    name: "Highlights",
+    name: "BeyondExhibition",
     enabled: true,
     sectionTag: "Global Organic Platform",
     titleMain: "Beyond An",
@@ -314,7 +314,7 @@ export const defaultLandingSections: LandingSectionContent[] = [
   },
   {
     key: "sponsors-attend",
-    name: "Sponsors",
+    name: "SponsorsAndAttend",
     enabled: true,
     title: "OUR PROMINENT SPONSORS & PARTNERS",
     subtitle: "Supported by leading ministries, associations, and organic pioneers.",
@@ -322,7 +322,7 @@ export const defaultLandingSections: LandingSectionContent[] = [
   },
   {
     key: "become-sponsor",
-    name: "Sponsor CTA",
+    name: "BecomeSponsor",
     enabled: true,
     title: "BECOME A SPONSOR",
     subtitle: "Maximize your brand visibility at India's largest organic gathering.",
@@ -332,7 +332,7 @@ export const defaultLandingSections: LandingSectionContent[] = [
   },
   {
     key: "sponsorship-categories",
-    name: "Sponsorship Tiers",
+    name: "SponsorshipCategories",
     enabled: true,
     title: "SPONSORSHIP TIERS & PACKAGES",
     subtitle: "Tailored sponsorship packages designed for high brand impact.",
@@ -345,14 +345,14 @@ export const defaultLandingSections: LandingSectionContent[] = [
   },
   {
     key: "partners-brands",
-    name: "Partners",
+    name: "PartnersAndBrands",
     enabled: true,
     title: "PARTNERS & SUPPORTING ORGANIZATIONS",
     subtitle: "Collaborating for a healthier and greener planet.",
   },
   {
     key: "buyer-seller-meet",
-    name: "B2B Meet",
+    name: "BuyerSellerMeet",
     enabled: true,
     title: "INTERNATIONAL B2B BUYER-SELLER MEET",
     subtitle: "Pre-scheduled One-on-One Business Matchmaking",
@@ -367,7 +367,7 @@ export const defaultLandingSections: LandingSectionContent[] = [
   },
   {
     key: "testimonials-carousel",
-    name: "Testimonials",
+    name: "TestimonialsCarousel",
     enabled: true,
     title: "WHAT EXHIBITORS & VISITORS SAY",
     subtitle: "Feedback from past editions of Bharat Organic Expo.",
@@ -379,7 +379,7 @@ export const defaultLandingSections: LandingSectionContent[] = [
   },
   {
     key: "latest-insights",
-    name: "News",
+    name: "LatestInsights",
     enabled: true,
     title: "LATEST NEWS & ORGANIC INSIGHTS",
     subtitle: "Stay updated with recent trends in organic farming, certification, and trade.",
