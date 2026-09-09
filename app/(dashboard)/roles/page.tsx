@@ -258,7 +258,7 @@ export default function RolesPage() {
   };
 
   return (
-    <div className={`${typography.pages} min-h-[calc(100vh-100px)] w-full overflow-hidden bg-white text-[#18233b]`}>
+    <div className={`${typography.pages} min-h-[calc(100vh-100px)] w-full bg-white text-[#18233b]`}>
       <div className="flex min-h-full flex-col px-[18px] pb-[16px] pt-[14px]">
         {/* =================================================
             TOP HEADING — Matching Staff Page
@@ -291,12 +291,12 @@ export default function RolesPage() {
         {/* =============================================
             ROLES TABLE — Clean border, no box shadow, rounded thead
         ============================================= */}
-        <div className="mt-[4px] flex min-h-0 flex-1 flex-col overflow-hidden rounded-[7px] bg-white border border-[#e8e5df]">
+        <div className="mt-[4px] flex min-h-0 flex-1 flex-col overflow-hidden bg-white border border-[#e8e5df]">
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left">
               <thead>
                 <tr className="h-[32px] border-b border-[#e8e5df] bg-[#233D4D]">
-                  <th className="rounded-tl-[6px] px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">
+                  <th className="px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">
                     Role Name
                   </th>
                   <th className="px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">
@@ -311,7 +311,7 @@ export default function RolesPage() {
                   <th className="px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="rounded-tr-[6px] px-[12px] py-[6px] text-right text-[8.5px] font-bold text-white uppercase tracking-wider">
+                  <th className="px-[12px] py-[6px] text-right text-[8.5px] font-bold text-white uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
