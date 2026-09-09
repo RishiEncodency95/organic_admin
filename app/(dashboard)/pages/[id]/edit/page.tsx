@@ -1445,12 +1445,22 @@ export default function CmsEditPage() {
                     }
                     onChange={(
                       value,
-                    ) =>
-                      updateField(
-                        "parent",
-                        value,
-                      )
-                    }
+                    ) => {
+                      updateField("parent", value);
+                      if (value === "About Us") {
+                        setSectionsDraft(defaultAboutSections.map((s) => ({ ...s })));
+                        updateField("template", "About Page");
+                      } else if (value === "Advisory Board") {
+                        setSectionsDraft(defaultAdvisorySections.map((s) => ({ ...s })));
+                        updateField("template", "Advisory Board");
+                      } else if (value === "Blogs & News") {
+                        setSectionsDraft(defaultBlogSections.map((s) => ({ ...s })));
+                        updateField("template", "Blogs & News");
+                      } else if (value === "Home") {
+                        setSectionsDraft(defaultLandingSections.map((s) => ({ ...s })));
+                        updateField("template", "Homepage");
+                      }
+                    }}
                     options={[
                       "— No Parent (Top Level) —",
                       "Home",
