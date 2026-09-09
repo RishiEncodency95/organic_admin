@@ -55,6 +55,7 @@ import {
   PUBLIC_SITE_URL,
 } from "@/lib/cmsPages";
 import { settingsApi } from "@/lib/settingsApi";
+import { defaultLandingSections } from "@/lib/landingContent";
 import Swal from "sweetalert2";
 
 /* =========================================================
@@ -1024,8 +1025,8 @@ export default function CmsEditPage() {
 
   useEffect(() => {
     const cfg = page.configKey && settings ? settings[page.configKey] : undefined;
-    if (!cfg?.sections) return;
-    setSectionsDraft(cfg.sections.map((section: Record<string, any>) => ({ ...section })));
+    const rawSections = cfg?.sections && cfg.sections.length > 0 ? cfg.sections : defaultLandingSections;
+    setSectionsDraft(rawSections.map((section: Record<string, any>) => ({ ...section })));
     setActiveSectionIndex(0);
   }, [settings, page.configKey]);
 
