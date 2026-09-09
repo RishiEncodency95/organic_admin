@@ -437,7 +437,7 @@ function StatCard({
     >
       {/* TOP: Full Label Content */}
       <div className="w-full min-w-0 overflow-hidden text-left">
-        <p className="truncate text-[8.5px] font-semibold text-[#172863]" title={item.label}>
+        <p className="truncate text-[7.5px] font-bold uppercase tracking-wider text-[#172863]" title={item.label}>
           {item.label}
         </p>
       </div>
@@ -1105,40 +1105,40 @@ export default function CommunicationsFollowUps() {
                     text-white
                   "
                 >
-                  <th className="px-[6px] text-[9px] font-semibold whitespace-nowrap">
+                  <th className="px-[6px] text-[9px] font-bold uppercase tracking-wider whitespace-nowrap">
                     ID
                   </th>
 
-                  <th className="px-[6px] text-[9px] font-semibold whitespace-nowrap">
-                    Contact / Organization
+                  <th className="px-[6px] text-[9px] font-bold uppercase tracking-wider whitespace-nowrap">
+                    CONTACT / ORGANIZATION
                   </th>
 
-                  <th className="px-[4px] text-[9px] font-semibold whitespace-nowrap text-center">
-                    Channel
+                  <th className="px-[4px] text-[9px] font-bold uppercase tracking-wider whitespace-nowrap text-center">
+                    CHANNEL
                   </th>
 
-                  <th className="px-[6px] text-[9px] font-semibold whitespace-nowrap">
-                    Subject / Conversation
+                  <th className="px-[6px] text-[9px] font-bold uppercase tracking-wider whitespace-nowrap">
+                    SUBJECT / CONVERSATION
                   </th>
 
-                  <th className="px-[5px] text-[9px] font-semibold whitespace-nowrap">
-                    Enquiry Type
+                  <th className="px-[5px] text-[9px] font-bold uppercase tracking-wider whitespace-nowrap">
+                    ENQUIRY TYPE
                   </th>
 
-                  <th className="px-[5px] text-[9px] font-semibold whitespace-nowrap">
-                    Status
+                  <th className="px-[5px] text-[9px] font-bold uppercase tracking-wider whitespace-nowrap">
+                    STATUS
                   </th>
 
-                  <th className="px-[6px] text-[9px] font-semibold whitespace-nowrap">
-                    Last Activity
+                  <th className="px-[6px] text-[9px] font-bold uppercase tracking-wider whitespace-nowrap">
+                    LAST ACTIVITY
                   </th>
 
-                  <th className="px-[6px] text-[9px] font-semibold whitespace-nowrap">
-                    Next Follow-up
+                  <th className="px-[6px] text-[9px] font-bold uppercase tracking-wider whitespace-nowrap">
+                    NEXT FOLLOW-UP
                   </th>
 
-                  <th className="px-[6px] text-[9px] font-semibold whitespace-nowrap text-center">
-                    Actions
+                  <th className="px-[6px] text-[9px] font-bold uppercase tracking-wider whitespace-nowrap text-center">
+                    ACTIONS
                   </th>
                 </tr>
               </thead>

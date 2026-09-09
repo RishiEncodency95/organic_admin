@@ -700,17 +700,17 @@ export default function EngagementLeadsOverviewPage() {
             <table
               className="
                 w-full
-                min-w-[550px]
+                min-w-[600px]
                 table-fixed
                 border-collapse
               "
             >
               <colgroup>
-                <col style={{ width: "32%" }} />
-                <col style={{ width: "22%" }} />
-                <col style={{ width: "17%" }} />
-                <col style={{ width: "17%" }} />
-                <col style={{ width: "12%" }} />
+                <col style={{ width: "30%" }} />
+                <col style={{ width: "20%" }} />
+                <col style={{ width: "16%" }} />
+                <col style={{ width: "18%" }} />
+                <col style={{ width: "16%" }} />
               </colgroup>
 
               <thead>
@@ -1549,16 +1549,23 @@ function StatusBadge({ status }: { status: RecentStatus }) {
         color: "#3576D0",
         border: "#D4E5F9",
       }
-      : {
-        bg: "#FFF3DB",
-        color: "#D78916",
-        border: "#F3DFB6",
-      };
+      : status === "Contacted"
+        ? {
+          bg: "#E6F5EA",
+          color: "#287E4D",
+          border: "#CBE8D3",
+        }
+        : {
+          bg: "#FFF3DB",
+          color: "#D78916",
+          border: "#F3DFB6",
+        };
 
   return (
     <span
       className="
         inline-flex
+        whitespace-nowrap
         rounded-[4px]
         border
         px-[7px]
