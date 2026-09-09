@@ -13,6 +13,7 @@ import {
   Handshake,
   History,
   LayoutDashboard,
+  Layers,
   Link2,
   ListTree,
   LockKeyhole,
@@ -64,6 +65,7 @@ export const NAV_SECTIONS: NavSection[] = [
     title: "Content Management",
     items: [
       { label: "Pages & CMS", href: "/pages", icon: FileText },
+      { label: "Landing Page Sections", href: "/pages/1/edit", icon: Layers, badge: "CMS" },
       { label: "Services Management", href: "/services", icon: BriefcaseBusiness },
       { label: "Blog & Insights", href: "/blogs", icon: BookOpenText },
       { label: "Media Library", href: "/gallery", icon: GalleryHorizontalEnd },
