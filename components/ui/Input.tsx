@@ -28,7 +28,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         </Label>
       )}
       <input ref={ref} id={id} className={`${FIELD_CLASSES} ${className}`} {...props} />
-      {hint && !error && <p className="mt-1 text-[11px] text-text-muted">{hint}</p>}
+      {hint && !error && <p className="mt-1 text-[11px] text-[#4B1426]">{hint}</p>}
       {error && <p className="mt-1 text-[11px] font-medium text-red-600">{error}</p>}
     </div>
   )
@@ -42,7 +42,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     <div>
       {label && <Label required={required}>{label}</Label>}
       <textarea ref={ref} className={`${FIELD_CLASSES} resize-none ${className}`} {...props} />
-      {hint && !error && <p className="mt-1 text-[11px] text-text-muted">{hint}</p>}
+      {hint && !error && <p className="mt-1 text-[11px] text-[#4B1426]">{hint}</p>}
       {error && <p className="mt-1 text-[11px] font-medium text-red-600">{error}</p>}
     </div>
   )
@@ -58,7 +58,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
       <select ref={ref} className={`${FIELD_CLASSES} ${className}`} {...props}>
         {children}
       </select>
-      {hint && !error && <p className="mt-1 text-[11px] text-text-muted">{hint}</p>}
+      {hint && !error && <p className="mt-1 text-[11px] text-[#4B1426]">{hint}</p>}
       {error && <p className="mt-1 text-[11px] font-medium text-red-600">{error}</p>}
     </div>
   )
