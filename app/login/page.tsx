@@ -219,8 +219,6 @@ export default function LoginPage() {
             title: "Setup Two-Factor Authentication",
             text: "Scan the QR code with Microsoft Authenticator to secure your account.",
             icon: "info",
-            background: "#1e2433",
-            color: "#e2e8f0",
             confirmButtonColor: "#4B1426",
             confirmButtonText: "I'm Ready to Scan",
           });
@@ -256,6 +254,7 @@ export default function LoginPage() {
                 name: data.admin.name,
                 email: data.admin.email,
                 phone: data.admin.phone || "",
+                avatarUrl: data.admin.avatarUrl || undefined,
                 userType: "INTERNAL",
                 roleSlug: data.admin.role === "superadmin" ? "SUPER_ADMIN" : "EXPO_ADMIN",
                 permissions: ["*"],
@@ -293,10 +292,8 @@ export default function LoginPage() {
         setError(lockMsg);
         Swal.fire({
           title: "🔒 Account Locked",
-          html: `<p style="color:#e2e8f0;font-size:0.95rem;">Too many incorrect password attempts.<br/><br/>Your account has been <strong style="color:#f87171;">temporarily deactivated</strong> for <strong>15 minutes</strong>.<br/><br/>Please wait and try again later.</p>`,
+          html: `<p style="font-size:0.95rem;">Too many incorrect password attempts.<br/><br/>Your account has been <strong style="color:#ef4444;">temporarily deactivated</strong> for <strong>15 minutes</strong>.<br/><br/>Please wait and try again later.</p>`,
           icon: "error",
-          background: "#1e2433",
-          color: "#e2e8f0",
           confirmButtonColor: "#4B1426",
           confirmButtonText: "OK, I'll wait",
           showClass: { popup: "animate__animated animate__shakeX" },
@@ -330,8 +327,6 @@ export default function LoginPage() {
         title: "2FA Activated Successfully!",
         text: "Microsoft Authenticator is now linked to your account. Please save your backup codes.",
         icon: "success",
-        background: "#1e2433",
-        color: "#e2e8f0",
         confirmButtonColor: "#4B1426",
         confirmButtonText: "View Backup Codes",
       });
@@ -710,21 +705,13 @@ export default function LoginPage() {
 
                 {/* REMEMBER */}
 
-                <label className="remember-option">
+                <label className="remember-option" style={{ color: "#2563eb" }}>
                   <input
                     type="checkbox"
-                    checked={
-                      rememberMe
-                    }
-                    onChange={(e) =>
-                      setRememberMe(
-                        e.target.checked,
-                      )
-                    }
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
                   />
-
                   {" "}
-
                   {text.remember}
                 </label>
 
@@ -1108,144 +1095,80 @@ export default function LoginPage() {
 
           {step === "totp" && (
             <form
-              onSubmit={
-                handleSubmit
-              }
-              className="space-y-6"
+              onSubmit={handleSubmit}
+              className="space-y-5 [&_label]:!text-[13px]"
             >
+              {/* Header */}
               <div className="text-center">
                 <div
-                  className="
-                    mx-auto
-                    flex
-                    h-14
-                    w-14
-                    items-center
-                    justify-center
-                    rounded-2xl
-                    bg-blue-50
-                    text-blue-600
-                    shadow-sm
-                    ring-1
-                    ring-blue-100
-                  "
+                  className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl shadow-sm ring-1"
+                  style={{ backgroundColor: "#4B142610", color: "#4B1426", borderColor: "#4B142630" }}
                 >
                   <ShieldCheck className="h-7 w-7" />
                 </div>
 
-                <h3
-                  className="
-                    mt-5
-                    text-xl
-                    font-semibold
-                    text-slate-900
-                  "
-                >
+                <h3 className="mt-4 text-xl font-semibold text-slate-900">
                   {text.twoStepTitle}
                 </h3>
 
-                <p
-                  className="
-                    mt-2
-                    text-sm
-                    text-slate-500
-                  "
-                >
+                <p className="mt-1.5 text-sm font-medium" style={{ color: "#4B1426" }}>
                   {text.twoStepCopy}
                 </p>
               </div>
 
+              {/* OTP Input */}
               <Input
-                label={
-                  text.authCode
-                }
+                label={text.authCode}
                 required
                 autoFocus
                 inputMode="numeric"
                 maxLength={6}
-                value={
-                  totpCode
-                }
+                value={totpCode}
                 onChange={(e) =>
-                  setTotpCode(
-                    e.target.value.replace(
-                      /\D/g,
-                      "",
-                    ),
-                  )
+                  setTotpCode(e.target.value.replace(/\D/g, ""))
                 }
                 placeholder="123456"
-                className="
-                  h-14
-                  text-center
-                  font-mono
-                  text-2xl
-                  tracking-[0.25em]
-                  shadow-sm
-                "
+                className="h-14 text-center font-mono text-2xl tracking-[0.25em] shadow-sm"
               />
 
+              {/* Error */}
               {error && (
-                <div
-                  className="
-                    flex
-                    items-start
-                    gap-3
-                    rounded-xl
-                    border
-                    border-red-100
-                    bg-red-50/80
-                    p-3.5
-                    text-sm
-                    text-red-700
-                  "
-                >
+                <div className="flex items-start gap-3 rounded-xl border border-red-100 bg-red-50/80 p-3.5 text-sm text-red-700">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
-
-                  <span className="font-medium">
-                    {error}
-                  </span>
+                  <span className="font-medium">{error}</span>
                 </div>
               )}
 
-              <Button
+              {/* Submit */}
+              <button
                 type="submit"
-                loading={
-                  isSubmitting
-                }
-                className="
-                  h-12
-                  w-full
-                  text-[15px]
-                  shadow-sm
-                "
+                disabled={isSubmitting}
+                className="flex w-full items-center justify-center gap-2 text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-60 uppercase tracking-wide"
+                style={{ backgroundColor: "#1b5e20", height: "40px", borderRadius: "7px", fontSize: "12px", fontWeight: 600 }}
               >
-                {text.verify}
-              </Button>
+                {isSubmitting ? (
+                  <>
+                    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Verifying…
+                  </>
+                ) : (
+                  text.verify
+                )}
+              </button>
 
+              {/* Back link */}
               <button
                 type="button"
                 onClick={() => {
-                  setStep(
-                    "credentials",
-                  );
-
+                  setStep("credentials");
                   setTotpCode("");
-
                   setError("");
                 }}
-                className="
-                  flex
-                  w-full
-                  items-center
-                  justify-center
-                  gap-2
-                  text-sm
-                  font-medium
-                  text-slate-500
-                  transition-colors
-                  hover:text-slate-800
-                "
+                className="flex w-full items-center justify-center gap-1.5 text-[13px] font-semibold transition-colors hover:opacity-80"
+                style={{ color: "#4B1426" }}
               >
                 ← {text.back}
               </button>
@@ -1588,33 +1511,7 @@ export default function LoginPage() {
               </div>
             )}
 
-          {/* =================================================
-              HELP
-          ================================================= */}
 
-          <div
-            className="
-              auth-help
-              !text-[14px]
-
-              [&>svg]:!h-[18px]
-              [&>svg]:!w-[18px]
-            "
-          >
-            <Headphones />
-
-            {text.needHelp}
-
-            {" "}
-
-            {text.contact}
-
-            {" "}
-
-            <a href="mailto:support@mokshasewa.com">
-              {text.itSupport}
-            </a>
-          </div>
         </div>
       </section>
 

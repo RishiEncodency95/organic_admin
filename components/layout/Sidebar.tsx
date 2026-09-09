@@ -95,7 +95,7 @@ export default function Sidebar({
                 items-center
                 justify-center
                 rounded-[4px]
-                bg-[linear-gradient(180deg,#F1A11A_0%,#D68208_100%)]
+                bg-[#8B2626]
                 px-[5px]
                 text-[9px]
                 font-bold
@@ -180,9 +180,9 @@ export default function Sidebar({
 
           ${active
             ? `
-                bg-[linear-gradient(90deg,#A88E3C_0%,#84773A_50%,#69643A_100%)]
+                bg-[linear-gradient(90deg,#1e5e1a_0%,#2a6d21_48%,#66871c_68%,#cb620c_92%,#b85208_100%)]
                 text-white
-                shadow-[0_3px_10px_rgba(0,0,0,0.28)]
+                shadow-[0_3px_10px_rgba(0,0,0,0.32)]
               `
             : `
                 text-[#F2F5F7]
@@ -344,8 +344,9 @@ export default function Sidebar({
                     uppercase
                     leading-[13px]
                     tracking-[0.035em]
-                    text-[#E8B83E]
+                    text-[#facc15]
                   "
+                  style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.4)" }}
                 >
                   {section.title}
                 </h2>
@@ -391,11 +392,11 @@ export default function Sidebar({
             overflow-hidden
             rounded-[9px]
             border
-            border-[#B0A14B]/25
-            bg-[linear-gradient(90deg,#6E6C38_0%,#72723C_55%,#62663A_100%)]
+            border-emerald-500/30
+            bg-[linear-gradient(90deg,#14532d_0%,#16a34a_55%,#15803d_100%)]
             px-[13px]
             text-white
-            shadow-[0_4px_12px_rgba(0,0,0,0.24)]
+            shadow-[0_4px_14px_rgba(0,0,0,0.24)]
             transition
             hover:brightness-110
           "
@@ -405,7 +406,7 @@ export default function Sidebar({
               pointer-events-none
               absolute
               inset-0
-              bg-[linear-gradient(180deg,rgba(255,255,255,0.08),transparent)]
+              bg-[linear-gradient(180deg,rgba(255,255,255,0.12),transparent)]
             "
           />
 
@@ -416,6 +417,7 @@ export default function Sidebar({
               h-[29px]
               w-[29px]
               shrink-0
+              text-white
             "
             strokeWidth={1.45}
           />
@@ -425,8 +427,9 @@ export default function Sidebar({
               className="
                 block
                 text-[11px]
-                font-semibold
+                font-bold
                 leading-[15px]
+                text-white
               "
             >
               Need Help?
@@ -437,9 +440,9 @@ export default function Sidebar({
                 mt-[1px]
                 block
                 text-[9.5px]
-                font-medium
+                font-semibold
                 leading-[13px]
-                text-white/85
+                text-white
               "
             >
               Contact IT Support

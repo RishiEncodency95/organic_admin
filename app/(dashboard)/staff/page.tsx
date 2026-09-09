@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Plus, Copy, Check, Pencil, Camera, Loader2, PowerOff, Power, Trash2, ExternalLink, User } from "lucide-react";
+import { Plus, Copy, Check, Pencil, Camera, Loader2, PowerOff, Power, Trash2, ExternalLink, User, ChevronLeft, ChevronRight } from "lucide-react";
 import Swal from "sweetalert2";
 import typography from "../pages/PagesTypography.module.css";
 import Button from "@/components/ui/Button";
@@ -58,6 +58,8 @@ export default function StaffPage() {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<InviteStaffInput>(EMPTY_FORM);
@@ -67,6 +69,12 @@ export default function StaffPage() {
   const [copied, setCopied] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const totalPages = Math.max(1, Math.ceil(staff.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * PAGE_SIZE;
+  const endIndex = Math.min(startIndex + PAGE_SIZE, staff.length);
+  const paginatedStaff = staff.slice(startIndex, endIndex);
 
 
   const load = () => {
@@ -250,21 +258,22 @@ export default function StaffPage() {
   };
 
   return (
-    <div
-      className={`${typography.pages} min-h-[calc(100vh-100px)] w-full overflow-hidden bg-white text-[#18233b]`}
-      style={{
-        boxShadow: "rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px",
-      }}
-    >
+    <div className={`${typography.pages} min-h-[calc(100vh-100px)] w-full overflow-hidden bg-white text-[#18233b]`}>
       <div className="flex min-h-full flex-col px-[18px] pb-[16px] pt-[14px]">
         {/* =================================================
-            TOP HEADING — Matching Pages & CMS
+            TOP HEADING — Matching Roles & Permissions
         ================================================= */}
         <div className="mb-[20px] flex shrink-0 items-center justify-between border-b-[2px] border-[#293681] pb-[8px]">
           <div>
-            <h1 className="text-[19px] font-bold leading-[1.15] tracking-[-0.018em] text-[#18233b]">
-              Staff
+            <h1
+              className="text-[19px] font-bold leading-[1.15] tracking-[-0.018em] text-[#23471d]"
+              style={{ color: "#23471d" }}
+            >
+              Staff &amp; Team Members
             </h1>
+            <p className="mt-0.5 text-[9px] font-medium text-[#6c7587]">
+              Super Admin only — manage internal team accounts, assign roles, and control system access.
+            </p>
           </div>
 
           <div className="flex items-center gap-[10px]">
@@ -283,17 +292,14 @@ export default function StaffPage() {
         </div>
 
         {/* =============================================
-            STAFF TABLE — Matching Pages & CMS
+            STAFF TABLE — Clean border, no box shadow, rounded thead
         ============================================= */}
-        <div
-          className="mt-[4px] flex min-h-0 flex-1 flex-col overflow-visible rounded-[7px] bg-white border border-[#e8e5df]"
-          style={{ boxShadow: "rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px" }}
-        >
-          <div className="overflow-x-auto overflow-y-visible">
+        <div className="mt-[4px] flex min-h-0 flex-1 flex-col overflow-hidden rounded-[7px] bg-white border border-[#e8e5df]">
+          <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left">
               <thead>
                 <tr className="h-[32px] border-b border-[#e8e5df] bg-[#233D4D]">
-                  <th className="px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">
+                  <th className="rounded-tl-[6px] px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">
                     Name
                   </th>
                   <th className="px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">
@@ -314,7 +320,7 @@ export default function StaffPage() {
                   <th className="px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">
                     Last Login
                   </th>
-                  <th className="px-[12px] py-[6px] text-right text-[8.5px] font-bold text-white uppercase tracking-wider">
+                  <th className="rounded-tr-[6px] px-[12px] py-[6px] text-right text-[8.5px] font-bold text-white uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -336,7 +342,7 @@ export default function StaffPage() {
                     </td>
                   </tr>
                 ) : (
-                  staff.map((s) => {
+                  paginatedStaff.map((s) => {
                     const lastLoginStr = s.lastLoginAt ? formatDateTime(s.lastLoginAt) : null;
                     const datePart = lastLoginStr ? lastLoginStr.split(",")[0] : null;
                     const timePart =
@@ -405,7 +411,7 @@ export default function StaffPage() {
                                   ? "bg-[#e8f5e9] text-[#23714a] border border-[#a5d6a7]"
                                   : s.status === "LOCKED"
                                   ? "bg-[#fff3e0] text-[#e65100] border border-[#ffb74d]"
-                                  : "bg-[#f1f5f9] text-[#475569] border border-[#cbd5e1]"
+                                  : "bg-[#fee2e2] text-[#dc2626] border border-[#fca5a5]"
                               }`}
                               style={{
                                 backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
@@ -414,7 +420,7 @@ export default function StaffPage() {
                               <option value="ACTIVE" className="bg-white text-[#23714a] font-bold">
                                 ACTIVE
                               </option>
-                              <option value="INACTIVE" className="bg-white text-[#475569] font-bold">
+                              <option value="INACTIVE" className="bg-white text-[#dc2626] font-bold">
                                 INACTIVE
                               </option>
                               <option value="LOCKED" className="bg-white text-[#e65100] font-bold">
@@ -497,13 +503,54 @@ export default function StaffPage() {
             </table>
           </div>
 
-          {/* Table Footer Stats */}
+          {/* Table Footer Stats & Pagination (10 per page) */}
           {!loading && staff.length > 0 && (
-            <div className="flex items-center justify-between border-t border-[#e8e5df] bg-[#fafafa] px-[12px] py-[6px] text-[8px]">
-              <span className="font-semibold text-[#2563eb]">
-                Total Staff Accounts: <strong className="font-bold text-[#1d4ed8]">{staff.length}</strong>
-              </span>
-              <span className="text-[7.5px] text-[#8a92a0]">All members registered on platform</span>
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#e8e5df] bg-[#fafafa] px-[12px] py-[6px] text-[8px]">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-[#2563eb]">
+                  Total Staff Accounts: <strong className="font-bold text-[#1d4ed8]">{staff.length}</strong>
+                </span>
+                <span className="text-[7.5px] text-[#8a92a0]">
+                  (Showing {startIndex + 1}–{endIndex} of {staff.length})
+                </span>
+              </div>
+
+              <div className="flex items-center gap-[4px]">
+                <button
+                  type="button"
+                  disabled={safePage <= 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className="flex h-[22px] w-[22px] items-center justify-center rounded-[4px] border border-[#d8dce2] bg-white text-[#334155] transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-30"
+                  title="Previous Page"
+                >
+                  <ChevronLeft className="h-3 w-3" />
+                </button>
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                  <button
+                    key={pageNum}
+                    type="button"
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`flex h-[22px] min-w-[22px] px-1.5 items-center justify-center rounded-[4px] border text-[8px] font-bold transition ${
+                      safePage === pageNum
+                        ? "border-[#233D4D] bg-[#233D4D] text-white shadow-xs"
+                        : "border-[#d8dce2] bg-white text-[#334155] hover:bg-slate-50"
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+
+                <button
+                  type="button"
+                  disabled={safePage >= totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  className="flex h-[22px] w-[22px] items-center justify-center rounded-[4px] border border-[#d8dce2] bg-white text-[#334155] transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-30"
+                  title="Next Page"
+                >
+                  <ChevronRight className="h-3 w-3" />
+                </button>
+              </div>
             </div>
           )}
         </div>

@@ -47,10 +47,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logout } from "@/store/slices/authSlice";
 
-const DotLottieReact = dynamic(
-  () => import("@lottiefiles/dotlottie-react").then((mod) => mod.DotLottieReact),
-  { ssr: false }
-);
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { authApi } from "@/lib/authApi";
 import Swal from "sweetalert2";
 import { casesApi, SlaBreach } from "@/lib/casesApi";
@@ -489,10 +486,15 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
       text: "You will be logged out from admin panel",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#475569",
       confirmButtonText: "Yes, Logout",
       cancelButtonText: "Cancel",
+      background: "#1e2433",
+      color: "#e2e8f0",
+      customClass: {
+        popup: "rounded-xl border border-slate-700/60 shadow-2xl",
+      },
     });
 
     if (result.isConfirmed) {
@@ -502,6 +504,8 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
         icon: "success",
         timer: 1500,
         showConfirmButton: false,
+        background: "#1e2433",
+        color: "#e2e8f0",
       });
 
       if (refreshToken) {
@@ -558,7 +562,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: "easeOut" }}
-              className="flex items-center gap-2.5 bg-slate-50/80 px-3 py-1 rounded-xl border border-slate-200/60 group transition-all duration-300 hover:bg-white hover:border-[#23471d]/30 shadow-xs"
+              className="flex items-center gap-2.5 bg-slate-50/80 px-3 py-1 rounded-xl border border-[#23471d]/25 group transition-all duration-300 hover:bg-white hover:border-[#23471d]/50 shadow-xs"
             >
               {/* Icon Circle */}
               <div className="flex items-center justify-center w-7 h-7 rounded-full bg-white border border-slate-100 shadow-xs">
@@ -568,10 +572,10 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
               {/* Text Content */}
               <div className="flex flex-col leading-tight">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[11.5px] font-medium text-slate-700 tracking-tight">
+                  <span className="text-[12px] font-medium text-slate-700 tracking-tight">
                     {greeting.text},
                   </span>
-                  <span className="text-[11.5px] font-bold text-[#23471d] tracking-tight">
+                  <span className="text-[12px] font-bold text-[#23471d] tracking-tight">
                     {admin?.name || displayName}
                   </span>
                 </div>
@@ -581,7 +585,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
                     <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
                     <div className="absolute inset-0 w-1.5 h-1.5 rounded-full bg-green-500 animate-ping opacity-75" />
                   </div>
-                  <span className="text-[8px] font-bold text-red-600 uppercase tracking-widest">
+                  <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest">
                     {displayRole}
                   </span>
                 </div>
@@ -589,7 +593,19 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
             </motion.div>
           ) : pagesSubRouteLabel(pathname) ? (
             <h1 className="flex min-w-0 items-center gap-1.5 text-[15px] font-semibold tracking-tight">
-              <span className="truncate text-slate-500">
+              <span
+                className={`truncate ${
+                  pathname.startsWith("/staff") || currentPageTitle(pathname) === "Staff Management"
+                    ? "text-[#4B1426]"
+                    : "text-slate-500"
+                }`}
+                style={{
+                  color:
+                    pathname.startsWith("/staff") || currentPageTitle(pathname) === "Staff Management"
+                      ? "#4B1426"
+                      : undefined,
+                }}
+              >
                 {currentPageTitle(pathname)}
               </span>
               <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" />
@@ -598,7 +614,19 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
               </span>
             </h1>
           ) : (
-            <h1 className="truncate text-[15px] font-bold tracking-tight text-slate-900">
+            <h1
+              className={`truncate text-[15px] font-bold tracking-tight ${
+                pathname.startsWith("/staff") || currentPageTitle(pathname) === "Staff Management"
+                  ? "text-[#4B1426]"
+                  : "text-slate-900"
+              }`}
+              style={{
+                color:
+                  pathname.startsWith("/staff") || currentPageTitle(pathname) === "Staff Management"
+                    ? "#4B1426"
+                    : undefined,
+              }}
+            >
               {currentPageTitle(pathname)}
             </h1>
           )}
@@ -789,42 +817,50 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
               type="button"
               onClick={() => {
                 setMenuOpen(!menuOpen);
+                setActiveTitle(null);
               }}
-              className="relative flex items-center gap-1.5 p-0.5 sm:pr-2.5 bg-white border border-slate-200 shadow-xs rounded-full hover:bg-slate-50 transition-all duration-200"
+              className="relative flex items-center gap-2 p-1 sm:pr-3 bg-white border-2 border-slate-300 shadow-xs rounded-full hover:bg-slate-50 transition-all duration-200"
             >
-              {/* Avatar: image if uploaded, Lottie if not */}
-              <div className="relative">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden border border-slate-200 flex-shrink-0 flex items-center justify-center shadow-xs bg-white">
-                  {admin?.avatarUrl ? (
+              {/* Profile Avatar: image if uploaded, Lottie animation if not */}
+              <div className="relative flex-shrink-0">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden border-2 border-slate-200 flex-shrink-0 flex items-center justify-center shadow-xs bg-white">
+                  {admin?.avatarUrl && admin.avatarUrl.trim() !== "" && admin.avatarUrl !== "null" ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={admin.avatarUrl}
-                      alt={admin.name}
+                      alt={admin?.name || displayName}
                       className="h-full w-full object-cover"
                     />
                   ) : (
                     <DotLottieReact
-                      src="https://lottie.host/5a98959a-4278-4845-8ba3-ba77bdc4306d/mAWwYVx6CA.lottie"
+                      src="/avatar-lottie.lottie"
                       loop
                       autoplay
                       style={{ width: "100%", height: "100%", transform: "scale(1.2)" }}
                     />
                   )}
                 </div>
+
                 {/* Online Status Dot */}
-                <div className="absolute bottom-0 right-0 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-green-500 border border-white rounded-full z-10">
+                <div className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 border-2 border-white rounded-full z-10 flex items-center justify-center">
                   <div className="absolute inset-0 w-full h-full bg-green-500 rounded-full animate-ping opacity-75" />
                 </div>
               </div>
 
-              {/* User Info: real name on top, role below */}
-              <div className="hidden sm:flex flex-col text-left leading-none ml-0.5">
-                <span className="text-[11px] font-bold text-blue-600">{admin?.name || displayName}</span>
-                <span className="text-[8.5px] font-semibold text-slate-400 capitalize mt-0.5">{displayRole}</span>
+              {/* User Info */}
+              <div className="hidden sm:flex flex-col text-left leading-none ml-1">
+                <span className="text-[12px] font-bold text-slate-800">
+                  {admin?.name || displayName}
+                </span>
+
+                <span className="text-[10px] font-bold uppercase tracking-wide mt-0.5" style={{ color: "#4B1426" }}>
+                  {displayRole}
+                </span>
               </div>
+
               <ChevronDown
-                size={11}
-                className={`text-slate-400 transition-transform duration-200 mr-0.5 ${menuOpen ? "rotate-180" : ""}`}
+                size={14}
+                className={`text-slate-500 transition-transform duration-200 ${menuOpen ? "rotate-180" : ""}`}
               />
             </button>
 

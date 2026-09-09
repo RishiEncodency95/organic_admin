@@ -95,12 +95,8 @@ button, input, select, textarea {
   font-weight: 400;
 }
 
-strong, b, .font-bold, .font-semibold {
+strong, b, .font-bold, .font-semibold, .font-medium {
   font-weight: 600 !important;
-}
-
-.font-medium {
-  font-weight: 500 !important;
 }
 
 /* Compact scrollbars fit the dense, data-heavy layout better than the OS default. */
@@ -132,6 +128,20 @@ html.swal2-shown, body.swal2-shown, html.swal2-height-auto, body.swal2-height-au
 }
 .swal2-container {
   overflow-y: auto !important;
+}
+.swal2-popup {
+  background: #1e2433 !important;
+  color: #e2e8f0 !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.5) !important;
+}
+.swal2-title {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+.swal2-html-container {
+  color: #cbd5e1 !important;
 }
 .language-switch{position:absolute;z-index:5;right:2.5%;top:16px;display:flex;align-items:center;gap:10px;height:44px;padding:0 16px;border:1px solid #e1e7ec;border-radius:10px;background:#fff;color:#263449;font-weight:600;box-shadow:0 3px 12px #11223314}
 .language-switch svg{width:18px;height:18px}.language-switch svg:last-child{width:14px}
