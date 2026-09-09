@@ -55,7 +55,8 @@ import {
   PUBLIC_SITE_URL,
 } from "@/lib/cmsPages";
 import { settingsApi } from "@/lib/settingsApi";
-import { defaultLandingSections } from "@/lib/landingContent";
+import typography from "../../PagesTypography.module.css";
+import { defaultLandingSections, defaultAboutSections } from "@/lib/landingContent";
 import Swal from "sweetalert2";
 
 /* =========================================================
@@ -506,12 +507,31 @@ function SectionItemsEditor({
   onRemoveItem: (index: number) => void;
   sectionId?: string;
 }) {
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
+
   return (
     <div className="flex flex-col gap-[8px]">
-      <div className="flex items-center justify-between">
-        <p className="text-[10.5px] font-bold text-[#3a4557]">
-          Items ({items.length})
-        </p>
+      <div className="flex items-center justify-between border-t border-[#e2e8f0] pt-[8px]">
+        <div className="flex items-center gap-[6px]">
+          <span className="text-[11px] font-bold text-[#0f766e]">
+            {sectionId === "hero" ? "Key Statistics & Badges" :
+             sectionId === "audience-strip" ? "Target Audience List" :
+             sectionId === "introduction-section" ? "Key Feature Cards" :
+             sectionId === "global-platform" ? "Platform Highlights & Deals" :
+             sectionId === "why-participate" ? "Exhibitor Benefits List" :
+             sectionId === "conference-section" ? "Seminar & Workshop Sessions" :
+             sectionId === "expo-categories" ? "Exhibition Category Cards" :
+             sectionId === "beyond-exhibition" ? "Event Highlights & Awards" :
+             sectionId === "sponsorship-categories" ? "Sponsorship Packages & Tiers" :
+             sectionId === "buyer-seller-meet" ? "Matchmaking Process Steps" :
+             sectionId === "testimonials-carousel" ? "Exhibitor & Visitor Reviews" :
+             sectionId === "navbar" ? "Header Navigation Links" :
+             sectionId === "footer" ? "Footer Quick Links" : "Section Content Cards"}
+          </span>
+          <span className="rounded-full bg-[#ccfbf1] px-[6px] py-[1px] text-[8.5px] font-bold text-[#0f766e]">
+            {items.length} Total
+          </span>
+        </div>
 
         <button
           type="button"
@@ -519,7 +539,7 @@ function SectionItemsEditor({
           className="flex h-[24px] items-center gap-[4px] rounded-[4px] border border-[#98bca5] bg-white px-[8px] text-[9px] font-semibold text-[#34714c]"
         >
           <Plus className="h-[10px] w-[10px]" />
-          Add Item
+          Add New Card
         </button>
       </div>
 
@@ -527,219 +547,124 @@ function SectionItemsEditor({
         <p className="text-[10px] font-medium text-[#8b929c]">No items yet.</p>
       )}
 
-      {items.map((item, index) => {
-        // Ensure icon field is present for items that might use it
-        let defaultIcon = "";
-        if (!item.icon) {
-           const text = (item.title || "") + " " + (item.label || "");
-           const textUpper = text.toUpperCase();
-           if (textUpper.includes("HELPLINE")) defaultIcon = "users";
-           else if (textUpper.includes("REGION")) defaultIcon = "building";
-           else if (textUpper.includes("CASE-BASED")) defaultIcon = "smile";
-           else if (textUpper.includes("ELIGIBILITY") && !textUpper.includes("BODY")) defaultIcon = "shield";
-           else if (textUpper.includes("UNCLAIMED") && !textUpper.includes("BODY")) defaultIcon = "info";
-           else if (textUpper.includes("PEOPLE WITHOUT")) defaultIcon = "heart";
-           else if (textUpper.includes("AMBULANCE") || textUpper.includes("TRANSPORT")) defaultIcon = "van";
-           else if (textUpper.includes("CREMATION")) defaultIcon = "fire";
-           else if (textUpper.includes("RITUAL ESSENTIALS")) defaultIcon = "diya";
-           else if (textUpper.includes("PRIEST")) defaultIcon = "priest";
-           else if (textUpper.includes("ON-GROUND")) defaultIcon = "heart-hands";
-           else if (textUpper.includes("NAMO GANGE")) defaultIcon = "people";
-           else if (textUpper.includes("GOVERNANCE")) defaultIcon = "shield";
-           else if (textUpper.includes("IMPACT") || textUpper.includes("REPORT")) defaultIcon = "report";
-           else if (textUpper.includes("DONATION") || textUpper.includes("REFUND")) defaultIcon = "policy";
-           else if (textUpper.includes("SEWA") && !textUpper.includes("GIVE") && !textUpper.includes("SERVE") && !textUpper.includes("PARTNER") && textUpper.length < 15) defaultIcon = "heart-hand";
-           else if (textUpper.includes("INTEGRITY")) defaultIcon = "scale";
-           else if (textUpper.includes("TRANSPARENCY")) defaultIcon = "eye";
-           else if (textUpper.includes("ACCOUNTABILITY")) defaultIcon = "accountability";
-           else if (textUpper.includes("ON-GROUND SEWA")) defaultIcon = "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165452/moksha-sewa/assets/sewa/on-ground.png";
-           else if (textUpper.includes("VOLUNTEER SEWA")) defaultIcon = "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165459/moksha-sewa/assets/sewa/voluteer-seva.png";
-           else if (textUpper.includes("RITUAL SUPPORT")) defaultIcon = "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165456/moksha-sewa/assets/sewa/ritual-support.png";
-           else if (textUpper.includes("COMMUNITY OUTREACH")) defaultIcon = "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165449/moksha-sewa/assets/sewa/community-outreach.png";
-           else if (text.includes("Economically")) defaultIcon = "heart";
-           else if (text.includes("Ritual")) defaultIcon = "book-open";
-           else if (text.includes("Family")) defaultIcon = "users";
-           else if (text.includes("Verified")) defaultIcon = "shield";
-           else if (text.includes("Guided")) defaultIcon = "heart";
-           else if (text.includes("Local")) defaultIcon = "map-pin";
-           else if (text.includes("Request")) defaultIcon = "clipboard";
-           else if (text.includes("Verification")) defaultIcon = "verification";
-           else if (text.includes("Coordination")) defaultIcon = "hands";
-           else if (text.includes("Final")) defaultIcon = "diya";
-           else if (text.includes("Legally")) defaultIcon = "shield-check";
-           else if (text.includes("Dignified")) defaultIcon = "diya";
-           else if (text.includes("Compassionate")) defaultIcon = "heart-hands";
-           else if (textUpper.includes("ECONOMICALLY")) defaultIcon = "family-hands";
-           else if (textUpper.includes("ELDERLY")) defaultIcon = "elderly-care";
-           else if (textUpper.includes("UNCLAIMED BODY")) defaultIcon = "unclaimed-case";
-           else if (textUpper.includes("FOR THOSE UNCLAIMED")) defaultIcon = "users-round";
-           else if (textUpper.includes("FOR THOSE ALONE")) defaultIcon = "heart-hands";
-           else if (textUpper.includes("FOR FAMILIES IN NEED")) defaultIcon = "heart-hands";
-           else if (textUpper.includes("WITH DIGNITY & CARE")) defaultIcon = "shield-check";
-           else if (textUpper.includes("HUMANITY FIRST")) defaultIcon = "heart-hands";
-           else if (textUpper.includes("VERIFICATION & LEGAL")) defaultIcon = "scale";
-           else if (textUpper.includes("TRANSPARENT SEWA")) defaultIcon = "heart-hands";
-           else if (textUpper.includes("COMMUNITY POWERED")) defaultIcon = "users-round";
-           else if (textUpper.includes("COMPASSION")) defaultIcon = "heart";
-           else if (textUpper.includes("INTEGRITY")) defaultIcon = "shield-check";
-           else if (textUpper.includes("RESPECT")) defaultIcon = "users-round";
-           else if (textUpper.includes("DIGNITY")) defaultIcon = "lotus";
-           else if (textUpper.includes("UNCLAIMED & AUTHORISED")) defaultIcon = "document-check";
-           else if (textUpper.includes("PEOPLE WITHOUT FAMILY SUPPORT")) defaultIcon = "people";
-           else if (textUpper.includes("VERIFIED FAMILIES FACING FINANCIAL HARDSHIP")) defaultIcon = "heart-hands";
-           else if (textUpper.includes("WHAT") && textUpper.includes("WE DO")) defaultIcon = "give-icon";
-           else if (textUpper.includes("WHY") && textUpper.includes("WE EXIST")) defaultIcon = "lotus";
-           else if (textUpper.includes("WHO") && textUpper.includes("WE SERVE")) defaultIcon = "users-round";
-           else if (textUpper.includes("HOW") && textUpper.includes("WE SERVE")) defaultIcon = "serve-icon";
-           else if (textUpper.includes("SOCIAL SERVICE")) defaultIcon = "heart-hands";
-           else if (textUpper.includes("COMMUNITY WELFARE")) defaultIcon = "users-round";
-           else if (textUpper.includes("HUMANITARIAN ACTION")) defaultIcon = "globe";
-           else if (textUpper.includes("RESPONSIBLE GOVERNANCE")) defaultIcon = "shield-check";
-           else if (textUpper.includes("VERIFICATION")) defaultIcon = "verification";
-           else if (textUpper.includes("FORMALITIES")) defaultIcon = "formalities";
-           else if (textUpper.includes("DOCUMENTATION")) defaultIcon = "documentation";
-           else if (textUpper.includes("PRIVACY")) defaultIcon = "privacy";
-           else if (textUpper.includes("NAMO GANGE TRUST")) defaultIcon = "lotus";
-           else if (textUpper.includes("FINAL-JOURNEY") || textUpper.includes("FINAL JOURNEY") || textUpper.includes("ESSENTIAL FINAL")) defaultIcon = "body";
-           else if (textUpper.includes("TRANSPORTATION")) defaultIcon = "van";
-           else if (textUpper.includes("RITUAL")) defaultIcon = "book-open";
-           else if (textUpper.includes("FAMILY SUPPORT") || textUpper.includes("ELIGIBLE FAMILY")) defaultIcon = "family-hands";
-           else if (textUpper.includes("ON-GROUND COORDINATION")) defaultIcon = "heart-hands";
-           else if (textUpper.includes("SECURE & TRUSTED") || textUpper.includes("SECURE")) defaultIcon = "shield-check";
-           else if (textUpper.includes("ACCOUNTABLE USE")) defaultIcon = "clipboard";
-           else if (textUpper.includes("TRANSPARENCY FIRST") || textUpper.includes("TRANSPARENCY")) defaultIcon = "eye";
-           else if (textUpper.includes("SEWA WITH DIGNITY")) defaultIcon = "lotus";
-           else if (textUpper.includes("VOLUNTEER")) defaultIcon = "heart-hands";
-           else if (textUpper.includes("SUPPORT") && textUpper.includes("MISSION")) defaultIcon = "heart-hands";
-           else if (text.toUpperCase().includes("GIVE")) defaultIcon = "give-icon";
-           else if (text.toUpperCase().includes("SERVE")) defaultIcon = "serve-icon";
-           else if (text.toUpperCase().includes("PARTNER")) defaultIcon = "partner-icon";
-        }
-        const itemToEdit = ("label" in item || "title" in item) && (!("icon" in item) || item.icon === "") 
-          ? { ...item, icon: defaultIcon } 
-          : item;
+      <div className="max-h-[350px] overflow-y-auto space-y-2 pr-1 border border-[#f1f5f9] rounded-[6px] p-1 bg-[#fafafa]">
+        {items.map((item, index) => {
+          let defaultIcon = "";
+          if (!item.icon) {
+             const text = (item.title || "") + " " + (item.label || "");
+             const textUpper = text.toUpperCase();
+             if (textUpper.includes("HELPLINE")) defaultIcon = "users";
+             else if (textUpper.includes("REGION")) defaultIcon = "building";
+             else if (textUpper.includes("VOLUNTEER")) defaultIcon = "heart-hands";
+             else if (textUpper.includes("SUPPORT")) defaultIcon = "heart-hands";
+             else if (text.toUpperCase().includes("GIVE")) defaultIcon = "give-icon";
+             else if (text.toUpperCase().includes("SERVE")) defaultIcon = "serve-icon";
+             else if (text.toUpperCase().includes("PARTNER")) defaultIcon = "partner-icon";
+          }
+          const itemToEdit = ("label" in item || "title" in item) && (!("icon" in item) || item.icon === "") 
+            ? { ...item, icon: defaultIcon } 
+            : item;
 
-        const fieldEntries = Object.entries(itemToEdit).filter(
-          ([key, value]) =>
-            key !== "_id" &&
-            (typeof value === "string" ||
-              typeof value === "number" ||
-              typeof value === "boolean" ||
-              (Array.isArray(value) && value.every((entry) => typeof entry === "string"))),
-        );
+          const fieldEntries = Object.entries(itemToEdit).filter(
+            ([key, value]) =>
+              key !== "_id" &&
+              (typeof value === "string" ||
+                typeof value === "number" ||
+                typeof value === "boolean" ||
+                (Array.isArray(value) && value.every((entry) => typeof entry === "string"))),
+          );
 
-        return (
-          <div
-            key={item._id ?? index}
-            className="bg-white p-[9px] border border-[#e5e6e2] shadow-[0_1px_3px_0_rgba(0,0,0,0.02),0_0_0_1px_rgba(27,31,35,0.15)]"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[9px] font-semibold text-[#697386]">
-                Item {index + 1}
-              </span>
+          const isOpen = openIndex === index;
 
-              <button
-                type="button"
-                onClick={() => onRemoveItem(index)}
-                className="text-[#c04a42]"
+          return (
+            <div
+              key={item._id ?? index}
+              className="bg-white border border-[#e2e8f0] rounded-[5px] overflow-hidden shadow-2xs transition"
+            >
+              <div 
+                onClick={() => setOpenIndex(isOpen ? null : index)}
+                className="flex cursor-pointer items-center justify-between bg-[#f8fafc] px-[10px] py-[7px] border-b border-[#f1f5f9] hover:bg-[#f1f5f9] transition"
               >
-                <Trash2 className="h-[11px] w-[11px]" />
-              </button>
-            </div>
-
-            <div className="mt-[6px] grid grid-cols-2 gap-[8px]">
-              {fieldEntries.map(([key, value]) => (
-                <div key={key}>
-                  <FieldLabel>{humanizeKey(key)}</FieldLabel>
-
-                  {key === "icon" && sectionId !== "journey-glimpse" ? (
-                    <SelectField
-                      value={String(value)}
-                      options={[
-                        { label: "None", value: "" },
-                        { label: "Group of People", value: "users" },
-                        { label: "Building", value: "building" },
-                        { label: "Smiley Face", value: "smile" },
-                        { label: "Shield", value: "shield" },
-                        { label: "Phone", value: "phone" },
-                        { label: "Mail", value: "mail" },
-                        { label: "Map Pin", value: "map-pin" },
-                        { label: "Heart", value: "heart" },
-                        { label: "Star", value: "star" },
-                        { label: "Check Circle", value: "check-circle" },
-                        { label: "Info", value: "info" },
-                        { label: "Activity", value: "activity" },
-                        { label: "Ambulance", value: "ambulance" },
-                        { label: "Flame", value: "flame" },
-                        { label: "Book Open", value: "book-open" },
-                        { label: "Clipboard", value: "clipboard" },
-                        { label: "Document", value: "document" },
-                        { label: "Hands", value: "hands" },
-                        { label: "Heart Hands", value: "heart-hands" },
-                        { label: "Shield Check", value: "shield-check" },
-                        { label: "Diya", value: "diya" },
-                        { label: "Family Hands", value: "family-hands" },
-                        { label: "Elderly Care", value: "elderly-care" },
-                        { label: "Unclaimed Case", value: "unclaimed-case" },
-                        { label: "Give Icon", value: "give-icon" },
-                        { label: "Serve Icon", value: "serve-icon" },
-                        { label: "Partner Icon", value: "partner-icon" },
-                        { label: "Users Round", value: "users-round" },
-                        { label: "Lotus", value: "lotus" },
-                        { label: "Document Check", value: "document-check" },
-                        { label: "People", value: "people" },
-                        { label: "Van", value: "van" },
-                        { label: "Fire", value: "fire" },
-                        { label: "Priest", value: "priest" },
-                        { label: "Report", value: "report" },
-                        { label: "Policy", value: "policy" },
-                        { label: "Heart Hand", value: "heart-hand" },
-                        { label: "Scale", value: "scale" },
-                        { label: "Eye", value: "eye" },
-                        { label: "Globe", value: "globe" },
-                        { label: "Accountability", value: "accountability" },
-                        { label: "Verification", value: "verification" },
-                        { label: "Formalities", value: "formalities" },
-                        { label: "Documentation", value: "documentation" },
-                        { label: "Privacy", value: "privacy" },
-                        { label: "Body / Final Journey", value: "body" },
-                        { label: "Leaf", value: "leaf" },
-                        { label: "Heart Handshake", value: "heart-handshake" }
-                      ]}
-                      onChange={(next) => onChangeItem(index, key, next)}
-                    />
-                  ) : Array.isArray(value) ? (
-                    <TextInput
-                      value={value.join(", ")}
-                      onChange={(next) =>
-                        onChangeItem(
-                          index,
-                          key,
-                          next.split(",").map((entry) => entry.trim()).filter(Boolean),
-                        )
-                      }
-                      placeholder="comma, separated, values"
-                    />
-                  ) : typeof value === "boolean" ? (
-                    <Toggle checked={value} onChange={(next) => onChangeItem(index, key, next)} />
-                  ) : key === "image" || (key === "icon" && sectionId === "journey-glimpse") ? (
-                    <div className="flex flex-col gap-[8px]">
-                      {value && typeof value === "string" && value.startsWith("http") && (
-                        <div className="h-[46px] w-[46px] shrink-0 overflow-hidden rounded-[6px] border border-[#d2d6db] bg-[#f8f9fa] shadow-sm">
-                          <img src={value} alt="Preview" className="h-full w-full object-contain p-1" />
-                        </div>
-                      )}
-                      <TextInput value={String(value)} onChange={(next) => onChangeItem(index, key, next)} />
-                    </div>
-                  ) : (
-                    <TextInput value={String(value)} onChange={(next) => onChangeItem(index, key, next)} />
-                  )}
+                <div className="flex items-center gap-[6px]">
+                  <ChevronRight className={`h-3 w-3 text-[#64748b] transition-transform ${isOpen ? "rotate-90 text-[#0f766e]" : ""}`} />
+                  <span className="text-[10px] font-bold text-[#0f766e]">
+                    {item.label || item.title || `Card ${index + 1}`}
+                    {item.value ? <span className="ml-[6px] font-semibold text-[#1e293b]">({item.value})</span> : ""}
+                  </span>
                 </div>
-              ))}
+
+                <div className="flex items-center gap-[8px]" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    onClick={() => onRemoveItem(index)}
+                    className="flex items-center gap-[3px] text-[9px] font-semibold text-[#dc2626] hover:underline"
+                  >
+                    <Trash2 className="h-[10px] w-[10px]" />
+                    Remove
+                  </button>
+                </div>
+              </div>
+
+              {isOpen && (
+                <div className="p-[10px] grid grid-cols-2 gap-[8px] bg-white">
+                  {fieldEntries.map(([key, value]) => (
+                    <div key={key}>
+                      <FieldLabel>{humanizeKey(key)}</FieldLabel>
+
+                      {key === "icon" && sectionId !== "journey-glimpse" ? (
+                        <SelectField
+                          value={String(value)}
+                          options={[
+                            { label: "None", value: "" },
+                            { label: "Group of People", value: "users" },
+                            { label: "Building", value: "building" },
+                            { label: "Smiley Face", value: "smile" },
+                            { label: "Shield", value: "shield" },
+                            { label: "Phone", value: "phone" },
+                            { label: "Mail", value: "mail" },
+                            { label: "Map Pin", value: "map-pin" },
+                            { label: "Heart", value: "heart" },
+                            { label: "Star", value: "star" },
+                            { label: "Check Circle", value: "check-circle" },
+                            { label: "Info", value: "info" },
+                            { label: "Activity", value: "activity" }
+                          ]}
+                          onChange={(next) => onChangeItem(index, key, next)}
+                        />
+                      ) : Array.isArray(value) ? (
+                        <TextInput
+                          value={value.join(", ")}
+                          onChange={(next) =>
+                            onChangeItem(
+                              index,
+                              key,
+                              next.split(",").map((entry) => entry.trim()).filter(Boolean),
+                            )
+                          }
+                          placeholder="comma, separated, values"
+                        />
+                      ) : typeof value === "boolean" ? (
+                        <Toggle checked={value} onChange={(next) => onChangeItem(index, key, next)} />
+                      ) : key === "image" || (key === "icon" && sectionId === "journey-glimpse") ? (
+                        <div className="flex flex-col gap-[8px]">
+                          {value && typeof value === "string" && value.startsWith("http") && (
+                            <div className="h-[46px] w-[46px] shrink-0 overflow-hidden rounded-[6px] border border-[#d2d6db] bg-[#f8f9fa] shadow-sm">
+                              <img src={value} alt="Preview" className="h-full w-full object-contain p-1" />
+                            </div>
+                          )}
+                          <TextInput value={String(value)} onChange={(next) => onChangeItem(index, key, next)} />
+                        </div>
+                      ) : (
+                        <TextInput value={String(value)} onChange={(next) => onChangeItem(index, key, next)} />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -949,6 +874,8 @@ export default function CmsEditPage() {
         template:
           page.type === "home"
             ? "Homepage"
+            : page.configKey === "aboutPage"
+            ? "About Page"
             : "Standard Page",
 
         parent:
@@ -1021,29 +948,40 @@ export default function CmsEditPage() {
   }, [settings, initialForm]);
 
   const [sectionsDraft, setSectionsDraft] = useState<Array<Record<string, any>>>([]);
-  const [activeSectionIndex, setActiveSectionIndex] = useState(0);
+  const [openSectionIndices, setOpenSectionIndices] = useState<Set<number>>(new Set([0]));
 
   useEffect(() => {
     const cfg = page.configKey && settings ? settings[page.configKey] : undefined;
-    const rawSections = cfg?.sections && cfg.sections.length > 0 ? cfg.sections : defaultLandingSections;
+    const fallbackSections = page.configKey === "aboutPage" ? defaultAboutSections : defaultLandingSections;
+    const rawSections = cfg?.sections && cfg.sections.length > 0 ? cfg.sections : fallbackSections;
     setSectionsDraft(rawSections.map((section: Record<string, any>) => ({ ...section })));
-    setActiveSectionIndex(0);
+    setOpenSectionIndices(new Set([0]));
   }, [settings, page.configKey]);
 
-  const activeSection = sectionsDraft[activeSectionIndex];
+  const toggleSectionAccordion = (index: number) => {
+    setOpenSectionIndices((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  };
 
-  const updateSectionField = (key: string, value: unknown) => {
+  const updateSectionField = (sectionIndex: number, key: string, value: unknown) => {
     setSectionsDraft((previous) =>
       previous.map((section, index) =>
-        index === activeSectionIndex ? { ...section, [key]: value } : section,
+        index === sectionIndex ? { ...section, [key]: value } : section,
       ),
     );
   };
 
-  const updateSectionItem = (itemIndex: number, key: string, value: unknown) => {
+  const updateSectionItem = (sectionIndex: number, itemIndex: number, key: string, value: unknown) => {
     setSectionsDraft((previous) =>
       previous.map((section, index) => {
-        if (index !== activeSectionIndex) return section;
+        if (index !== sectionIndex) return section;
         const items = [...(section.items ?? [])];
         items[itemIndex] = { ...items[itemIndex], [key]: value };
         return { ...section, items };
@@ -1051,10 +989,10 @@ export default function CmsEditPage() {
     );
   };
 
-  const addSectionItem = () => {
+  const addSectionItem = (sectionIndex: number) => {
     setSectionsDraft((previous) =>
       previous.map((section, index) => {
-        if (index !== activeSectionIndex) return section;
+        if (index !== sectionIndex) return section;
         const items = [...(section.items ?? [])];
         const sample = items[0] ?? { label: "", value: "" };
         const blank = Object.fromEntries(
@@ -1067,10 +1005,10 @@ export default function CmsEditPage() {
     );
   };
 
-  const removeSectionItem = (itemIndex: number) => {
+  const removeSectionItem = (sectionIndex: number, itemIndex: number) => {
     setSectionsDraft((previous) =>
       previous.map((section, index) => {
-        if (index !== activeSectionIndex) return section;
+        if (index !== sectionIndex) return section;
         const items = (section.items ?? []).filter((_: unknown, i: number) => i !== itemIndex);
         return { ...section, items };
       }),
@@ -1133,26 +1071,8 @@ export default function CmsEditPage() {
   };
 
   return (
-    <div
-      className="
-        w-full
-        bg-white
-        text-[#172238]
-      "
-    >
-      {/* =================================================
-          FOOTER SPACE RESERVED
-      ================================================= */}
-
-      <div
-        className="
-          flex
-          flex-col
-          px-[16px]
-          pb-[86px]
-          pt-[7px]
-        "
-      >
+    <div className={`${typography.pages} min-h-[calc(100vh-100px)] w-full bg-white text-[#18233b]`}>
+      <div className="flex flex-col px-[18px] pb-[16px] pt-[14px]">
         {/* =================================================
             HEADER
         ================================================= */}
@@ -1476,16 +1396,19 @@ export default function CmsEditPage() {
                     }
                     onChange={(
                       value,
-                    ) =>
-                      updateField(
-                        "template",
-                        value,
-                      )
-                    }
+                    ) => {
+                      updateField("template", value);
+                      if (value === "About Page") {
+                        setSectionsDraft(defaultAboutSections.map((s) => ({ ...s })));
+                      } else if (value === "Homepage" || value === "Landing Page") {
+                        setSectionsDraft(defaultLandingSections.map((s) => ({ ...s })));
+                      }
+                    }}
                     options={[
                       "Homepage",
-                      "Default",
+                      "About Page",
                       "Landing Page",
+                      "Default",
                       "Service Page",
                     ]}
                   />
@@ -1558,118 +1481,152 @@ export default function CmsEditPage() {
                 </span>
               </div>
 
-              {/* SECTION TABS */}
-
-              <div className="mt-[10px] flex shrink-0 flex-wrap gap-[6px]">
-                {sectionsDraft.map((section, index) => (
+              {/* EXPAND / COLLAPSE GLOBAL ACTIONS */}
+              <div className="mt-[10px] flex items-center justify-between border-b border-[#f1f5f9] pb-[8px] mb-[12px]">
+                <span className="text-[10.5px] font-bold text-[#1e293b]">
+                  Page Landing Sections ({sectionsDraft.length})
+                </span>
+                <div className="flex items-center gap-[6px]">
                   <button
-                    key={section._id ?? section.key ?? index}
                     type="button"
-                    onClick={() => setActiveSectionIndex(index)}
-                    className={`flex h-[28px] items-center gap-[5px] rounded-[5px] border px-[11px] text-[9.5px] font-semibold transition ${
-                      index === activeSectionIndex
-                        ? "border-[#166b40] bg-[#0d5c34] text-white"
-                        : section.enabled === false
-                          ? "border-[#e7e7e3] bg-[#f7f7f5] text-[#a2a8b3]"
-                          : "border-[#dedfdb] bg-white text-[#465168] hover:bg-[#f7f7f4]"
-                    }`}
+                    onClick={() => setOpenSectionIndices(new Set(sectionsDraft.map((_, i) => i)))}
+                    className="text-[9.5px] font-semibold text-[#0f766e] hover:underline"
                   >
-                    {section.name ?? section.key ?? `Section ${index + 1}`}
+                    Expand All
                   </button>
-                ))}
+                  <span className="text-[#cbd5e1]">|</span>
+                  <button
+                    type="button"
+                    onClick={() => setOpenSectionIndices(new Set())}
+                    className="text-[9.5px] font-semibold text-[#64748b] hover:underline"
+                  >
+                    Collapse All
+                  </button>
+                </div>
               </div>
 
-              {/* ACTIVE SECTION EDITOR */}
+              {/* INDIVIDUAL COLLAPSIBLE SECTION CARDS */}
+              <div className="flex flex-col gap-[10px]">
+                {sectionsDraft.map((section, sectionIndex) => {
+                  const isOpen = openSectionIndices.has(sectionIndex);
 
-              {activeSection ? (
-                <div className="mt-[12px] flex flex-col gap-[12px] rounded-none border border-[#dedfdb] bg-[#fbfbfa] p-[12px]">
-                  <div className="flex items-center justify-between">
-                    <p className="text-[12px] font-bold text-[#1c5033]">
-                      {activeSection.name ?? activeSection.key}
-                    </p>
+                  return (
+                    <div
+                      key={section._id ?? section.key ?? sectionIndex}
+                      className={`rounded-[6px] border transition ${
+                        isOpen ? "border-[#0d5c34] bg-[#fbfbfa]" : "border-[#cbd5e1] bg-white hover:border-[#94a3b8]"
+                      }`}
+                    >
+                      {/* SECTION CARD HEADER */}
+                      <div
+                        onClick={() => toggleSectionAccordion(sectionIndex)}
+                        className={`flex cursor-pointer items-center justify-between px-[14px] py-[10px] transition ${
+                          isOpen ? "bg-[#f0fdf4] border-b border-[#dcfce7]" : "bg-[#f8fafc]"
+                        }`}
+                      >
+                        <div className="flex items-center gap-[8px]">
+                          <ChevronRight
+                            className={`h-4 w-4 text-[#0d5c34] transition-transform ${
+                              isOpen ? "rotate-90 text-[#166b40]" : ""
+                            }`}
+                          />
+                          <span className="font-mono text-[10px] font-bold text-[#64748b]">
+                            {sectionIndex + 1}.
+                          </span>
+                          <span className="text-[12px] font-bold text-[#1c5033]">
+                            {section.name ?? section.key}
+                          </span>
+                          {section.enabled === false && (
+                            <span className="rounded-[4px] bg-[#f1f5f9] px-[6px] py-[1px] text-[8px] font-bold text-[#94a3b8]">
+                              Disabled
+                            </span>
+                          )}
+                        </div>
 
-                    <div className="flex items-center gap-[8px]">
-                      <span className="text-[9.5px] font-semibold text-[#697386]">
-                        Enabled
-                      </span>
+                        <div className="flex items-center gap-[10px]" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center gap-[6px]">
+                            <span className="text-[9.5px] font-semibold text-[#697386]">Enabled</span>
+                            <Toggle
+                              checked={section.enabled !== false}
+                              onChange={(value) => updateSectionField(sectionIndex, "enabled", value)}
+                            />
+                          </div>
+                        </div>
+                      </div>
 
-                      <Toggle
-                        checked={activeSection.enabled !== false}
-                        onChange={(value) => updateSectionField("enabled", value)}
-                      />
+                      {/* SECTION BODY (ONLY RENDERED WHEN OPEN) */}
+                      {isOpen && (
+                        <div className="flex flex-col gap-[12px] p-[14px] bg-[#fbfbfa]">
+                          <SectionFieldsEditor
+                            section={section}
+                            onFieldChange={(key, value) => updateSectionField(sectionIndex, key, value)}
+                          />
+
+                          {Array.isArray(section.slides) && (
+                            <div className="flex flex-col gap-[8px] pt-[8px] border-t border-[#e8e9e5]">
+                              <p className="text-[11px] font-bold text-[#1c5033]">
+                                Hero Carousel Slides ({section.slides.length})
+                              </p>
+                              <SectionItemsEditor
+                                items={section.slides}
+                                onChangeItem={(itemIndex, key, value) => {
+                                  setSectionsDraft((previous) =>
+                                    previous.map((sec, i) => {
+                                      if (i !== sectionIndex) return sec;
+                                      const slides = [...(sec.slides ?? [])];
+                                      slides[itemIndex] = { ...slides[itemIndex], [key]: value };
+                                      return { ...sec, slides };
+                                    }),
+                                  );
+                                }}
+                                onAddItem={() => {
+                                  setSectionsDraft((previous) =>
+                                    previous.map((sec, i) => {
+                                      if (i !== sectionIndex) return sec;
+                                      const slides = [...(sec.slides ?? [])];
+                                      const blank = {
+                                        title: "NEW HERO SLIDE",
+                                        description: "Enter slide description...",
+                                        image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
+                                        alt: "Hero Banner Slide",
+                                        buttonLabel: "Book Your Stall",
+                                        buttonHref: "/registration/book-a-stand",
+                                        secondaryButtonLabel: "Register as Visitor",
+                                        secondaryButtonHref: "/registration/visitor-registration",
+                                      };
+                                      return { ...sec, slides: [...slides, blank] };
+                                    }),
+                                  );
+                                }}
+                                onRemoveItem={(itemIndex) => {
+                                  setSectionsDraft((previous) =>
+                                    previous.map((sec, i) => {
+                                      if (i !== sectionIndex) return sec;
+                                      const slides = (sec.slides ?? []).filter((_: unknown, idx: number) => idx !== itemIndex);
+                                      return { ...sec, slides };
+                                    }),
+                                  );
+                                }}
+                                sectionId={section.key}
+                              />
+                            </div>
+                          )}
+
+                          {Array.isArray(section.items) && (
+                            <SectionItemsEditor
+                              items={section.items}
+                              onChangeItem={(itemIndex, key, value) => updateSectionItem(sectionIndex, itemIndex, key, value)}
+                              onAddItem={() => addSectionItem(sectionIndex)}
+                              onRemoveItem={(itemIndex) => removeSectionItem(sectionIndex, itemIndex)}
+                              sectionId={section.key}
+                            />
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </div>
-
-                  <SectionFieldsEditor
-                    section={activeSection}
-                    onFieldChange={updateSectionField}
-                  />
-
-                  {Array.isArray(activeSection.slides) && (
-                    <div className="flex flex-col gap-[8px] pt-[8px] border-t border-[#e8e9e5]">
-                      <p className="text-[11px] font-bold text-[#1c5033]">
-                        Hero Carousel Slides ({activeSection.slides.length})
-                      </p>
-                      <SectionItemsEditor
-                        items={activeSection.slides}
-                        onChangeItem={(itemIndex, key, value) => {
-                          setSectionsDraft((previous) =>
-                            previous.map((section, index) => {
-                              if (index !== activeSectionIndex) return section;
-                              const slides = [...(section.slides ?? [])];
-                              slides[itemIndex] = { ...slides[itemIndex], [key]: value };
-                              return { ...section, slides };
-                            }),
-                          );
-                        }}
-                        onAddItem={() => {
-                          setSectionsDraft((previous) =>
-                            previous.map((section, index) => {
-                              if (index !== activeSectionIndex) return section;
-                              const slides = [...(section.slides ?? [])];
-                              const blank = {
-                                title: "NEW HERO SLIDE",
-                                description: "Enter slide description...",
-                                image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
-                                alt: "Hero Banner Slide",
-                                buttonLabel: "Book Your Stall",
-                                buttonHref: "/registration/book-a-stand",
-                                secondaryButtonLabel: "Register as Visitor",
-                                secondaryButtonHref: "/registration/visitor-registration",
-                              };
-                              return { ...section, slides: [...slides, blank] };
-                            }),
-                          );
-                        }}
-                        onRemoveItem={(itemIndex) => {
-                          setSectionsDraft((previous) =>
-                            previous.map((section, index) => {
-                              if (index !== activeSectionIndex) return section;
-                              const slides = (section.slides ?? []).filter((_: unknown, i: number) => i !== itemIndex);
-                              return { ...section, slides };
-                            }),
-                          );
-                        }}
-                        sectionId={activeSection.key}
-                      />
-                    </div>
-                  )}
-
-                  {Array.isArray(activeSection.items) && (
-                    <SectionItemsEditor
-                      items={activeSection.items}
-                      onChangeItem={updateSectionItem}
-                      onAddItem={addSectionItem}
-                      onRemoveItem={removeSectionItem}
-                      sectionId={activeSection.key}
-                    />
-                  )}
-                </div>
-              ) : (
-                <p className="mt-[12px] text-[10px] font-medium text-[#8b929c]">
-                  No sections found for this page yet.
-                </p>
-              )}
+                  );
+                })}
+              </div>
             </section>
 
             {/* =================================================

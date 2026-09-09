@@ -97,6 +97,23 @@ export interface LandingSectionContent {
   location?: string;
   exploreText?: string;
   buttonText?: string;
+  marqueeText?: string;
+  bannerTitle?: string;
+  bannerSubtitle?: string;
+  bannerFeature?: string;
+  formTitle?: string;
+  rightTitle?: string;
+  rightBottomText?: string;
+  centerText1?: string;
+  centerText2?: string;
+  centerText3?: string;
+  websiteUrl?: string;
+  imageBadgeText?: string;
+  headerTitle?: string;
+  titlePrefix?: string;
+  value?: string;
+  badgeLine1?: string;
+  badgeLine2?: string;
   slides?: LandingHeroSlide[];
   items?: LandingSectionItem[];
 }
@@ -316,9 +333,18 @@ export const defaultLandingSections: LandingSectionContent[] = [
     key: "sponsors-attend",
     name: "SponsorsAndAttend",
     enabled: true,
+    titlePrefix: "WHY",
+    titleHighlight: "ATTEND?",
     title: "OUR PROMINENT SPONSORS & PARTNERS",
     subtitle: "Supported by leading ministries, associations, and organic pioneers.",
-    description: "Join hands with industry giants driving India's organic revolution.",
+    description: "Explore innovations, build connections and gain insights that drive better health and stronger businesses.",
+    rightTitle: "WHO SHOULD ATTEND?",
+    rightBottomText: "Whether you're sourcing, learning or networking — this is the place to be!",
+    centerText1: "ONE PLATFORM.",
+    centerText2: "ORGANIC",
+    centerText3: "OPPORTUNITIES.",
+    buttonLabel: "REGISTER AS VISITOR!",
+    buttonHref: "/registration/visitor-registration",
   },
   {
     key: "become-sponsor",
@@ -334,13 +360,31 @@ export const defaultLandingSections: LandingSectionContent[] = [
     key: "sponsorship-categories",
     name: "SponsorshipCategories",
     enabled: true,
+    headerTitle: "SPONSORSHIP OPPORTUNITIES",
     title: "SPONSORSHIP TIERS & PACKAGES",
     subtitle: "Tailored sponsorship packages designed for high brand impact.",
+    bannerTitle: "LIMITED SPONSORSHIP SLOTS AVAILABLE",
+    bannerSubtitle: "Secure your category before it's gone!",
+    bannerFeature: "Featured sponsors get exclusive media coverage & brand promotions.",
+    image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
+    imageAlt: "Bharat Organic Expo - B2B Exhibition and Conference",
+    badgeLine1: "GO ORGANIC",
+    badgeLine2: "GO BETTER",
+    titlePrefix: "ELEVATE YOUR BRAND PRESENCE",
+    titleHighlight: "AT BHARAT ORGANIC EXPO 2027",
+    description: "Build meaningful connections and grow your business with India's biggest organic show.",
+    formTitle: "INTERESTED IN SPONSORING?",
+    buttonLabel: "BROCHURE",
+    buttonHref: "/download/invited card.pdf",
+    secondaryButtonLabel: "ANY QUERY?",
+    secondaryButtonHref: "/contact",
+    tertiaryButtonLabel: "TALK TO US",
+    tertiaryButtonHref: "tel:+919654900525",
     items: [
-      { title: "Title Sponsor", value: "₹25,00,000", description: "Maximum branding across all promotional materials, main stage, and entry arches." },
-      { title: "Platinum Sponsor", value: "₹15,00,000", description: "Prime stall location, VIP lounge access, and dedicated seminar slot." },
-      { title: "Gold Sponsor", value: "₹10,00,000", description: "Featured logo placement, brochure inclusion, and social media promotion." },
-      { title: "Silver Sponsor", value: "₹5,00,000", description: "Branding in delegate kits and official website sponsor directory." },
+      { title: "Title Sponsor", value: "Exclusive", description: "Maximum visibility & brand exclusivity across all promotional materials." },
+      { title: "Powered By Sponsor", value: "Category Tier", description: "Align your brand as the power behind BOE with prime lounge & main stage branding." },
+      { title: "Associate Sponsor", value: "High Impact", description: "High-impact visibility & brand recognition across expo halls." },
+      { title: "Conference Sponsor", value: "Knowledge Tier", description: "Brand association with 20+ global knowledge sessions & workshops." },
     ],
   },
   {
@@ -390,15 +434,17 @@ export const defaultLandingSections: LandingSectionContent[] = [
     key: "topbar",
     name: "Topbar",
     enabled: true,
-    title: "Bharat Organic Expo 2027 | 19-21 February | Pragati Maidan, New Delhi",
-    phoneLabel: "Helpline: +91 98102 42071",
-    contactEmail: "info@bharatorganicexpo.com",
+    title: "Bharat Organic Expo 2027",
+    marqueeText: "500+ SPEAKERS CONFIRMED • EARLY BIRD DISCOUNT ENDING SOON! • JOIN 50,000+ PROFESSIONALS FROM 25+ COUNTRIES",
+    phoneNumber: "+91 96549 00525",
+    contactEmail: "info@namogangewellness.com",
   },
   {
     key: "navbar",
     name: "Header Navigation",
     enabled: true,
     title: "Bharat Organic Expo",
+    logoImage: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
     buttonLabel: "Book Your Stall",
     buttonHref: "/registration/book-a-stand",
     secondaryButtonLabel: "Register as Visitor",
@@ -421,24 +467,33 @@ export const defaultLandingSections: LandingSectionContent[] = [
     name: "Footer & Social Links",
     enabled: true,
     title: "BHARAT ORGANIC EXPO 2027",
-    subtitle: "India's Premier International Organic, Natural & AYUSH Trade Fair.",
-    description: "Connecting organic farmers, manufacturers, exporters, and conscious consumers for a sustainable future.",
-    contactAddress: "Pragati Maidan, New Delhi - 110001, India",
-    phoneNumber: "+91 98102 42071",
-    contactEmail: "info@bharatorganicexpo.com",
-    bottomStatement: "© 2027 Bharat Organic Expo. All Rights Reserved.",
+    subtitle: "A global platform uniting over 500+ exhibitors from across the organic value chain.",
+    description: "Showcasing certified products, advanced agritech, sustainable practices, and the rich heritage of traditional wellness.",
+    logoImage: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
+    partnerLogoImage: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
+    secondaryImage: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
+    tertiaryImage: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
+    contactAddress: "Hall 12, Pragati Maidan, New Delhi, India 110001",
+    phoneNumber: "+91 96549 00525",
+    altPhoneNumber: "+91 98183 53841",
+    contactEmail: "info@namogangewellness.com",
+    websiteUrl: "www.bharatorganicexpo.com",
     items: [
       { label: "Home", href: "/" },
       { label: "About Us", href: "/about" },
-      { label: "Why Exhibit", href: "/why-exhibit" },
-      { label: "Why Visit", href: "/why-visit" },
-      { label: "Exhibition Sectors", href: "/exhibition-categories" },
-      { label: "B2B Meet", href: "/buyer-seller-meet" },
-      { label: "Privacy Policy", href: "/privacy-policy" },
-      { label: "Terms & Conditions", href: "/terms" },
+      { label: "Exhibitor Registration", href: "/registration/book-a-stand" },
+      { label: "Delegate Registration", href: "https://arogya.namogange.org/" },
+      { label: "Conference Tracks", href: "https://arogya.namogange.org/" },
+      { label: "Buyer Seller Meet", href: "/buyer-seller-meet" },
+      { label: "Exhibitor List", href: "/exhibitors" },
+      { label: "Blogs", href: "/blog" },
+      { label: "Awards", href: "/awards" },
+      { label: "Contact Us", href: "/contact" },
     ],
   },
 ];
+
+export { defaultAboutSections } from "./aboutContent";
 
 export function mergeLandingSections(sections?: LandingSectionContent[]): LandingSectionContent[] {
   if (!sections?.length) return defaultLandingSections;

@@ -18,7 +18,6 @@ import {
   Lightbulb,
   Menu,
   Monitor,
-
   Pencil,
   Plus,
   Search,
@@ -45,6 +44,7 @@ type MenuStructureItem = {
   id: string;
   label: string;
   type: string;
+  url?: string;
   icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   children?: MenuStructureItem[];
 };
@@ -52,117 +52,204 @@ type MenuStructureItem = {
 const MENUS: MenuRecord[] = [
   {
     id: 1,
-    name: "Primary Menu",
-    description: "Main website navigation header bar",
-    location: "Header",
+    name: "Primary Header Menu",
+    description: "Main website navigation header bar with parent & child dropdowns",
+    location: "Header Bar",
     status: "Active",
     items: 12,
-    updatedDate: "30 May 2026",
+    updatedDate: "20 May 2026",
     updatedTime: "10:30 AM",
   },
   {
     id: 2,
-    name: "Footer Menu",
-    description: "Footer quick links & compliance",
-    location: "Footer",
+    name: "Registration & Action Menu",
+    description: "Header registration buttons & advisor helpline",
+    location: "Header Action Bar",
     status: "Active",
-    items: 8,
-    updatedDate: "29 May 2026",
-    updatedTime: "04:15 PM",
+    items: 6,
+    updatedDate: "20 May 2026",
+    updatedTime: "10:35 AM",
   },
   {
     id: 3,
-    name: "Mobile Menu",
-    description: "Mobile drawer & overlay navigation",
-    location: "Mobile",
+    name: "Footer Quick Links",
+    description: "Footer 10 key links & navigation",
+    location: "Footer Left",
     status: "Active",
     items: 10,
-    updatedDate: "30 May 2026",
-    updatedTime: "09:20 AM",
+    updatedDate: "20 May 2026",
+    updatedTime: "10:40 AM",
   },
   {
     id: 4,
-    name: "Services Mega Menu",
-    description: "Services dropdown full-width menu",
-    location: "Mega Menu",
+    name: "Footer Legal & Policy Links",
+    description: "Privacy policy, terms & conditions, refund policy",
+    location: "Footer Bottom",
     status: "Active",
-    items: 7,
-    updatedDate: "28 May 2026",
-    updatedTime: "02:45 PM",
+    items: 3,
+    updatedDate: "20 May 2026",
+    updatedTime: "10:45 AM",
   },
   {
     id: 5,
-    name: "Utility Menu",
-    description: "Top utility contact & language bar",
-    location: "Top Bar",
-    status: "Inactive",
-    items: 5,
+    name: "Mobile Drawer Navigation Menu",
+    description: "Mobile bottom sheet drawer & tab bar links",
+    location: "Mobile Drawer",
+    status: "Active",
+    items: 11,
     updatedDate: "20 May 2026",
-    updatedTime: "11:10 AM",
+    updatedTime: "10:50 AM",
   },
   {
     id: 6,
-    name: "Exhibitor & Buyer Menu",
-    description: "Stall booking & buyer registration links",
-    location: "Header Dropdown",
+    name: "User & Portal Logins Menu",
+    description: "Exhibitor, Buyer, Delegates & User Login links",
+    location: "Top Bar Dropdown",
     status: "Active",
-    items: 6,
-    updatedDate: "27 May 2026",
-    updatedTime: "01:15 PM",
+    items: 4,
+    updatedDate: "20 May 2026",
+    updatedTime: "10:55 AM",
   },
   {
     id: 7,
-    name: "Legal & Policy Footer Links",
-    description: "Privacy, terms, and refund policy list",
-    location: "Footer Bottom",
-    status: "Active",
-    items: 4,
-    updatedDate: "25 May 2026",
-    updatedTime: "06:40 PM",
-  },
-  {
-    id: 8,
-    name: "Media & Press Coverage Links",
-    description: "Blogs, news, and press coverage items",
-    location: "Mega Menu",
-    status: "Active",
-    items: 6,
-    updatedDate: "24 May 2026",
-    updatedTime: "11:05 AM",
-  },
-  {
-    id: 9,
-    name: "Expo Helpline & Venue Bar",
-    description: "Quick helpline & venue location bar",
+    name: "Top Bar Utility & Helpline",
+    description: "Email, phone number & announcement ticker",
     location: "Top Bar",
     status: "Active",
     items: 3,
-    updatedDate: "22 May 2026",
-    updatedTime: "08:50 AM",
+    updatedDate: "20 May 2026",
+    updatedTime: "11:00 AM",
   },
 ];
 
-const STRUCTURE: MenuStructureItem[] = [
-  { id: "home", label: "Home", type: "Custom Link", icon: Home },
-  {
-    id: "about",
-    label: "About Us",
-    type: "Page",
-    icon: FolderClosed,
-    children: [
-      { id: "mission", label: "Our Mission", type: "Page", icon: FileText },
-      { id: "vision", label: "Our Vision", type: "Page", icon: FileText },
-    ],
-  },
-  { id: "services", label: "Our Services", type: "Mega Menu", icon: FolderClosed },
-  { id: "help", label: "Who We Help", type: "Page", icon: Heart },
-  { id: "works", label: "How It Works", type: "Page", icon: Settings },
-  { id: "involved", label: "Get Involved", type: "Mega Menu", icon: UsersRound },
-  { id: "contact", label: "Contact Us", type: "Page", icon: Menu },
-  { id: "helpline", label: "Emergency Sewa Support", type: "Custom Link", icon: HelpCircle },
-  { id: "donate", label: "Donate & Support Journey", type: "Page", icon: Heart },
-  { id: "blog", label: "Blogs & Awareness", type: "Category", icon: FileText },
-];
+const MENU_STRUCTURES: Record<number, MenuStructureItem[]> = {
+  1: [
+    { id: "home", label: "Home", type: "Custom Link", url: "/", icon: Home },
+    {
+      id: "about",
+      label: "About Us",
+      type: "Dropdown Parent",
+      url: "/about",
+      icon: FolderClosed,
+      children: [
+        { id: "about-expo", label: "About Expo", type: "Page", url: "/about", icon: FileText },
+        { id: "advisory-board", label: "Advisory Board Members", type: "Page", url: "/about/advisory_board_member", icon: UsersRound },
+        { id: "blogs", label: "Blogs & News", type: "Category", url: "/blog", icon: FileText },
+      ],
+    },
+    {
+      id: "participate",
+      label: "Participate",
+      type: "Dropdown Parent",
+      url: "/why-exhibit",
+      icon: FolderClosed,
+      children: [
+        { id: "why-exhibit", label: "Why Exhibit at ORGANIC EXPO?", type: "Page", url: "/why-exhibit", icon: FileText },
+        { id: "exhibitors", label: "Exhibitor List", type: "Page", url: "/exhibitors", icon: FileText },
+        { id: "why-visit", label: "Why Visit ORGANIC EXPO", type: "Page", url: "/why-visit", icon: FileText },
+        { id: "msme", label: "MSME PMS Scheme", type: "Page", url: "/participate/msme", icon: FileText },
+      ],
+    },
+    { id: "buyer-seller", label: "Buyer-Seller Meet", type: "Page", url: "/buyer-seller-meet", icon: FileText },
+    {
+      id: "opportunities",
+      label: "Opportunities",
+      type: "Dropdown Parent",
+      url: "/sponsorship",
+      icon: FolderClosed,
+      children: [
+        { id: "sponsorship", label: "Sponsorship Opportunities", type: "Page", url: "/sponsorship", icon: FileText },
+        { id: "epromotion", label: "E-Promotion Opportunity", type: "Page", url: "/e-promotion-web", icon: FileText },
+        { id: "partnership", label: "Partnership / Collaboration", type: "Page", url: "/partnership", icon: FileText },
+      ],
+    },
+    { id: "glimpses", label: "Glimpses & Media", type: "Page", url: "/gallery", icon: FileText },
+    { id: "conference", label: "Global Conference", type: "External Link", url: "https://arogya.namogange.org/", icon: ExternalLink },
+    { id: "awards", label: "Organic Awards", type: "Page", url: "/awards", icon: FileText },
+    { id: "contact", label: "Contact Us", type: "Page", url: "/contact", icon: Menu },
+  ],
+  2: [
+    { id: "book-stall", label: "BOOK A STALL", type: "Action CTA", url: "/registration/book-a-stand", icon: FileText },
+    { id: "reg-visitor", label: "REGISTER AS VISITOR", type: "Action CTA", url: "/registration/visitor-registration", icon: FileText },
+    { id: "reg-delegate", label: "DELEGATE REGISTRATION", type: "External Link", url: "https://arogya.namogange.org/", icon: ExternalLink },
+    { id: "reg-buyer", label: "REGISTER AS BUYER", type: "Action CTA", url: "/registration/buyer-registration", icon: FileText },
+    { id: "spon-opp", label: "SPONSORSHIP OPPORTUNITIES", type: "Action CTA", url: "/sponsorship", icon: FileText },
+    { id: "talk-advisor", label: "TALK TO EXPO ADVISOR", type: "Phone Link", url: "tel:+919654900525", icon: HelpCircle },
+  ],
+  3: [
+    { id: "f-home", label: "Home", type: "Footer Link", url: "/", icon: Home },
+    { id: "f-about", label: "About Us", type: "Footer Link", url: "/about", icon: FileText },
+    { id: "f-exhibitor-reg", label: "Exhibitor Registration", type: "Footer Link", url: "/registration/book-a-stand", icon: FileText },
+    { id: "f-delegate-reg", label: "Delegate Registration", type: "External Link", url: "https://arogya.namogange.org/", icon: ExternalLink },
+    { id: "f-conference-tracks", label: "Conference Tracks", type: "External Link", url: "https://arogya.namogange.org/", icon: ExternalLink },
+    { id: "f-bs-meet", label: "Buyer Seller Meet", type: "Footer Link", url: "/buyer-seller-meet", icon: FileText },
+    { id: "f-exhibitors", label: "Exhibitor List", type: "Footer Link", url: "/exhibitors", icon: FileText },
+    { id: "f-blogs", label: "Blogs", type: "Category", url: "/blog", icon: FileText },
+    { id: "f-awards", label: "Awards", type: "Footer Link", url: "/awards", icon: FileText },
+    { id: "f-contact", label: "Contact Us", type: "Footer Link", url: "/contact", icon: Menu },
+  ],
+  4: [
+    { id: "f-privacy", label: "Privacy Policy", type: "Legal Policy", url: "/registration/privacy-policy", icon: FileText },
+    { id: "f-terms", label: "Terms & Conditions", type: "Legal Policy", url: "/registration/terms-and-conditions", icon: FileText },
+    { id: "f-refund", label: "Refund Policy", type: "Legal Policy", url: "/registration/refund-policy", icon: FileText },
+  ],
+  5: [
+    { id: "m-home", label: "Home", type: "Mobile Tab", url: "/", icon: Home },
+    {
+      id: "m-about",
+      label: "About Us",
+      type: "Accordion Parent",
+      url: "/about",
+      icon: FolderClosed,
+      children: [
+        { id: "m-about-expo", label: "About Expo", type: "Sub Menu", url: "/about", icon: FileText },
+        { id: "m-advisory", label: "Advisory Board Members", type: "Sub Menu", url: "/about/advisory_board_member", icon: UsersRound },
+        { id: "m-blogs", label: "Blogs", type: "Sub Menu", url: "/blog", icon: FileText },
+      ],
+    },
+    {
+      id: "m-participate",
+      label: "Participate",
+      type: "Accordion Parent",
+      url: "/why-exhibit",
+      icon: FolderClosed,
+      children: [
+        { id: "m-why-exhibit", label: "Why Exhibit", type: "Sub Menu", url: "/why-exhibit", icon: FileText },
+        { id: "m-exhibitors", label: "Exhibitor List", type: "Sub Menu", url: "/exhibitors", icon: FileText },
+        { id: "m-why-visit", label: "Why Visit", type: "Sub Menu", url: "/why-visit", icon: FileText },
+        { id: "m-msme", label: "MSME PMS Scheme", type: "Sub Menu", url: "/participate/msme", icon: FileText },
+      ],
+    },
+    { id: "m-bs-meet", label: "Buyer-Seller Meet", type: "Mobile Item", url: "/buyer-seller-meet", icon: FileText },
+    {
+      id: "m-opp",
+      label: "Opportunities",
+      type: "Accordion Parent",
+      url: "/sponsorship",
+      icon: FolderClosed,
+      children: [
+        { id: "m-sponsership", label: "Sponsorship", type: "Sub Menu", url: "/sponsorship", icon: FileText },
+        { id: "m-epromo", label: "E-Promotion", type: "Sub Menu", url: "/e-promotion-web", icon: FileText },
+        { id: "m-partner", label: "Partnership / Collaboration", type: "Sub Menu", url: "/partnership", icon: FileText },
+      ],
+    },
+    { id: "m-gallery", label: "Media / Gallery", type: "Mobile Item", url: "/gallery", icon: FileText },
+    { id: "m-conf", label: "Conference", type: "External Link", url: "https://arogya.namogange.org/", icon: ExternalLink },
+    { id: "m-awards", label: "Awards", type: "Mobile Item", url: "/awards", icon: FileText },
+    { id: "m-contact", label: "Contact", type: "Mobile Item", url: "/contact", icon: Menu },
+  ],
+  6: [
+    { id: "l-user", label: "User Login", type: "Portal Login", url: "https://admin.organicexpo.in/login", icon: ExternalLink },
+    { id: "l-exhibitor", label: "Exhibitor Login", type: "Portal Login", url: "/exhibitor-login", icon: FileText },
+    { id: "l-buyer", label: "Buyer Login", type: "Portal Login", url: "/buyer-login", icon: FileText },
+    { id: "l-delegates", label: "Delegates Login", type: "Portal Login", url: "/delegates-login", icon: FileText },
+  ],
+  7: [
+    { id: "t-email", label: "Email: info@namogangewellness.com", type: "Top Bar Email", url: "mailto:info@namogangewellness.com", icon: HelpCircle },
+    { id: "t-phone", label: "Phone: +91 96549 00525", type: "Top Bar Phone", url: "tel:+919654900525", icon: HelpCircle },
+    { id: "t-marquee", label: "Ticker: 500+ SPEAKERS CONFIRMED • EARLY BIRD DISCOUNT ENDING SOON!", type: "Top Bar Ticker", url: "#", icon: Lightbulb },
+  ],
+};
 
 function MetricCard({
   icon,
@@ -207,18 +294,27 @@ function StructureRow({
 
   return (
     <div className={nested ? "ml-[24px] border-l border-dashed border-[#b8c5d6] pl-[10px]" : ""}>
-      <div className="flex min-h-[34px] items-center gap-[8px] rounded-[5px] border border-[#e4e8eb] bg-white px-[10px]">
-        <Icon className="h-[13px] w-[13px] shrink-0 text-[#4d8b69]" strokeWidth={1.8} />
+      <div className="flex min-h-[34px] items-center gap-[8px] rounded-[5px] border border-[#e4e8eb] bg-white px-[10px] py-[4px]">
+        <Icon className="h-[13px] w-[13px] shrink-0 text-[#075b33]" strokeWidth={1.8} />
 
-        <span className="min-w-0 flex-1 truncate text-[9px] font-semibold text-[#32405d]">
-          {item.label}
-        </span>
+        <div className="flex flex-1 items-center gap-[6px] min-w-0">
+          <span className="truncate text-[9.5px] font-bold text-[#1a2b4c]">
+            {item.label}
+          </span>
+          {item.url && (
+            <span className="truncate rounded-[3px] bg-[#f0f9f4] px-[5px] py-[1px] font-mono text-[8px] font-semibold text-[#075b33] border border-[#cde8d7]">
+              {item.url}
+            </span>
+          )}
+        </div>
 
-        <span className="shrink-0 text-[8px] font-semibold text-[#68758d]">
+        <span className="shrink-0 rounded-[3px] bg-[#f1f5f9] px-[5px] py-[1px] text-[8px] font-bold text-[#64748b]">
           {item.type}
         </span>
 
-        <ChevronDown className="h-[11px] w-[11px] shrink-0 text-[#657188]" />
+        {item.children?.length ? (
+          <ChevronDown className="h-[11px] w-[11px] shrink-0 text-[#075b33] rotate-180" />
+        ) : null}
       </div>
 
       {item.children?.length ? (
@@ -237,7 +333,6 @@ export default function NavigationMenusPage() {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("All Status");
   const [selectedMenuId, setSelectedMenuId] = useState(1);
-  const [selectedPreview, setSelectedPreview] = useState("Primary Menu");
   const [activeTab, setActiveTab] = useState<"Menu Structure" | "Menu Settings">("Menu Structure");
 
   const rows = useMemo(() => {
@@ -256,6 +351,8 @@ export default function NavigationMenusPage() {
 
   const selectedMenu =
     MENUS.find((item) => item.id === selectedMenuId) ?? MENUS[0];
+
+  const currentStructure = MENU_STRUCTURES[selectedMenuId] ?? MENU_STRUCTURES[1];
 
   return (
     <main
@@ -298,7 +395,7 @@ export default function NavigationMenusPage() {
             <button
               type="button"
               onClick={() => router.push("/navigation-menus/new")}
-              className="inline-flex h-[34px] items-center gap-[6px] rounded-[6px] bg-[linear-gradient(180deg,#076636_0%,#03542c_100%)] px-[16px] text-[10px] font-semibold text-white shadow-[0_4px_10px_rgba(5,94,49,.12)] transition hover:opacity-95"
+              className="inline-flex h-[34px] items-center gap-[6px] rounded-[6px] bg-[linear-gradient(180deg,#076636_0%,#03542c_100%)] px-[16px] text-[10px] font-semibold text-white shadow-[0_4px_10px_rgba(0,0,0,.12)] transition hover:opacity-95"
             >
               <Plus className="h-[14px] w-[14px]" />
               Add New Menu
@@ -313,7 +410,7 @@ export default function NavigationMenusPage() {
             iconClass="bg-emerald-50 text-emerald-700"
             label="Total Menus"
             value={MENUS.length.toString()}
-            note="All navigation menus"
+            note="Bharat Organic Expo menus"
           />
 
           <MetricCard
@@ -321,7 +418,7 @@ export default function NavigationMenusPage() {
             iconClass="bg-violet-50 text-violet-700"
             label="Active Menus"
             value={MENUS.filter((m) => m.status === "Active").length.toString()}
-            note="Currently live on website"
+            note="Live website menus"
           />
 
           <MetricCard
@@ -329,7 +426,7 @@ export default function NavigationMenusPage() {
             iconClass="bg-amber-50 text-amber-700"
             label="Inactive Menus"
             value={MENUS.filter((m) => m.status === "Inactive").length.toString()}
-            note="Not displayed on website"
+            note="Hidden or draft menus"
           />
 
           <MetricCard
@@ -396,7 +493,6 @@ export default function NavigationMenusPage() {
                           key={item.id}
                           onClick={() => {
                             setSelectedMenuId(item.id);
-                            setSelectedPreview(item.name);
                           }}
                           className={`h-[52px] cursor-pointer border-b border-[#eef0f2] align-middle last:border-b-0 hover:bg-slate-50/60 ${selectedMenuId === item.id ? "bg-[#fbfefc]" : ""
                             }`}
@@ -407,7 +503,7 @@ export default function NavigationMenusPage() {
 
                           <td className="px-[8px]">
                             <div className="min-w-[160px]">
-                              <p className="text-[10px] font-semibold text-[#19274a]">
+                              <p className="text-[10px] font-bold text-[#19274a]">
                                 {item.name}
                               </p>
                               <p className="mt-[2px] text-[8.5px] font-semibold text-[#68758d]">
@@ -417,7 +513,7 @@ export default function NavigationMenusPage() {
                           </td>
 
                           <td className="px-[8px]">
-                            <span className="inline-flex rounded-[4px] border border-[#dce1e6] bg-white px-[7px] py-[2.5px] text-[8px] font-semibold text-[#4f5c73]">
+                            <span className="inline-flex rounded-[4px] border border-[#dce1e6] bg-white px-[7px] py-[2.5px] text-[8px] font-bold text-[#075b33]">
                               {item.location}
                             </span>
                           </td>
@@ -479,39 +575,31 @@ export default function NavigationMenusPage() {
           {/* RIGHT PREVIEW */}
           <section className="flex flex-col justify-between rounded-[8px] border border-[#e7e9ec] bg-white p-[10px] shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
             <div className="flex items-center justify-between gap-[12px]">
-              <h2 className="text-[12px] font-semibold text-[#19274a]">
-                Menu Preview
+              <h2 className="text-[12px] font-bold text-[#19274a]">
+                Menu Structure & Live Preview ({selectedMenu.name})
               </h2>
 
               <select
-                value={selectedPreview}
-                onChange={(event) => setSelectedPreview(event.target.value)}
-                className="h-[32px] min-w-[160px] rounded-[5px] border border-[#dfe4e8] bg-white px-[10px] text-[9px] font-semibold text-[#35445f] outline-none"
+                value={selectedMenuId}
+                onChange={(event) => setSelectedMenuId(Number(event.target.value))}
+                className="h-[32px] min-w-[180px] rounded-[5px] border border-[#dfe4e8] bg-white px-[10px] text-[9px] font-semibold text-[#35445f] outline-none"
               >
                 {MENUS.map((item) => (
-                  <option key={item.id}>{item.name}</option>
+                  <option key={item.id} value={item.id}>{item.name}</option>
                 ))}
               </select>
             </div>
 
-            <div className="mt-[8px] overflow-x-auto rounded-[5px] bg-[linear-gradient(180deg,#076636_0%,#03542c_100%)] px-[12px]">
-              <div className="flex h-[32px] min-w-[540px] items-center justify-between gap-[10px] text-white">
-                {[
-                  "Home",
-                  "About Us",
-                  "Our Services",
-                  "Who We Help",
-                  "How It Works",
-                  "Get Involved",
-                  "Contact Us",
-                ].map((item, index) => (
+            <div className="mt-[8px] overflow-x-auto rounded-[5px] bg-[linear-gradient(180deg,#076636_0%,#03542c_100%)] px-[10px] py-[6px] [&::-webkit-scrollbar]:h-[3px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-emerald-300/50">
+              <div className="flex flex-nowrap items-center gap-[10px] whitespace-nowrap text-white">
+                {currentStructure.map((item) => (
                   <span
-                    key={item}
-                    className="flex shrink-0 items-center gap-[3px] text-[8px] font-semibold"
+                    key={item.id}
+                    className="flex shrink-0 items-center gap-[3px] text-[7.5px] font-extrabold uppercase tracking-wider text-white"
                   >
-                    {item}
-                    {[1, 2, 5].includes(index) ? (
-                      <ChevronDown className="h-[9px] w-[9px]" />
+                    {item.label}
+                    {item.children?.length ? (
+                      <ChevronDown className="h-[8px] w-[8px] text-[#facc15]" />
                     ) : null}
                   </span>
                 ))}
@@ -539,11 +627,11 @@ export default function NavigationMenusPage() {
               <div className="mt-[8px]">
                 <div className="flex items-center gap-[6px] text-[8.5px] font-semibold text-[#66738b]">
                   <HelpCircle className="h-[12px] w-[12px] text-[#4d8b69]" />
-                  Drag and drop items to reorder. Click on an item to edit.
+                  Parent items have dropdown child menus. Each badge shows its exact URL route.
                 </div>
 
                 <div className="mt-[8px] space-y-[4px]">
-                  {STRUCTURE.map((item) => (
+                  {currentStructure.map((item) => (
                     <StructureRow key={item.id} item={item} />
                   ))}
                 </div>
@@ -586,14 +674,14 @@ export default function NavigationMenusPage() {
 
             <div>
               <h3 className="text-[11.5px] font-semibold text-[#285039]">
-                Quick Tips
+                Bharat Organic Expo Menu Structure Tips
               </h3>
 
               <div className="mt-[6px] space-y-[4px]">
                 {[
-                  "Keep your primary menu simple and user-friendly.",
-                  "Use mega menus for large dropdowns like Services.",
-                  "Mobile menu is used on all mobile devices.",
+                  "Primary Header Menu supports Parent & Child dropdown items for About Us, Participate & Opportunities.",
+                  "Registration Action Menu links directly to Book Stall, Visitor, Delegate & Buyer registration pages.",
+                  "Mobile Drawer Navigation mirrors all website links for seamless mobile device navigation.",
                 ].map((tip) => (
                   <div key={tip} className="flex items-center gap-[6px]">
                     <CheckCircle2 className="h-[11px] w-[11px] shrink-0 text-[#2b8154]" />
@@ -612,9 +700,9 @@ export default function NavigationMenusPage() {
             </div>
 
             <div className="min-w-0 overflow-hidden">
-              <p className="text-[10px] font-semibold text-[#1f2d52]">Need Help?</p>
+              <p className="text-[10px] font-semibold text-[#1f2d52]">Need Navigation Help?</p>
               <p className="mt-[2px] text-[8.5px] font-semibold text-[#68758d]">
-                Learn how to create and manage menus.
+                Configure header, footer & mobile links.
               </p>
 
               <button className="mt-[6px] inline-flex h-[26px] items-center gap-[5px] rounded-[4px] border border-[#dfe4e8] bg-white px-[8px] text-[8px] font-semibold text-[#35445f]">
