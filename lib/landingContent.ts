@@ -25,6 +25,16 @@ export interface LandingSectionItem {
   location?: string;
   date?: string;
   readTime?: string;
+  main?: string;
+  sub?: string;
+  num?: string;
+  title1?: string;
+  title2?: string;
+  val?: string;
+  desc?: string;
+  companyName1?: string;
+  companyName2?: string;
+  initials?: string;
 }
 
 export interface LandingHeroSlide {
@@ -267,7 +277,7 @@ export const defaultLandingSections: LandingSectionContent[] = [
     enabled: true,
     title: "WHO SHOULD VISIT & EXHIBIT",
     items: [
-      { title: "UNIVERSITY/", subtitle: "ACADEMIC PARTNERS", icon: "GraduationCap", color: "text-orange-500", label: "UNIVERSITY/ ACADEMIC PARTNERS" },
+      { title: "UNIVERSITY", subtitle: "ACADEMIC PARTNERS", icon: "GraduationCap", color: "text-orange-500", label: "UNIVERSITY ACADEMIC PARTNERS" },
       { title: "HEALTHCARE", subtitle: "LEADERS", icon: "Stethoscope", color: "text-[#3b8c2a]", label: "HEALTHCARE LEADERS" },
       { title: "GOVERNMENT", subtitle: "BODIES", icon: "Landmark", color: "text-blue-500", label: "GOVERNMENT BODIES" },
       { title: "AYUSH", subtitle: "INDUSTRY", icon: "Leaf", color: "text-green-600", label: "AYUSH INDUSTRY" },

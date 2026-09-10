@@ -59,6 +59,11 @@ import { defaultLandingSections } from "@/lib/landingContent";
 import { defaultAboutSections } from "@/lib/aboutContent";
 import { defaultAdvisorySections } from "@/lib/advisoryContent";
 import { defaultBlogSections } from "@/lib/blogContent";
+import { defaultParticipateAsExhibitorSections } from "@/lib/participateAsExhibitorContent";
+import { defaultWhyVisitSections } from "@/lib/whyVisitContent";
+import { defaultWhyExhibitSections } from "@/lib/whyExhibitContent";
+import { defaultMsmeSections } from "@/lib/msmeContent";
+import { defaultExhibitorsSections } from "@/lib/exhibitorsContent";
 import typography from "../../PagesTypography.module.css";
 import Swal from "sweetalert2";
 
@@ -619,18 +624,33 @@ function SectionItemsEditor({
                           value={String(value)}
                           options={[
                             { label: "None", value: "" },
-                            { label: "Group of People", value: "users" },
-                            { label: "Building", value: "building" },
-                            { label: "Smiley Face", value: "smile" },
-                            { label: "Shield", value: "shield" },
-                            { label: "Phone", value: "phone" },
-                            { label: "Mail", value: "mail" },
-                            { label: "Map Pin", value: "map-pin" },
-                            { label: "Heart", value: "heart" },
-                            { label: "Star", value: "star" },
-                            { label: "Check Circle", value: "check-circle" },
-                            { label: "Info", value: "info" },
-                            { label: "Activity", value: "activity" }
+                            { label: "Group of People (Users)", value: "Users" },
+                            { label: "Building / Company (Building2)", value: "Building2" },
+                            { label: "Globe / International", value: "Globe" },
+                            { label: "Leaf / Organic", value: "Leaf" },
+                            { label: "Graduation Cap / Academic", value: "GraduationCap" },
+                            { label: "Stethoscope / Healthcare", value: "Stethoscope" },
+                            { label: "Landmark / Government", value: "Landmark" },
+                            { label: "Shield Check / Verified", value: "ShieldCheck" },
+                            { label: "Handshake / Partnership", value: "Handshake" },
+                            { label: "Target / Vision", value: "Target" },
+                            { label: "Trending Up / Growth", value: "TrendingUp" },
+                            { label: "Award / Achievement", value: "Award" },
+                            { label: "Lightbulb / Innovation", value: "Lightbulb" },
+                            { label: "Mic / Speaker", value: "Mic" },
+                            { label: "Calendar / Dates", value: "CalendarDays" },
+                            { label: "Eye / View", value: "Eye" },
+                            { label: "Sprout / Plant", value: "Sprout" },
+                            { label: "Heart Pulse / Health", value: "HeartPulse" },
+                            { label: "Trophy / Winner", value: "Trophy" },
+                            { label: "Megaphone / Visibility", value: "Megaphone" },
+                            { label: "Phone", value: "Phone" },
+                            { label: "Mail", value: "Mail" },
+                            { label: "Map Pin", value: "MapPin" },
+                            { label: "Heart", value: "Heart" },
+                            { label: "Star", value: "Star" },
+                            { label: "Check Circle", value: "CheckCircle" },
+                            { label: "Info", value: "Info" },
                           ]}
                           onChange={(next) => onChangeItem(index, key, next)}
                         />
@@ -883,6 +903,16 @@ export default function CmsEditPage() {
             ? "Advisory Board"
             : page.configKey === "blogPage"
             ? "Blogs & News"
+            : page.configKey === "participateAsExhibitorPage"
+            ? "Participate as Exhibitor"
+            : page.configKey === "whyVisitPage"
+            ? "Why Visit"
+            : page.configKey === "whyExhibitPage"
+            ? "Why Exhibit"
+            : page.configKey === "msmePage"
+            ? "MSME PMS Scheme"
+            : page.configKey === "exhibitorsPage"
+            ? "Exhibitors List"
             : "Standard Page",
 
         parent:
@@ -966,6 +996,16 @@ export default function CmsEditPage() {
         ? defaultAdvisorySections
         : page.configKey === "blogPage"
         ? defaultBlogSections
+        : page.configKey === "participateAsExhibitorPage"
+        ? defaultParticipateAsExhibitorSections
+        : page.configKey === "whyVisitPage"
+        ? defaultWhyVisitSections
+        : page.configKey === "whyExhibitPage"
+        ? defaultWhyExhibitSections
+        : page.configKey === "msmePage"
+        ? defaultMsmeSections
+        : page.configKey === "exhibitorsPage"
+        ? defaultExhibitorsSections
         : defaultLandingSections;
     const rawSections = cfg?.sections && cfg.sections.length > 0 ? cfg.sections : fallbackSections;
     setSectionsDraft(rawSections.map((section: Record<string, any>) => ({ ...section })));
@@ -1412,13 +1452,23 @@ export default function CmsEditPage() {
                       value,
                     ) => {
                       updateField("template", value);
-                      if (value === "About Page") {
+                      if (value === "About Page" || value === "About Us") {
                         setSectionsDraft(defaultAboutSections.map((s) => ({ ...s })));
                       } else if (value === "Advisory Board") {
                         setSectionsDraft(defaultAdvisorySections.map((s) => ({ ...s })));
                       } else if (value === "Blogs & News") {
                         setSectionsDraft(defaultBlogSections.map((s) => ({ ...s })));
-                      } else if (value === "Homepage" || value === "Landing Page") {
+                      } else if (value === "Participate as Exhibitor") {
+                        setSectionsDraft(defaultParticipateAsExhibitorSections.map((s) => ({ ...s })));
+                      } else if (value === "Why Visit") {
+                        setSectionsDraft(defaultWhyVisitSections.map((s) => ({ ...s })));
+                      } else if (value === "Why Exhibit") {
+                        setSectionsDraft(defaultWhyExhibitSections.map((s) => ({ ...s })));
+                      } else if (value === "MSME PMS Scheme") {
+                        setSectionsDraft(defaultMsmeSections.map((s) => ({ ...s })));
+                      } else if (value === "Exhibitors List") {
+                        setSectionsDraft(defaultExhibitorsSections.map((s) => ({ ...s })));
+                      } else if (value === "Homepage" || value === "Landing Page" || value === "Home") {
                         setSectionsDraft(defaultLandingSections.map((s) => ({ ...s })));
                       }
                     }}
@@ -1427,9 +1477,13 @@ export default function CmsEditPage() {
                       "About Page",
                       "Advisory Board",
                       "Blogs & News",
-                      "Landing Page",
-                      "Default",
-                      "Service Page",
+                      "Participate as Exhibitor",
+                      "Why Visit",
+                      "Why Exhibit",
+                      "MSME PMS Scheme",
+                      "Exhibitors List",
+                      "Our Services",
+                      "Contact Us",
                     ]}
                   />
                 </div>
@@ -1447,7 +1501,7 @@ export default function CmsEditPage() {
                       value,
                     ) => {
                       updateField("parent", value);
-                      if (value === "About Us") {
+                      if (value === "About Us" || value === "About Page") {
                         setSectionsDraft(defaultAboutSections.map((s) => ({ ...s })));
                         updateField("template", "About Page");
                       } else if (value === "Advisory Board") {
@@ -1456,6 +1510,21 @@ export default function CmsEditPage() {
                       } else if (value === "Blogs & News") {
                         setSectionsDraft(defaultBlogSections.map((s) => ({ ...s })));
                         updateField("template", "Blogs & News");
+                      } else if (value === "Participate as Exhibitor") {
+                        setSectionsDraft(defaultParticipateAsExhibitorSections.map((s) => ({ ...s })));
+                        updateField("template", "Participate as Exhibitor");
+                      } else if (value === "Why Visit") {
+                        setSectionsDraft(defaultWhyVisitSections.map((s) => ({ ...s })));
+                        updateField("template", "Why Visit");
+                      } else if (value === "Why Exhibit") {
+                        setSectionsDraft(defaultWhyExhibitSections.map((s) => ({ ...s })));
+                        updateField("template", "Why Exhibit");
+                      } else if (value === "MSME PMS Scheme") {
+                        setSectionsDraft(defaultMsmeSections.map((s) => ({ ...s })));
+                        updateField("template", "MSME PMS Scheme");
+                      } else if (value === "Exhibitors List") {
+                        setSectionsDraft(defaultExhibitorsSections.map((s) => ({ ...s })));
+                        updateField("template", "Exhibitors List");
                       } else if (value === "Home") {
                         setSectionsDraft(defaultLandingSections.map((s) => ({ ...s })));
                         updateField("template", "Homepage");
@@ -1467,7 +1536,14 @@ export default function CmsEditPage() {
                       "About Us",
                       "Advisory Board",
                       "Blogs & News",
+                      "Participate as Exhibitor",
+                      "Why Visit",
+                      "Why Exhibit",
+                      "MSME PMS Scheme",
+                      "Exhibitors List",
                       "Our Services",
+                      "Contact Us",
+                      ...pages.map((p) => p.title).filter((t) => !["Home", "About Us", "Advisory Board", "Blogs & News", "Participate as Exhibitor", "Why Visit", "Why Exhibit", "MSME PMS Scheme", "Exhibitors List", "Our Services", "Contact Us"].includes(t)),
                     ]}
                   />
 
