@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const apiOrigin = new URL(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000").origin;
-const siteOrigin = new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://mokshasewa.org").origin;
+const siteOrigin = new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3002").origin;
 const scriptSrcEval = process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'";
 
 const csp = [

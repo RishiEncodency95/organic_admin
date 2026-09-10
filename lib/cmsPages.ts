@@ -1,4 +1,4 @@
-export const PUBLIC_SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://mokshasewa.org").replace(/\/$/, "");
+export const PUBLIC_SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3002").replace(/\/$/, "");
 
 export type PageStatus = "Published" | "Draft";
 
@@ -76,6 +76,7 @@ const pageDefinitions = [
   ["exhibitorsPage", "Exhibitors List", "/exhibitors", "page"],
   ["buyerSellerMeetPage", "Buyer-Seller Meet", "/buyer-seller-meet", "page"],
   ["galleryPage", "Glimpses & Gallery", "/gallery", "page"],
+  ["awardsPage", "Awards", "/awards", "page"],
   ["servicesPage", "Our Services", "/our-services", "page"],
   ["contactPage", "Contact Us", "/contact", "page"],
 ] as const;

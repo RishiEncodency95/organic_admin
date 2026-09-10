@@ -66,6 +66,7 @@ import { defaultMsmeSections } from "@/lib/msmeContent";
 import { defaultExhibitorsSections } from "@/lib/exhibitorsContent";
 import { defaultBuyerSellerMeetSections } from "@/lib/buyerSellerMeetContent";
 import { defaultGallerySections } from "@/lib/galleryContent";
+import { defaultAwardsSections } from "@/lib/awardsContent";
 import typography from "../../PagesTypography.module.css";
 import Swal from "sweetalert2";
 
@@ -917,6 +918,8 @@ export default function CmsEditPage() {
             ? "Buyer-Seller Meet"
             : page.configKey === "galleryPage"
             ? "Glimpses & Gallery"
+            : page.configKey === "awardsPage"
+            ? "Excellence Awards"
             : page.configKey === "servicesPage"
             ? "Our Services"
             : page.configKey === "contactPage"
@@ -930,8 +933,8 @@ export default function CmsEditPage() {
 
         metaTitle:
           page.type === "home"
-            ? "Moksha Sewa – Dignity in Every Final Journey"
-            : `${page.title} – Moksha Sewa`,
+            ? "Bharat Organic Expo – International Trade Fair on Organic Products"
+            : `${page.title} – Bharat Organic Expo`,
 
         metaDescription: page.seo?.metaDescription ?? "",
         metaKeywords: page.seo?.metaKeywords ?? "",
@@ -998,6 +1001,8 @@ export default function CmsEditPage() {
           ? "Buyer-Seller Meet"
           : page.configKey === "galleryPage"
           ? "Glimpses & Gallery"
+          : page.configKey === "awardsPage"
+          ? "Excellence Awards"
           : page.configKey === "servicesPage"
           ? "Our Services"
           : page.configKey === "contactPage"
@@ -1050,6 +1055,8 @@ export default function CmsEditPage() {
         ? defaultBuyerSellerMeetSections
         : page.configKey === "galleryPage"
         ? defaultGallerySections
+        : page.configKey === "awardsPage"
+        ? defaultAwardsSections
         : defaultLandingSections;
     const rawSections = cfg?.sections && cfg.sections.length > 0 ? cfg.sections : fallbackSections;
     setSectionsDraft(rawSections.map((section: Record<string, any>) => ({ ...section })));
@@ -1516,6 +1523,8 @@ export default function CmsEditPage() {
                         setSectionsDraft(defaultBuyerSellerMeetSections.map((s) => ({ ...s })));
                       } else if (value === "Glimpses & Gallery" || value === "Gallery") {
                         setSectionsDraft(defaultGallerySections.map((s) => ({ ...s })));
+                      } else if (value === "Excellence Awards" || value === "Awards") {
+                        setSectionsDraft(defaultAwardsSections.map((s) => ({ ...s })));
                       } else if (value === "Homepage" || value === "Landing Page" || value === "Home") {
                         setSectionsDraft(defaultLandingSections.map((s) => ({ ...s })));
                       }
@@ -1531,6 +1540,7 @@ export default function CmsEditPage() {
                       "Exhibitors List",
                       "Buyer-Seller Meet",
                       "Glimpses & Gallery",
+                      "Excellence Awards",
                       "Our Services",
                       "Contact Us",
                     ]}
