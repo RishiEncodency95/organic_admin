@@ -1,4 +1,5 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
+import { authApi } from "@/lib/authApi";
 
 export interface AdminUser {
   id: string;
@@ -7,8 +8,6 @@ export interface AdminUser {
   phone: string;
   avatarUrl?: string;
   userType: "INTERNAL" | "VOLUNTEER" | "DONOR";
-  // Resolved at login time for UI purposes only — every actual API call is re-authorized fresh
-  // server-side (PRD §3.2 "fail closed"), so a stale permission here can never grant real access.
   roleSlug?: string;
   permissions: string[];
 }
@@ -23,6 +22,8 @@ interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   hydrated: boolean;
+  loading: boolean;
+  error: string | null;
 }
 
 const initialState: AuthState = {
@@ -30,7 +31,34 @@ const initialState: AuthState = {
   accessToken: null,
   refreshToken: null,
   hydrated: false,
+  loading: false,
+  error: null,
 };
+
+// Async Thunks
+export const loginAdmin = createAsyncThunk(
+  "auth/loginAdmin",
+  async ({ email, password, totpCode }: { email: string; password: string; totpCode?: string }, { rejectWithValue }) => {
+    try {
+      const result = await authApi.login(email, password, totpCode);
+      return result;
+    } catch (err: any) {
+      return rejectWithValue(err);
+    }
+  }
+);
+
+export const verifyTwoFactor = createAsyncThunk(
+  "auth/verifyTwoFactor",
+  async ({ totpCode, tempToken }: { totpCode: string; tempToken: string }, { rejectWithValue }) => {
+    try {
+      const result = await authApi.verifyTwoFactor(totpCode, tempToken);
+      return result;
+    } catch (err: any) {
+      return rejectWithValue(err);
+    }
+  }
+);
 
 const authSlice = createSlice({
   name: "auth",
@@ -45,13 +73,10 @@ const authSlice = createSlice({
       state.accessToken = action.payload.accessToken;
       state.refreshToken = action.payload.refreshToken;
     },
-    // Patches the logged-in admin's own display fields after a self-edit (e.g. via the Staff
-    // page) — without this, name/email changes wouldn't show in the Topbar/dashboard until the
-    // next login, since `admin` here is only ever set once at login/hydration.
     updateAdmin: (state, action: PayloadAction<Partial<AdminUser>>) => {
       if (state.admin) state.admin = { ...state.admin, ...action.payload };
     },
-    hydrate: (state, action: PayloadAction<Omit<AuthState, "hydrated"> | null>) => {
+    hydrate: (state, action: PayloadAction<Omit<AuthState, "hydrated" | "loading" | "error"> | null>) => {
       if (action.payload) {
         state.admin = action.payload.admin;
         state.accessToken = action.payload.accessToken;
@@ -65,6 +90,35 @@ const authSlice = createSlice({
       state.refreshToken = null;
     },
   },
+  extraReducers: (builder) => {
+    builder
+      // loginAdmin cases
+      .addCase(loginAdmin.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(loginAdmin.fulfilled, (state) => {
+        state.loading = false;
+        // We do not set admin state here automatically because the UI might need to handle 2FA branching.
+        // It relies on dispatching setCredentials from the component after unwrapping.
+      })
+      .addCase(loginAdmin.rejected, (state, action) => {
+        state.loading = false;
+        state.error = (action.payload as any)?.message || action.error.message || "Failed to login";
+      })
+      // verifyTwoFactor cases
+      .addCase(verifyTwoFactor.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(verifyTwoFactor.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(verifyTwoFactor.rejected, (state, action) => {
+        state.loading = false;
+        state.error = (action.payload as any)?.message || action.error.message || "Failed to verify 2FA";
+      });
+  }
 });
 
 export const { setCredentials, setTokens, updateAdmin, hydrate, logout } = authSlice.actions;
