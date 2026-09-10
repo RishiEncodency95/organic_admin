@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setCredentials, logout } from "@/store/slices/authSlice";
+import { setCredentials, logout, loginAdmin, verifyTwoFactor } from "@/store/slices/authSlice";
 import { authApi } from "@/lib/authApi";
 import { ApiRequestError } from "@/lib/api";
 import { Input } from "@/components/ui/Input";
@@ -185,7 +185,7 @@ export default function LoginPage() {
 
     try {
       if (step === "credentials") {
-        const result = await authApi.login(email, password);
+        const result = await dispatch(loginAdmin({ email, password })).unwrap();
 
         if (result.requiresTwoFactor) {
           setTempToken(result.tempToken || "");
@@ -240,9 +240,9 @@ export default function LoginPage() {
 
         let res: any;
         if (tempToken) {
-          res = await authApi.verifyTwoFactor(totpCode, tempToken);
+          res = await dispatch(verifyTwoFactor({ totpCode, tempToken })).unwrap();
         } else {
-          res = await authApi.login(email, password, totpCode);
+          res = await dispatch(loginAdmin({ email, password, totpCode })).unwrap();
         }
 
         const data = res?.data || res;
