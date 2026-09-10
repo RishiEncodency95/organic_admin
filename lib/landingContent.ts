@@ -35,6 +35,8 @@ export interface LandingSectionItem {
   companyName1?: string;
   companyName2?: string;
   initials?: string;
+  question?: string;
+  answer?: string;
 }
 
 export interface LandingHeroSlide {
@@ -110,6 +112,19 @@ export interface LandingSectionContent {
   supportMissionDescription?: string;
   buttonLabel?: string;
   buttonHref?: string;
+  primaryButton?: string;
+  secondaryButton?: string;
+  primaryButtonHref?: string;
+  headingBefore?: string;
+  headingHighlight?: string;
+  leftCardTitle?: string;
+  leftCardDescription?: string;
+  rightCardTitle?: string;
+  rightCardDescription?: string;
+  supportText?: string;
+  services?: string[];
+  disclaimerTitle?: string;
+  disclaimerText?: string;
   secondaryButtonLabel?: string;
   secondaryButtonHref?: string;
   tertiaryButtonLabel?: string;

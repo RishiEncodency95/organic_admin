@@ -188,11 +188,36 @@ export const defaultAboutSections: LandingSectionContent[] = [
     image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
     secondaryImage: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
     items: [
-      { title: "What is the Bharat Organic Expo 2027?", description: "It is India's premier international exhibition & conference dedicated to organic products, natural healthcare, Ayurveda, and sustainable living solutions under one integrated platform." },
-      { title: "Who should attend this expo?", description: "Organic farmers, wholesale buyers, retailers, distributors, wellness entrepreneurs, policymakers, and international trade delegations looking to discover authentic organic products and build global partnerships." },
-      { title: "What are the key highlights of the expo?", description: "The event features a large international exhibition pavilion, technical knowledge conferences, B2B buyer-seller meets, and prestigious industry excellence recognition programs." },
-      { title: "What industries are covered in the expo?", description: "Key sectors include Certified Organic Foods, Natural Herbal Healthcare, Ayurveda, Organic Farming Inputs, Eco-Friendly Packaging, and Sustainable Agriculture Technologies." },
-      { title: "How can I participate in the expo?", description: "You can register as an exhibitor, visitor, B2B buyer, or conference delegate directly on our website or by getting in touch with our event help desk." },
+      {
+        question: "What is the Bharat Organic Expo 2027?",
+        answer: "It is India's premier international exhibition & conference dedicated to organic products, natural healthcare, Ayurveda, and sustainable living solutions under one integrated platform.",
+        title: "What is the Bharat Organic Expo 2027?",
+        description: "It is India's premier international exhibition & conference dedicated to organic products, natural healthcare, Ayurveda, and sustainable living solutions under one integrated platform.",
+      },
+      {
+        question: "Who should attend this expo?",
+        answer: "Organic farmers, wholesale buyers, retailers, distributors, wellness entrepreneurs, policymakers, and international trade delegations looking to discover authentic organic products and build global partnerships.",
+        title: "Who should attend this expo?",
+        description: "Organic farmers, wholesale buyers, retailers, distributors, wellness entrepreneurs, policymakers, and international trade delegations looking to discover authentic organic products and build global partnerships.",
+      },
+      {
+        question: "What are the key highlights of the expo?",
+        answer: "The event features a large international exhibition pavilion, technical knowledge conferences, B2B buyer-seller meets, and prestigious industry excellence recognition programs.",
+        title: "What are the key highlights of the expo?",
+        description: "The event features a large international exhibition pavilion, technical knowledge conferences, B2B buyer-seller meets, and prestigious industry excellence recognition programs.",
+      },
+      {
+        question: "What industries are covered in the expo?",
+        answer: "Key sectors include Certified Organic Foods, Natural Herbal Healthcare, Ayurveda, Organic Farming Inputs, Eco-Friendly Packaging, and Sustainable Agriculture Technologies.",
+        title: "What industries are covered in the expo?",
+        description: "Key sectors include Certified Organic Foods, Natural Herbal Healthcare, Ayurveda, Organic Farming Inputs, Eco-Friendly Packaging, and Sustainable Agriculture Technologies.",
+      },
+      {
+        question: "How can I participate in the expo?",
+        answer: "You can register as an exhibitor, visitor, B2B buyer, or conference delegate directly on our website or by getting in touch with our event help desk.",
+        title: "How can I participate in the expo?",
+        description: "You can register as an exhibitor, visitor, B2B buyer, or conference delegate directly on our website or by getting in touch with our event help desk.",
+      },
     ],
   },
 ];
