@@ -96,12 +96,11 @@ function seoScore(config: SettingsPageConfig): number {
 
 export function cmsPagesFromSettings(settings: Record<string, unknown>): CmsPage[] {
   const updatedAt = typeof settings.updatedAt === "string" ? new Date(settings.updatedAt) : new Date();
-  return pageDefinitions.flatMap(([key, title, slug, type], index) => {
-    const config = settings[key] as SettingsPageConfig | undefined;
-    if (!config) return [];
+  return pageDefinitions.map(([key, title, slug, type], index) => {
+    const config = (settings[key] as SettingsPageConfig | undefined) ?? {};
     const score = seoScore(config);
     const status: PageStatus = config.sections?.some((section) => section.enabled !== false) ? "Published" : "Draft";
-    return [{
+    return {
       id: index + 1,
       configKey: key,
       title,
@@ -114,7 +113,7 @@ export function cmsPagesFromSettings(settings: Record<string, unknown>): CmsPage
       updatedBy: "Admin User",
       type,
       seo: config.seo,
-    }];
+    };
   });
 }
 

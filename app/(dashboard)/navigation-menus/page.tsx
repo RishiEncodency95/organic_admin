@@ -286,9 +286,11 @@ function MetricCard({
 function StructureRow({
   item,
   nested = false,
+  onNavigateEdit,
 }: {
   item: MenuStructureItem;
   nested?: boolean;
+  onNavigateEdit?: (url?: string) => void;
 }) {
   const Icon = item.icon;
 
@@ -308,6 +310,17 @@ function StructureRow({
           )}
         </div>
 
+        {item.url && onNavigateEdit && (
+          <button
+            type="button"
+            onClick={() => onNavigateEdit(item.url)}
+            className="shrink-0 inline-flex items-center gap-[3px] rounded-[4px] bg-[#075b33] px-[6px] py-[2px] text-[8px] font-bold text-white hover:bg-[#054828] transition"
+          >
+            <Pencil className="h-[9px] w-[9px]" />
+            Edit Page
+          </button>
+        )}
+
         <span className="shrink-0 rounded-[3px] bg-[#f1f5f9] px-[5px] py-[1px] text-[8px] font-bold text-[#64748b]">
           {item.type}
         </span>
@@ -320,7 +333,7 @@ function StructureRow({
       {item.children?.length ? (
         <div className="mt-[4px] space-y-[4px]">
           {item.children.map((child) => (
-            <StructureRow key={child.id} item={child} nested />
+            <StructureRow key={child.id} item={child} nested onNavigateEdit={onNavigateEdit} />
           ))}
         </div>
       ) : null}
@@ -627,12 +640,35 @@ export default function NavigationMenusPage() {
               <div className="mt-[8px]">
                 <div className="flex items-center gap-[6px] text-[8.5px] font-semibold text-[#66738b]">
                   <HelpCircle className="h-[12px] w-[12px] text-[#4d8b69]" />
-                  Parent items have dropdown child menus. Each badge shows its exact URL route.
+                  Click "Edit Page" on any menu item to go directly to its Admin CMS Edit Page!
                 </div>
 
                 <div className="mt-[8px] space-y-[4px]">
                   {currentStructure.map((item) => (
-                    <StructureRow key={item.id} item={item} />
+                    <StructureRow
+                      key={item.id}
+                      item={item}
+                      onNavigateEdit={(url) => {
+                        if (!url) return;
+                        let targetRoute = "home"; // Default Home
+                        const cleanUrl = url.toLowerCase().trim();
+
+                        if (cleanUrl === "/" || cleanUrl === "home") targetRoute = "home";
+                        else if (cleanUrl.includes("about")) targetRoute = "about-us";
+                        else if (cleanUrl.includes("advisory")) targetRoute = "advisory-board";
+                        else if (cleanUrl.includes("blog")) targetRoute = "blogs-and-news";
+                        else if (cleanUrl.includes("why-visit")) targetRoute = "why-visit";
+                        else if (cleanUrl.includes("why-exhibit")) targetRoute = "why-exhibit";
+                        else if (cleanUrl.includes("msme")) targetRoute = "msme-pms-scheme";
+                        else if (cleanUrl.includes("exhibitor")) targetRoute = "exhibitors-list";
+                        else if (cleanUrl.includes("buyer-seller")) targetRoute = "buyer-seller-meet";
+                        else if (cleanUrl.includes("gallery")) targetRoute = "glimpses-and-gallery";
+                        else if (cleanUrl.includes("service")) targetRoute = "our-services";
+                        else if (cleanUrl.includes("contact")) targetRoute = "contact-us";
+
+                        router.push(`/pages/${targetRoute}/edit`);
+                      }}
+                    />
                   ))}
                 </div>
               </div>

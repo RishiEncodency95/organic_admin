@@ -905,8 +905,6 @@ export default function CmsEditPage() {
             ? "Advisory Board"
             : page.configKey === "blogPage"
             ? "Blogs & News"
-            : page.configKey === "participateAsExhibitorPage"
-            ? "Participate as Exhibitor"
             : page.configKey === "whyVisitPage"
             ? "Why Visit"
             : page.configKey === "whyExhibitPage"
@@ -915,6 +913,14 @@ export default function CmsEditPage() {
             ? "MSME PMS Scheme"
             : page.configKey === "exhibitorsPage"
             ? "Exhibitors List"
+            : page.configKey === "buyerSellerMeetPage"
+            ? "Buyer-Seller Meet"
+            : page.configKey === "galleryPage"
+            ? "Glimpses & Gallery"
+            : page.configKey === "servicesPage"
+            ? "Our Services"
+            : page.configKey === "contactPage"
+            ? "Contact Us"
             : "Standard Page",
 
         parent:
@@ -968,9 +974,36 @@ export default function CmsEditPage() {
     );
 
   useEffect(() => {
-    if (!settings) return;
     setForm({
-      ...initialForm,
+      pageTitle: page.title,
+      slug: page.slug === "/" ? "" : page.slug.replace(/^\//, ""),
+      template:
+        page.type === "home"
+          ? "Homepage"
+          : page.configKey === "aboutPage"
+          ? "About Page"
+          : page.configKey === "advisoryPage"
+          ? "Advisory Board"
+          : page.configKey === "blogPage"
+          ? "Blogs & News"
+          : page.configKey === "whyVisitPage"
+          ? "Why Visit"
+          : page.configKey === "whyExhibitPage"
+          ? "Why Exhibit"
+          : page.configKey === "msmePage"
+          ? "MSME PMS Scheme"
+          : page.configKey === "exhibitorsPage"
+          ? "Exhibitors List"
+          : page.configKey === "buyerSellerMeetPage"
+          ? "Buyer-Seller Meet"
+          : page.configKey === "galleryPage"
+          ? "Glimpses & Gallery"
+          : page.configKey === "servicesPage"
+          ? "Our Services"
+          : page.configKey === "contactPage"
+          ? "Contact Us"
+          : "Standard Page",
+      parent: page.type === "home" ? "— No Parent (Top Level) —" : "Home",
       metaTitle: page.seo?.metaTitle ?? "",
       metaDescription: page.seo?.metaDescription ?? "",
       metaKeywords: page.seo?.metaKeywords ?? "",
@@ -983,8 +1016,13 @@ export default function CmsEditPage() {
       schemaMarkup: page.seo?.schemaMarkup ?? "",
       robotsIndex: page.seo?.robotsIndex ?? true,
       robotsFollow: page.seo?.robotsFollow ?? true,
+      status: page.status,
+      visibility: "Public",
+      author: page.author,
+      showInNavigation: true,
+      menuOrder: page.type === "home" ? "1" : "4",
     });
-  }, [settings, initialForm]);
+  }, [page]);
 
   const [sectionsDraft, setSectionsDraft] = useState<Array<Record<string, any>>>([]);
   const [openSectionIndices, setOpenSectionIndices] = useState<Set<number>>(new Set([0]));
@@ -1016,7 +1054,7 @@ export default function CmsEditPage() {
     const rawSections = cfg?.sections && cfg.sections.length > 0 ? cfg.sections : fallbackSections;
     setSectionsDraft(rawSections.map((section: Record<string, any>) => ({ ...section })));
     setOpenSectionIndices(new Set([0]));
-  }, [settings, page.configKey]);
+  }, [settings, page]);
 
   const toggleSectionAccordion = (index: number) => {
     setOpenSectionIndices((prev) => {
