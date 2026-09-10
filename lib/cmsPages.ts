@@ -77,6 +77,9 @@ const pageDefinitions = [
   ["buyerSellerMeetPage", "Buyer-Seller Meet", "/buyer-seller-meet", "page"],
   ["galleryPage", "Glimpses & Gallery", "/gallery", "page"],
   ["awardsPage", "Awards", "/awards", "page"],
+  ["sponsorshipPage", "Sponsorship Opportunities", "/sponsorship", "page"],
+  ["epromotionPage", "E-Promotion Web", "/e-promotion-web", "page"],
+  ["partnershipPage", "Partnership / Collaboration", "/partnership", "page"],
   ["servicesPage", "Our Services", "/our-services", "page"],
   ["contactPage", "Contact Us", "/contact", "page"],
 ] as const;

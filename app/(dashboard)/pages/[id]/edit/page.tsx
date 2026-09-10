@@ -67,6 +67,8 @@ import { defaultExhibitorsSections } from "@/lib/exhibitorsContent";
 import { defaultBuyerSellerMeetSections } from "@/lib/buyerSellerMeetContent";
 import { defaultGallerySections } from "@/lib/galleryContent";
 import { defaultAwardsSections } from "@/lib/awardsContent";
+import { defaultContactSections } from "@/lib/contactContent";
+import { defaultSponsorshipSections, defaultEPromotionSections, defaultPartnershipPageSections } from "@/lib/opportunityContent";
 import typography from "../../PagesTypography.module.css";
 import Swal from "sweetalert2";
 
@@ -628,6 +630,8 @@ function SectionItemsEditor({
                           options={[
                             { label: "None", value: "" },
                             { label: "Group of People (Users)", value: "Users" },
+                            { label: "Store / Exhibitor", value: "Store" },
+                            { label: "Presentation / Speaker", value: "Presentation" },
                             { label: "Building / Company (Building2)", value: "Building2" },
                             { label: "Globe / International", value: "Globe" },
                             { label: "Leaf / Organic", value: "Leaf" },
@@ -639,6 +643,7 @@ function SectionItemsEditor({
                             { label: "Target / Vision", value: "Target" },
                             { label: "Trending Up / Growth", value: "TrendingUp" },
                             { label: "Award / Achievement", value: "Award" },
+                            { label: "Medal / Honour", value: "Medal" },
                             { label: "Lightbulb / Innovation", value: "Lightbulb" },
                             { label: "Mic / Speaker", value: "Mic" },
                             { label: "Calendar / Dates", value: "CalendarDays" },
@@ -647,6 +652,22 @@ function SectionItemsEditor({
                             { label: "Heart Pulse / Health", value: "HeartPulse" },
                             { label: "Trophy / Winner", value: "Trophy" },
                             { label: "Megaphone / Visibility", value: "Megaphone" },
+                            { label: "User Check / Verified User", value: "UserCheck" },
+                            { label: "Briefcase / Business", value: "Briefcase" },
+                            { label: "Sparkles / Magic", value: "Sparkles" },
+                            { label: "Zap / Fast", value: "Zap" },
+                            { label: "ID Card / Lanyard", value: "IdCard" },
+                            { label: "Plug / Charging", value: "Plug" },
+                            { label: "Contact / Badge", value: "Contact" },
+                            { label: "Wi-Fi / Internet", value: "Wifi" },
+                            { label: "Shopping Bag / Visitor Bag", value: "ShoppingBag" },
+                            { label: "Coffee / Refreshment", value: "Coffee" },
+                            { label: "Newspaper / Press", value: "Newspaper" },
+                            { label: "File Text / Print", value: "FileText" },
+                            { label: "Camera / Media", value: "Camera" },
+                            { label: "Headphones / Support", value: "Headphones" },
+                            { label: "Message Circle / Chat", value: "MessageCircle" },
+                            { label: "Clock / Time", value: "Clock" },
                             { label: "Phone", value: "Phone" },
                             { label: "Mail", value: "Mail" },
                             { label: "Map Pin", value: "MapPin" },
@@ -920,6 +941,12 @@ export default function CmsEditPage() {
             ? "Glimpses & Gallery"
             : page.configKey === "awardsPage"
             ? "Excellence Awards"
+            : page.configKey === "sponsorshipPage"
+            ? "Sponsorship Opportunities"
+            : page.configKey === "epromotionPage"
+            ? "E-Promotion Web"
+            : page.configKey === "partnershipPage"
+            ? "Partnership / Collaboration"
             : page.configKey === "servicesPage"
             ? "Our Services"
             : page.configKey === "contactPage"
@@ -1003,6 +1030,12 @@ export default function CmsEditPage() {
           ? "Glimpses & Gallery"
           : page.configKey === "awardsPage"
           ? "Excellence Awards"
+          : page.configKey === "sponsorshipPage"
+          ? "Sponsorship Opportunities"
+          : page.configKey === "epromotionPage"
+          ? "E-Promotion Web"
+          : page.configKey === "partnershipPage"
+          ? "Partnership / Collaboration"
           : page.configKey === "servicesPage"
           ? "Our Services"
           : page.configKey === "contactPage"
@@ -1057,6 +1090,14 @@ export default function CmsEditPage() {
         ? defaultGallerySections
         : page.configKey === "awardsPage"
         ? defaultAwardsSections
+        : page.configKey === "sponsorshipPage"
+        ? defaultSponsorshipSections
+        : page.configKey === "epromotionPage"
+        ? defaultEPromotionSections
+        : page.configKey === "partnershipPage"
+        ? defaultPartnershipPageSections
+        : page.configKey === "contactPage"
+        ? defaultContactSections
         : defaultLandingSections;
     const rawSections = cfg?.sections && cfg.sections.length > 0 ? cfg.sections : fallbackSections;
     setSectionsDraft(rawSections.map((section: Record<string, any>) => ({ ...section })));
@@ -1525,6 +1566,14 @@ export default function CmsEditPage() {
                         setSectionsDraft(defaultGallerySections.map((s) => ({ ...s })));
                       } else if (value === "Excellence Awards" || value === "Awards") {
                         setSectionsDraft(defaultAwardsSections.map((s) => ({ ...s })));
+                      } else if (value === "Sponsorship Opportunities" || value === "Sponsorship") {
+                        setSectionsDraft(defaultSponsorshipSections.map((s) => ({ ...s })));
+                      } else if (value === "E-Promotion Web" || value === "E-Promotion") {
+                        setSectionsDraft(defaultEPromotionSections.map((s) => ({ ...s })));
+                      } else if (value === "Partnership / Collaboration" || value === "Partnership") {
+                        setSectionsDraft(defaultPartnershipPageSections.map((s) => ({ ...s })));
+                      } else if (value === "Contact Us" || value === "Contact") {
+                        setSectionsDraft(defaultContactSections.map((s) => ({ ...s })));
                       } else if (value === "Homepage" || value === "Landing Page" || value === "Home") {
                         setSectionsDraft(defaultLandingSections.map((s) => ({ ...s })));
                       }
@@ -1541,6 +1590,9 @@ export default function CmsEditPage() {
                       "Buyer-Seller Meet",
                       "Glimpses & Gallery",
                       "Excellence Awards",
+                      "Sponsorship Opportunities",
+                      "E-Promotion Web",
+                      "Partnership / Collaboration",
                       "Our Services",
                       "Contact Us",
                     ]}
