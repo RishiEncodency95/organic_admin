@@ -37,6 +37,8 @@ export interface LandingSectionItem {
   initials?: string;
   question?: string;
   answer?: string;
+  category?: string;
+  year?: string;
 }
 
 export interface LandingHeroSlide {

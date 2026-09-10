@@ -65,6 +65,7 @@ import { defaultWhyExhibitSections } from "@/lib/whyExhibitContent";
 import { defaultMsmeSections } from "@/lib/msmeContent";
 import { defaultExhibitorsSections } from "@/lib/exhibitorsContent";
 import { defaultBuyerSellerMeetSections } from "@/lib/buyerSellerMeetContent";
+import { defaultGallerySections } from "@/lib/galleryContent";
 import typography from "../../PagesTypography.module.css";
 import Swal from "sweetalert2";
 
@@ -1009,6 +1010,8 @@ export default function CmsEditPage() {
         ? defaultExhibitorsSections
         : page.configKey === "buyerSellerMeetPage"
         ? defaultBuyerSellerMeetSections
+        : page.configKey === "galleryPage"
+        ? defaultGallerySections
         : defaultLandingSections;
     const rawSections = cfg?.sections && cfg.sections.length > 0 ? cfg.sections : fallbackSections;
     setSectionsDraft(rawSections.map((section: Record<string, any>) => ({ ...section })));
@@ -1473,6 +1476,8 @@ export default function CmsEditPage() {
                         setSectionsDraft(defaultExhibitorsSections.map((s) => ({ ...s })));
                       } else if (value === "Buyer-Seller Meet") {
                         setSectionsDraft(defaultBuyerSellerMeetSections.map((s) => ({ ...s })));
+                      } else if (value === "Glimpses & Gallery" || value === "Gallery") {
+                        setSectionsDraft(defaultGallerySections.map((s) => ({ ...s })));
                       } else if (value === "Homepage" || value === "Landing Page" || value === "Home") {
                         setSectionsDraft(defaultLandingSections.map((s) => ({ ...s })));
                       }
@@ -1487,6 +1492,7 @@ export default function CmsEditPage() {
                       "MSME PMS Scheme",
                       "Exhibitors List",
                       "Buyer-Seller Meet",
+                      "Glimpses & Gallery",
                       "Our Services",
                       "Contact Us",
                     ]}
@@ -1530,6 +1536,9 @@ export default function CmsEditPage() {
                       } else if (value === "Buyer-Seller Meet") {
                         setSectionsDraft(defaultBuyerSellerMeetSections.map((s) => ({ ...s })));
                         updateField("template", "Buyer-Seller Meet");
+                      } else if (value === "Glimpses & Gallery") {
+                        setSectionsDraft(defaultGallerySections.map((s) => ({ ...s })));
+                        updateField("template", "Glimpses & Gallery");
                       } else if (value === "Home") {
                         setSectionsDraft(defaultLandingSections.map((s) => ({ ...s })));
                         updateField("template", "Homepage");
@@ -1546,9 +1555,10 @@ export default function CmsEditPage() {
                       "MSME PMS Scheme",
                       "Exhibitors List",
                       "Buyer-Seller Meet",
+                      "Glimpses & Gallery",
                       "Our Services",
                       "Contact Us",
-                      ...pages.map((p) => p.title).filter((t) => !["Home", "About Us", "Advisory Board", "Blogs & News", "Why Visit", "Why Exhibit", "MSME PMS Scheme", "Exhibitors List", "Buyer-Seller Meet", "Our Services", "Contact Us"].includes(t)),
+                      ...pages.map((p) => p.title).filter((t) => !["Home", "About Us", "Advisory Board", "Blogs & News", "Why Visit", "Why Exhibit", "MSME PMS Scheme", "Exhibitors List", "Buyer-Seller Meet", "Glimpses & Gallery", "Our Services", "Contact Us"].includes(t)),
                     ]}
                   />
 
