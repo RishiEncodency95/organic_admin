@@ -40,11 +40,18 @@ export function getCmsPageRouteKey(page: Pick<CmsPage, "title">): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export function findCmsPageByRouteKey(pages: CmsPage[], routeKey: string): CmsPage | undefined {
-  const numericId = Number(routeKey);
-  return pages.find((page) =>
-    (Number.isInteger(numericId) && page.id === numericId) || getCmsPageRouteKey(page) === routeKey.toLowerCase(),
-  );
+export function findCmsPageByRouteKey(pages: CmsPage[], routeKey?: string): CmsPage | undefined {
+  if (!routeKey) return undefined;
+  const decoded = decodeURIComponent(routeKey).toLowerCase().trim();
+  const numericId = Number(decoded);
+  return pages.find((page) => {
+    if (Number.isInteger(numericId) && page.id === numericId) return true;
+    if (getCmsPageRouteKey(page) === decoded) return true;
+    if (page.configKey && page.configKey.toLowerCase() === decoded) return true;
+    const cleanSlug = page.slug.replace(/^\//, "").toLowerCase();
+    if (cleanSlug && cleanSlug === decoded) return true;
+    return false;
+  });
 }
 
 type SettingsPageConfig = {
@@ -103,7 +110,9 @@ export function cmsPagesFromSettings(settings: Record<string, unknown>): CmsPage
   return pageDefinitions.map(([key, title, slug, type], index) => {
     const config = (settings[key] as SettingsPageConfig | undefined) ?? {};
     const score = seoScore(config);
-    const status: PageStatus = config.sections?.some((section) => section.enabled !== false) ? "Published" : "Draft";
+    const status: PageStatus = config.sections && config.sections.length > 0
+      ? (config.sections.some((section) => section.enabled !== false) ? "Published" : "Draft")
+      : "Published";
     return {
       id: index + 1,
       configKey: key,
