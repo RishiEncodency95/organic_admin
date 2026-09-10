@@ -6,6 +6,7 @@ export interface LandingSectionItem {
   description?: string;
   image?: string;
   icon?: string;
+  color?: string;
   href?: string;
   buttonLabel?: string;
   buttonHref?: string;
@@ -14,11 +15,27 @@ export interface LandingSectionItem {
   tertiaryImage?: string;
   quaternaryImage?: string;
   videoUrl?: string;
+  tag?: string;
+  name?: string;
+  role?: string;
+  quote?: string;
+  duration?: string;
+  meta?: string;
+  count?: number;
+  location?: string;
+  date?: string;
+  readTime?: string;
 }
 
 export interface LandingHeroSlide {
   title: string;
+  tagline?: string;
+  titlePrimary?: string;
+  titleSecondary?: string;
+  subtitle?: string;
   description: string;
+  date?: string;
+  location?: string;
   image: string;
   alt: string;
   buttonLabel?: string;
@@ -110,6 +127,8 @@ export interface LandingSectionContent {
   centerText3?: string;
   websiteUrl?: string;
   imageBadgeText?: string;
+  authorName?: string;
+  authorDesignation?: string;
   headerTitle?: string;
   titlePrefix?: string;
   value?: string;
@@ -139,8 +158,14 @@ export const defaultLandingSections: LandingSectionContent[] = [
     secondaryButtonHref: "/registration/visitor-registration",
     slides: [
       {
+        tagline: "ORGANIC FOOD & BEVERAGES",
+        titlePrimary: "PURE & CERTIFIED",
+        titleSecondary: "ORGANIC STAPLES",
+        subtitle: "Taste the purity of nature.",
         title: "PURE & CERTIFIED ORGANIC STAPLES",
         description: "Discover a diverse range of certified organic staples, farm-fresh produce, healthy snacks, and plant-based drinks.",
+        date: "19-21 FEBRUARY 2027",
+        location: "PRAGATI MAIDAN, NEW DELHI",
         image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
         alt: "Organic Food & Beverages",
         buttonLabel: "Book Your Stall",
@@ -149,8 +174,14 @@ export const defaultLandingSections: LandingSectionContent[] = [
         secondaryButtonHref: "/registration/visitor-registration",
       },
       {
+        tagline: "SUPERFOODS",
+        titlePrimary: "BOOST YOUR",
+        titleSecondary: "IMMUNITY",
+        subtitle: "Health straight from the earth.",
         title: "BOOST YOUR IMMUNITY",
         description: "Explore premium natural dietary supplements, organic protein powders, and powerful superfoods to fuel your everyday life.",
+        date: "19-21 FEBRUARY 2027",
+        location: "PRAGATI MAIDAN, NEW DELHI",
         image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
         alt: "Superfoods",
         buttonLabel: "Book Your Stall",
@@ -159,8 +190,14 @@ export const defaultLandingSections: LandingSectionContent[] = [
         secondaryButtonHref: "/registration/visitor-registration",
       },
       {
+        tagline: "NATURAL BEAUTY",
+        titlePrimary: "CLEAN & CRUELTY",
+        titleSecondary: "FREE COSMETICS",
+        subtitle: "Radiance without the chemicals.",
         title: "CLEAN & CRUELTY FREE COSMETICS",
         description: "Source top-tier organic skincare, vegan cosmetics, and non-toxic personal hygiene products that care for you and the planet.",
+        date: "19-21 FEBRUARY 2027",
+        location: "PRAGATI MAIDAN, NEW DELHI",
         image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
         alt: "Natural Beauty",
         buttonLabel: "Book Your Stall",
@@ -169,8 +206,14 @@ export const defaultLandingSections: LandingSectionContent[] = [
         secondaryButtonHref: "/registration/visitor-registration",
       },
       {
+        tagline: "SMART & SUSTAINABLE FARMING",
+        titlePrimary: "INNOVATING",
+        titleSecondary: "AGRICULTURE",
+        subtitle: "Empowering farmers with green tech.",
         title: "INNOVATING AGRICULTURE",
         description: "Experience the latest in organic seeds, bio-fertilizers, agri-tech innovations, and vertical farming solutions.",
+        date: "19-21 FEBRUARY 2027",
+        location: "PRAGATI MAIDAN, NEW DELHI",
         image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
         alt: "Smart & Sustainable Farming",
         buttonLabel: "Book Your Stall",
@@ -179,8 +222,14 @@ export const defaultLandingSections: LandingSectionContent[] = [
         secondaryButtonHref: "/registration/visitor-registration",
       },
       {
+        tagline: "HERBAL WELLNESS & AYURVEDA",
+        titlePrimary: "ANCIENT WISDOM",
+        titleSecondary: "MODERN HEALING",
+        subtitle: "Balance your mind, body, and soul.",
         title: "ANCIENT WISDOM MODERN HEALING",
         description: "Immerse yourself in authentic Ayurvedic therapies, holistic herbal supplements, essential oils, and detox solutions.",
+        date: "19-21 FEBRUARY 2027",
+        location: "PRAGATI MAIDAN, NEW DELHI",
         image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
         alt: "Herbal Wellness & Ayurveda",
         buttonLabel: "Book Your Stall",
@@ -189,8 +238,14 @@ export const defaultLandingSections: LandingSectionContent[] = [
         secondaryButtonHref: "/registration/visitor-registration",
       },
       {
+        tagline: "LIVE EXPO & NETWORKING",
+        titlePrimary: "EXPERIENCE THE",
+        titleSecondary: "MEGA EVENT",
+        subtitle: "Connect with industry leaders.",
         title: "EXPERIENCE THE MEGA EVENT",
         description: "Join thousands of experts, buyers, and exhibitors at the most anticipated organic and wellness mega event of the year.",
+        date: "19-21 FEBRUARY 2027",
+        location: "PRAGATI MAIDAN, NEW DELHI",
         image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
         alt: "Live Expo & Networking",
         buttonLabel: "Book Your Stall",
@@ -212,99 +267,125 @@ export const defaultLandingSections: LandingSectionContent[] = [
     enabled: true,
     title: "WHO SHOULD VISIT & EXHIBIT",
     items: [
-      { label: "Organic Farmers & Producers" },
-      { label: "Retailers, Wholesalers & Distributors" },
-      { label: "Exporters & Importers" },
-      { label: "B2B Bulk Buyers & Supermarkets" },
-      { label: "General Public & Wellness Enthusiasts" },
+      { title: "UNIVERSITY/", subtitle: "ACADEMIC PARTNERS", icon: "GraduationCap", color: "text-orange-500", label: "UNIVERSITY/ ACADEMIC PARTNERS" },
+      { title: "HEALTHCARE", subtitle: "LEADERS", icon: "Stethoscope", color: "text-[#3b8c2a]", label: "HEALTHCARE LEADERS" },
+      { title: "GOVERNMENT", subtitle: "BODIES", icon: "Landmark", color: "text-blue-500", label: "GOVERNMENT BODIES" },
+      { title: "AYUSH", subtitle: "INDUSTRY", icon: "Leaf", color: "text-green-600", label: "AYUSH INDUSTRY" },
+      { title: "INTERNATIONAL", subtitle: "BUYERS", icon: "Globe", color: "text-indigo-600", label: "INTERNATIONAL BUYERS" },
+      { title: "HOSPITAL & CLINIC", subtitle: "PROCUREMENT TEAMS", icon: "Building2", color: "text-red-500", label: "HOSPITAL & CLINIC PROCUREMENT TEAMS" },
     ],
   },
   {
     key: "introduction-section",
     name: "IntroductionSection",
     enabled: true,
-    eyebrow: "WELCOME TO BHARAT ORGANIC EXPO",
-    titlePrimary: "INDIA'S LARGEST ORGANIC",
-    titleSecondary: "NATURAL & AYUSH EXPO 2027",
+    eyebrow: "INTRODUCTION",
+    titlePrimary: "WELCOME TO BHARAT ORGANIC EXPO",
+    titleSecondary: "2027",
     subtitle: "India's Premier Platform for Organic Products, Sustainable Agriculture & Natural Living",
-    description: "Bharat Organic Expo brings together organic producers, brands, technology innovators, exporters and buyers under one grand roof at Pragati Maidan.",
+    description: "Bharat Organic Expo 2027 is India's leading international exhibition dedicated to organic products, sustainable agriculture, natural wellness, eco-friendly innovations, and green business opportunities.",
     image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
     imageAlt: "Bharat Organic Expo 2027 Introduction",
     buttonLabel: "Explore Exhibition",
     buttonHref: "/about",
     items: [
-      { title: "Direct Farm to Market Access", description: "Empowering organic farmers with direct consumer and B2B buyer connections." },
-      { title: "Global Export Opportunities", description: "Connecting Indian organic brands with international delegations." },
-      { title: "Sustainable AgriTech Solutions", description: "Showcasing bio-fertilizers, natural farming inputs and green technology." },
+      { title: "10+ YEARS OF LEGACY", description: "A decade of excellence and leadership in the organic space." },
+      { title: "8 SUCCESSFUL EDITIONS", description: "Consistently delivering high-impact trade exhibitions." },
+      { title: "500+ EXHIBITORS & BRANDS", description: "Showcasing leading organic and natural product manufacturers." },
+      { title: "25+ COUNTRIES PARTICIPATED", description: "Uniting international delegations and global buyers." },
     ],
   },
   {
     key: "global-platform",
     name: "GlobalPlatform",
     enabled: true,
+    eyebrow: "FROM INDIA TO THE WORLD",
+    titlePrimary: "From a National Expo to a",
+    titleSecondary: "Global Platform",
     title: "GLOBAL PLATFORM FOR ORGANIC TRADE",
     subtitle: "Connecting over 25+ countries in India's premier organic gathering.",
-    description: "Empowering exporters, trade councils, and sustainable food producers with global market access.",
+    description: "Bharat Organic Expo is India's most influential platform connecting organic products, people and possibilities.",
     image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
     imageAlt: "Global Organic Platform",
     items: [
-      { label: "International Delegations", value: "35+" },
-      { label: "Global Organic Brands", value: "120+" },
-      { label: "B2B Matchmaking Deals", value: "₹500 Cr+" },
+      { title: "GLOBAL CONNECTIONS", description: "Connect with global leaders in organic trade and sustainable business. Expand your network across international markets to build long-term, profitable relationships.", icon: "Globe" },
+      { title: "INTERNATIONAL ALLIANCES", description: "Forge strategic alliances with prominent international organizations, trade bodies, and embassies to unlock massive cross-border trade opportunities.", icon: "Handshake" },
+      { title: "POLICY & KNOWLEDGE", description: "Engage directly with global policy makers, researchers, and leaders driving regulatory changes and sustainability standards in the organic ecosystem.", icon: "BookOpen" },
+      { title: "INVESTMENT & INNOVATION", description: "Discover high-growth investment opportunities and explore cutting-edge, innovative solutions presented by dynamic startups in the wellness industry.", icon: "TrendingUp" },
     ],
   },
   {
     key: "why-participate",
     name: "WhyParticipate",
     enabled: true,
+    eyebrow: "WHY PARTICIPATE",
+    titlePrimary: "Your Gateway to",
+    titleSecondary: "Global Opportunities",
     title: "WHY PARTICIPATE & EXHIBIT",
     subtitle: "Unlock massive growth opportunities for your organic brand.",
+    description: "Bharat Organic Expo 2027 is a leading platform for organic products, natural health, fitness, Ayurveda, and sustainable innovation—bringing together top brands, buyers, investors, and industry leaders from India and worldwide.",
     image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
     imageAlt: "Why Participate in Expo",
+    buttonLabel: "BOOK A STALL",
+    buttonHref: "/registration/book-a-stand",
+    secondaryButtonLabel: "Download Brochure",
+    secondaryButtonHref: "/download/invited card.pdf",
+    tertiaryButtonLabel: "Why Exhibit?",
+    tertiaryButtonHref: "/why-exhibit",
     items: [
-      { title: "Brand Exposure", description: "Present your products to over 50,000+ targeted trade visitors." },
-      { title: "B2B Matchmaking", description: "Pre-scheduled one-on-one meetings with verified bulk buyers and exporters." },
-      { title: "Market Expansion", description: "Launch new organic products and expand retail distribution channels." },
-      { title: "Knowledge Sharing", description: "Gain insights from global organic certification and policy experts." },
+      { title: "Meet genuine buyers, distributors, retailers, and healthcare professionals" },
+      { title: "Generate high-quality B2B & B2C leads with faster business conversions" },
+      { title: "Launch new products with maximum visibility and market impact" },
+      { title: "Expand your dealer, distributor, franchise, and export network" },
+      { title: "Strengthen brand presence through live demos and media exposure" },
+      { title: "Connect with investors, CEOs, doctors, and key decision-makers" },
+      { title: "Achieve higher ROI with direct customer engagement and trust building" },
     ],
   },
   {
     key: "conference-section",
     name: "ConferenceSection",
     enabled: true,
+    eyebrow: "GLOBAL CONFERENCE & SEMINARS",
+    titlePrimary: "Where Knowledge Meets",
+    titleSecondary: "the Future of Organic",
     title: "CONFERENCES, SEMINARS & WORKSHOPS",
     subtitle: "3 Days of Knowledge Exchange and Expert Keynotes",
-    description: "Engage in insightful discussions led by top organic scientists, policy makers, and successful organic entrepreneurs.",
+    description: "Join expert-led sessions, panel discussions & thought leadership talks on the latest trends shaping the future of organic, natural and sustainable living.",
     image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
     imageAlt: "Conferences & Seminars",
-    buttonLabel: "View Conference Agenda",
-    buttonHref: "/buyer-seller-meet",
+    buttonLabel: "View Conference Schedule",
+    buttonHref: "https://arogya.namogange.org/",
     items: [
-      { title: "Organic Certification Standards", description: "Keynote by APEDA & NOP Certification Authorities." },
-      { title: "Natural Farming Innovations", description: "Practical insights into bio-inputs and soil health enhancement." },
-      { title: "Export & Trade Regulations", description: "Navigating international compliance and export logistics." },
+      { title: "Expert-led panel discussions & keynotes" },
+      { title: "Emerging trends in organic farming & retail" },
+      { title: "Sustainable business & growth strategies" },
     ],
   },
   {
     key: "expo-categories",
     name: "ExpoCategories",
     enabled: true,
-    sectionTag: "EXPO CATEGORIES",
+    sectionTag: "Expo Categories",
     titleMain: "Explore Diverse",
     titleHighlight: "Exhibition Sectors",
     descriptionPrefix: "One Platform. Every Opportunity.",
-    description: "Bharat Organic Expo brings together the entire organic ecosystem under one roof.",
+    description: " Bharat Organic Expo brings together the entire organic ecosystem under one roof. Explore a wide range of sectors driving sustainable living, natural wellness, ethical production and global trade.",
     image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
     imageAlt: "Expo Categories",
     exploreText: "Explore",
     buttonText: "VIEW ALL CATEGORIES",
     items: [
-      { title: "Organic Food & Beverages", description: "Certified organic staples, grains, healthy snacks, and juices.", image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg" },
-      { title: "AYUSH, Ayurveda & Herbal", description: "Ayurvedic medicines, supplements, teas, and herbal solutions.", image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg" },
-      { title: "Natural Farming & Bio-Inputs", description: "Bio-fertilizers, organic seeds, manures, and pest management.", image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg" },
-      { title: "Natural Beauty & Personal Care", description: "Eco-friendly skincare, vegan cosmetics, and personal hygiene.", image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg" },
-      { title: "AgriTech & Green Innovations", description: "Smart farming technology, irrigation, and processing machines.", image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg" },
-      { title: "Sustainable Packaging", description: "Biodegradable, eco-friendly, and recyclable packaging materials.", image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg" },
+      { title: "Organic Food & Beverages", description: "Wide range of certified organic foods, beverages, healthy snacks, grains, pulses, and ingredients." },
+      { title: "AYUSH, Ayurveda & Herba", description: "Ayurvedic medicines, herbal supplements, essential oils, teas, wellness products and holistic solutions." },
+      { title: "Organic Natural Farming", description: "Natural farming practices, organic cultivation methods, innovations and farm-to-market solutions." },
+      { title: "Organic Inputs, Seeds & Bio- Inputs", description: "Bio-fertilisers, organic manures, soil enhancers, pesticides and high-quality seeds." },
+      { title: "Dairy, Livestock & Allied", description: "Organic dairy products, livestock nutrition, animal health solutions and sustainable practices." },
+      { title: "Natural Beauty & Personal Care", description: "Herbal skincare, haircare, personal care and eco-friendly beauty products." },
+      { title: "Nutraceuticals & Functional Nutrition", description: "Dietary supplements, functional foods, immunity boosters and wellness nutrition products." },
+      { title: "Sustainable Packaging & Processing", description: "Eco-friendly, biodegradable, recyclable and sustainable packaging solutions." },
+      { title: "AgriTech, GreenTech & Innovation", description: "Innovative agri technologies, smart farming, irrigation, farm mechanization and digital solutions." },
+      { title: "Certification, Export, Trade & Services", description: "Exporters, importers, trade associations and global business opportunities for organic products." },
     ],
   },
   {
@@ -323,11 +404,11 @@ export const defaultLandingSections: LandingSectionContent[] = [
       { title: "GLOBAL CONFERENCES", description: "Gain actionable insights and explore emerging trends with global industry experts.", icon: "Users" },
       { title: "LEADERSHIP SUMMITS", description: "Engage with top policymakers and CEOs driving sustainable change.", icon: "Briefcase" },
       { title: "ORGANIC AWARDS", description: "Celebrate excellence and recognize pioneering brands in the organic sector.", icon: "Award" },
-      { title: "STARTUP SHOWCASE", description: "Discover innovative startups pitching groundbreaking green technologies.", icon: "Sparkles" },
+      { title: "STARTUP SHOWCASE", description: "Discover innovative startups pitching groundbreaking green technologies.", icon: "Lightbulb" },
       { title: "B2B MEETINGS", description: "Network with top distributors and build lasting global partnerships.", icon: "Handshake" },
       { title: "GLOBAL DELEGATION", description: "Connect with international delegates to expand your market reach.", icon: "Globe" },
       { title: "SUSTAINABILITY WORKSHOPS", description: "Learn practical implementations for zero-waste and eco-friendly practices.", icon: "Leaf" },
-      { title: "PRODUCT LAUNCHPAD", description: "Witness the exclusive unveiling of the latest natural and organic innovations.", icon: "Rocket" },
+      { title: "PRODUCT LAUNCHPAD", description: "Witness the exclusive unveiling of the latest natural and organic innovations.", icon: "Store" },
     ],
   },
   {
@@ -346,6 +427,18 @@ export const defaultLandingSections: LandingSectionContent[] = [
     centerText3: "OPPORTUNITIES.",
     buttonLabel: "REGISTER AS VISITOR!",
     buttonHref: "/registration/visitor-registration",
+    items: [
+      { label: "Organic Distributors, Wholesalers & Retailers", icon: "ShoppingCart" },
+      { label: "Eco-Importers & Exporters", icon: "Globe" },
+      { label: "Ayurvedic Institutions & Wellness Centers", icon: "Hospital" },
+      { label: "Nutritionists, Farmers & Wellness Experts", icon: "Stethoscope" },
+      { label: "Gym Owners, Spa & Eco-Fitness Professionals", icon: "Dumbbell" },
+      { label: "Organic Farming & Natural Product Buyers", icon: "Sprout" },
+      { label: "Sustainable Packaging & Eco-friendly Brands", icon: "Flower2" },
+      { label: "Investors, Franchise Seekers & Green Business", icon: "Handshake" },
+      { label: "Supermarkets & Organic Grocery Chains", icon: "Users" },
+      { label: "Health-Conscious Consumers & Eco-Enthusiasts", icon: "Heart" },
+    ],
   },
   {
     key: "become-sponsor",
@@ -399,37 +492,54 @@ export const defaultLandingSections: LandingSectionContent[] = [
     key: "buyer-seller-meet",
     name: "BuyerSellerMeet",
     enabled: true,
-    title: "INTERNATIONAL B2B BUYER-SELLER MEET",
-    subtitle: "Pre-scheduled One-on-One Business Matchmaking",
-    description: "Direct business interactions between international buyers, Indian exporters, and certified organic producers.",
-    buttonLabel: "Register for B2B Meet",
-    buttonHref: "/buyer-seller-meet",
+    eyebrow: "Pre-Scheduled Meetings",
+    titlePrefix: "BUYER-SELLER",
+    titleHighlight: "MEET 2027",
+    subtitle: "Bridging the gap between Organic Buyers and Sustainable Brands",
+    description: "Join India's most exclusive B2B networking platform for the organic sector. Our highly curated Buyer-Seller Meet brings together certified farmers, eco-friendly product manufacturers, and top-tier global buyers. Pre-schedule your 1-on-1 meetings to secure bulk orders and forge lasting partnerships in the booming sustainable market.",
+    buttonLabel: "Register Now",
+    buttonHref: "/registration/buyer-registration",
+    secondaryButtonLabel: "View Schedule",
+    secondaryButtonHref: "/schedule",
     items: [
-      { value: "01", title: "Buyer Registration", description: "Submit your sourcing requirements online." },
-      { value: "02", title: "Matchmaking & Scheduling", description: "Get matched with verified organic suppliers." },
-      { value: "03", title: "One-on-One Meetings", description: "Conduct business meetings at designated B2B lounges." },
+      { title: "VERIFIED ORGANIC BUYERS", description: "Pre-vetted buyers actively sourcing organic products." },
+      { title: "1-ON-1 B2B MEETINGS", description: "Direct pre-scheduled matchmaking sessions." },
+      { title: "LUCRATIVE GREEN OPPORTUNITIES", description: "Access high-value commercial deals." },
+      { title: "EXPAND GLOBAL REACH", description: "Connect with international distributors and importers." },
     ],
   },
   {
     key: "testimonials-carousel",
     name: "TestimonialsCarousel",
     enabled: true,
-    title: "WHAT EXHIBITORS & VISITORS SAY",
-    subtitle: "Feedback from past editions of Bharat Organic Expo.",
+    eyebrow: "Industry Testimonials",
+    titlePrefix: "WHAT GLOBAL EXPERTS SAY",
+    titleHighlight: "ABOUT BHARAT ORGANIC EXPO",
+    subtitle: "Bridging the gap between Organic Buyers and Sustainable Brands",
+    description: "Trusted by leaders across natural & organic sectors. Bharat Organic Expo serves as the premier platform bridging the gap between sustainable brands, farmers, and global buyers. We are committed to fostering B2B connections and transforming the organic business landscape globally.",
     items: [
-      { title: "Ramesh Sharma", label: "Organic Farmer & Exporter", description: "Bharat Organic Expo gave us direct access to international buyers. Our export deals doubled in 3 days!" },
-      { title: "Priya Kapoor", label: "CEO, NaturePure Foods", description: "The quality of trade visitors and organization at Pragati Maidan was world-class. Outstanding ROI!" },
-      { title: "Ankit Nair", label: "Retail Distributor", description: "An incredible array of new organic brands and agri-tech innovations. Highly recommended for every trader!" },
+      { title: "Achaspati Kulwant", label: "Chancellor, University of Patanjali", description: "The change is organizing activities with a vision. I wish the project a great success. It's a wonderful initiative for sustainable future. We must all come together to ensure that our environment is protected and cherished by the coming generations, creating a harmonious balance." },
+      { title: "Khyati Nayak", label: "PRO – Gujarat Tourism", description: "This platform will open eyes of our new generations towards organic living. It provides a unique opportunity to learn from global experts. By adopting these sustainable methodologies, we can actively contribute to a greener ecosystem and promote healthier lifestyle choices." },
+      { title: "Mukesh Kumar", label: "The Yogshala Head", description: "It made me realize the impact of holistic wellness in our daily decisions. Every small step taken today safeguards our natural resources. Whether it is choosing chemical-free products or supporting local farmers, these choices collectively lead to a monumental positive shift in society." },
+      { title: "Dr. Subramanian Swamy", label: "Bharatiya Janata Party (BJP)", description: "The Yogshala Expo is a great step towards a healthier and self-reliant India. It beautifully bridges traditional wisdom with modern practices. The integration of Ayurveda into everyday life ensures that our citizens maintain not just physical strength but also mental and spiritual well-being." },
+      { title: "Qazhf Khan", label: "Father of Kairana Model", description: "The Yogshala Expo ensures honest and responsible contributions. The collective commitment shown here will build a robust organic market. We are witnessing an incredible movement where ethical farming and conscientious consumption are becoming the new standard for a thriving nation." },
     ],
   },
   {
     key: "latest-insights",
     name: "LatestInsights",
     enabled: true,
-    title: "LATEST NEWS & ORGANIC INSIGHTS",
+    eyebrow: "LATEST INSIGHTS",
+    titlePrefix: "Organic Industry",
+    titleHighlight: "Perspectives",
     subtitle: "Stay updated with recent trends in organic farming, certification, and trade.",
-    buttonLabel: "View All Articles",
+    buttonLabel: "Explore All",
     buttonHref: "/blog",
+    items: [
+      { title: "Bharat Organic Expo 2026: India's Organic Industry Comes Together", label: "Expo News", description: "Discover the brands, farmers, buyers and innovators bringing India's organic ecosystem together at Bharat Organic Expo 2026." },
+      { title: "Why India's Organic Industry Is Ready for Its Next Growth Phase", label: "Industry Insight", description: "Explore the market trends, consumer demand and business opportunities shaping India's organic food and natural products sector." },
+      { title: "Sustainable Farming Practices Shaping a Better Tomorrow", label: "Sustainable Future", description: "Discover regenerative agriculture, natural farming and sustainable practices helping create a healthier agricultural ecosystem." },
+    ],
   },
   {
     key: "topbar",
