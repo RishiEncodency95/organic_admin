@@ -1,10 +1,14 @@
 import { configureStore } from "@reduxjs/toolkit";
 import authReducer, { logout, setTokens as setTokensAction } from "./slices/authSlice";
+import homeHeroReducer from "./slices/home/homeHeroSlice";
 import { setTokenRefreshHandlers } from "@/lib/api";
 import { authSyncMiddleware, AUTH_STORAGE_KEY } from "./middleware/authSyncMiddleware";
 
 export const store = configureStore({
-  reducer: { auth: authReducer },
+  reducer: {
+    auth: authReducer,
+    homeHero: homeHeroReducer,
+  },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(authSyncMiddleware),
 });
 
