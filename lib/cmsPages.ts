@@ -110,7 +110,9 @@ export function cmsPagesFromSettings(settings: Record<string, unknown>): CmsPage
   return pageDefinitions.map(([key, title, slug, type], index) => {
     const config = (settings[key] as SettingsPageConfig | undefined) ?? {};
     const score = seoScore(config);
-    const status: PageStatus = config.sections?.some((section) => section.enabled !== false) ? "Published" : "Draft";
+    const status: PageStatus = config.sections && config.sections.length > 0
+      ? (config.sections.some((section) => section.enabled !== false) ? "Published" : "Draft")
+      : "Published";
     return {
       id: index + 1,
       configKey: key,
