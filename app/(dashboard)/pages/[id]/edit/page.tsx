@@ -4,9 +4,13 @@ import React, {
   useEffect,
   useMemo,
   useState,
+  useCallback,
   type ReactNode,
 } from "react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { createHomeHero, updateHomeHero, fetchHomeHeros } from "@/store/slices/home/homeHeroSlice";
 
+import Link from "next/link";
 import {
   useParams,
   useRouter,
@@ -23,9 +27,11 @@ import {
   Clock3,
   Code2,
   Copy,
+  Edit,
   Edit3,
   ExternalLink,
   Eye,
+  EyeOff,
   FileText,
   FormInput,
   ImageIcon,
@@ -976,9 +982,49 @@ function ImageUploadField({
     const router =
       useRouter();
 
-    const [pages, setPages] = useState(cmsPages);
-    const [settings, setSettings] = useState<Record<string, any> | null>(null);
-    const [saving, setSaving] = useState(false);
+  const dispatch = useAppDispatch();
+  const { data: homeHeros } = useAppSelector((state) => state.homeHero);
+
+  useEffect(() => {
+    dispatch(fetchHomeHeros());
+  }, [dispatch]);
+
+  const handleHeroApi = async (action: 'add' | 'edit', section: any) => {
+    const form = new FormData();
+    form.append("tagline", section.tagline || "");
+    form.append("titlePrimary", section.titlePrimary || "");
+    form.append("titleSecondary", section.titleSecondary || "");
+    form.append("subtitle", section.subtitle || "");
+    form.append("description", section.description || "");
+    form.append("date", section.date || "");
+    form.append("location", section.location || "");
+    form.append("button1Name", section.buttonLabel || "");
+    form.append("button1Link", section.buttonHref || "");
+    form.append("button2Name", section.secondaryButtonLabel || "");
+    form.append("button2Link", section.secondaryButtonHref || "");
+    
+    try {
+      if (action === 'add') {
+        await dispatch(createHomeHero(form)).unwrap();
+        Swal.fire({ title: "Success", text: "Added to Home Hero API", icon: "success", timer: 1500 });
+      } else {
+        const id = homeHeros?.[0]?._id;
+        if (id) {
+          await dispatch(updateHomeHero({ id, formData: form })).unwrap();
+          Swal.fire({ title: "Success", text: "Updated Home Hero API", icon: "success", timer: 1500 });
+        } else {
+          Swal.fire({ title: "Error", text: "No existing hero found to edit. Click Add instead.", icon: "error" });
+        }
+      }
+      dispatch(fetchHomeHeros());
+    } catch(err: any) {
+      Swal.fire({ title: "Error", text: err || "API failed", icon: "error" });
+    }
+  };
+
+  const [pages, setPages] = useState(cmsPages);
+  const [settings, setSettings] = useState<Record<string, any> | null>(null);
+  const [saving, setSaving] = useState(false);
 
     const page = findCmsPageByRouteKey(pages, params.id) ?? pages[0] ?? cmsPages[0];
 
@@ -1851,16 +1897,16 @@ function ImageUploadField({
                             )}
                           </div>
 
-                          <div className="flex items-center gap-[10px]" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center gap-[6px]">
-                              <span className="text-[9.5px] font-semibold text-[#697386]">Enabled</span>
-                              <Toggle
-                                checked={section.enabled !== false}
-                                onChange={(value) => updateSectionField(sectionIndex, "enabled", value)}
-                              />
-                            </div>
+                        <div className="flex items-center gap-[10px]" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center gap-[6px]">
+                            <span className="text-[9.5px] font-semibold text-[#697386]">Enabled</span>
+                            <Toggle
+                              checked={section.enabled !== false}
+                              onChange={(value) => updateSectionField(sectionIndex, "enabled", value)}
+                            />
                           </div>
                         </div>
+                      </div>
 
                         {/* SECTION BODY (ONLY RENDERED WHEN OPEN) */}
                         {isOpen && (
