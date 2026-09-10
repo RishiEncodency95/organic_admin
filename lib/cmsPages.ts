@@ -40,11 +40,18 @@ export function getCmsPageRouteKey(page: Pick<CmsPage, "title">): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export function findCmsPageByRouteKey(pages: CmsPage[], routeKey: string): CmsPage | undefined {
-  const numericId = Number(routeKey);
-  return pages.find((page) =>
-    (Number.isInteger(numericId) && page.id === numericId) || getCmsPageRouteKey(page) === routeKey.toLowerCase(),
-  );
+export function findCmsPageByRouteKey(pages: CmsPage[], routeKey?: string): CmsPage | undefined {
+  if (!routeKey) return undefined;
+  const decoded = decodeURIComponent(routeKey).toLowerCase().trim();
+  const numericId = Number(decoded);
+  return pages.find((page) => {
+    if (Number.isInteger(numericId) && page.id === numericId) return true;
+    if (getCmsPageRouteKey(page) === decoded) return true;
+    if (page.configKey && page.configKey.toLowerCase() === decoded) return true;
+    const cleanSlug = page.slug.replace(/^\//, "").toLowerCase();
+    if (cleanSlug && cleanSlug === decoded) return true;
+    return false;
+  });
 }
 
 type SettingsPageConfig = {
