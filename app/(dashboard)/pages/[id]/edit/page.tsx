@@ -64,6 +64,7 @@ import { defaultWhyVisitSections } from "@/lib/whyVisitContent";
 import { defaultWhyExhibitSections } from "@/lib/whyExhibitContent";
 import { defaultMsmeSections } from "@/lib/msmeContent";
 import { defaultExhibitorsSections } from "@/lib/exhibitorsContent";
+import { defaultBuyerSellerMeetSections } from "@/lib/buyerSellerMeetContent";
 import typography from "../../PagesTypography.module.css";
 import Swal from "sweetalert2";
 
@@ -1006,6 +1007,8 @@ export default function CmsEditPage() {
         ? defaultMsmeSections
         : page.configKey === "exhibitorsPage"
         ? defaultExhibitorsSections
+        : page.configKey === "buyerSellerMeetPage"
+        ? defaultBuyerSellerMeetSections
         : defaultLandingSections;
     const rawSections = cfg?.sections && cfg.sections.length > 0 ? cfg.sections : fallbackSections;
     setSectionsDraft(rawSections.map((section: Record<string, any>) => ({ ...section })));
@@ -1468,6 +1471,8 @@ export default function CmsEditPage() {
                         setSectionsDraft(defaultMsmeSections.map((s) => ({ ...s })));
                       } else if (value === "Exhibitors List") {
                         setSectionsDraft(defaultExhibitorsSections.map((s) => ({ ...s })));
+                      } else if (value === "Buyer-Seller Meet") {
+                        setSectionsDraft(defaultBuyerSellerMeetSections.map((s) => ({ ...s })));
                       } else if (value === "Homepage" || value === "Landing Page" || value === "Home") {
                         setSectionsDraft(defaultLandingSections.map((s) => ({ ...s })));
                       }
@@ -1477,11 +1482,11 @@ export default function CmsEditPage() {
                       "About Page",
                       "Advisory Board",
                       "Blogs & News",
-                      "Participate as Exhibitor",
                       "Why Visit",
                       "Why Exhibit",
                       "MSME PMS Scheme",
                       "Exhibitors List",
+                      "Buyer-Seller Meet",
                       "Our Services",
                       "Contact Us",
                     ]}
@@ -1510,9 +1515,6 @@ export default function CmsEditPage() {
                       } else if (value === "Blogs & News") {
                         setSectionsDraft(defaultBlogSections.map((s) => ({ ...s })));
                         updateField("template", "Blogs & News");
-                      } else if (value === "Participate as Exhibitor") {
-                        setSectionsDraft(defaultParticipateAsExhibitorSections.map((s) => ({ ...s })));
-                        updateField("template", "Participate as Exhibitor");
                       } else if (value === "Why Visit") {
                         setSectionsDraft(defaultWhyVisitSections.map((s) => ({ ...s })));
                         updateField("template", "Why Visit");
@@ -1525,6 +1527,9 @@ export default function CmsEditPage() {
                       } else if (value === "Exhibitors List") {
                         setSectionsDraft(defaultExhibitorsSections.map((s) => ({ ...s })));
                         updateField("template", "Exhibitors List");
+                      } else if (value === "Buyer-Seller Meet") {
+                        setSectionsDraft(defaultBuyerSellerMeetSections.map((s) => ({ ...s })));
+                        updateField("template", "Buyer-Seller Meet");
                       } else if (value === "Home") {
                         setSectionsDraft(defaultLandingSections.map((s) => ({ ...s })));
                         updateField("template", "Homepage");
@@ -1536,14 +1541,14 @@ export default function CmsEditPage() {
                       "About Us",
                       "Advisory Board",
                       "Blogs & News",
-                      "Participate as Exhibitor",
                       "Why Visit",
                       "Why Exhibit",
                       "MSME PMS Scheme",
                       "Exhibitors List",
+                      "Buyer-Seller Meet",
                       "Our Services",
                       "Contact Us",
-                      ...pages.map((p) => p.title).filter((t) => !["Home", "About Us", "Advisory Board", "Blogs & News", "Participate as Exhibitor", "Why Visit", "Why Exhibit", "MSME PMS Scheme", "Exhibitors List", "Our Services", "Contact Us"].includes(t)),
+                      ...pages.map((p) => p.title).filter((t) => !["Home", "About Us", "Advisory Board", "Blogs & News", "Why Visit", "Why Exhibit", "MSME PMS Scheme", "Exhibitors List", "Buyer-Seller Meet", "Our Services", "Contact Us"].includes(t)),
                     ]}
                   />
 
