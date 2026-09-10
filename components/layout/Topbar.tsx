@@ -575,8 +575,9 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
                   <span className="text-[12px] font-medium text-slate-700 tracking-tight">
                     {greeting.text},
                   </span>
-                  <span className="text-[12px] font-bold text-[#23471d] tracking-tight">
-                    {admin?.name || displayName}
+                  <span className="text-[12px] font-extrabold text-slate-400">/</span>
+                  <span className="text-[11px] font-extrabold text-[#23471d] bg-[#23471d]/10 px-2 py-0.5 rounded-md border border-[#23471d]/20 shadow-2xs tracking-wide uppercase">
+                    Dashboard
                   </span>
                 </div>
 
