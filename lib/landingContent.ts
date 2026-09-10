@@ -201,21 +201,8 @@ export const defaultLandingSections: LandingSectionContent[] = [
   },
   {
     key: "hero",
-    name: "HeroSection",
+    name: "Hero Carousel Slides",
     enabled: true,
-    tagline: "ORGANIC FOOD & BEVERAGES",
-    titlePrimary: "PURE & CERTIFIED",
-    titleSecondary: "ORGANIC STAPLES",
-    subtitle: "Taste the purity of nature.",
-    description: "Discover a diverse range of certified organic staples, farm-fresh produce, healthy snacks, and plant-based drinks.",
-    date: "19-21 FEBRUARY 2027",
-    location: "PRAGATI MAIDAN, NEW DELHI",
-    image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
-    imageAlt: "Bharat Organic Expo 2027 Hero Banner",
-    buttonLabel: "Book Your Stall",
-    buttonHref: "/registration/book-a-stand",
-    secondaryButtonLabel: "Register as Visitor",
-    secondaryButtonHref: "/registration/visitor-registration",
     slides: [
       {
         tagline: "ORGANIC FOOD & BEVERAGES",
@@ -313,12 +300,6 @@ export const defaultLandingSections: LandingSectionContent[] = [
         secondaryButtonLabel: "Register as Visitor",
         secondaryButtonHref: "/registration/visitor-registration",
       },
-    ],
-    items: [
-      { label: "Exhibitors", value: "500+" },
-      { label: "Trade Visitors", value: "50,000+" },
-      { label: "Exhibition Space", value: "20,000 Sq.m" },
-      { label: "Participating Countries", value: "25+" },
     ],
   },
   {

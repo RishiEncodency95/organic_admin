@@ -5,10 +5,12 @@ import React, {
   useMemo,
   useState,
   useCallback,
+  useRef,
   type ReactNode,
 } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { createHomeHero, updateHomeHero, fetchHomeHeros } from "@/store/slices/home/homeHeroSlice";
+import { api } from "@/lib/api";
 
 import Link from "next/link";
 import {
@@ -380,11 +382,12 @@ function Toggle({
         w-[38px]
         shrink-0
         rounded-full
-        transition
-
+        transition-colors
+        duration-200
+        cursor-pointer
         ${checked
-          ? "bg-[#087540]"
-          : "bg-[#cdd3cf]"
+          ? "bg-[#16a34a]"
+          : "bg-[#dc2626]"
         }
       `}
     >
@@ -398,7 +401,7 @@ function Toggle({
           bg-white
           shadow-sm
           transition-all
-
+          duration-200
           ${checked
             ? "left-[21px]"
             : "left-[3px]"
@@ -446,7 +449,7 @@ function Textarea({
 
 const SECTION_SKIP_KEYS = new Set(["_id", "key", "slides", "items", "enabled", "name"]);
 const LONG_TEXT_KEY_PATTERN = /description|subtitle|quote|message|statement|notice/i;
-const IMAGE_KEY_PATTERN = /image|logo/i;
+const IMAGE_KEY_PATTERN = /image|img|logo|photo|banner|picture|bg/i;
 
 function humanizeKey(key: string) {
   return key
@@ -455,7 +458,7 @@ function humanizeKey(key: string) {
 }
 
 /* =========================================================
-   IMAGE UPLOADER HELPER
+   IMAGE UPLOADER HELPER (EDIT / UPLOAD / DELETE / PREVIEW)
 ========================================================= */
 
 function ImageUploadField({
@@ -472,9 +475,10 @@ function ImageUploadField({
     if (!file) return;
     setUploading(true);
     try {
-      const res = await uploadApi.file(file, "bharat-organic/content");
-      if (res.url) {
-        onChange(res.url);
+      const res: any = await uploadApi.file(file, "bharat-organic/content");
+      const uploadedUrl = res?.url || res?.data?.url;
+      if (uploadedUrl) {
+        onChange(uploadedUrl);
       }
     } catch (err) {
       console.error("Failed to upload image", err);
@@ -483,17 +487,21 @@ function ImageUploadField({
     }
   };
 
+  const handleRemove = () => {
+    onChange("");
+  };
+
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-center gap-2">
+    <div className="flex flex-col gap-2 p-2 bg-[#f8fafc] border border-[#e2e8f0] rounded-[6px]">
+      <div className="flex items-center gap-1.5">
         <TextInput
           value={value}
           onChange={onChange}
           placeholder="https://... image URL"
         />
-        <label className="flex shrink-0 cursor-pointer items-center gap-1 rounded border border-[#0f766e] bg-[#f0fdf4] px-1.5 py-1 text-[8.5px] font-bold text-[#0f766e] hover:bg-[#dcfce7] transition-colors">
-          <Upload className="h-2.5 w-2.5" />
-          {uploading ? "Uploading..." : "Upload"}
+        <label className="flex shrink-0 cursor-pointer items-center gap-1 rounded border border-[#0f766e] bg-[#f0fdf4] px-2 py-1.5 text-[9px] font-bold text-[#0f766e] hover:bg-[#dcfce7] transition-colors shadow-2xs">
+          <Upload className="h-3 w-3" />
+          {uploading ? "Uploading..." : "Upload Image"}
           <input
             type="file"
             accept="image/*"
@@ -502,10 +510,69 @@ function ImageUploadField({
             disabled={uploading}
           />
         </label>
+        {value ? (
+          <button
+            type="button"
+            onClick={handleRemove}
+            title="Remove/Delete image"
+            className="flex shrink-0 items-center gap-1 rounded border border-[#fca5a5] bg-[#fef2f2] px-2 py-1.5 text-[9px] font-bold text-[#dc2626] hover:bg-[#fee2e2] transition-colors shadow-2xs"
+          >
+            <Trash2 className="h-3 w-3" />
+            Delete Image
+          </button>
+        ) : null}
       </div>
-      {value && typeof value === "string" && (
-        <div className="relative mt-1 h-[54px] w-[90px] overflow-hidden rounded border border-[#e5e6e2] bg-[#f8fafc]">
-          <img src={value} alt="Preview" className="h-full w-full object-cover" />
+
+      {value && typeof value === "string" ? (() => {
+        const displayUrl = value.startsWith("http")
+          ? value
+          : value.startsWith("/")
+          ? `http://localhost:4000${value}`
+          : `http://localhost:4000/${value}`;
+
+        return (
+          <div className="flex items-center gap-3 bg-white p-1.5 rounded border border-[#e2e8f0]">
+            <div className="relative h-[60px] w-[100px] shrink-0 overflow-hidden rounded border border-[#cbd5e1] bg-black/5 group">
+              <img
+                src={displayUrl}
+                alt="Background Preview"
+                className="h-full w-full object-cover transition-transform group-hover:scale-105"
+              />
+              <button
+                type="button"
+                onClick={handleRemove}
+                title="Delete Image"
+                className="absolute top-1 right-1 bg-black/70 hover:bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow"
+              >
+                <Trash2 className="h-2.5 w-2.5" />
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-1 min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[9px] font-bold text-[#0f766e] bg-[#ccfbf1] px-1.5 py-0.5 rounded">
+                  Active Image
+                </span>
+                <a
+                  href={displayUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-0.5 text-[8.5px] font-medium text-[#2563eb] hover:underline"
+                >
+                  <ExternalLink className="h-2.5 w-2.5" />
+                  View Full
+                </a>
+              </div>
+              <p className="text-[8.5px] text-[#64748b] truncate font-mono">
+                {value}
+              </p>
+            </div>
+          </div>
+        );
+      })() : (
+        <div className="text-[9px] text-[#94a3b8] italic flex items-center gap-1 px-1">
+          <ImageIcon className="h-3 w-3 text-[#cbd5e1]" />
+          No background image set. Paste a URL or click "Upload Image".
         </div>
       )}
     </div>
@@ -524,11 +591,7 @@ function ImageUploadField({
     );
 
     if (!entries.length) {
-      return (
-        <p className="text-[10px] font-medium text-[#8b929c]">
-          This section has no editable text fields.
-        </p>
-      );
+      return null;
     }
 
     return (
@@ -584,9 +647,42 @@ function ImageUploadField({
     sectionId?: string;
   }) {
     const [openIndex, setOpenIndex] = useState<number | null>(0);
+    const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+    const handleToggle = (index: number) => {
+      if (openIndex === index) {
+        setOpenIndex(null);
+      } else {
+        setOpenIndex(index);
+        setTimeout(() => {
+          itemRefs.current[index]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }, 50);
+      }
+    };
+
+    const FIELD_ORDER_PRIORITY: Record<string, number> = {
+      tagline: 1,
+      titlePrimary: 2,
+      titleSecondary: 3,
+      subtitle: 4,
+      title: 5,
+      name: 6,
+      label: 7,
+      description: 8,
+      date: 9,
+      location: 10,
+      image: 11,
+      img: 12,
+      alt: 13,
+      buttonLabel: 14,
+      buttonHref: 15,
+      secondaryButtonLabel: 16,
+      secondaryButtonHref: 17,
+      icon: 18,
+    };
 
     const getSectionAddLabel = () => {
-      if (sectionId === "hero") return "Add Hero Slide / Badge";
+      if (sectionId === "hero") return "Add Hero Slide";
       if (sectionId === "audience-strip") return "Add Target Audience Group";
       if (sectionId === "introduction-section") return "Add Feature Highlight";
       if (sectionId === "global-platform") return "Add Platform Metric / Highlight";
@@ -620,8 +716,8 @@ function ImageUploadField({
       <div className="flex flex-col gap-[8px]">
         <div className="flex items-center justify-between border-t border-[#e2e8f0] pt-[8px]">
           <div className="flex items-center gap-[6px]">
-            <span className="text-[11px] font-bold text-[#0f766e]">
-              {sectionId === "hero" ? "Key Statistics & Badges" :
+            <span className="text-[11px] font-bold text-[#4B1426]">
+              {sectionId === "hero" ? "Hero Carousel Slides" :
                 sectionId === "audience-strip" ? "Target Audience List" :
                   sectionId === "introduction-section" ? "Key Feature Cards" :
                     sectionId === "global-platform" ? "Platform Highlights & Deals" :
@@ -635,7 +731,7 @@ function ImageUploadField({
                                     sectionId === "navbar" ? "Header Navigation Links" :
                                       sectionId === "footer" ? "Footer Quick Links" : "Section Content Blocks"}
             </span>
-            <span className="rounded-full bg-[#ccfbf1] px-[6px] py-[1px] text-[8.5px] font-bold text-[#0f766e]">
+            <span className="rounded-full bg-[#fae8eb] px-[6px] py-[1px] text-[8.5px] font-bold text-[#4B1426]">
               {items.length} Total
             </span>
           </div>
@@ -643,7 +739,7 @@ function ImageUploadField({
           <button
             type="button"
             onClick={onAddItem}
-            className="flex h-[24px] items-center gap-[4px] rounded-[4px] border border-[#98bca5] bg-white px-[8px] text-[9px] font-semibold text-[#34714c] hover:bg-[#f0fdf4]"
+            className="flex h-[24px] items-center gap-[4px] rounded-[4px] border border-[#d4a2ab] bg-white px-[8px] text-[9px] font-semibold text-[#4B1426] hover:bg-[#fdf2f4]"
           >
             <Plus className="h-[10px] w-[10px]" />
             {getSectionAddLabel()}
@@ -654,7 +750,7 @@ function ImageUploadField({
           <p className="text-[10px] font-medium text-[#8b929c]">No items added yet.</p>
         )}
 
-        <div className="max-h-[350px] overflow-y-auto space-y-2 pr-1 border border-[#f1f5f9] rounded-[6px] p-1 bg-[#fafafa]">
+        <div className="space-y-3 pt-1">
           {items.map((item, index) => {
             let defaultIcon = "";
             if (!item.icon) {
@@ -672,29 +768,36 @@ function ImageUploadField({
               ? { ...item, icon: defaultIcon }
               : item;
 
-            const fieldEntries = Object.entries(itemToEdit).filter(
-              ([key, value]) =>
-                key !== "_id" &&
-                (typeof value === "string" ||
-                  typeof value === "number" ||
-                  typeof value === "boolean" ||
-                  (Array.isArray(value) && value.every((entry) => typeof entry === "string"))),
-            );
+            const fieldEntries = Object.entries(itemToEdit)
+              .filter(
+                ([key, value]) =>
+                  key !== "_id" &&
+                  key !== "img" &&
+                  key !== "status" &&
+                  (typeof value === "string" ||
+                    typeof value === "number" ||
+                    typeof value === "boolean" ||
+                    (Array.isArray(value) && value.every((entry) => typeof entry === "string")))
+              )
+              .sort(([a], [b]) => (FIELD_ORDER_PRIORITY[a] || 99) - (FIELD_ORDER_PRIORITY[b] || 99));
 
             const isOpen = openIndex === index;
 
             return (
               <div
                 key={item._id ?? index}
-                className="bg-white border border-[#e2e8f0] rounded-[5px] overflow-hidden shadow-2xs transition"
+                ref={(el) => {
+                  itemRefs.current[index] = el;
+                }}
+                className="bg-white border border-[#e2e8f0] rounded-[6px] overflow-hidden shadow-2xs transition"
               >
                 <div
-                  onClick={() => setOpenIndex(isOpen ? null : index)}
-                  className="flex cursor-pointer items-center justify-between bg-[#f8fafc] px-[10px] py-[7px] border-b border-[#f1f5f9] hover:bg-[#f1f5f9] transition"
+                  onClick={() => handleToggle(index)}
+                  className="flex cursor-pointer items-center justify-between bg-[#f8fafc] px-[12px] py-[8px] border-b border-[#f1f5f9] hover:bg-[#f1f5f9] transition"
                 >
                   <div className="flex items-center gap-[6px]">
-                    <ChevronRight className={`h-3 w-3 text-[#64748b] transition-transform ${isOpen ? "rotate-90 text-[#0f766e]" : ""}`} />
-                    <span className="text-[10px] font-bold text-[#0f766e]">
+                    <ChevronRight className={`h-3.5 w-3.5 text-[#64748b] transition-transform ${isOpen ? "rotate-90 text-[#4B1426]" : ""}`} />
+                    <span className="text-[11px] font-bold text-[#4B1426]">
                       {getItemLabel(item, index)}
                       {item.value ? <span className="ml-[6px] font-semibold text-[#1e293b]">({item.value})</span> : ""}
                     </span>
@@ -704,16 +807,16 @@ function ImageUploadField({
                     <button
                       type="button"
                       onClick={() => onRemoveItem(index)}
-                      className="flex items-center gap-[3px] text-[9px] font-semibold text-[#dc2626] hover:underline"
+                      className="flex items-center gap-[3px] text-[9.5px] font-semibold text-[#dc2626] hover:underline"
                     >
-                      <Trash2 className="h-[10px] w-[10px]" />
+                      <Trash2 className="h-[11px] w-[11px]" />
                       Remove
                     </button>
                   </div>
                 </div>
 
                 {isOpen && (
-                  <div className="p-[10px] grid grid-cols-2 gap-[8px] bg-white">
+                  <div className="p-[12px] grid grid-cols-2 gap-[10px] bg-white">
                     {fieldEntries.map(([key, value]) => {
                       const isImageKey = IMAGE_KEY_PATTERN.test(key);
 
@@ -1200,42 +1303,89 @@ function ImageUploadField({
     const [openSectionIndices, setOpenSectionIndices] = useState<Set<number>>(new Set([0]));
 
     useEffect(() => {
-      const cfg = page.configKey && settings ? settings[page.configKey] : undefined;
-      const fallbackSections =
-        page.configKey === "aboutPage"
-          ? defaultAboutSections
-          : page.configKey === "advisoryPage"
-            ? defaultAdvisorySections
-            : page.configKey === "blogPage"
-              ? defaultBlogSections
-              : page.configKey === "participateAsExhibitorPage"
-                ? defaultParticipateAsExhibitorSections
-                : page.configKey === "whyVisitPage"
-                  ? defaultWhyVisitSections
-                  : page.configKey === "whyExhibitPage"
-                    ? defaultWhyExhibitSections
-                    : page.configKey === "msmePage"
-                      ? defaultMsmeSections
-                      : page.configKey === "exhibitorsPage"
-                        ? defaultExhibitorsSections
-                        : page.configKey === "buyerSellerMeetPage"
-                          ? defaultBuyerSellerMeetSections
-                          : page.configKey === "galleryPage"
-                            ? defaultGallerySections
-                            : page.configKey === "awardsPage"
-                              ? defaultAwardsSections
-                              : page.configKey === "sponsorshipPage"
-                                ? defaultSponsorshipSections
-                                : page.configKey === "epromotionPage"
-                                  ? defaultEPromotionSections
-                                  : page.configKey === "partnershipPage"
-                                    ? defaultPartnershipPageSections
-                                    : page.configKey === "contactPage"
-                                      ? defaultContactSections
-                                      : defaultLandingSections;
-      const rawSections = cfg?.sections && cfg.sections.length > 0 ? cfg.sections : fallbackSections;
-      setSectionsDraft(rawSections.map((section: Record<string, any>) => ({ ...section })));
-      setOpenSectionIndices(new Set([0]));
+      let isMounted = true;
+      const loadSections = async () => {
+        const cfg = page.configKey && settings ? settings[page.configKey] : undefined;
+        const fallbackSections =
+          page.configKey === "aboutPage"
+            ? defaultAboutSections
+            : page.configKey === "advisoryPage"
+              ? defaultAdvisorySections
+              : page.configKey === "blogPage"
+                ? defaultBlogSections
+                : page.configKey === "participateAsExhibitorPage"
+                  ? defaultParticipateAsExhibitorSections
+                  : page.configKey === "whyVisitPage"
+                    ? defaultWhyVisitSections
+                    : page.configKey === "whyExhibitPage"
+                      ? defaultWhyExhibitSections
+                      : page.configKey === "msmePage"
+                        ? defaultMsmeSections
+                        : page.configKey === "exhibitorsPage"
+                          ? defaultExhibitorsSections
+                          : page.configKey === "buyerSellerMeetPage"
+                            ? defaultBuyerSellerMeetSections
+                            : page.configKey === "galleryPage"
+                              ? defaultGallerySections
+                              : page.configKey === "awardsPage"
+                                ? defaultAwardsSections
+                                : page.configKey === "sponsorshipPage"
+                                  ? defaultSponsorshipSections
+                                  : page.configKey === "epromotionPage"
+                                    ? defaultEPromotionSections
+                                    : page.configKey === "partnershipPage"
+                                      ? defaultPartnershipPageSections
+                                      : page.configKey === "contactPage"
+                                        ? defaultContactSections
+                                        : defaultLandingSections;
+        const rawSections = cfg?.sections && cfg.sections.length > 0 ? cfg.sections : fallbackSections;
+        const cloned = rawSections.map((section: Record<string, any>) => ({ ...section }));
+
+        if (page.configKey === "landingPage" || page.type === "home") {
+          try {
+            const heroRes: any = await api.get("/website/home/home-hero");
+            const liveSlides = Array.isArray(heroRes) ? heroRes : (heroRes?.data ? (Array.isArray(heroRes.data) ? heroRes.data : [heroRes.data]) : []);
+            if (liveSlides && liveSlides.length > 0 && isMounted) {
+              const heroIdx = cloned.findIndex((s: any) => s.key === "hero");
+              if (heroIdx !== -1) {
+                cloned[heroIdx] = {
+                  ...cloned[heroIdx],
+                  slides: liveSlides.map((s: any) => ({
+                    _id: s._id,
+                    tagline: s.tagline || "",
+                    titlePrimary: s.titlePrimary || "",
+                    titleSecondary: s.titleSecondary || "",
+                    subtitle: s.subtitle || "",
+                    title: s.title || `${s.titlePrimary || ""} ${s.titleSecondary || ""}`.trim(),
+                    description: s.description || "",
+                    date: s.date || "",
+                    location: s.location || "",
+                    image: s.image || s.img || "",
+                    alt: s.alt || "",
+                    buttonLabel: s.buttonLabel || s.button1Name || "Book Your Stall",
+                    buttonHref: s.buttonHref || s.button1Link || "/registration/book-a-stand",
+                    secondaryButtonLabel: s.secondaryButtonLabel || s.button2Name || "Register as Visitor",
+                    secondaryButtonHref: s.secondaryButtonHref || s.button2Link || "/registration/visitor-registration",
+                  })),
+                };
+              }
+            }
+          } catch (e) {
+            console.error("Failed to load live hero slides:", e);
+          }
+        }
+
+        if (isMounted) {
+          setSectionsDraft(cloned);
+          setOpenSectionIndices(new Set([0]));
+        }
+      };
+
+      loadSections();
+
+      return () => {
+        isMounted = false;
+      };
     }, [settings, page]);
 
     const toggleSectionAccordion = (index: number) => {
@@ -1313,6 +1463,17 @@ function ImageUploadField({
       if (!settings || !page.configKey) return;
       setSaving(true);
       try {
+        if (page.configKey === "landingPage" || page.type === "home") {
+          const heroSec = sectionsDraft.find((s) => s.key === "hero");
+          if (heroSec && Array.isArray(heroSec.slides) && heroSec.slides.length > 0) {
+            try {
+              await api.put("/website/home/home-hero", { slides: heroSec.slides });
+            } catch (err) {
+              console.error("Failed to sync hero slides to backend:", err);
+            }
+          }
+        }
+
         const current = settings[page.configKey] ?? {};
         const updated = await settingsApi.update({
           [page.configKey]: {
@@ -1847,7 +2008,7 @@ function ImageUploadField({
                     <button
                       type="button"
                       onClick={() => setOpenSectionIndices(new Set(sectionsDraft.map((_, i) => i)))}
-                      className="text-[9.5px] font-semibold text-[#0f766e] hover:underline"
+                      className="text-[9.5px] font-semibold text-[#4B1426] hover:underline"
                     >
                       Expand All
                     </button>
@@ -1870,28 +2031,28 @@ function ImageUploadField({
                     return (
                       <div
                         key={section._id ?? section.key ?? sectionIndex}
-                        className={`rounded-[6px] border transition ${isOpen ? "border-[#0d5c34] bg-[#fbfbfa]" : "border-[#cbd5e1] bg-white hover:border-[#94a3b8]"
+                        className={`rounded-[6px] border transition ${isOpen ? "border-[#4B1426] bg-[#fbfbfa]" : "border-[#cbd5e1] bg-white hover:border-[#94a3b8]"
                           }`}
                       >
                         {/* SECTION CARD HEADER */}
                         <div
                           onClick={() => toggleSectionAccordion(sectionIndex)}
-                          className={`flex cursor-pointer items-center justify-between px-[14px] py-[10px] transition ${isOpen ? "bg-[#f0fdf4] border-b border-[#dcfce7]" : "bg-[#f8fafc]"
+                          className={`flex cursor-pointer items-center justify-between px-[14px] py-[10px] transition ${isOpen ? "bg-[#fdf2f4] border-b border-[#f5d0d6]" : "bg-[#f8fafc]"
                             }`}
                         >
                           <div className="flex items-center gap-[8px]">
                             <ChevronRight
-                              className={`h-4 w-4 text-[#0d5c34] transition-transform ${isOpen ? "rotate-90 text-[#166b40]" : ""
+                              className={`h-4 w-4 text-[#4B1426] transition-transform ${isOpen ? "rotate-90 text-[#3b0f1e]" : ""
                                 }`}
                             />
                             <span className="font-mono text-[10px] font-bold text-[#64748b]">
                               {sectionIndex + 1}.
                             </span>
-                            <span className="text-[12px] font-bold text-[#1c5033]">
+                            <span className="text-[12px] font-bold text-[#4B1426]">
                               {section.name ?? section.key}
                             </span>
                             {section.enabled === false && (
-                              <span className="rounded-[4px] bg-[#f1f5f9] px-[6px] py-[1px] text-[8px] font-bold text-[#94a3b8]">
+                              <span className="rounded-[4px] bg-rose-50 border border-rose-200 px-[6px] py-[1px] text-[8px] font-bold text-rose-600">
                                 Disabled
                               </span>
                             )}
@@ -1899,7 +2060,13 @@ function ImageUploadField({
 
                         <div className="flex items-center gap-[10px]" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center gap-[6px]">
-                            <span className="text-[9.5px] font-semibold text-[#697386]">Enabled</span>
+                            <span
+                              className={`text-[9.5px] font-bold ${
+                                section.enabled !== false ? "text-[#16a34a]" : "text-[#dc2626]"
+                              }`}
+                            >
+                              {section.enabled !== false ? "Enabled" : "Disabled"}
+                            </span>
                             <Toggle
                               checked={section.enabled !== false}
                               onChange={(value) => updateSectionField(sectionIndex, "enabled", value)}
@@ -1917,10 +2084,7 @@ function ImageUploadField({
                             />
 
                             {Array.isArray(section.slides) && (
-                              <div className="flex flex-col gap-[8px] pt-[8px] border-t border-[#e8e9e5]">
-                                <p className="text-[11px] font-bold text-[#1c5033]">
-                                  Hero Carousel Slides ({section.slides.length})
-                                </p>
+                              <div className="flex flex-col gap-[8px]">
                                 <SectionItemsEditor
                                   items={section.slides}
                                   onChangeItem={(itemIndex, key, value) => {
@@ -1966,7 +2130,7 @@ function ImageUploadField({
                               </div>
                             )}
 
-                            {Array.isArray(section.items) && (
+                            {Array.isArray(section.items) && section.key !== "hero" && (
                               <SectionItemsEditor
                                 items={section.items}
                                 onChangeItem={(itemIndex, key, value) => updateSectionItem(sectionIndex, itemIndex, key, value)}
