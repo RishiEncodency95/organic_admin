@@ -26,11 +26,11 @@ export const defaultMsmeSections: LandingSectionContent[] = [
     enabled: true,
     title: "MSME SCHEME HIGHLIGHTS",
     items: [
-      { title: "Government Approved", subtitle: "Official Scheme", icon: "ShieldCheck" },
-      { title: "Financial Support", subtitle: "Up to ₹1.50 Lakh*", icon: "Banknote" },
-      { title: "Stall Rent Assistance", subtitle: "Space Subsidies", icon: "Store" },
-      { title: "Contingency Support", subtitle: "Travel & Freight*", icon: "Truck" },
-      { title: "Easy Process", subtitle: "Hassle-free Support", icon: "CheckCircle" },
+      { title: "Curated Meetings", subtitle: "Relevant Connections", icon: "Users" },
+      { title: "Verified Business", subtitle: "Profiles", icon: "CheckCircle" },
+      { title: "Industry Focused", subtitle: "Networking", icon: "Target" },
+      { title: "New Opportunities", subtitle: "& Partnerships", icon: "ArrowUpRight" },
+      { title: "Business Growth", subtitle: "& Expansion", icon: "TrendingUp" },
     ],
   },
   {

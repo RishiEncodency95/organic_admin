@@ -70,7 +70,6 @@ const pageDefinitions = [
   ["aboutPage", "About Us", "/about", "page"],
   ["advisoryPage", "Advisory Board", "/advisory-board", "page"],
   ["blogPage", "Blogs & News", "/blog", "page"],
-  ["participateAsExhibitorPage", "Participate as Exhibitor", "/participate-as-exhibitor", "page"],
   ["whyVisitPage", "Why Visit", "/participate/why-visit", "page"],
   ["whyExhibitPage", "Why Exhibit", "/participate/why-exhibit", "page"],
   ["msmePage", "MSME PMS Scheme", "/participate/msme", "page"],
@@ -177,19 +176,7 @@ export const cmsPages: CmsPage[] = [
     updatedBy: "Admin User",
     type: "page",
   },
-  {
-    id: 5,
-    configKey: "participateAsExhibitorPage",
-    title: "Participate as Exhibitor",
-    slug: "/participate-as-exhibitor",
-    author: "Admin User",
-    status: "Published",
-    seoScore: 90,
-    rating: "Excellent",
-    updated: "Today, 12:30 PM",
-    updatedBy: "Admin User",
-    type: "page",
-  },
+
   {
     id: 6,
     configKey: "whyVisitPage",
