@@ -177,40 +177,62 @@ function TextInput({
   value,
   onChange,
   placeholder,
+  maxLength = 120,
 }: {
   value: string;
-  onChange: (
-    value: string,
-  ) => void;
+  onChange: (value: string) => void;
   placeholder?: string;
+  maxLength?: number;
 }) {
+  const currentLength = (value || "").length;
+  // Lock max limit strictly to the initial text length (or fallback if empty)
+  const initialLengthRef = useRef<number | null>(null);
+  if (initialLengthRef.current === null) {
+    initialLengthRef.current = currentLength > 0 ? currentLength : maxLength;
+  }
+  const maxAllowed = initialLengthRef.current;
+  const isAtLimit = currentLength >= maxAllowed;
+
   return (
-    <input
-      type="text"
-      value={value}
-      placeholder={placeholder}
-      onChange={(event) =>
-        onChange(
-          event.target.value,
-        )
-      }
-      className="
-        h-[35px]
-        w-full
-        cursor-default
-        bg-white
-        rounded-none
-        shadow-[0_1px_3px_0_rgba(0,0,0,0.02),0_0_0_1px_rgba(27,31,35,0.15)]
-        px-[10px]
-        text-[11px]
-        font-medium
-        text-[#414b5e]
-        outline-none
-        placeholder:text-[10.5px]
-        placeholder:text-[#9aa0aa]
-        focus:border-[#8fa98e]
-      "
-    />
+    <div className="relative w-full">
+      <input
+        type="text"
+        value={value}
+        maxLength={maxAllowed}
+        placeholder={placeholder}
+        onChange={(event) => {
+          if (event.target.value.length <= maxAllowed) {
+            onChange(event.target.value);
+          }
+        }}
+        className="
+          h-[35px]
+          w-full
+          cursor-default
+          bg-white
+          rounded-none
+          shadow-[0_1px_3px_0_rgba(0,0,0,0.02),0_0_0_1px_rgba(27,31,35,0.15)]
+          pl-[10px]
+          pr-[62px]
+          text-[11px]
+          font-medium
+          text-[#414b5e]
+          outline-none
+          placeholder:text-[10.5px]
+          placeholder:text-[#9aa0aa]
+          focus:border-[#8fa98e]
+        "
+      />
+      <span
+        className={`absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none px-1.5 py-0.5 text-[8.5px] font-mono font-bold rounded ${
+          isAtLimit
+            ? "bg-[#fee2e2] text-[#dc2626] border border-[#fca5a5]"
+            : "bg-[#f1f5f9] text-[#64748b]"
+        }`}
+      >
+        {currentLength}/{maxAllowed}
+      </span>
+    </div>
   );
 }
 
@@ -255,33 +277,17 @@ function SelectField({
           focus:border-[#8fa98e]
         "
       >
-        {options.map((option) => {
-          const isString = typeof option === "string";
-          const optValue = isString ? option : option.value;
-          const optLabel = isString ? option : option.label;
+        {options.map((opt) => {
+          const val = typeof opt === "string" ? opt : opt.value;
+          const lbl = typeof opt === "string" ? opt : opt.label;
           return (
-            <option
-              key={optValue}
-              value={optValue}
-            >
-              {optLabel}
+            <option key={val} value={val}>
+              {lbl}
             </option>
           );
         })}
       </select>
-
-      <ChevronDown
-        className="
-          pointer-events-none
-          absolute
-          right-[9px]
-          top-1/2
-          h-[11px]
-          w-[11px]
-          -translate-y-1/2
-          text-[#697386]
-        "
-      />
+      <ChevronDown className="pointer-events-none absolute right-[8px] top-1/2 h-[12px] w-[12px] -translate-y-1/2 text-[#64748b]" />
     </div>
   );
 }
@@ -432,21 +438,47 @@ function Textarea({
   placeholder,
   rows = 3,
   mono = false,
+  maxLength = 450,
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   rows?: number;
   mono?: boolean;
+  maxLength?: number;
 }) {
+  const currentLength = (value || "").length;
+  const initialLengthRef = useRef<number | null>(null);
+  if (initialLengthRef.current === null) {
+    initialLengthRef.current = currentLength > 0 ? currentLength : maxLength;
+  }
+  const maxAllowed = initialLengthRef.current;
+  const isAtLimit = currentLength >= maxAllowed;
+
   return (
-    <textarea
-      value={value}
-      placeholder={placeholder}
-      rows={rows}
-      onChange={(event) => onChange(event.target.value)}
-      className={`w-full cursor-default resize-none bg-white rounded-none shadow-[0_1px_3px_0_rgba(0,0,0,0.02),0_0_0_1px_rgba(27,31,35,0.15)] px-[10px] py-[8px] text-[11px] font-medium text-[#414b5e] outline-none placeholder:text-[10.5px] placeholder:text-[#9aa0aa] focus:shadow-[0_1px_3px_0_rgba(0,0,0,0.02),0_0_0_1px_rgba(143,169,142,1)] ${mono ? "font-mono text-[10px]" : ""}`}
-    />
+    <div className="relative w-full">
+      <textarea
+        value={value}
+        maxLength={maxAllowed}
+        placeholder={placeholder}
+        rows={rows}
+        onChange={(event) => {
+          if (event.target.value.length <= maxAllowed) {
+            onChange(event.target.value);
+          }
+        }}
+        className={`w-full cursor-default resize-none bg-white rounded-none shadow-[0_1px_3px_0_rgba(0,0,0,0.02),0_0_0_1px_rgba(27,31,35,0.15)] px-[10px] py-[8px] text-[11px] font-medium text-[#414b5e] outline-none placeholder:text-[10.5px] placeholder:text-[#9aa0aa] focus:shadow-[0_1px_3px_0_rgba(0,0,0,0.02),0_0_0_1px_rgba(143,169,142,1)] ${mono ? "font-mono text-[10px]" : ""}`}
+      />
+      <span
+        className={`absolute right-2 bottom-2.5 pointer-events-none px-1.5 py-0.5 text-[8.5px] font-mono font-bold rounded ${
+          isAtLimit
+            ? "bg-[#fee2e2] text-[#dc2626] border border-[#fca5a5]"
+            : "bg-[#f1f5f9] text-[#64748b]"
+        }`}
+      >
+        {currentLength}/{maxAllowed}
+      </span>
+    </div>
   );
 }
 
@@ -459,7 +491,8 @@ function Textarea({
 
 const SECTION_SKIP_KEYS = new Set(["_id", "key", "slides", "items", "enabled", "name"]);
 const LONG_TEXT_KEY_PATTERN = /description|subtitle|quote|message|statement|notice/i;
-const IMAGE_KEY_PATTERN = /image|img|logo|photo|banner|picture|bg/i;
+const IMAGE_KEY_PATTERN = /image|img|logo|photo|banner|picture|bg|avatar|thumbnail/i;
+const VIDEO_KEY_PATTERN = /video|youtube|embed|vimeo|clip|mediaUrl/i;
 
 function humanizeKey(key: string) {
   return key
@@ -589,6 +622,167 @@ function ImageUploadField({
   );
 }
 
+/* =========================================================
+   VIDEO UPLOADER HELPER (EDIT / UPLOAD / DELETE / PREVIEW)
+========================================================= */
+
+function VideoUploadField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (url: string) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await api.postForm<{ url: string }>("/gallery/upload", formData);
+      if (res && res.url) {
+        onChange(res.url);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemove = () => {
+    onChange("");
+  };
+
+  const isYouTube = value.includes("youtube.com") || value.includes("youtu.be");
+  let ytEmbedUrl = "";
+  if (isYouTube) {
+    const match = value.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+    if (match && match[1]) {
+      ytEmbedUrl = `https://www.youtube.com/embed/${match[1]}`;
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2 p-2 bg-[#f8fafc] border border-[#e2e8f0] rounded-[6px]">
+      <div className="flex items-center gap-1.5">
+        <TextInput
+          value={value}
+          onChange={onChange}
+          placeholder="https://... Video / YouTube URL"
+        />
+        <label className="flex shrink-0 cursor-pointer items-center gap-1 rounded border border-[#2563eb] bg-[#eff6ff] px-2 py-1.5 text-[9px] font-bold text-[#1d4ed8] hover:bg-[#dbeafe] transition-colors shadow-2xs">
+          <Upload className="h-3 w-3" />
+          {uploading ? "Uploading..." : "Upload Video"}
+          <input
+            type="file"
+            accept="video/*"
+            onChange={handleFileChange}
+            className="hidden"
+            disabled={uploading}
+          />
+        </label>
+        {value ? (
+          <button
+            type="button"
+            onClick={handleRemove}
+            title="Remove/Delete video"
+            className="flex shrink-0 items-center gap-1 rounded border border-[#fca5a5] bg-[#fef2f2] px-2 py-1.5 text-[9px] font-bold text-[#dc2626] hover:bg-[#fee2e2] transition-colors shadow-2xs"
+          >
+            <Trash2 className="h-3 w-3" />
+            Delete Video
+          </button>
+        ) : null}
+      </div>
+
+      {value && typeof value === "string" ? (() => {
+        const displayUrl = value.startsWith("http")
+          ? value
+          : value.startsWith("/")
+            ? `http://localhost:4000${value}`
+            : `http://localhost:4000/${value}`;
+
+        return (
+          <div className="flex flex-col gap-2 bg-white p-2 rounded border border-[#e2e8f0]">
+            <div className="flex items-center gap-3">
+              <div className="relative h-[65px] w-[110px] shrink-0 overflow-hidden rounded border border-[#cbd5e1] bg-black group flex items-center justify-center">
+                {ytEmbedUrl ? (
+                  <iframe
+                    src={ytEmbedUrl}
+                    title="Video Preview"
+                    className="h-full w-full pointer-events-none"
+                  />
+                ) : (
+                  <video src={displayUrl} className="h-full w-full object-cover" />
+                )}
+                <button
+                  type="button"
+                  onClick={handleRemove}
+                  title="Delete Video"
+                  className="absolute top-1 right-1 bg-black/70 hover:bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                >
+                  <Trash2 className="h-2.5 w-2.5" />
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-1 min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9px] font-bold text-[#1d4ed8] bg-[#dbeafe] px-1.5 py-0.5 rounded">
+                    Active Video Media
+                  </span>
+                  <a
+                    href={displayUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-0.5 text-[8.5px] font-medium text-[#2563eb] hover:underline"
+                  >
+                    <ExternalLink className="h-2.5 w-2.5" />
+                    Open Video
+                  </a>
+                </div>
+                <p className="text-[8.5px] text-[#64748b] truncate font-mono">
+                  {value}
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+      })() : (
+        <div className="text-[9px] text-[#94a3b8] italic flex items-center gap-1 px-1">
+          <ImageIcon className="h-3 w-3 text-[#cbd5e1]" />
+          No video media set. Paste a YouTube/Video URL or click "Upload Video".
+        </div>
+      )}
+    </div>
+  );
+}
+
+function getFieldMaxLength(key: string, isLongText: boolean = false): number {
+  const k = key.toLowerCase();
+  if (k === "title" || k === "name" || k === "eyebrow" || k === "tag" || k === "badge") {
+    return 60; // Strict limit for Titles, Names, Eyebrows
+  }
+  if (k === "subtitle" || k === "sub" || k === "main" || k === "heading") {
+    return 90; // Subtitles
+  }
+  if (k.includes("marquee") || k.includes("notice") || k.includes("statement")) {
+    return 140; // Marquee / Banner Announcement text
+  }
+  if (k.includes("phone") || k.includes("mobile") || k.includes("email") || k.includes("date") || k.includes("location") || k.includes("duration")) {
+    return 50; // Short contact info & meta details
+  }
+  if (k.includes("button") || k.includes("label") || k.includes("action")) {
+    return 30; // Buttons & CTA Labels
+  }
+  if (isLongText || k.includes("desc") || k.includes("quote") || k.includes("answer") || k.includes("message")) {
+    return 350; // Paragraph descriptions
+  }
+  return 80; // General default fields
+}
+
 function SectionFieldsEditor({
   section,
   onFieldChange,
@@ -613,25 +807,41 @@ function SectionFieldsEditor({
       {entries.map(([key, value]) => {
         const isLong = LONG_TEXT_KEY_PATTERN.test(key);
         const isImage = IMAGE_KEY_PATTERN.test(key);
+        const isVideo = VIDEO_KEY_PATTERN.test(key);
+        const fieldLimit = getFieldMaxLength(key, isLong);
 
         return (
           <div
             key={key}
-            className={isLong || isImage || typeof value === "boolean" ? "col-span-2" : ""}
+            className={isLong || isImage || isVideo || typeof value === "boolean" ? "col-span-2" : ""}
           >
             <FieldLabel>{humanizeKey(key)}</FieldLabel>
 
             {typeof value === "boolean" ? (
               <Toggle checked={value} onChange={(next) => onFieldChange(key, next)} />
+            ) : isVideo ? (
+              <VideoUploadField
+                value={String(value)}
+                onChange={(next) => onFieldChange(key, next)}
+              />
             ) : isImage ? (
               <ImageUploadField
                 value={String(value)}
                 onChange={(next) => onFieldChange(key, next)}
               />
             ) : isLong ? (
-              <Textarea value={String(value)} onChange={(next) => onFieldChange(key, next)} rows={2} />
+              <Textarea
+                value={String(value)}
+                onChange={(next) => onFieldChange(key, next)}
+                rows={2}
+                maxLength={fieldLimit}
+              />
             ) : (
-              <TextInput value={String(value)} onChange={(next) => onFieldChange(key, next)} />
+              <TextInput
+                value={String(value)}
+                onChange={(next) => onFieldChange(key, next)}
+                maxLength={fieldLimit}
+              />
             )}
           </div>
         );
@@ -833,73 +1043,79 @@ function SectionItemsEditor({
 
               {isOpen && (
                 <div className="p-[12px] grid grid-cols-2 gap-[10px] bg-white">
-                  {fieldEntries.map(([key, value]) => {
-                    const isImageKey = IMAGE_KEY_PATTERN.test(key);
+                    {fieldEntries.map(([key, value]) => {
+                      const isImageKey = IMAGE_KEY_PATTERN.test(key);
+                      const isVideoKey = VIDEO_KEY_PATTERN.test(key);
 
-                    return (
-                      <div key={key} className={isImageKey ? "col-span-2" : ""}>
-                        <FieldLabel>{humanizeKey(key)}</FieldLabel>
+                      return (
+                        <div key={key} className={isImageKey || isVideoKey ? "col-span-2" : ""}>
+                          <FieldLabel>{humanizeKey(key)}</FieldLabel>
 
-                        {key === "icon" && sectionId !== "journey-glimpse" ? (
-                          <SelectField
-                            value={String(value)}
-                            options={[
-                              { label: "None", value: "" },
-                              { label: "Group of People (Users)", value: "Users" },
-                              { label: "Store / Exhibitor", value: "Store" },
-                              { label: "Presentation / Speaker", value: "Presentation" },
-                              { label: "Building / Company (Building2)", value: "Building2" },
-                              { label: "Globe / International", value: "Globe" },
-                              { label: "Leaf / Organic", value: "Leaf" },
-                              { label: "Graduation Cap / Academic", value: "GraduationCap" },
-                              { label: "Stethoscope / Healthcare", value: "Stethoscope" },
-                              { label: "Landmark / Government", value: "Landmark" },
-                              { label: "Shield Check / Verified", value: "ShieldCheck" },
-                              { label: "Handshake / Partnership", value: "Handshake" },
-                              { label: "Target / Vision", value: "Target" },
-                              { label: "Trending Up / Growth", value: "TrendingUp" },
-                              { label: "Award / Achievement", value: "Award" },
-                              { label: "Medal / Honour", value: "Medal" },
-                              { label: "Lightbulb / Innovation", value: "Lightbulb" },
-                              { label: "Mic / Speaker", value: "Mic" },
-                              { label: "Calendar / Dates", value: "CalendarDays" },
-                              { label: "Eye / View", value: "Eye" },
-                              { label: "Sprout / Plant", value: "Sprout" },
-                              { label: "Heart Pulse / Health", value: "HeartPulse" },
-                              { label: "Trophy / Winner", value: "Trophy" },
-                              { label: "Megaphone / Visibility", value: "Megaphone" },
-                              { label: "User Check / Verified User", value: "UserCheck" },
-                              { label: "Briefcase / Business", value: "Briefcase" },
-                              { label: "Sparkles / Magic", value: "Sparkles" },
-                              { label: "Zap / Fast", value: "Zap" },
-                              { label: "ID Card / Lanyard", value: "IdCard" },
-                              { label: "Plug / Charging", value: "Plug" },
-                              { label: "Contact / Badge", value: "Contact" },
-                              { label: "Wi-Fi / Internet", value: "Wifi" },
-                              { label: "Shopping Bag / Visitor Bag", value: "ShoppingBag" },
-                              { label: "Coffee / Refreshment", value: "Coffee" },
-                              { label: "Newspaper / Press", value: "Newspaper" },
-                              { label: "File Text / Print", value: "FileText" },
-                              { label: "Camera / Media", value: "Camera" },
-                              { label: "Headphones / Support", value: "Headphones" },
-                              { label: "Message Circle / Chat", value: "MessageCircle" },
-                              { label: "Clock / Time", value: "Clock" },
-                              { label: "Phone", value: "Phone" },
-                              { label: "Mail", value: "Mail" },
-                              { label: "Map Pin", value: "MapPin" },
-                              { label: "Heart", value: "Heart" },
-                              { label: "Star", value: "Star" },
-                              { label: "Check Circle", value: "CheckCircle" },
-                              { label: "Info", value: "Info" },
-                            ]}
-                            onChange={(next) => onChangeItem(index, key, next)}
-                          />
-                        ) : isImageKey ? (
-                          <ImageUploadField
-                            value={String(value)}
-                            onChange={(next) => onChangeItem(index, key, next)}
-                          />
-                        ) : Array.isArray(value) ? (
+                          {key === "icon" && sectionId !== "journey-glimpse" ? (
+                            <SelectField
+                              value={String(value)}
+                              options={[
+                                { label: "None", value: "" },
+                                { label: "Group of People (Users)", value: "Users" },
+                                { label: "Store / Exhibitor", value: "Store" },
+                                { label: "Presentation / Speaker", value: "Presentation" },
+                                { label: "Building / Company (Building2)", value: "Building2" },
+                                { label: "Globe / International", value: "Globe" },
+                                { label: "Leaf / Organic", value: "Leaf" },
+                                { label: "Graduation Cap / Academic", value: "GraduationCap" },
+                                { label: "Stethoscope / Healthcare", value: "Stethoscope" },
+                                { label: "Landmark / Government", value: "Landmark" },
+                                { label: "Shield Check / Verified", value: "ShieldCheck" },
+                                { label: "Handshake / Partnership", value: "Handshake" },
+                                { label: "Target / Vision", value: "Target" },
+                                { label: "Trending Up / Growth", value: "TrendingUp" },
+                                { label: "Award / Achievement", value: "Award" },
+                                { label: "Medal / Honour", value: "Medal" },
+                                { label: "Lightbulb / Innovation", value: "Lightbulb" },
+                                { label: "Mic / Speaker", value: "Mic" },
+                                { label: "Calendar / Dates", value: "CalendarDays" },
+                                { label: "Eye / View", value: "Eye" },
+                                { label: "Sprout / Plant", value: "Sprout" },
+                                { label: "Heart Pulse / Health", value: "HeartPulse" },
+                                { label: "Trophy / Winner", value: "Trophy" },
+                                { label: "Megaphone / Visibility", value: "Megaphone" },
+                                { label: "User Check / Verified User", value: "UserCheck" },
+                                { label: "Briefcase / Business", value: "Briefcase" },
+                                { label: "Sparkles / Magic", value: "Sparkles" },
+                                { label: "Zap / Fast", value: "Zap" },
+                                { label: "ID Card / Lanyard", value: "IdCard" },
+                                { label: "Plug / Charging", value: "Plug" },
+                                { label: "Contact / Badge", value: "Contact" },
+                                { label: "Wi-Fi / Internet", value: "Wifi" },
+                                { label: "Shopping Bag / Visitor Bag", value: "ShoppingBag" },
+                                { label: "Coffee / Refreshment", value: "Coffee" },
+                                { label: "Newspaper / Press", value: "Newspaper" },
+                                { label: "File Text / Print", value: "FileText" },
+                                { label: "Camera / Media", value: "Camera" },
+                                { label: "Headphones / Support", value: "Headphones" },
+                                { label: "Message Circle / Chat", value: "MessageCircle" },
+                                { label: "Clock / Time", value: "Clock" },
+                                { label: "Phone", value: "Phone" },
+                                { label: "Mail", value: "Mail" },
+                                { label: "Map Pin", value: "MapPin" },
+                                { label: "Heart", value: "Heart" },
+                                { label: "Star", value: "Star" },
+                                { label: "Check Circle", value: "CheckCircle" },
+                                { label: "Info", value: "Info" },
+                              ]}
+                              onChange={(next) => onChangeItem(index, key, next)}
+                            />
+                          ) : isVideoKey ? (
+                            <VideoUploadField
+                              value={String(value)}
+                              onChange={(next) => onChangeItem(index, key, next)}
+                            />
+                          ) : isImageKey ? (
+                            <ImageUploadField
+                              value={String(value)}
+                              onChange={(next) => onChangeItem(index, key, next)}
+                            />
+                          ) : Array.isArray(value) ? (
                           <TextInput
                             value={value.join(", ")}
                             onChange={(next) =>
@@ -913,8 +1129,19 @@ function SectionItemsEditor({
                           />
                         ) : typeof value === "boolean" ? (
                           <Toggle checked={value} onChange={(next) => onChangeItem(index, key, next)} />
+                        ) : LONG_TEXT_KEY_PATTERN.test(key) ? (
+                          <Textarea
+                            value={String(value)}
+                            onChange={(next) => onChangeItem(index, key, next)}
+                            rows={2}
+                            maxLength={getFieldMaxLength(key, true)}
+                          />
                         ) : (
-                          <TextInput value={String(value)} onChange={(next) => onChangeItem(index, key, next)} />
+                          <TextInput
+                            value={String(value)}
+                            onChange={(next) => onChangeItem(index, key, next)}
+                            maxLength={getFieldMaxLength(key, false)}
+                          />
                         )}
                       </div>
                     );
