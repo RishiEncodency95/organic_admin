@@ -185,12 +185,8 @@ function TextInput({
   maxLength?: number;
 }) {
   const currentLength = (value || "").length;
-  // Lock max limit strictly to the initial text length (or fallback if empty)
-  const initialLengthRef = useRef<number | null>(null);
-  if (initialLengthRef.current === null) {
-    initialLengthRef.current = currentLength > 0 ? currentLength : maxLength;
-  }
-  const maxAllowed = initialLengthRef.current;
+  // Dynamic max allowed: allows expanding up to the specified field capacity (e.g. 120, 140, 350)
+  const maxAllowed = Math.max(currentLength, maxLength);
   const isAtLimit = currentLength >= maxAllowed;
 
   return (
@@ -224,11 +220,10 @@ function TextInput({
         "
       />
       <span
-        className={`absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none px-1.5 py-0.5 text-[8.5px] font-mono font-bold rounded ${
-          isAtLimit
+        className={`absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none px-1.5 py-0.5 text-[8.5px] font-mono font-bold rounded ${isAtLimit
             ? "bg-[#fee2e2] text-[#dc2626] border border-[#fca5a5]"
             : "bg-[#f1f5f9] text-[#64748b]"
-        }`}
+          }`}
       >
         {currentLength}/{maxAllowed}
       </span>
@@ -470,11 +465,10 @@ function Textarea({
         className={`w-full cursor-default resize-none bg-white rounded-none shadow-[0_1px_3px_0_rgba(0,0,0,0.02),0_0_0_1px_rgba(27,31,35,0.15)] px-[10px] py-[8px] text-[11px] font-medium text-[#414b5e] outline-none placeholder:text-[10.5px] placeholder:text-[#9aa0aa] focus:shadow-[0_1px_3px_0_rgba(0,0,0,0.02),0_0_0_1px_rgba(143,169,142,1)] ${mono ? "font-mono text-[10px]" : ""}`}
       />
       <span
-        className={`absolute right-2 bottom-2.5 pointer-events-none px-1.5 py-0.5 text-[8.5px] font-mono font-bold rounded ${
-          isAtLimit
+        className={`absolute right-2 bottom-2.5 pointer-events-none px-1.5 py-0.5 text-[8.5px] font-mono font-bold rounded ${isAtLimit
             ? "bg-[#fee2e2] text-[#dc2626] border border-[#fca5a5]"
             : "bg-[#f1f5f9] text-[#64748b]"
-        }`}
+          }`}
       >
         {currentLength}/{maxAllowed}
       </span>
@@ -762,25 +756,28 @@ function VideoUploadField({
 
 function getFieldMaxLength(key: string, isLongText: boolean = false): number {
   const k = key.toLowerCase();
+  if (k.includes("email") || k.includes("phone") || k.includes("mobile") || k.includes("contact") || k.includes("address")) {
+    return 120; // Expanded limit for emails like info@namogangewellness.com & long contact details
+  }
   if (k === "title" || k === "name" || k === "eyebrow" || k === "tag" || k === "badge") {
-    return 60; // Strict limit for Titles, Names, Eyebrows
+    return 120; // Expanded capacity for titles
   }
   if (k === "subtitle" || k === "sub" || k === "main" || k === "heading") {
-    return 90; // Subtitles
+    return 180; // Subtitles
   }
   if (k.includes("marquee") || k.includes("notice") || k.includes("statement")) {
-    return 140; // Marquee / Banner Announcement text
+    return 250; // Marquee / Banner Announcement text
   }
-  if (k.includes("phone") || k.includes("mobile") || k.includes("email") || k.includes("date") || k.includes("location") || k.includes("duration")) {
-    return 50; // Short contact info & meta details
+  if (k.includes("date") || k.includes("location") || k.includes("duration")) {
+    return 100; // Dates & Location details
   }
   if (k.includes("button") || k.includes("label") || k.includes("action")) {
-    return 30; // Buttons & CTA Labels
+    return 60; // Buttons & CTA Labels
   }
   if (isLongText || k.includes("desc") || k.includes("quote") || k.includes("answer") || k.includes("message")) {
-    return 350; // Paragraph descriptions
+    return 500; // Paragraph descriptions
   }
-  return 80; // General default fields
+  return 150; // General default fields
 }
 
 function SectionFieldsEditor({
@@ -1043,79 +1040,79 @@ function SectionItemsEditor({
 
               {isOpen && (
                 <div className="p-[12px] grid grid-cols-2 gap-[10px] bg-white">
-                    {fieldEntries.map(([key, value]) => {
-                      const isImageKey = IMAGE_KEY_PATTERN.test(key);
-                      const isVideoKey = VIDEO_KEY_PATTERN.test(key);
+                  {fieldEntries.map(([key, value]) => {
+                    const isImageKey = IMAGE_KEY_PATTERN.test(key);
+                    const isVideoKey = VIDEO_KEY_PATTERN.test(key);
 
-                      return (
-                        <div key={key} className={isImageKey || isVideoKey ? "col-span-2" : ""}>
-                          <FieldLabel>{humanizeKey(key)}</FieldLabel>
+                    return (
+                      <div key={key} className={isImageKey || isVideoKey ? "col-span-2" : ""}>
+                        <FieldLabel>{humanizeKey(key)}</FieldLabel>
 
-                          {key === "icon" && sectionId !== "journey-glimpse" ? (
-                            <SelectField
-                              value={String(value)}
-                              options={[
-                                { label: "None", value: "" },
-                                { label: "Group of People (Users)", value: "Users" },
-                                { label: "Store / Exhibitor", value: "Store" },
-                                { label: "Presentation / Speaker", value: "Presentation" },
-                                { label: "Building / Company (Building2)", value: "Building2" },
-                                { label: "Globe / International", value: "Globe" },
-                                { label: "Leaf / Organic", value: "Leaf" },
-                                { label: "Graduation Cap / Academic", value: "GraduationCap" },
-                                { label: "Stethoscope / Healthcare", value: "Stethoscope" },
-                                { label: "Landmark / Government", value: "Landmark" },
-                                { label: "Shield Check / Verified", value: "ShieldCheck" },
-                                { label: "Handshake / Partnership", value: "Handshake" },
-                                { label: "Target / Vision", value: "Target" },
-                                { label: "Trending Up / Growth", value: "TrendingUp" },
-                                { label: "Award / Achievement", value: "Award" },
-                                { label: "Medal / Honour", value: "Medal" },
-                                { label: "Lightbulb / Innovation", value: "Lightbulb" },
-                                { label: "Mic / Speaker", value: "Mic" },
-                                { label: "Calendar / Dates", value: "CalendarDays" },
-                                { label: "Eye / View", value: "Eye" },
-                                { label: "Sprout / Plant", value: "Sprout" },
-                                { label: "Heart Pulse / Health", value: "HeartPulse" },
-                                { label: "Trophy / Winner", value: "Trophy" },
-                                { label: "Megaphone / Visibility", value: "Megaphone" },
-                                { label: "User Check / Verified User", value: "UserCheck" },
-                                { label: "Briefcase / Business", value: "Briefcase" },
-                                { label: "Sparkles / Magic", value: "Sparkles" },
-                                { label: "Zap / Fast", value: "Zap" },
-                                { label: "ID Card / Lanyard", value: "IdCard" },
-                                { label: "Plug / Charging", value: "Plug" },
-                                { label: "Contact / Badge", value: "Contact" },
-                                { label: "Wi-Fi / Internet", value: "Wifi" },
-                                { label: "Shopping Bag / Visitor Bag", value: "ShoppingBag" },
-                                { label: "Coffee / Refreshment", value: "Coffee" },
-                                { label: "Newspaper / Press", value: "Newspaper" },
-                                { label: "File Text / Print", value: "FileText" },
-                                { label: "Camera / Media", value: "Camera" },
-                                { label: "Headphones / Support", value: "Headphones" },
-                                { label: "Message Circle / Chat", value: "MessageCircle" },
-                                { label: "Clock / Time", value: "Clock" },
-                                { label: "Phone", value: "Phone" },
-                                { label: "Mail", value: "Mail" },
-                                { label: "Map Pin", value: "MapPin" },
-                                { label: "Heart", value: "Heart" },
-                                { label: "Star", value: "Star" },
-                                { label: "Check Circle", value: "CheckCircle" },
-                                { label: "Info", value: "Info" },
-                              ]}
-                              onChange={(next) => onChangeItem(index, key, next)}
-                            />
-                          ) : isVideoKey ? (
-                            <VideoUploadField
-                              value={String(value)}
-                              onChange={(next) => onChangeItem(index, key, next)}
-                            />
-                          ) : isImageKey ? (
-                            <ImageUploadField
-                              value={String(value)}
-                              onChange={(next) => onChangeItem(index, key, next)}
-                            />
-                          ) : Array.isArray(value) ? (
+                        {key === "icon" && sectionId !== "journey-glimpse" ? (
+                          <SelectField
+                            value={String(value)}
+                            options={[
+                              { label: "None", value: "" },
+                              { label: "Group of People (Users)", value: "Users" },
+                              { label: "Store / Exhibitor", value: "Store" },
+                              { label: "Presentation / Speaker", value: "Presentation" },
+                              { label: "Building / Company (Building2)", value: "Building2" },
+                              { label: "Globe / International", value: "Globe" },
+                              { label: "Leaf / Organic", value: "Leaf" },
+                              { label: "Graduation Cap / Academic", value: "GraduationCap" },
+                              { label: "Stethoscope / Healthcare", value: "Stethoscope" },
+                              { label: "Landmark / Government", value: "Landmark" },
+                              { label: "Shield Check / Verified", value: "ShieldCheck" },
+                              { label: "Handshake / Partnership", value: "Handshake" },
+                              { label: "Target / Vision", value: "Target" },
+                              { label: "Trending Up / Growth", value: "TrendingUp" },
+                              { label: "Award / Achievement", value: "Award" },
+                              { label: "Medal / Honour", value: "Medal" },
+                              { label: "Lightbulb / Innovation", value: "Lightbulb" },
+                              { label: "Mic / Speaker", value: "Mic" },
+                              { label: "Calendar / Dates", value: "CalendarDays" },
+                              { label: "Eye / View", value: "Eye" },
+                              { label: "Sprout / Plant", value: "Sprout" },
+                              { label: "Heart Pulse / Health", value: "HeartPulse" },
+                              { label: "Trophy / Winner", value: "Trophy" },
+                              { label: "Megaphone / Visibility", value: "Megaphone" },
+                              { label: "User Check / Verified User", value: "UserCheck" },
+                              { label: "Briefcase / Business", value: "Briefcase" },
+                              { label: "Sparkles / Magic", value: "Sparkles" },
+                              { label: "Zap / Fast", value: "Zap" },
+                              { label: "ID Card / Lanyard", value: "IdCard" },
+                              { label: "Plug / Charging", value: "Plug" },
+                              { label: "Contact / Badge", value: "Contact" },
+                              { label: "Wi-Fi / Internet", value: "Wifi" },
+                              { label: "Shopping Bag / Visitor Bag", value: "ShoppingBag" },
+                              { label: "Coffee / Refreshment", value: "Coffee" },
+                              { label: "Newspaper / Press", value: "Newspaper" },
+                              { label: "File Text / Print", value: "FileText" },
+                              { label: "Camera / Media", value: "Camera" },
+                              { label: "Headphones / Support", value: "Headphones" },
+                              { label: "Message Circle / Chat", value: "MessageCircle" },
+                              { label: "Clock / Time", value: "Clock" },
+                              { label: "Phone", value: "Phone" },
+                              { label: "Mail", value: "Mail" },
+                              { label: "Map Pin", value: "MapPin" },
+                              { label: "Heart", value: "Heart" },
+                              { label: "Star", value: "Star" },
+                              { label: "Check Circle", value: "CheckCircle" },
+                              { label: "Info", value: "Info" },
+                            ]}
+                            onChange={(next) => onChangeItem(index, key, next)}
+                          />
+                        ) : isVideoKey ? (
+                          <VideoUploadField
+                            value={String(value)}
+                            onChange={(next) => onChangeItem(index, key, next)}
+                          />
+                        ) : isImageKey ? (
+                          <ImageUploadField
+                            value={String(value)}
+                            onChange={(next) => onChangeItem(index, key, next)}
+                          />
+                        ) : Array.isArray(value) ? (
                           <TextInput
                             value={value.join(", ")}
                             onChange={(next) =>
