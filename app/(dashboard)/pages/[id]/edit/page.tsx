@@ -177,40 +177,57 @@ function TextInput({
   value,
   onChange,
   placeholder,
+  maxLength = 120,
 }: {
   value: string;
-  onChange: (
-    value: string,
-  ) => void;
+  onChange: (value: string) => void;
   placeholder?: string;
+  maxLength?: number;
 }) {
+  const currentLength = (value || "").length;
+  // Dynamic max allowed: allows expanding up to the specified field capacity (e.g. 120, 140, 350)
+  const maxAllowed = Math.max(currentLength, maxLength);
+  const isAtLimit = currentLength >= maxAllowed;
+
   return (
-    <input
-      type="text"
-      value={value}
-      placeholder={placeholder}
-      onChange={(event) =>
-        onChange(
-          event.target.value,
-        )
-      }
-      className="
-        h-[35px]
-        w-full
-        cursor-default
-        bg-white
-        rounded-none
-        shadow-[0_1px_3px_0_rgba(0,0,0,0.02),0_0_0_1px_rgba(27,31,35,0.15)]
-        px-[10px]
-        text-[11px]
-        font-medium
-        text-[#414b5e]
-        outline-none
-        placeholder:text-[10.5px]
-        placeholder:text-[#9aa0aa]
-        focus:border-[#8fa98e]
-      "
-    />
+    <div className="relative w-full">
+      <input
+        type="text"
+        value={value}
+        maxLength={maxAllowed}
+        placeholder={placeholder}
+        onChange={(event) => {
+          if (event.target.value.length <= maxAllowed) {
+            onChange(event.target.value);
+          }
+        }}
+        className="
+          h-[35px]
+          w-full
+          cursor-default
+          bg-white
+          rounded-none
+          shadow-[0_1px_3px_0_rgba(0,0,0,0.02),0_0_0_1px_rgba(27,31,35,0.15)]
+          pl-[10px]
+          pr-[62px]
+          text-[11px]
+          font-medium
+          text-[#414b5e]
+          outline-none
+          placeholder:text-[10.5px]
+          placeholder:text-[#9aa0aa]
+          focus:border-[#8fa98e]
+        "
+      />
+      <span
+        className={`absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none px-1.5 py-0.5 text-[8.5px] font-mono font-bold rounded ${isAtLimit
+            ? "bg-[#fee2e2] text-[#dc2626] border border-[#fca5a5]"
+            : "bg-[#f1f5f9] text-[#64748b]"
+          }`}
+      >
+        {currentLength}/{maxAllowed}
+      </span>
+    </div>
   );
 }
 
@@ -255,33 +272,17 @@ function SelectField({
           focus:border-[#8fa98e]
         "
       >
-        {options.map((option) => {
-          const isString = typeof option === "string";
-          const optValue = isString ? option : option.value;
-          const optLabel = isString ? option : option.label;
+        {options.map((opt) => {
+          const val = typeof opt === "string" ? opt : opt.value;
+          const lbl = typeof opt === "string" ? opt : opt.label;
           return (
-            <option
-              key={optValue}
-              value={optValue}
-            >
-              {optLabel}
+            <option key={val} value={val}>
+              {lbl}
             </option>
           );
         })}
       </select>
-
-      <ChevronDown
-        className="
-          pointer-events-none
-          absolute
-          right-[9px]
-          top-1/2
-          h-[11px]
-          w-[11px]
-          -translate-y-1/2
-          text-[#697386]
-        "
-      />
+      <ChevronDown className="pointer-events-none absolute right-[8px] top-1/2 h-[12px] w-[12px] -translate-y-1/2 text-[#64748b]" />
     </div>
   );
 }
@@ -432,21 +433,46 @@ function Textarea({
   placeholder,
   rows = 3,
   mono = false,
+  maxLength = 450,
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   rows?: number;
   mono?: boolean;
+  maxLength?: number;
 }) {
+  const currentLength = (value || "").length;
+  const initialLengthRef = useRef<number | null>(null);
+  if (initialLengthRef.current === null) {
+    initialLengthRef.current = currentLength > 0 ? currentLength : maxLength;
+  }
+  const maxAllowed = initialLengthRef.current;
+  const isAtLimit = currentLength >= maxAllowed;
+
   return (
-    <textarea
-      value={value}
-      placeholder={placeholder}
-      rows={rows}
-      onChange={(event) => onChange(event.target.value)}
-      className={`w-full cursor-default resize-none bg-white rounded-none shadow-[0_1px_3px_0_rgba(0,0,0,0.02),0_0_0_1px_rgba(27,31,35,0.15)] px-[10px] py-[8px] text-[11px] font-medium text-[#414b5e] outline-none placeholder:text-[10.5px] placeholder:text-[#9aa0aa] focus:shadow-[0_1px_3px_0_rgba(0,0,0,0.02),0_0_0_1px_rgba(143,169,142,1)] ${mono ? "font-mono text-[10px]" : ""}`}
-    />
+    <div className="relative w-full">
+      <textarea
+        value={value}
+        maxLength={maxAllowed}
+        placeholder={placeholder}
+        rows={rows}
+        onChange={(event) => {
+          if (event.target.value.length <= maxAllowed) {
+            onChange(event.target.value);
+          }
+        }}
+        className={`w-full cursor-default resize-none bg-white rounded-none shadow-[0_1px_3px_0_rgba(0,0,0,0.02),0_0_0_1px_rgba(27,31,35,0.15)] px-[10px] py-[8px] text-[11px] font-medium text-[#414b5e] outline-none placeholder:text-[10.5px] placeholder:text-[#9aa0aa] focus:shadow-[0_1px_3px_0_rgba(0,0,0,0.02),0_0_0_1px_rgba(143,169,142,1)] ${mono ? "font-mono text-[10px]" : ""}`}
+      />
+      <span
+        className={`absolute right-2 bottom-2.5 pointer-events-none px-1.5 py-0.5 text-[8.5px] font-mono font-bold rounded ${isAtLimit
+            ? "bg-[#fee2e2] text-[#dc2626] border border-[#fca5a5]"
+            : "bg-[#f1f5f9] text-[#64748b]"
+          }`}
+      >
+        {currentLength}/{maxAllowed}
+      </span>
+    </div>
   );
 }
 
@@ -459,7 +485,8 @@ function Textarea({
 
 const SECTION_SKIP_KEYS = new Set(["_id", "key", "slides", "items", "enabled", "name"]);
 const LONG_TEXT_KEY_PATTERN = /description|subtitle|quote|message|statement|notice/i;
-const IMAGE_KEY_PATTERN = /image|img|logo|photo|banner|picture|bg/i;
+const IMAGE_KEY_PATTERN = /image|img|logo|photo|banner|picture|bg|avatar|thumbnail/i;
+const VIDEO_KEY_PATTERN = /video|youtube|embed|vimeo|clip|mediaUrl/i;
 
 function humanizeKey(key: string) {
   if (key === "keyPoint1") return "Key Point 1";
@@ -813,6 +840,11 @@ function SectionFieldsEditor({
 
             {typeof value === "boolean" ? (
               <Toggle checked={value} onChange={(next) => onFieldChange(key, next)} />
+            ) : isVideo ? (
+              <VideoUploadField
+                value={String(value)}
+                onChange={(next) => onFieldChange(key, next)}
+              />
             ) : isImage ? (
               <ImageUploadField
                 value={String(value)}
@@ -840,7 +872,11 @@ function SectionFieldsEditor({
             ) : isLong ? (
               <Textarea value={String(value)} onChange={(next) => onFieldChange(key, next)} rows={3} />
             ) : (
-              <TextInput value={String(value)} onChange={(next) => onFieldChange(key, next)} />
+              <TextInput
+                value={String(value)}
+                onChange={(next) => onFieldChange(key, next)}
+                maxLength={fieldLimit}
+              />
             )}
           </div>
         );
@@ -1123,6 +1159,11 @@ function SectionItemsEditor({
                               { label: "Check Circle", value: "CheckCircle" },
                               { label: "Info", value: "Info" },
                             ]}
+                            onChange={(next) => onChangeItem(index, key, next)}
+                          />
+                        ) : isVideoKey ? (
+                          <VideoUploadField
+                            value={String(value)}
                             onChange={(next) => onChangeItem(index, key, next)}
                           />
                         ) : isImageKey ? (
