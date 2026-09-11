@@ -1,0 +1,48 @@
+import { LandingSectionContent } from "./landingContent";
+
+export const defaultExhibitionCategoriesSections: LandingSectionContent[] = [
+  {
+    key: "exhibition-hero",
+    name: "Exhibition Categories Hero",
+    enabled: true,
+    eyebrow: "EXHIBITION SECTORS",
+    titlePrimary: "EXPLORE OUR",
+    titleSecondary: "EXHIBITION CATEGORIES",
+    subtitle: "Showcasing the entire organic & natural ecosystem.",
+    description: "Discover innovative products, sustainable solutions, certified organic produce, and cutting-edge technologies across key sector categories.",
+    date: "19–21 February 2027",
+    location: "Hall 12, Bharat Mandapam, New Delhi",
+    image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
+    buttonLabel: "BOOK YOUR STALL",
+    buttonHref: "/registration/book-a-stand",
+    secondaryButtonLabel: "REGISTER AS VISITOR",
+    secondaryButtonHref: "/registration/visitor-registration",
+  },
+  {
+    key: "exhibition-sectors",
+    name: "Sector Showcase Overview",
+    enabled: true,
+    title: "EXHIBITION SECTOR HIGHLIGHTS",
+    description: "Key product segments represented at Bharat Organic Expo 2027.",
+    items: [
+      { title: "Organic Agriculture & Farming Inputs", icon: "Sprout", description: "Bio-fertilizers, organic seeds, pest management, soil health solutions" },
+      { title: "Organic Food & Beverages", icon: "Leaf", description: "Certified organic staples, health drinks, processed foods, snacks" },
+      { title: "Ayush, Herbal & Wellness", icon: "HeartPulse", description: "Ayurvedic products, herbal supplements, wellness remedies" },
+      { title: "Natural Beauty & Personal Care", icon: "Sparkles", description: "Organic cosmetics, clean skincare, herbal hygiene products" },
+      { title: "AgriTech & Smart Farming", icon: "Zap", description: "Smart irrigation, farm automation, vertical farming tech" },
+      { title: "Sustainable Packaging & Eco-Products", icon: "ShieldCheck", description: "Biodegradable packaging, compostable materials, eco-friendly goods" },
+      { title: "Dairy, Livestock & Bio-Energy", icon: "Building2", description: "Organic dairy, sustainable livestock care, biogas & bio-energy" },
+      { title: "Nutraceuticals & Superfoods", icon: "Award", description: "Dietary supplements, functional foods, natural proteins" },
+      { title: "Certification, Testing & Trade Services", icon: "FileText", description: "Organic certification agencies, testing labs, trade promotion" },
+    ],
+  },
+  {
+    key: "exhibition-cta",
+    name: "Exhibition Call to Action",
+    enabled: true,
+    title: "READY TO SHOWCASE YOUR PRODUCTS TO THOUSANDS OF BUYERS?",
+    description: "Reserve your stall space today at Bharat Organic Expo 2027.",
+    buttonLabel: "BOOK YOUR STALL NOW",
+    buttonHref: "/registration/book-a-stand",
+  },
+];

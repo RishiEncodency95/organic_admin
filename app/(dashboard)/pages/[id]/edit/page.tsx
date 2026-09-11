@@ -68,6 +68,16 @@ import { defaultAboutSections } from "@/lib/aboutContent";
 import { defaultAdvisorySections } from "@/lib/advisoryContent";
 import { defaultBlogSections } from "@/lib/blogContent";
 import { defaultParticipateAsExhibitorSections } from "@/lib/participateAsExhibitorContent";
+import { defaultExhibitionCategoriesSections } from "@/lib/exhibitionCategoriesContent";
+import {
+  defaultBookAStandSections,
+  defaultVisitorRegistrationSections,
+  defaultDelegateRegistrationSections,
+  defaultBuyerRegistrationSections,
+  defaultTermsAndConditionsSections,
+  defaultPrivacyPolicySections,
+  defaultRefundPolicySections,
+} from "@/lib/registrationPagesContent";
 import { defaultWhyVisitSections } from "@/lib/whyVisitContent";
 import { defaultWhyExhibitSections } from "@/lib/whyExhibitContent";
 import { defaultMsmeSections } from "@/lib/msmeContent";
@@ -1201,39 +1211,53 @@ function ImageUploadField({
 
     useEffect(() => {
       const cfg = page.configKey && settings ? settings[page.configKey] : undefined;
-      const fallbackSections =
-        page.configKey === "aboutPage"
-          ? defaultAboutSections
-          : page.configKey === "advisoryPage"
-            ? defaultAdvisorySections
-            : page.configKey === "blogPage"
-              ? defaultBlogSections
-              : page.configKey === "participateAsExhibitorPage"
-                ? defaultParticipateAsExhibitorSections
-                : page.configKey === "whyVisitPage"
-                  ? defaultWhyVisitSections
-                  : page.configKey === "whyExhibitPage"
-                    ? defaultWhyExhibitSections
-                    : page.configKey === "msmePage"
-                      ? defaultMsmeSections
-                      : page.configKey === "exhibitorsPage"
-                        ? defaultExhibitorsSections
-                        : page.configKey === "buyerSellerMeetPage"
-                          ? defaultBuyerSellerMeetSections
-                          : page.configKey === "galleryPage"
-                            ? defaultGallerySections
-                            : page.configKey === "awardsPage"
-                              ? defaultAwardsSections
-                              : page.configKey === "sponsorshipPage"
-                                ? defaultSponsorshipSections
-                                : page.configKey === "epromotionPage"
-                                  ? defaultEPromotionSections
-                                  : page.configKey === "partnershipPage"
-                                    ? defaultPartnershipPageSections
-                                    : page.configKey === "contactPage"
-                                      ? defaultContactSections
-                                      : defaultLandingSections;
-      const rawSections = cfg?.sections && cfg.sections.length > 0 ? cfg.sections : fallbackSections;
+      const key = (page.configKey || "").toLowerCase();
+      const title = (page.title || "").toLowerCase();
+      const slug = (page.slug || "").toLowerCase();
+
+      const getFallbackForPage = () => {
+        if (key === "aboutpage" || title.includes("about") || slug === "/about") return defaultAboutSections;
+        if (key === "advisorypage" || title.includes("advisory") || slug.includes("advisory")) return defaultAdvisorySections;
+        if (key === "blogpage" || title.includes("blog") || slug.includes("blog")) return defaultBlogSections;
+        if (key === "participateasexhibitorpage" || title.includes("participate as exhibitor") || slug.includes("participate-as-exhibitor")) return defaultParticipateAsExhibitorSections;
+        if (key === "exhibitioncategoriespage" || title.includes("exhibition categories") || slug.includes("exhibition-categories")) return defaultExhibitionCategoriesSections;
+        if (key === "bookastandpage" || title.includes("book a stall") || title.includes("book a stand") || slug.includes("book-a-stand")) return defaultBookAStandSections;
+        if (key === "visitorregistrationpage" || title.includes("register as visitor") || title.includes("visitor registration") || slug.includes("visitor-registration")) return defaultVisitorRegistrationSections;
+        if (key === "delegateregistrationpage" || title.includes("delegate registration") || slug.includes("delegate-registration")) return defaultDelegateRegistrationSections;
+        if (key === "buyerregistrationpage" || title.includes("register as buyer") || title.includes("buyer registration") || slug.includes("buyer-registration")) return defaultBuyerRegistrationSections;
+        if (key === "termsandconditionspage" || title.includes("terms") || slug.includes("terms")) return defaultTermsAndConditionsSections;
+        if (key === "privacypolicypage" || title.includes("privacy") || slug.includes("privacy")) return defaultPrivacyPolicySections;
+        if (key === "refundpolicypage" || title.includes("refund") || slug.includes("refund")) return defaultRefundPolicySections;
+        if (key === "whyvisitpage" || title.includes("why visit") || slug.includes("why-visit")) return defaultWhyVisitSections;
+        if (key === "whyexhibitpage" || title.includes("why exhibit") || slug.includes("why-exhibit")) return defaultWhyExhibitSections;
+        if (key === "msmepage" || title.includes("msme") || slug.includes("msme")) return defaultMsmeSections;
+        if (key === "exhibitorspage" || title.includes("exhibitors") || slug.includes("exhibitors")) return defaultExhibitorsSections;
+        if (key === "buyersellermeetpage" || title.includes("buyer-seller") || slug.includes("buyer-seller")) return defaultBuyerSellerMeetSections;
+        if (key === "gallerypage" || title.includes("gallery") || slug.includes("gallery")) return defaultGallerySections;
+        if (key === "awardspage" || title.includes("award") || slug.includes("awards")) return defaultAwardsSections;
+        if (key === "sponsorshippage" || title.includes("sponsorship") || slug.includes("sponsorship")) return defaultSponsorshipSections;
+        if (key === "epromotionpage" || title.includes("e-promotion") || slug.includes("e-promotion")) return defaultEPromotionSections;
+        if (key === "partnershippage" || title.includes("partnership") || slug.includes("partnership")) return defaultPartnershipPageSections;
+        if (key === "contactpage" || title.includes("contact") || title.includes("advisor") || slug.includes("contact")) return defaultContactSections;
+        return defaultLandingSections;
+      };
+
+      const fallbackSections = getFallbackForPage();
+      const stored = cfg?.sections;
+      const rawSections = fallbackSections.map((fallbackItem: Record<string, any>) => {
+        const savedItem = stored?.find((s: Record<string, any>) => s.key === fallbackItem.key);
+        if (!savedItem) return { ...fallbackItem };
+        return {
+          ...fallbackItem,
+          ...savedItem,
+          items: fallbackItem.items !== undefined ? (
+            fallbackItem.items.map((item: Record<string, any>, idx: number) => ({
+              ...item,
+              ...(savedItem.items?.[idx] || {}),
+            }))
+          ) : undefined,
+        };
+      });
       setSectionsDraft(rawSections.map((section: Record<string, any>) => ({ ...section })));
       setOpenSectionIndices(new Set([0]));
     }, [settings, page]);
@@ -1274,13 +1298,30 @@ function ImageUploadField({
         previous.map((section, index) => {
           if (index !== sectionIndex) return section;
           const items = [...(section.items ?? [])];
-          const sample = items[0] ?? { label: "", value: "" };
-          const blank = Object.fromEntries(
-            Object.entries(sample)
-              .filter(([key]) => key !== "_id")
-              .map(([key, value]) => [key, Array.isArray(value) ? [] : typeof value === "boolean" ? false : ""]),
-          );
-          return { ...section, items: [...items, blank] };
+          const defaultItemTemplate: Record<string, any> = {
+            title: "",
+            subtitle: "",
+            description: "",
+            label: "",
+            value: "",
+            icon: "",
+            image: "",
+            buttonLabel: "",
+            buttonHref: "",
+            question: "",
+            answer: "",
+            href: "",
+            category: "",
+            year: "",
+          };
+          if (items[0]) {
+            Object.keys(items[0]).forEach((k) => {
+              if (k !== "_id" && !(k in defaultItemTemplate)) {
+                defaultItemTemplate[k] = "";
+              }
+            });
+          }
+          return { ...section, items: [...items, defaultItemTemplate] };
         }),
       );
     };
@@ -1307,6 +1348,45 @@ function ImageUploadField({
           [key]: value,
         }),
       );
+    };
+
+    const resetToWebsiteDefaults = () => {
+      const key = (page.configKey || "").toLowerCase();
+      const title = (page.title || "").toLowerCase();
+      const slug = (page.slug || "").toLowerCase();
+      let defaults = defaultLandingSections;
+      if (key === "aboutpage" || title.includes("about") || slug === "/about") defaults = defaultAboutSections;
+      else if (key === "advisorypage" || title.includes("advisory") || slug.includes("advisory")) defaults = defaultAdvisorySections;
+      else if (key === "blogpage" || title.includes("blog") || slug.includes("blog")) defaults = defaultBlogSections;
+      else if (key === "participateasexhibitorpage" || title.includes("participate as exhibitor") || slug.includes("participate-as-exhibitor")) defaults = defaultParticipateAsExhibitorSections;
+      else if (key === "exhibitioncategoriespage" || title.includes("exhibition categories") || slug.includes("exhibition-categories")) defaults = defaultExhibitionCategoriesSections;
+      else if (key === "bookastandpage" || title.includes("book a stall") || title.includes("book a stand") || slug.includes("book-a-stand")) defaults = defaultBookAStandSections;
+      else if (key === "visitorregistrationpage" || title.includes("register as visitor") || title.includes("visitor registration") || slug.includes("visitor-registration")) defaults = defaultVisitorRegistrationSections;
+      else if (key === "delegateregistrationpage" || title.includes("delegate registration") || slug.includes("delegate-registration")) defaults = defaultDelegateRegistrationSections;
+      else if (key === "buyerregistrationpage" || title.includes("register as buyer") || title.includes("buyer registration") || slug.includes("buyer-registration")) defaults = defaultBuyerRegistrationSections;
+      else if (key === "termsandconditionspage" || title.includes("terms") || slug.includes("terms")) defaults = defaultTermsAndConditionsSections;
+      else if (key === "privacypolicypage" || title.includes("privacy") || slug.includes("privacy")) defaults = defaultPrivacyPolicySections;
+      else if (key === "refundpolicypage" || title.includes("refund") || slug.includes("refund")) defaults = defaultRefundPolicySections;
+      else if (key === "whyvisitpage" || title.includes("why visit") || slug.includes("why-visit")) defaults = defaultWhyVisitSections;
+      else if (key === "whyexhibitpage" || title.includes("why exhibit") || slug.includes("why-exhibit")) defaults = defaultWhyExhibitSections;
+      else if (key === "msmepage" || title.includes("msme") || slug.includes("msme")) defaults = defaultMsmeSections;
+      else if (key === "exhibitorspage" || title.includes("exhibitors") || slug.includes("exhibitors")) defaults = defaultExhibitorsSections;
+      else if (key === "buyersellermeetpage" || title.includes("buyer-seller") || slug.includes("buyer-seller")) defaults = defaultBuyerSellerMeetSections;
+      else if (key === "gallerypage" || title.includes("gallery") || slug.includes("gallery")) defaults = defaultGallerySections;
+      else if (key === "awardspage" || title.includes("award") || slug.includes("awards")) defaults = defaultAwardsSections;
+      else if (key === "sponsorshippage" || title.includes("sponsorship") || slug.includes("sponsorship")) defaults = defaultSponsorshipSections;
+      else if (key === "epromotionpage" || title.includes("e-promotion") || slug.includes("e-promotion")) defaults = defaultEPromotionSections;
+      else if (key === "partnershippage" || title.includes("partnership") || slug.includes("partnership")) defaults = defaultPartnershipPageSections;
+      else if (key === "contactpage" || title.includes("contact") || title.includes("advisor") || slug.includes("contact")) defaults = defaultContactSections;
+
+      setSectionsDraft(defaults.map((s) => ({ ...s })));
+      Swal.fire({
+        title: "Reset to Website Content",
+        text: "Page sections have been reset to match the exact live website defaults.",
+        icon: "success",
+        timer: 1800,
+        confirmButtonColor: "#0f766e",
+      });
     };
 
     const savePage = async () => {
@@ -1470,6 +1550,30 @@ function ImageUploadField({
                 <Eye className="h-[13px] w-[13px]" />
 
                 Preview Page
+              </button>
+
+              <button
+                type="button"
+                onClick={resetToWebsiteDefaults}
+                className="
+                flex
+                h-[30px]
+                items-center
+                gap-[7px]
+                rounded-[4px]
+                border
+                border-[#0f766e]
+                bg-[#f0fdf4]
+                px-[12px]
+                text-[8.5px]
+                font-semibold
+                text-[#0f766e]
+                hover:bg-[#dcfce7]
+              "
+              >
+                <Sparkles className="h-[13px] w-[13px]" />
+
+                Sync / Reset Website Data
               </button>
 
               <button
@@ -1686,6 +1790,22 @@ function ImageUploadField({
                           setSectionsDraft(defaultBlogSections.map((s) => ({ ...s })));
                         } else if (value === "Participate as Exhibitor") {
                           setSectionsDraft(defaultParticipateAsExhibitorSections.map((s) => ({ ...s })));
+                        } else if (value === "Exhibition Categories") {
+                          setSectionsDraft(defaultExhibitionCategoriesSections.map((s) => ({ ...s })));
+                        } else if (value === "Book a Stall") {
+                          setSectionsDraft(defaultBookAStandSections.map((s) => ({ ...s })));
+                        } else if (value === "Register as Visitor" || value === "Visitor Registration") {
+                          setSectionsDraft(defaultVisitorRegistrationSections.map((s) => ({ ...s })));
+                        } else if (value === "Delegate Registration") {
+                          setSectionsDraft(defaultDelegateRegistrationSections.map((s) => ({ ...s })));
+                        } else if (value === "Register as Buyer" || value === "Buyer Registration") {
+                          setSectionsDraft(defaultBuyerRegistrationSections.map((s) => ({ ...s })));
+                        } else if (value === "Terms & Conditions") {
+                          setSectionsDraft(defaultTermsAndConditionsSections.map((s) => ({ ...s })));
+                        } else if (value === "Privacy Policy") {
+                          setSectionsDraft(defaultPrivacyPolicySections.map((s) => ({ ...s })));
+                        } else if (value === "Refund Policy") {
+                          setSectionsDraft(defaultRefundPolicySections.map((s) => ({ ...s })));
                         } else if (value === "Why Visit") {
                           setSectionsDraft(defaultWhyVisitSections.map((s) => ({ ...s })));
                         } else if (value === "Why Exhibit") {
@@ -1717,6 +1837,17 @@ function ImageUploadField({
                         "About Page",
                         "Advisory Board",
                         "Blogs & News",
+                        "Participate as Exhibitor",
+                        "Exhibition Categories",
+                        "Book a Stall",
+                        "Register as Visitor",
+                        "Delegate Registration",
+                        "Register as Buyer",
+                        "Sponsorship Opportunities",
+                        "Talk to Expo Advisor",
+                        "Terms & Conditions",
+                        "Privacy Policy",
+                        "Refund Policy",
                         "Why Visit",
                         "Why Exhibit",
                         "MSME PMS Scheme",
@@ -1724,7 +1855,6 @@ function ImageUploadField({
                         "Buyer-Seller Meet",
                         "Glimpses & Gallery",
                         "Excellence Awards",
-                        "Sponsorship Opportunities",
                         "E-Promotion Web",
                         "Partnership / Collaboration",
                         "Our Services",
@@ -1773,6 +1903,48 @@ function ImageUploadField({
                         } else if (value === "Glimpses & Gallery") {
                           setSectionsDraft(defaultGallerySections.map((s) => ({ ...s })));
                           updateField("template", "Glimpses & Gallery");
+                        } else if (value === "Participate as Exhibitor") {
+                          setSectionsDraft(defaultParticipateAsExhibitorSections.map((s) => ({ ...s })));
+                          updateField("template", "Participate as Exhibitor");
+                        } else if (value === "Exhibition Categories") {
+                          setSectionsDraft(defaultExhibitionCategoriesSections.map((s) => ({ ...s })));
+                          updateField("template", "Exhibition Categories");
+                        } else if (value === "Book a Stall") {
+                          setSectionsDraft(defaultBookAStandSections.map((s) => ({ ...s })));
+                          updateField("template", "Book a Stall");
+                        } else if (value === "Register as Visitor" || value === "Visitor Registration") {
+                          setSectionsDraft(defaultVisitorRegistrationSections.map((s) => ({ ...s })));
+                          updateField("template", "Register as Visitor");
+                        } else if (value === "Delegate Registration") {
+                          setSectionsDraft(defaultDelegateRegistrationSections.map((s) => ({ ...s })));
+                          updateField("template", "Delegate Registration");
+                        } else if (value === "Register as Buyer" || value === "Buyer Registration") {
+                          setSectionsDraft(defaultBuyerRegistrationSections.map((s) => ({ ...s })));
+                          updateField("template", "Register as Buyer");
+                        } else if (value === "Terms & Conditions") {
+                          setSectionsDraft(defaultTermsAndConditionsSections.map((s) => ({ ...s })));
+                          updateField("template", "Terms & Conditions");
+                        } else if (value === "Privacy Policy") {
+                          setSectionsDraft(defaultPrivacyPolicySections.map((s) => ({ ...s })));
+                          updateField("template", "Privacy Policy");
+                        } else if (value === "Refund Policy") {
+                          setSectionsDraft(defaultRefundPolicySections.map((s) => ({ ...s })));
+                          updateField("template", "Refund Policy");
+                        } else if (value === "Excellence Awards" || value === "Awards") {
+                          setSectionsDraft(defaultAwardsSections.map((s) => ({ ...s })));
+                          updateField("template", "Excellence Awards");
+                        } else if (value === "Sponsorship Opportunities" || value === "Sponsorship") {
+                          setSectionsDraft(defaultSponsorshipSections.map((s) => ({ ...s })));
+                          updateField("template", "Sponsorship Opportunities");
+                        } else if (value === "E-Promotion Web" || value === "E-Promotion") {
+                          setSectionsDraft(defaultEPromotionSections.map((s) => ({ ...s })));
+                          updateField("template", "E-Promotion Web");
+                        } else if (value === "Partnership / Collaboration" || value === "Partnership") {
+                          setSectionsDraft(defaultPartnershipPageSections.map((s) => ({ ...s })));
+                          updateField("template", "Partnership / Collaboration");
+                        } else if (value === "Contact Us" || value === "Contact" || value === "Talk to Expo Advisor") {
+                          setSectionsDraft(defaultContactSections.map((s) => ({ ...s })));
+                          updateField("template", "Contact Us");
                         } else if (value === "Home") {
                           setSectionsDraft(defaultLandingSections.map((s) => ({ ...s })));
                           updateField("template", "Homepage");

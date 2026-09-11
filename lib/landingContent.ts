@@ -363,15 +363,18 @@ export const defaultLandingSections: LandingSectionContent[] = [
     titlePrimary: "From a National Expo to a",
     titleSecondary: "Global Platform",
     title: "GLOBAL PLATFORM FOR ORGANIC TRADE",
-    subtitle: "Connecting over 25+ countries in India's premier organic gathering.",
+    subtitle: "Uniting the organic, natural, and sustainable industries",
     description: "Bharat Organic Expo is India's most influential platform connecting organic products, people and possibilities.",
     image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
     imageAlt: "Global Organic Platform",
     items: [
+      { title: "Trusted Brands", description: "Connect with India's top organic brands & manufacturers", icon: "Building2" },
+      { title: "Targeted Audience", description: "Engage with qualified buyers, distributors & decision makers", icon: "Users" },
+      { title: "Business Growth", description: "Expand your market & accelerate your organic growth", icon: "TrendingUp" },
       { title: "GLOBAL CONNECTIONS", description: "Connect with global leaders in organic trade and sustainable business. Expand your network across international markets to build long-term, profitable relationships.", icon: "Globe" },
       { title: "INTERNATIONAL ALLIANCES", description: "Forge strategic alliances with prominent international organizations, trade bodies, and embassies to unlock massive cross-border trade opportunities.", icon: "Handshake" },
       { title: "POLICY & KNOWLEDGE", description: "Engage directly with global policy makers, researchers, and leaders driving regulatory changes and sustainability standards in the organic ecosystem.", icon: "BookOpen" },
-      { title: "INVESTMENT & INNOVATION", description: "Discover high-growth investment opportunities and explore cutting-edge, innovative solutions presented by dynamic startups in the wellness industry.", icon: "TrendingUp" },
+      { title: "INVESTMENT & INNOVATION", description: "Discover high-growth investment opportunities and explore cutting-edge, innovative solutions presented by dynamic startups in the wellness industry.", icon: "Zap" },
     ],
   },
   {
@@ -758,52 +761,5 @@ function limitFromFallback(value: string | undefined, generic: number) {
 }
 
 export function normalizeLandingSection(section: LandingSectionContent, fallback: LandingSectionContent): LandingSectionContent {
-  const normalized: LandingSectionContent = { ...section };
-  (Object.keys(genericTextLimits) as (keyof LandingSectionContent)[]).forEach((key) => {
-    const value = normalized[key];
-    if (typeof value === "string") {
-      const fallbackValue = fallback[key] as string | undefined;
-      const limit = limitFromFallback(fallbackValue, genericTextLimits[key] ?? 160);
-      (normalized as unknown as Record<string, unknown>)[key] = truncateText(value, limit, fallbackValue);
-    }
-  });
-
-  normalized.items = section.items?.map((item, index) => {
-    const fallbackItem = fallback.items?.[index];
-    const next = { ...item };
-    (Object.keys(itemTextLimits) as (keyof LandingSectionItem)[]).forEach((key) => {
-      const value = next[key];
-      if (typeof value === "string") {
-        const fallbackValue = fallbackItem?.[key] as string | undefined;
-        (next as unknown as Record<string, unknown>)[key] = truncateText(
-          value,
-          limitFromFallback(fallbackValue, itemTextLimits[key] ?? 120),
-          fallbackValue
-        );
-      }
-    });
-    next.features = item.features?.map((feature, featureIndex) =>
-      truncateText(feature, limitFromFallback(fallbackItem?.features?.[featureIndex], 80), fallbackItem?.features?.[featureIndex]) ?? ""
-    );
-    return next;
-  });
-
-  normalized.slides = section.slides?.map((slide, index) => {
-    const fallbackSlide = fallback.slides?.[index];
-    const next = { ...slide };
-    (Object.keys(slideTextLimits) as (keyof LandingHeroSlide)[]).forEach((key) => {
-      const value = next[key];
-      if (typeof value === "string") {
-        const fallbackValue = fallbackSlide?.[key] as string | undefined;
-        (next as Record<string, unknown>)[key] = truncateText(
-          value,
-          limitFromFallback(fallbackValue, slideTextLimits[key] ?? 120),
-          fallbackValue
-        );
-      }
-    });
-    return next;
-  });
-
-  return normalized;
+  return section;
 }
