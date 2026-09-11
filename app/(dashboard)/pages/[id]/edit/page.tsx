@@ -462,8 +462,51 @@ const LONG_TEXT_KEY_PATTERN = /description|subtitle|quote|message|statement|noti
 const IMAGE_KEY_PATTERN = /image|img|logo|photo|banner|picture|bg/i;
 
 function humanizeKey(key: string) {
+  if (key === "keyPoint1") return "Key Point 1";
+  if (key === "keyPoint2") return "Key Point 2";
+  if (key === "keyPoint3") return "Key Point 3";
+  if (key === "keyPoint4") return "Key Point 4";
+  if (key === "keyPoint5") return "Key Point 5";
+  if (key === "keyPoint6") return "Key Point 6";
+  if (key === "keyPoint7") return "Key Point 7";
+  if (key === "keyPoint8") return "Key Point 8";
+  if (key === "keyPoint9") return "Key Point 9";
+  if (key === "keyPoint10") return "Key Point 10";
+  if (key === "titlePrefix") return "Title Prefix";
+  if (key === "feature1Title") return "Feature 1: Title (DISCOVER)";
+  if (key === "feature1Desc") return "Feature 1: Description";
+  if (key === "feature2Title") return "Feature 2: Title (LEARN)";
+  if (key === "feature2Desc") return "Feature 2: Description";
+  if (key === "feature3Title") return "Feature 3: Title (CONNECT)";
+  if (key === "feature3Desc") return "Feature 3: Description";
+  if (key === "feature4Title") return "Feature 4: Title (SOURCE)";
+  if (key === "feature4Desc") return "Feature 4: Description";
+  if (key === "feature5Title") return "Feature 5: Title (GROW)";
+  if (key === "feature5Desc") return "Feature 5: Description";
+  if (key === "feature6Title") return "Feature 6: Title (STAY AHEAD)";
+  if (key === "feature6Desc") return "Feature 6: Description";
+  if (key === "secondaryButtonHref") return "Secondary Button Href (Upload Brochure PDF)";
+  if (key === "stat1Title") return "Stat 1: Date Range";
+  if (key === "stat1Sub") return "Stat 1: Month & Year";
+  if (key === "stat2Title") return "Stat 2: Venue";
+  if (key === "stat2Sub") return "Stat 2: City";
+  if (key === "stat3Title") return "Stat 3: Tagline Line 1";
+  if (key === "stat3Sub") return "Stat 3: Tagline Line 2";
+  if (key === "stat4Title") return "Stat 4: Speaker Count";
+  if (key === "stat4Sub") return "Stat 4: Speaker Label";
+  if (key === "stat5Title") return "Stat 5: Session Count";
+  if (key === "stat5Sub") return "Stat 5: Session Label";
+  if (key === "sectionTag") return "Section Tag";
+  if (key === "titleMain") return "Title Main";
+  if (key === "titleHighlight") return "Title Highlight";
+  if (key === "descriptionPrefix") return "Description Prefix";
+  if (key === "buttonText") return "Button Text";
+  if (key === "buttonHref") return "Button Link (Href)";
+  if (key === "exploreText") return "Explore Text";
+  if (key === "href") return "Explore Link (Href)";
   return key
     .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/([a-zA-Z])([0-9])/g, "$1 $2")
     .replace(/^./, (char) => char.toUpperCase());
 }
 
@@ -589,6 +632,112 @@ function ImageUploadField({
   );
 }
 
+function PdfUploadField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (url: string) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const res: any = await uploadApi.file(file, "bharat-organic/brochures");
+      const uploadedUrl = res?.url || res?.data?.url;
+      if (uploadedUrl) {
+        onChange(uploadedUrl);
+      }
+    } catch (err) {
+      console.error("Failed to upload PDF", err);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemove = () => {
+    onChange("");
+  };
+
+  const displayUrl = value
+    ? value.startsWith("http")
+      ? value
+      : value.startsWith("/")
+        ? `http://localhost:4000${value}`
+        : `http://localhost:4000/${value}`
+    : "";
+
+  return (
+    <div className="flex flex-col gap-2 p-2 bg-[#f8fafc] border border-[#e2e8f0] rounded-[6px]">
+      <div className="flex items-center gap-1.5">
+        <TextInput
+          value={value}
+          onChange={onChange}
+          placeholder="https://... or click Upload PDF"
+        />
+        <label className="flex shrink-0 cursor-pointer items-center gap-1 rounded border border-[#2563eb] bg-[#eff6ff] px-2.5 py-1.5 text-[9px] font-bold text-[#1d4ed8] hover:bg-[#dbeafe] transition-colors shadow-2xs">
+          <Upload className="h-3 w-3" />
+          {uploading ? "Uploading..." : "Upload PDF"}
+          <input
+            type="file"
+            accept="application/pdf"
+            onChange={handleFileChange}
+            className="hidden"
+            disabled={uploading}
+          />
+        </label>
+        {value ? (
+          <button
+            type="button"
+            onClick={handleRemove}
+            title="Remove PDF"
+            className="flex shrink-0 items-center gap-1 rounded border border-[#fca5a5] bg-[#fef2f2] px-2 py-1.5 text-[9px] font-bold text-[#dc2626] hover:bg-[#fee2e2] transition-colors shadow-2xs"
+          >
+            <Trash2 className="h-3 w-3" />
+            Remove
+          </button>
+        ) : null}
+      </div>
+
+      {value && typeof value === "string" ? (
+        <div className="flex items-center gap-3 bg-white p-2 rounded border border-[#e2e8f0]">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-red-50 border border-red-200 text-red-600 font-bold text-[10px]">
+            <FileText className="h-4 w-4 text-red-600" />
+          </div>
+
+          <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-bold text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">
+                Brochure PDF
+              </span>
+              <a
+                href={displayUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1 text-[9px] font-semibold text-blue-600 hover:underline"
+              >
+                <ExternalLink className="h-2.5 w-2.5" />
+                View / Test PDF
+              </a>
+            </div>
+            <p className="text-[8.5px] text-[#64748b] truncate font-mono">
+              {value}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="text-[9px] text-[#94a3b8] italic flex items-center gap-1 px-1">
+          <FileText className="h-3 w-3 text-[#cbd5e1]" />
+          No PDF file attached. Paste a file URL or click "Upload PDF".
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SectionFieldsEditor({
   section,
   onFieldChange,
@@ -600,6 +749,42 @@ function SectionFieldsEditor({
     ([key, value]) => {
       if (SECTION_SKIP_KEYS.has(key)) return false;
       if ((section.key === "audience-strip" || section.name === "AudienceStrip") && key === "title") return false;
+      if (
+        (section.key === "global-platform" || section.name === "GlobalPlatform") &&
+        (key === "subtitle" || key === "title" || key === "image" || key === "imageAlt")
+      ) {
+        return false;
+      }
+      if (
+        (section.key === "why-participate" || section.name === "WhyParticipate") &&
+        (key === "subtitle" || key === "title")
+      ) {
+        return false;
+      }
+      if (
+        (section.key === "conference-section" || section.name === "ConferenceSection") &&
+        (key === "subtitle" || key === "title")
+      ) {
+        return false;
+      }
+      if (
+        (section.key === "expo-categories" || section.name === "ExpoCategories") &&
+        (key === "image" || key === "imageAlt" || key === "title" || key === "subtitle")
+      ) {
+        return false;
+      }
+      if (
+        (section.key === "beyond-exhibition" || section.name === "BeyondExhibition") &&
+        (key === "title" || key === "subtitle")
+      ) {
+        return false;
+      }
+      if (
+        (section.key === "sponsors-attend" || section.name === "SponsorsAndAttend") &&
+        (key === "title" || key === "subtitle" || key === "rightTitle" || key === "rightBottomText" || key === "centerText1" || key === "centerText2" || key === "centerText3")
+      ) {
+        return false;
+      }
       return typeof value === "string" || typeof value === "boolean";
     },
   );
@@ -612,12 +797,17 @@ function SectionFieldsEditor({
     <div className="grid grid-cols-2 gap-x-[16px] gap-y-[10px]">
       {entries.map(([key, value]) => {
         const isLong = LONG_TEXT_KEY_PATTERN.test(key);
-        const isImage = IMAGE_KEY_PATTERN.test(key);
+        const isImage = IMAGE_KEY_PATTERN.test(key) && !/alt/i.test(key);
+        const isPdf =
+          (section.key === "why-participate" && key === "secondaryButtonHref") ||
+          /brochure|pdf/i.test(key) ||
+          (typeof value === "string" && /\.pdf$/i.test(value));
+        const isDate = /date|time/i.test(key) && typeof value === "string";
 
         return (
           <div
             key={key}
-            className={isLong || isImage || typeof value === "boolean" ? "col-span-2" : ""}
+            className={isLong || isImage || isPdf || typeof value === "boolean" || /^keyPoint/i.test(key) || /alt/i.test(key) ? "col-span-2" : ""}
           >
             <FieldLabel>{humanizeKey(key)}</FieldLabel>
 
@@ -628,8 +818,27 @@ function SectionFieldsEditor({
                 value={String(value)}
                 onChange={(next) => onFieldChange(key, next)}
               />
+            ) : isPdf ? (
+              <PdfUploadField
+                value={String(value)}
+                onChange={(next) => onFieldChange(key, next)}
+              />
+            ) : isDate ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="datetime-local"
+                  value={
+                    String(value).includes("T")
+                      ? String(value).slice(0, 16)
+                      : String(value)
+                  }
+                  onChange={(e) => onFieldChange(key, e.target.value)}
+                  className="h-[34px] rounded border border-[#cbd5e1] px-2.5 text-[12px] bg-white text-[#1e293b] focus:border-[#0f766e] focus:outline-none"
+                />
+                <span className="text-[10px] text-[#64748b]">Select date and time for live countdown timer</span>
+              </div>
             ) : isLong ? (
-              <Textarea value={String(value)} onChange={(next) => onFieldChange(key, next)} rows={2} />
+              <Textarea value={String(value)} onChange={(next) => onFieldChange(key, next)} rows={3} />
             ) : (
               <TextInput value={String(value)} onChange={(next) => onFieldChange(key, next)} />
             )}
@@ -750,7 +959,7 @@ function SectionItemsEditor({
           </span>
         </div>
 
-        {sectionId !== "audience-strip" && (
+        {sectionId !== "audience-strip" && sectionId !== "beyond-exhibition" && (
           <button
             type="button"
             onClick={onAddItem}
@@ -768,21 +977,41 @@ function SectionItemsEditor({
 
       <div className="space-y-3 pt-1">
         {items.map((item, index) => {
-          let defaultIcon = "";
-          if (!item.icon) {
-            const text = (item.title || "") + " " + (item.label || "");
-            const textUpper = text.toUpperCase();
-            if (textUpper.includes("HELPLINE")) defaultIcon = "users";
-            else if (textUpper.includes("REGION")) defaultIcon = "building";
-            else if (textUpper.includes("VOLUNTEER")) defaultIcon = "heart-hands";
-            else if (textUpper.includes("SUPPORT")) defaultIcon = "heart-hands";
-            else if (text.toUpperCase().includes("GIVE")) defaultIcon = "give-icon";
-            else if (text.toUpperCase().includes("SERVE")) defaultIcon = "serve-icon";
-            else if (text.toUpperCase().includes("PARTNER")) defaultIcon = "partner-icon";
+          let itemToEdit = { ...item };
+          if (sectionId === "expo-categories") {
+            delete itemToEdit.icon;
+            delete itemToEdit.desc;
+            delete itemToEdit.color;
+            delete itemToEdit.imageAlt;
+            if (itemToEdit.description === undefined) itemToEdit.description = item.desc || "";
+            if (itemToEdit.image === undefined) itemToEdit.image = "";
+            if (!itemToEdit.exploreText) itemToEdit.exploreText = "Explore";
+            if (!itemToEdit.href) itemToEdit.href = item.link || "/exhibition-categories";
+          } else if (sectionId === "beyond-exhibition") {
+            delete itemToEdit.subtitle;
+            delete itemToEdit.title2;
+            delete itemToEdit.color;
+            delete itemToEdit.image;
+            delete itemToEdit.imageAlt;
+            if (itemToEdit.description === undefined) itemToEdit.description = item.subtitle || "";
+            if (!itemToEdit.icon) itemToEdit.icon = "Users";
+          } else {
+            let defaultIcon = "";
+            if (!item.icon) {
+              const text = (item.title || "") + " " + (item.label || "");
+              const textUpper = text.toUpperCase();
+              if (textUpper.includes("HELPLINE")) defaultIcon = "users";
+              else if (textUpper.includes("REGION")) defaultIcon = "building";
+              else if (textUpper.includes("VOLUNTEER")) defaultIcon = "heart-hands";
+              else if (textUpper.includes("SUPPORT")) defaultIcon = "heart-hands";
+              else if (text.toUpperCase().includes("GIVE")) defaultIcon = "give-icon";
+              else if (text.toUpperCase().includes("SERVE")) defaultIcon = "serve-icon";
+              else if (text.toUpperCase().includes("PARTNER")) defaultIcon = "partner-icon";
+            }
+            itemToEdit = ("label" in item || "title" in item) && (!("icon" in item) || item.icon === "")
+              ? { ...item, icon: defaultIcon }
+              : item;
           }
-          const itemToEdit = ("label" in item || "title" in item) && (!("icon" in item) || item.icon === "")
-            ? { ...item, icon: defaultIcon }
-            : item;
 
           const fieldEntries = Object.entries(itemToEdit)
             .filter(
@@ -790,6 +1019,7 @@ function SectionItemsEditor({
                 key !== "_id" &&
                 key !== "img" &&
                 key !== "status" &&
+                !(sectionId === "expo-categories" && key === "icon") &&
                 (typeof value === "string" ||
                   typeof value === "number" ||
                   typeof value === "boolean" ||
@@ -835,9 +1065,10 @@ function SectionItemsEditor({
                 <div className="p-[12px] grid grid-cols-2 gap-[10px] bg-white">
                   {fieldEntries.map(([key, value]) => {
                     const isImageKey = IMAGE_KEY_PATTERN.test(key);
+                    const isLong = LONG_TEXT_KEY_PATTERN.test(key);
 
                     return (
-                      <div key={key} className={isImageKey ? "col-span-2" : ""}>
+                      <div key={key} className={isImageKey || isLong ? "col-span-2" : ""}>
                         <FieldLabel>{humanizeKey(key)}</FieldLabel>
 
                         {key === "icon" && sectionId !== "journey-glimpse" ? (
@@ -911,8 +1142,31 @@ function SectionItemsEditor({
                             }
                             placeholder="comma, separated, values"
                           />
+                        ) : key === "color" ? (
+                          <div className="flex items-center gap-2">
+                            <div className="relative flex-1">
+                              <TextInput
+                                value={String(value)}
+                                onChange={(next) => onChangeItem(index, key, next)}
+                                placeholder="e.g. #facc15 or text-orange-500"
+                              />
+                            </div>
+                            <input
+                              type="color"
+                              value={
+                                String(value).startsWith("#") && String(value).length === 7
+                                  ? String(value)
+                                  : "#facc15"
+                              }
+                              onChange={(e) => onChangeItem(index, key, e.target.value)}
+                              className="h-[34px] w-[38px] cursor-pointer rounded border border-[#cbd5e1] p-0.5 bg-white shrink-0"
+                              title="Pick a color"
+                            />
+                          </div>
                         ) : typeof value === "boolean" ? (
                           <Toggle checked={value} onChange={(next) => onChangeItem(index, key, next)} />
+                        ) : isLong ? (
+                          <Textarea value={String(value)} onChange={(next) => onChangeItem(index, key, next)} rows={3} />
                         ) : (
                           <TextInput value={String(value)} onChange={(next) => onChangeItem(index, key, next)} />
                         )}
@@ -1369,10 +1623,486 @@ export default function CmsEditPage() {
       if (fallbackItem.key === "audience-strip" || merged.key === "audience-strip") {
         delete merged.title;
       }
+      if (fallbackItem.key === "introduction-section" || merged.key === "introduction-section") {
+        delete merged.items;
+        if (!merged.description2) {
+          merged.description2 =
+            "Designed to foster business growth, knowledge sharing, innovation, and international collaboration, Bharat Organic Expo serves as the perfect destination for discovering new products, building strategic partnerships, expanding global markets, and promoting a sustainable future.";
+        }
+        if (!merged.timerTitle) merged.timerTitle = "EVENT BEGINS IN";
+        if (!merged.eventDate) merged.eventDate = "2027-02-19T00:00:00";
+        if (merged.showTimer === undefined) merged.showTimer = true;
+      }
+      if (fallbackItem.key === "global-platform" || merged.key === "global-platform") {
+        delete merged.subtitle;
+        delete merged.title;
+        delete merged.image;
+        delete merged.imageAlt;
+        if (!merged.keyPoint1) merged.keyPoint1 = "International Exhibitors & Global Brands";
+        if (!merged.keyPoint2) merged.keyPoint2 = "Buyers, Distributors & Importers";
+        if (!merged.keyPoint3) merged.keyPoint3 = "Research & Innovation | Startups";
+        if (!merged.keyPoint4) merged.keyPoint4 = "Investors, Financial Institutions";
+        if (!merged.keyPoint5) merged.keyPoint5 = "Government Bodies, Embassies & Policy Makers";
+        merged.items = (merged.items || []).filter(
+          (it: any) =>
+            !/trusted brands|targeted audience|business growth/i.test(it.title || "")
+        );
+      }
+      if (fallbackItem.key === "why-participate" || merged.key === "why-participate") {
+        delete merged.subtitle;
+        delete merged.title;
+        delete merged.items;
+        if (!merged.keyPoint1) merged.keyPoint1 = "Meet genuine buyers, distributors, retailers, and healthcare professionals";
+        if (!merged.keyPoint2) merged.keyPoint2 = "Generate high-quality B2B & B2C leads with faster business conversions";
+        if (!merged.keyPoint3) merged.keyPoint3 = "Launch new products with maximum visibility and market impact";
+        if (!merged.keyPoint4) merged.keyPoint4 = "Expand your dealer, distributor, franchise, and export network";
+        if (!merged.keyPoint5) merged.keyPoint5 = "Strengthen brand presence through live demos and media exposure";
+        if (!merged.keyPoint6) merged.keyPoint6 = "Connect with investors, CEOs, doctors, and key decision-makers";
+        if (!merged.keyPoint7) merged.keyPoint7 = "Achieve higher ROI with direct customer engagement and trust building";
+        if (!merged.buttonLabel) merged.buttonLabel = "BOOK A STALL";
+        if (!merged.buttonHref) merged.buttonHref = "/registration/book-a-stand";
+        if (!merged.secondaryButtonLabel) merged.secondaryButtonLabel = "Download Brochure";
+        if (!merged.secondaryButtonHref) merged.secondaryButtonHref = "/download/invited card.pdf";
+        if (!merged.tertiaryButtonLabel) merged.tertiaryButtonLabel = "Why Exhibit?";
+        if (!merged.tertiaryButtonHref) merged.tertiaryButtonHref = "/why-exhibit";
+      }
+      if (fallbackItem.key === "conference-section" || merged.key === "conference-section") {
+        delete merged.subtitle;
+        delete merged.title;
+        delete merged.items;
+        if (!merged.eyebrow) merged.eyebrow = "GLOBAL CONFERENCE & SEMINARS";
+        if (!merged.titlePrimary) merged.titlePrimary = "Where Knowledge Meets";
+        if (!merged.titleSecondary) merged.titleSecondary = "the Future of Organic";
+        if (!merged.description) merged.description = "Join expert-led sessions, panel discussions & thought leadership talks on the latest trends shaping the future of organic, natural and sustainable living.";
+        if (!merged.buttonLabel) merged.buttonLabel = "View Conference Schedule";
+        if (!merged.buttonHref) merged.buttonHref = "https://arogya.namogange.org/";
+        if (!merged.keyPoint1) merged.keyPoint1 = "Expert-led panel discussions & keynotes";
+        if (!merged.keyPoint2) merged.keyPoint2 = "Emerging trends in organic farming & retail";
+        if (!merged.keyPoint3) merged.keyPoint3 = "Sustainable business & growth strategies";
+        if (!merged.stat1Title) merged.stat1Title = "19 – 21";
+        if (!merged.stat1Sub) merged.stat1Sub = "FEBRUARY 2027";
+        if (!merged.stat2Title) merged.stat2Title = "PRAGATI MAIDAN";
+        if (!merged.stat2Sub) merged.stat2Sub = "NEW DELHI";
+        if (!merged.stat3Title) merged.stat3Title = "INSIGHTS. IDEAS.";
+        if (!merged.stat3Sub) merged.stat3Sub = "IMPACT.";
+        if (!merged.stat4Title) merged.stat4Title = "50+ GLOBAL";
+        if (!merged.stat4Sub) merged.stat4Sub = "SPEAKERS";
+        if (!merged.stat5Title) merged.stat5Title = "20+ KEY";
+        if (!merged.stat5Sub) merged.stat5Sub = "SESSIONS";
+      }
+      if (fallbackItem.key === "expo-categories" || merged.key === "expo-categories") {
+        delete merged.image;
+        delete merged.imageAlt;
+        delete merged.title;
+        delete merged.subtitle;
+        if (!merged.sectionTag) merged.sectionTag = "Expo Categories";
+        if (!merged.titleMain) merged.titleMain = "Explore Diverse";
+        if (!merged.titleHighlight) merged.titleHighlight = "Exhibition Sectors";
+        if (!merged.descriptionPrefix) merged.descriptionPrefix = "One Platform. Every Opportunity.";
+        if (!merged.description) merged.description = "Bharat Organic Expo brings together the entire organic ecosystem under one roof. Explore a wide range of sectors driving sustainable living, natural wellness, ethical production and global trade.";
+        if (!merged.buttonText) merged.buttonText = "VIEW ALL CATEGORIES";
+        if (!merged.buttonHref) merged.buttonHref = "/exhibition-categories";
+        if (!merged.exploreText) merged.exploreText = "Explore";
+        if (Array.isArray(merged.items)) {
+          merged.items = merged.items.map((it: any) => {
+            const clean = { ...it };
+            delete clean.icon;
+            delete clean.desc;
+            delete clean.color;
+            delete clean.imageAlt;
+            if (clean.description === undefined) clean.description = it.desc || "";
+            if (clean.image === undefined) clean.image = "";
+            if (!clean.href) clean.href = it.link || "/exhibition-categories";
+            if (!clean.exploreText) clean.exploreText = "Explore";
+            return clean;
+          });
+        }
+      }
+      if (fallbackItem.key === "beyond-exhibition" || merged.key === "beyond-exhibition") {
+        delete merged.title;
+        delete merged.subtitle;
+        if (!merged.sectionTag) merged.sectionTag = "Global Organic Platform";
+        if (!merged.titleMain) merged.titleMain = "Beyond An";
+        if (!merged.titleHighlight) merged.titleHighlight = "Exhibition";
+        if (!merged.description) merged.description = "Join India's most powerful ecosystem for the organic industry. From high-impact B2B matchmaking and leadership summits to global networking, we provide everything you need to scale your business.";
+        if (!merged.image) merged.image = "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg";
+        if (!merged.imageAlt) merged.imageAlt = "Conferences & Seminars";
+        if (Array.isArray(merged.items)) {
+          merged.items = merged.items.map((it: any) => ({
+            title: it.title || "",
+            description: it.description || it.subtitle || "",
+            icon: it.icon || "Users",
+          }));
+        }
+      }
+      if (fallbackItem.key === "sponsors-attend" || merged.key === "sponsors-attend") {
+        delete merged.title;
+        delete merged.subtitle;
+        delete merged.rightTitle;
+        delete merged.rightBottomText;
+        delete merged.centerText1;
+        delete merged.centerText2;
+        delete merged.centerText3;
+        delete merged.items;
+        if (!merged.titlePrefix) merged.titlePrefix = "WHY";
+        if (!merged.titleHighlight) merged.titleHighlight = "ATTEND?";
+        if (!merged.description) merged.description = "Explore innovations, build connections and gain insights that drive better health and stronger businesses.";
+        if (!merged.image) merged.image = "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg";
+        if (!merged.imageAlt) merged.imageAlt = "Why Attend Expo";
+        if (!merged.buttonLabel) merged.buttonLabel = "REGISTER AS VISITOR!";
+        if (!merged.buttonHref) merged.buttonHref = "/registration/visitor-registration";
+        if (!merged.feature1Title) merged.feature1Title = "DISCOVER";
+        if (!merged.feature1Desc) merged.feature1Desc = "Explore the latest organic products and eco-friendly services driving a sustainable future.";
+        if (!merged.feature2Title) merged.feature2Title = "LEARN";
+        if (!merged.feature2Desc) merged.feature2Desc = "Attend seminars, workshops and live demos by organic agriculture and sustainability experts.";
+        if (!merged.feature3Title) merged.feature3Title = "CONNECT";
+        if (!merged.feature3Desc) merged.feature3Desc = "Meet leading organic brands, manufacturers and sustainable suppliers under one roof.";
+        if (!merged.feature4Title) merged.feature4Title = "SOURCE";
+        if (!merged.feature4Desc) merged.feature4Desc = "Find trusted organic suppliers, distributors and eco-franchise opportunities.";
+        if (!merged.feature5Title) merged.feature5Title = "GROW";
+        if (!merged.feature5Desc) merged.feature5Desc = "Unlock new green business opportunities, partnerships and eco-investment possibilities.";
+        if (!merged.feature6Title) merged.feature6Title = "STAY AHEAD";
+        if (!merged.feature6Desc) merged.feature6Desc = "Stay updated with market trends, conscious consumer insights and future organic industry developments.";
+        if (!merged.keyPoint1) merged.keyPoint1 = "Organic Distributors, Wholesalers & Retailers";
+        if (!merged.keyPoint2) merged.keyPoint2 = "Eco-Importers & Exporters";
+        if (!merged.keyPoint3) merged.keyPoint3 = "Ayurvedic Institutions & Wellness Centers";
+        if (!merged.keyPoint4) merged.keyPoint4 = "Nutritionists, Farmers & Wellness Experts";
+        if (!merged.keyPoint5) merged.keyPoint5 = "Gym Owners, Spa & Eco-Fitness Professionals";
+        if (!merged.keyPoint6) merged.keyPoint6 = "Organic Farming & Natural Product Buyers";
+        if (!merged.keyPoint7) merged.keyPoint7 = "Sustainable Packaging & Eco-friendly Brands";
+        if (!merged.keyPoint8) merged.keyPoint8 = "Investors, Franchise Seekers & Green Business";
+        if (!merged.keyPoint9) merged.keyPoint9 = "Supermarkets & Organic Grocery Chains";
+        if (!merged.keyPoint10) merged.keyPoint10 = "Health-Conscious Consumers & Eco-Enthusiasts";
+      }
       return merged;
     });
     setSectionsDraft(rawSections.map((section: Record<string, any>) => ({ ...section })));
     setOpenSectionIndices(new Set());
+
+    if (page.configKey === "landingPage" || page.type === "home") {
+      api.get("/website/home/audience-strip")
+        .then((res: any) => {
+          const data = res?.data?.data || res?.data || res;
+          if (data && Array.isArray(data.items) && data.items.length > 0) {
+            setSectionsDraft((prev) =>
+              prev.map((sec) =>
+                sec.key === "audience-strip"
+                  ? {
+                      ...sec,
+                      enabled: data.enabled !== false,
+                      items: data.items.map((it: any) => ({
+                        title: it.title ?? "",
+                        subtitle: it.subtitle ?? "",
+                        label: it.label ?? `${it.title ?? ""} ${it.subtitle ?? ""}`.trim(),
+                        icon: it.icon ?? "GraduationCap",
+                        color: it.color ?? "#facc15",
+                      })),
+                    }
+                  : sec
+              )
+            );
+          }
+        })
+        .catch(() => {});
+
+      api.get("/website/home/introduction-section")
+        .then((res: any) => {
+          const data = res?.data?.data || res?.data || res;
+          if (data) {
+            setSectionsDraft((prev) =>
+              prev.map((sec) =>
+                sec.key === "introduction-section"
+                  ? {
+                      ...sec,
+                      enabled: data.enabled !== false,
+                      eyebrow: data.eyebrow ?? sec.eyebrow,
+                      titlePrimary: data.titlePrimary ?? sec.titlePrimary,
+                      titleSecondary: data.titleSecondary ?? sec.titleSecondary,
+                      subtitle: data.subtitle ?? sec.subtitle,
+                      description: data.description ?? sec.description,
+                      description2: data.description2 ?? sec.description2,
+                      buttonLabel: data.buttonLabel ?? sec.buttonLabel,
+                      buttonHref: data.buttonHref ?? sec.buttonHref,
+                      timerTitle: data.timerTitle ?? sec.timerTitle,
+                      eventDate: data.eventDate ?? sec.eventDate,
+                      showTimer: data.showTimer !== false,
+                      image: data.image ?? sec.image,
+                      imageAlt: data.imageAlt ?? sec.imageAlt,
+                    }
+                  : sec
+              )
+            );
+          }
+        })
+        .catch(() => {});
+
+      api.get("/website/home/global-platform")
+        .then((res: any) => {
+          const data = res?.data?.data || res?.data || res;
+          if (data) {
+            setSectionsDraft((prev) =>
+              prev.map((sec) =>
+                sec.key === "global-platform"
+                  ? {
+                      ...sec,
+                      enabled: data.enabled !== false,
+                      eyebrow: data.eyebrow ?? data.badge ?? sec.eyebrow,
+                      titlePrimary: data.titlePrimary ?? sec.titlePrimary,
+                      titleSecondary: data.titleSecondary ?? sec.titleSecondary,
+                      description: data.description ?? sec.description,
+                      keyPoint1:
+                        data.keyPoint1 ??
+                        data.listItems?.[0] ??
+                        sec.keyPoint1 ??
+                        "International Exhibitors & Global Brands",
+                      keyPoint2:
+                        data.keyPoint2 ??
+                        data.listItems?.[1] ??
+                        sec.keyPoint2 ??
+                        "Buyers, Distributors & Importers",
+                      keyPoint3:
+                        data.keyPoint3 ??
+                        data.listItems?.[2] ??
+                        sec.keyPoint3 ??
+                        "Research & Innovation | Startups",
+                      keyPoint4:
+                        data.keyPoint4 ??
+                        data.listItems?.[3] ??
+                        sec.keyPoint4 ??
+                        "Investors, Financial Institutions",
+                      keyPoint5:
+                        data.keyPoint5 ??
+                        data.listItems?.[4] ??
+                        sec.keyPoint5 ??
+                        "Government Bodies, Embassies & Policy Makers",
+                      items:
+                        Array.isArray(data.items || data.cards) &&
+                        (data.items || data.cards).length > 0
+                          ? (data.items || data.cards)
+                              .filter(
+                                (c: any) =>
+                                  !/trusted brands|targeted audience|business growth/i.test(
+                                    c.title || ""
+                                  )
+                              )
+                              .map((c: any) => ({
+                                title: c.title ?? "",
+                                description: c.description ?? c.desc ?? "",
+                              }))
+                          : sec.items,
+                    }
+                  : sec
+              )
+            );
+          }
+        })
+        .catch(() => {});
+
+      api.get("/website/home/why-participate")
+        .then((res: any) => {
+          const data = res?.data?.data || res?.data || res;
+          if (data) {
+            setSectionsDraft((prev) =>
+              prev.map((sec) =>
+                sec.key === "why-participate"
+                  ? {
+                      ...sec,
+                      enabled: data.enabled !== false,
+                      eyebrow: data.eyebrow ?? data.sectionTag ?? sec.eyebrow,
+                      titlePrimary: data.titlePrimary ?? data.titleMain ?? sec.titlePrimary,
+                      titleSecondary: data.titleSecondary ?? data.titleHighlight ?? sec.titleSecondary,
+                      description: data.description ?? sec.description,
+                      image: data.image ?? sec.image,
+                      imageAlt: data.imageAlt ?? sec.imageAlt,
+                      buttonLabel: data.buttonLabel ?? data.buttons?.stall?.text ?? sec.buttonLabel,
+                      buttonHref: data.buttonHref ?? data.buttons?.stall?.link ?? sec.buttonHref,
+                      secondaryButtonLabel: data.secondaryButtonLabel ?? data.buttons?.brochure?.text ?? sec.secondaryButtonLabel,
+                      secondaryButtonHref: data.secondaryButtonHref ?? data.buttons?.brochure?.link ?? sec.secondaryButtonHref,
+                      tertiaryButtonLabel: data.tertiaryButtonLabel ?? data.buttons?.moreInfo?.text ?? sec.tertiaryButtonLabel,
+                      tertiaryButtonHref: data.tertiaryButtonHref ?? data.buttons?.moreInfo?.link ?? sec.tertiaryButtonHref,
+                      keyPoint1: data.keyPoint1 ?? data.points?.[0] ?? sec.keyPoint1,
+                      keyPoint2: data.keyPoint2 ?? data.points?.[1] ?? sec.keyPoint2,
+                      keyPoint3: data.keyPoint3 ?? data.points?.[2] ?? sec.keyPoint3,
+                      keyPoint4: data.keyPoint4 ?? data.points?.[3] ?? sec.keyPoint4,
+                      keyPoint5: data.keyPoint5 ?? data.points?.[4] ?? sec.keyPoint5,
+                      keyPoint6: data.keyPoint6 ?? data.points?.[5] ?? sec.keyPoint6,
+                      keyPoint7: data.keyPoint7 ?? data.points?.[6] ?? sec.keyPoint7,
+                    }
+                  : sec
+              )
+            );
+          }
+        })
+        .catch(() => {});
+
+      api.get("/website/home/conference-seminars")
+        .then((res: any) => {
+          const data = res?.data?.data || res?.data || res;
+          if (data) {
+            setSectionsDraft((prev) =>
+              prev.map((sec) =>
+                sec.key === "conference-section"
+                  ? {
+                      ...sec,
+                      enabled: data.enabled !== false,
+                      eyebrow: data.eyebrow ?? data.sectionTag ?? sec.eyebrow,
+                      titlePrimary: data.titlePrimary ?? data.titleMain ?? sec.titlePrimary,
+                      titleSecondary: data.titleSecondary ?? data.titleHighlight ?? sec.titleSecondary,
+                      description: data.description ?? sec.description,
+                      image: data.image ?? sec.image,
+                      imageAlt: data.imageAlt ?? sec.imageAlt,
+                      buttonLabel: data.buttonLabel ?? data.button?.text ?? sec.buttonLabel,
+                      buttonHref: data.buttonHref ?? data.button?.link ?? sec.buttonHref,
+                      keyPoint1: data.keyPoint1 ?? data.checklist?.[0] ?? sec.keyPoint1,
+                      keyPoint2: data.keyPoint2 ?? data.checklist?.[1] ?? sec.keyPoint2,
+                      keyPoint3: data.keyPoint3 ?? data.checklist?.[2] ?? sec.keyPoint3,
+                      stat1Title: data.stat1Title ?? data.eventInfo?.[0]?.title ?? sec.stat1Title,
+                      stat1Sub: data.stat1Sub ?? data.eventInfo?.[0]?.sub ?? sec.stat1Sub,
+                      stat2Title: data.stat2Title ?? data.eventInfo?.[1]?.title ?? sec.stat2Title,
+                      stat2Sub: data.stat2Sub ?? data.eventInfo?.[1]?.sub ?? sec.stat2Sub,
+                      stat3Title: data.stat3Title ?? data.eventInfo?.[2]?.title ?? sec.stat3Title,
+                      stat3Sub: data.stat3Sub ?? data.eventInfo?.[2]?.sub ?? sec.stat3Sub,
+                      stat4Title: data.stat4Title ?? data.eventInfo?.[3]?.title ?? sec.stat4Title,
+                      stat4Sub: data.stat4Sub ?? data.eventInfo?.[3]?.sub ?? sec.stat4Sub,
+                      stat5Title: data.stat5Title ?? data.eventInfo?.[4]?.title ?? sec.stat5Title,
+                      stat5Sub: data.stat5Sub ?? data.eventInfo?.[4]?.sub ?? sec.stat5Sub,
+                    }
+                  : sec
+              )
+            );
+          }
+        })
+        .catch(() => {});
+
+      api.get("/website/home/expo-categories")
+        .then((res: any) => {
+          const data = res?.data?.data || res?.data || res;
+          if (data) {
+            setSectionsDraft((prev) =>
+              prev.map((sec) =>
+                sec.key === "expo-categories"
+                  ? {
+                      ...sec,
+                      enabled: data.enabled !== false,
+                      sectionTag: data.sectionTag ?? sec.sectionTag,
+                      titleMain: data.titleMain ?? sec.titleMain,
+                      titleHighlight: data.titleHighlight ?? sec.titleHighlight,
+                      descriptionPrefix: data.descriptionPrefix ?? sec.descriptionPrefix,
+                      description: data.description ?? sec.description,
+                      exploreText: data.exploreText ?? sec.exploreText,
+                      buttonText: data.buttonText ?? sec.buttonText,
+                      buttonHref: data.buttonHref ?? data.buttonLink ?? sec.buttonHref,
+                      items: Array.isArray(data.items) && data.items.length > 0
+                        ? data.items.map((it: any) => ({
+                            title: it.title || "",
+                            description: it.description ?? it.desc ?? "",
+                            image: it.image || "",
+                            href: it.href ?? it.link ?? "/exhibition-categories",
+                            exploreText: it.exploreText || "Explore",
+                          }))
+                        : Array.isArray(data.categories) && data.categories.length > 0
+                        ? data.categories.map((it: any) => ({
+                            title: it.title || "",
+                            description: it.description ?? it.desc ?? "",
+                            image: it.image || "",
+                            href: it.href ?? it.link ?? "/exhibition-categories",
+                            exploreText: it.exploreText || "Explore",
+                          }))
+                        : sec.items,
+                    }
+                  : sec
+              )
+            );
+          }
+        })
+        .catch(() => {});
+
+      api.get("/website/home/beyond-exhibition")
+        .then((res: any) => {
+          const data = res?.data?.data || res?.data || res;
+          if (data) {
+            setSectionsDraft((prev) =>
+              prev.map((sec) =>
+                sec.key === "beyond-exhibition"
+                  ? {
+                      ...sec,
+                      enabled: data.enabled !== false,
+                      sectionTag: data.sectionTag ?? sec.sectionTag,
+                      titleMain: data.titleMain ?? sec.titleMain,
+                      titleHighlight: data.titleHighlight ?? sec.titleHighlight,
+                      description: data.description ?? sec.description,
+                      image: data.image ?? sec.image,
+                      imageAlt: data.imageAlt ?? sec.imageAlt,
+                      items: Array.isArray(data.items) && data.items.length > 0
+                        ? data.items.map((it: any) => ({
+                            title: it.title || "",
+                            description: it.description ?? it.subtitle ?? "",
+                            icon: it.icon || "Users",
+                          }))
+                        : Array.isArray(data.extras) && data.extras.length > 0
+                        ? data.extras.map((it: any) => ({
+                            title: it.title2 ? `${it.title} ${it.title2}`.trim() : (it.title || ""),
+                            description: it.description ?? it.subtitle ?? "",
+                            icon: it.icon || "Users",
+                          }))
+                        : sec.items,
+                    }
+                  : sec
+              )
+            );
+          }
+        })
+        .catch(() => {});
+
+      api.get("/website/home/sponsors-attend")
+        .then((res: any) => {
+          const data = res?.data?.data || res?.data || res;
+          if (data) {
+            setSectionsDraft((prev) =>
+              prev.map((sec) =>
+                sec.key === "sponsors-attend"
+                  ? {
+                      ...sec,
+                      enabled: data.enabled !== false,
+                      titlePrefix: data.titlePrefix ?? data.leftSection?.titlePrefix ?? sec.titlePrefix,
+                      titleHighlight: data.titleHighlight ?? data.leftSection?.titleHighlight ?? sec.titleHighlight,
+                      description: data.description ?? data.leftSection?.description ?? sec.description,
+                      image: data.image ?? sec.image,
+                      imageAlt: data.imageAlt ?? sec.imageAlt,
+                      buttonLabel: data.buttonLabel ?? sec.buttonLabel,
+                      buttonHref: data.buttonHref ?? sec.buttonHref,
+
+                      feature1Title: data.feature1Title ?? data.leftSection?.itemsLeft?.[0]?.title ?? sec.feature1Title,
+                      feature1Desc: data.feature1Desc ?? data.leftSection?.itemsLeft?.[0]?.desc ?? sec.feature1Desc,
+                      feature2Title: data.feature2Title ?? data.leftSection?.itemsRight?.[0]?.title ?? sec.feature2Title,
+                      feature2Desc: data.feature2Desc ?? data.leftSection?.itemsRight?.[0]?.desc ?? sec.feature2Desc,
+                      feature3Title: data.feature3Title ?? data.leftSection?.itemsLeft?.[1]?.title ?? sec.feature3Title,
+                      feature3Desc: data.feature3Desc ?? data.leftSection?.itemsLeft?.[1]?.desc ?? sec.feature3Desc,
+                      feature4Title: data.feature4Title ?? data.leftSection?.itemsRight?.[1]?.title ?? sec.feature4Title,
+                      feature4Desc: data.feature4Desc ?? data.leftSection?.itemsRight?.[1]?.desc ?? sec.feature4Desc,
+                      feature5Title: data.feature5Title ?? data.leftSection?.itemsLeft?.[2]?.title ?? sec.feature5Title,
+                      feature5Desc: data.feature5Desc ?? data.leftSection?.itemsLeft?.[2]?.desc ?? sec.feature5Desc,
+                      feature6Title: data.feature6Title ?? data.leftSection?.itemsRight?.[2]?.title ?? sec.feature6Title,
+                      feature6Desc: data.feature6Desc ?? data.leftSection?.itemsRight?.[2]?.desc ?? sec.feature6Desc,
+
+                      keyPoint1: data.keyPoint1 ?? data.rightSection?.items?.[0]?.label ?? sec.keyPoint1,
+                      keyPoint2: data.keyPoint2 ?? data.rightSection?.items?.[1]?.label ?? sec.keyPoint2,
+                      keyPoint3: data.keyPoint3 ?? data.rightSection?.items?.[2]?.label ?? sec.keyPoint3,
+                      keyPoint4: data.keyPoint4 ?? data.rightSection?.items?.[3]?.label ?? sec.keyPoint4,
+                      keyPoint5: data.keyPoint5 ?? data.rightSection?.items?.[4]?.label ?? sec.keyPoint5,
+                      keyPoint6: data.keyPoint6 ?? data.rightSection?.items?.[5]?.label ?? sec.keyPoint6,
+                      keyPoint7: data.keyPoint7 ?? data.rightSection?.items?.[6]?.label ?? sec.keyPoint7,
+                      keyPoint8: data.keyPoint8 ?? data.rightSection?.items?.[7]?.label ?? sec.keyPoint8,
+                      keyPoint9: data.keyPoint9 ?? data.rightSection?.items?.[8]?.label ?? sec.keyPoint9,
+                      keyPoint10: data.keyPoint10 ?? data.rightSection?.items?.[9]?.label ?? sec.keyPoint10,
+                    }
+                  : sec
+              )
+            );
+          }
+        })
+        .catch(() => {});
+    }
   }, [settings, page]);
 
   const toggleSectionAccordion = (index: number) => {
@@ -1411,6 +2141,34 @@ export default function CmsEditPage() {
       previous.map((section, index) => {
         if (index !== sectionIndex) return section;
         const items = [...(section.items ?? [])];
+        if (section.key === "audience-strip") {
+          const blankAudience = {
+            title: "NEW AUDIENCE",
+            subtitle: "TARGET GROUP",
+            icon: "GraduationCap",
+            color: "#facc15",
+            label: "NEW AUDIENCE TARGET GROUP",
+          };
+          return { ...section, items: [...items, blankAudience] };
+        }
+        if (section.key === "expo-categories") {
+          const blankCategory = {
+            title: "New Exhibition Sector",
+            description: "Enter sector description...",
+            image: "",
+            href: "/exhibition-categories",
+            exploreText: "Explore",
+          };
+          return { ...section, items: [...items, blankCategory] };
+        }
+        if (section.key === "beyond-exhibition") {
+          const blankItem = {
+            title: "NEW HIGHLIGHT / AWARD",
+            description: "Enter description...",
+            icon: "Award",
+          };
+          return { ...section, items: [...items, blankItem] };
+        }
         const defaultItemTemplate: Record<string, any> = {
           title: "",
           subtitle: "",
@@ -1513,6 +2271,265 @@ export default function CmsEditPage() {
             await api.put("/website/home/home-hero", { slides: heroSec.slides });
           } catch (err) {
             console.error("Failed to sync hero slides to backend:", err);
+          }
+        }
+
+        const audienceSec = sectionsDraft.find((s) => s.key === "audience-strip");
+        if (audienceSec) {
+          try {
+            await api.put("/website/home/audience-strip", {
+              enabled: audienceSec.enabled !== false,
+              items: audienceSec.items || [],
+            });
+          } catch (err) {
+            console.error("Failed to sync audience strip to backend:", err);
+          }
+        }
+
+        const introSec = sectionsDraft.find((s) => s.key === "introduction-section");
+        if (introSec) {
+          try {
+            await api.put("/website/home/introduction-section", {
+              enabled: introSec.enabled !== false,
+              eyebrow: introSec.eyebrow,
+              titlePrimary: introSec.titlePrimary,
+              titleSecondary: introSec.titleSecondary,
+              subtitle: introSec.subtitle,
+              description: introSec.description,
+              description2: introSec.description2,
+              buttonLabel: introSec.buttonLabel,
+              buttonHref: introSec.buttonHref,
+              timerTitle: introSec.timerTitle,
+              eventDate: introSec.eventDate,
+              showTimer: introSec.showTimer !== false,
+              image: introSec.image,
+              imageAlt: introSec.imageAlt,
+            });
+          } catch (err) {
+            console.error("Failed to sync introduction section to backend:", err);
+          }
+        }
+
+        const globalSec = sectionsDraft.find((s) => s.key === "global-platform");
+        if (globalSec) {
+          try {
+            await api.put("/website/home/global-platform", {
+              enabled: globalSec.enabled !== false,
+              eyebrow: globalSec.eyebrow,
+              badge: globalSec.eyebrow,
+              titlePrimary: globalSec.titlePrimary,
+              titleSecondary: globalSec.titleSecondary,
+              description: globalSec.description,
+              keyPoint1: globalSec.keyPoint1,
+              keyPoint2: globalSec.keyPoint2,
+              keyPoint3: globalSec.keyPoint3,
+              keyPoint4: globalSec.keyPoint4,
+              keyPoint5: globalSec.keyPoint5,
+              items: (globalSec.items || []).map((it: any) => ({
+                title: it.title ?? "",
+                description: it.description ?? it.desc ?? "",
+                desc: it.description ?? it.desc ?? "",
+              })),
+            });
+          } catch (err) {
+            console.error("Failed to sync global platform to backend:", err);
+          }
+        }
+
+        const whySec = sectionsDraft.find((s) => s.key === "why-participate");
+        if (whySec) {
+          try {
+            await api.put("/website/home/why-participate", {
+              enabled: whySec.enabled !== false,
+              eyebrow: whySec.eyebrow,
+              sectionTag: whySec.eyebrow,
+              titlePrimary: whySec.titlePrimary,
+              titleMain: whySec.titlePrimary,
+              titleSecondary: whySec.titleSecondary,
+              titleHighlight: whySec.titleSecondary,
+              description: whySec.description,
+              image: whySec.image,
+              imageAlt: whySec.imageAlt,
+              buttonLabel: whySec.buttonLabel,
+              buttonHref: whySec.buttonHref,
+              secondaryButtonLabel: whySec.secondaryButtonLabel,
+              secondaryButtonHref: whySec.secondaryButtonHref,
+              tertiaryButtonLabel: whySec.tertiaryButtonLabel,
+              tertiaryButtonHref: whySec.tertiaryButtonHref,
+              keyPoint1: whySec.keyPoint1,
+              keyPoint2: whySec.keyPoint2,
+              keyPoint3: whySec.keyPoint3,
+              keyPoint4: whySec.keyPoint4,
+              keyPoint5: whySec.keyPoint5,
+              keyPoint6: whySec.keyPoint6,
+              keyPoint7: whySec.keyPoint7,
+              points: [
+                whySec.keyPoint1,
+                whySec.keyPoint2,
+                whySec.keyPoint3,
+                whySec.keyPoint4,
+                whySec.keyPoint5,
+                whySec.keyPoint6,
+                whySec.keyPoint7,
+              ].filter(Boolean),
+            });
+          } catch (err) {
+            console.error("Failed to sync why participate to backend:", err);
+          }
+        }
+
+        const confSec = sectionsDraft.find((s) => s.key === "conference-section");
+        if (confSec) {
+          try {
+            await api.put("/website/home/conference-seminars", {
+              enabled: confSec.enabled !== false,
+              eyebrow: confSec.eyebrow,
+              sectionTag: confSec.eyebrow,
+              titlePrimary: confSec.titlePrimary,
+              titleMain: confSec.titlePrimary,
+              titleSecondary: confSec.titleSecondary,
+              titleHighlight: confSec.titleSecondary,
+              description: confSec.description,
+              image: confSec.image,
+              imageAlt: confSec.imageAlt,
+              buttonLabel: confSec.buttonLabel,
+              buttonHref: confSec.buttonHref,
+              button: {
+                text: confSec.buttonLabel,
+                link: confSec.buttonHref,
+              },
+              keyPoint1: confSec.keyPoint1,
+              keyPoint2: confSec.keyPoint2,
+              keyPoint3: confSec.keyPoint3,
+              checklist: [
+                confSec.keyPoint1,
+                confSec.keyPoint2,
+                confSec.keyPoint3,
+              ].filter(Boolean),
+              stat1Title: confSec.stat1Title,
+              stat1Sub: confSec.stat1Sub,
+              stat2Title: confSec.stat2Title,
+              stat2Sub: confSec.stat2Sub,
+              stat3Title: confSec.stat3Title,
+              stat3Sub: confSec.stat3Sub,
+              stat4Title: confSec.stat4Title,
+              stat4Sub: confSec.stat4Sub,
+              stat5Title: confSec.stat5Title,
+              stat5Sub: confSec.stat5Sub,
+              eventInfo: [
+                { icon: "Calendar", title: confSec.stat1Title, sub: confSec.stat1Sub },
+                { icon: "MapPin", title: confSec.stat2Title, sub: confSec.stat2Sub },
+                { icon: "Users", title: confSec.stat3Title, sub: confSec.stat3Sub },
+                { icon: "Mic", title: confSec.stat4Title, sub: confSec.stat4Sub },
+                { icon: "BookOpen", title: confSec.stat5Title, sub: confSec.stat5Sub },
+              ],
+            });
+          } catch (err) {
+            console.error("Failed to sync conference seminars to backend:", err);
+          }
+        }
+
+        const expoSec = sectionsDraft.find((s) => s.key === "expo-categories");
+        if (expoSec) {
+          try {
+            const cleanItems = Array.isArray(expoSec.items)
+              ? expoSec.items.map((it: any) => ({
+                  title: it.title || "",
+                  description: it.description || "",
+                  desc: it.description || "",
+                  image: it.image || "",
+                  href: it.href || "/exhibition-categories",
+                  link: it.href || "/exhibition-categories",
+                  exploreText: it.exploreText || "Explore",
+                }))
+              : [];
+
+            await api.put("/website/home/expo-categories", {
+              enabled: expoSec.enabled !== false,
+              sectionTag: expoSec.sectionTag,
+              titleMain: expoSec.titleMain,
+              titleHighlight: expoSec.titleHighlight,
+              descriptionPrefix: expoSec.descriptionPrefix,
+              description: expoSec.description,
+              exploreText: expoSec.exploreText,
+              buttonText: expoSec.buttonText,
+              buttonHref: expoSec.buttonHref,
+              buttonLink: expoSec.buttonHref,
+              items: cleanItems,
+              categories: cleanItems,
+            });
+          } catch (err) {
+            console.error("Failed to sync expo categories to backend:", err);
+          }
+        }
+
+        const beyondSec = sectionsDraft.find((s) => s.key === "beyond-exhibition");
+        if (beyondSec) {
+          try {
+            const cleanItems = Array.isArray(beyondSec.items)
+              ? beyondSec.items.map((it: any) => ({
+                  title: it.title || "",
+                  description: it.description || it.subtitle || "",
+                  subtitle: it.description || it.subtitle || "",
+                  icon: it.icon || "Users",
+                }))
+              : [];
+
+            await api.put("/website/home/beyond-exhibition", {
+              enabled: beyondSec.enabled !== false,
+              sectionTag: beyondSec.sectionTag,
+              titleMain: beyondSec.titleMain,
+              titleHighlight: beyondSec.titleHighlight,
+              description: beyondSec.description,
+              image: beyondSec.image,
+              imageAlt: beyondSec.imageAlt,
+              items: cleanItems,
+              extras: cleanItems,
+            });
+          } catch (err) {
+            console.error("Failed to sync beyond exhibition to backend:", err);
+          }
+        }
+
+        const attendSec = sectionsDraft.find((s) => s.key === "sponsors-attend");
+        if (attendSec) {
+          try {
+            await api.put("/website/home/sponsors-attend", {
+              enabled: attendSec.enabled !== false,
+              titlePrefix: attendSec.titlePrefix,
+              titleHighlight: attendSec.titleHighlight,
+              description: attendSec.description,
+              image: attendSec.image,
+              imageAlt: attendSec.imageAlt,
+              buttonLabel: attendSec.buttonLabel,
+              buttonHref: attendSec.buttonHref,
+
+              feature1Title: attendSec.feature1Title,
+              feature1Desc: attendSec.feature1Desc,
+              feature2Title: attendSec.feature2Title,
+              feature2Desc: attendSec.feature2Desc,
+              feature3Title: attendSec.feature3Title,
+              feature3Desc: attendSec.feature3Desc,
+              feature4Title: attendSec.feature4Title,
+              feature4Desc: attendSec.feature4Desc,
+              feature5Title: attendSec.feature5Title,
+              feature5Desc: attendSec.feature5Desc,
+              feature6Title: attendSec.feature6Title,
+              feature6Desc: attendSec.feature6Desc,
+
+              keyPoint1: attendSec.keyPoint1,
+              keyPoint2: attendSec.keyPoint2,
+              keyPoint3: attendSec.keyPoint3,
+              keyPoint4: attendSec.keyPoint4,
+              keyPoint5: attendSec.keyPoint5,
+              keyPoint6: attendSec.keyPoint6,
+              keyPoint7: attendSec.keyPoint7,
+              keyPoint8: attendSec.keyPoint8,
+              keyPoint9: attendSec.keyPoint9,
+              keyPoint10: attendSec.keyPoint10,
+            });
+          } catch (err) {
+            console.error("Failed to sync sponsors and attend to backend:", err);
           }
         }
       }
@@ -2264,7 +3281,7 @@ export default function CmsEditPage() {
                             </div>
                           )}
 
-                          {Array.isArray(section.items) && section.key !== "hero" && (
+                          {Array.isArray(section.items) && section.key !== "hero" && section.key !== "introduction-section" && section.key !== "why-participate" && section.key !== "conference-section" && section.key !== "sponsors-attend" && (
                             <SectionItemsEditor
                               items={section.items}
                               onChangeItem={(itemIndex, key, value) => updateSectionItem(sectionIndex, itemIndex, key, value)}
