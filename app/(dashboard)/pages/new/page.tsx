@@ -255,16 +255,14 @@ function Toggle({
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className={`relative h-[20px] w-[37px] shrink-0 rounded-full transition ${checked
-          ? "bg-[#087540]"
-          : "bg-[#cfd4d0]"
-        }`}
+      className={`relative h-[20px] w-[37px] shrink-0 rounded-full transition-colors duration-200 cursor-pointer ${
+        checked ? "bg-[#16a34a]" : "bg-[#dc2626]"
+      }`}
     >
       <span
-        className={`absolute top-[3px] h-[14px] w-[14px] rounded-full bg-white shadow-sm transition-all ${checked
-            ? "left-[20px]"
-            : "left-[3px]"
-          }`}
+        className={`absolute top-[3px] h-[14px] w-[14px] rounded-full bg-white shadow-sm transition-all duration-200 ${
+          checked ? "left-[20px]" : "left-[3px]"
+        }`}
       />
     </button>
   );

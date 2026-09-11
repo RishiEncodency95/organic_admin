@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api/v1";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1";
 const REQUEST_TIMEOUT_MS = 10_000;
 const GET_CACHE_TTL_MS = 2_000;
 const getInFlight = new Map<string, Promise<unknown>>();
