@@ -275,19 +275,41 @@ export default function Sidebar({
           text-center
         "
       >
-        <Link href="/" className="block">
+        <Link href="/" className="group relative block">
+          {/* Ultra-subtle Soft Ambient Glow behind logo */}
+          <div
+            className="
+              pointer-events-none
+              absolute
+              left-1/2
+              top-1/2
+              h-[55px]
+              w-[140px]
+              -translate-x-1/2
+              -translate-y-1/2
+              rounded-full
+              bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.07)_0%,rgba(255,255,255,0.015)_50%,transparent_75%)]
+              blur-[8px]
+              transition-all
+              duration-300
+              group-hover:bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.11)_0%,rgba(255,255,255,0.02)_50%,transparent_75%)]
+            "
+          />
+
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/admin.png"
             alt="Bharat Organic Expo Admin"
             className="
+              relative
+              z-10
               mx-auto
               h-auto
               max-h-[75px]
               w-auto
               max-w-[195px]
               object-contain
-              drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)]
+              drop-shadow-[0_1px_4px_rgba(0,0,0,0.2)]
               transition-transform
               duration-200
               hover:scale-[1.02]

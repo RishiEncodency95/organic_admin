@@ -597,7 +597,11 @@ function SectionFieldsEditor({
   onFieldChange: (key: string, value: unknown) => void;
 }) {
   const entries = Object.entries(section).filter(
-    ([key, value]) => !SECTION_SKIP_KEYS.has(key) && (typeof value === "string" || typeof value === "boolean"),
+    ([key, value]) => {
+      if (SECTION_SKIP_KEYS.has(key)) return false;
+      if ((section.key === "audience-strip" || section.name === "AudienceStrip") && key === "title") return false;
+      return typeof value === "string" || typeof value === "boolean";
+    },
   );
 
   if (!entries.length) {
@@ -726,7 +730,7 @@ function SectionItemsEditor({
     <div className="flex flex-col gap-[8px]">
       <div className="flex items-center justify-between border-t border-[#e2e8f0] pt-[8px]">
         <div className="flex items-center gap-[6px]">
-          <span className="text-[11px] font-bold text-[#4B1426]">
+          <span className="text-[11px] font-bold text-[#1e40af]">
             {sectionId === "hero" ? "Hero Carousel Slides" :
               sectionId === "audience-strip" ? "Target Audience List" :
                 sectionId === "introduction-section" ? "Key Feature Cards" :
@@ -741,19 +745,21 @@ function SectionItemsEditor({
                                   sectionId === "navbar" ? "Header Navigation Links" :
                                     sectionId === "footer" ? "Footer Quick Links" : "Section Content Blocks"}
           </span>
-          <span className="rounded-full bg-[#fae8eb] px-[6px] py-[1px] text-[8.5px] font-bold text-[#4B1426]">
+          <span className="rounded-full bg-blue-50 border border-blue-200 px-[7px] py-[1px] text-[8.5px] font-bold text-blue-700">
             {items.length} Total
           </span>
         </div>
 
-        <button
-          type="button"
-          onClick={onAddItem}
-          className="flex h-[24px] items-center gap-[4px] rounded-[4px] border border-[#d4a2ab] bg-white px-[8px] text-[9px] font-semibold text-[#4B1426] hover:bg-[#fdf2f4]"
-        >
-          <Plus className="h-[10px] w-[10px]" />
-          {getSectionAddLabel()}
-        </button>
+        {sectionId !== "audience-strip" && (
+          <button
+            type="button"
+            onClick={onAddItem}
+            className="flex h-[24px] items-center gap-[4px] rounded-[4px] border border-blue-200 bg-white px-[8px] text-[9px] font-semibold text-blue-700 hover:bg-blue-50 transition-colors"
+          >
+            <Plus className="h-[10px] w-[10px]" />
+            {getSectionAddLabel()}
+          </button>
+        )}
       </div>
 
       {items.length === 0 && (
@@ -806,8 +812,8 @@ function SectionItemsEditor({
                 className="flex cursor-pointer items-center justify-between bg-[#f8fafc] px-[12px] py-[8px] border-b border-[#f1f5f9] hover:bg-[#f1f5f9] transition"
               >
                 <div className="flex items-center gap-[6px]">
-                  <ChevronRight className={`h-3.5 w-3.5 text-[#64748b] transition-transform ${isOpen ? "rotate-90 text-[#4B1426]" : ""}`} />
-                  <span className="text-[11px] font-bold text-[#4B1426]">
+                  <ChevronRight className={`h-3.5 w-3.5 text-[#64748b] transition-transform ${isOpen ? "rotate-90 text-[#1e40af]" : ""}`} />
+                  <span className="text-[11px] font-bold text-[#1e40af]">
                     {getItemLabel(item, index)}
                     {item.value ? <span className="ml-[6px] font-semibold text-[#1e293b]">({item.value})</span> : ""}
                   </span>
@@ -1310,7 +1316,7 @@ export default function CmsEditPage() {
   }, [page]);
 
   const [sectionsDraft, setSectionsDraft] = useState<Array<Record<string, any>>>([]);
-  const [openSectionIndices, setOpenSectionIndices] = useState<Set<number>>(new Set([0]));
+  const [openSectionIndices, setOpenSectionIndices] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     const cfg = page.configKey && settings ? settings[page.configKey] : undefined;
@@ -1350,7 +1356,7 @@ export default function CmsEditPage() {
     const rawSections = fallbackSections.map((fallbackItem: Record<string, any>) => {
       const savedItem = stored?.find((s: Record<string, any>) => s.key === fallbackItem.key);
       if (!savedItem) return { ...fallbackItem };
-      return {
+      const merged = {
         ...fallbackItem,
         ...savedItem,
         items: fallbackItem.items !== undefined ? (
@@ -1360,9 +1366,13 @@ export default function CmsEditPage() {
           }))
         ) : undefined,
       };
+      if (fallbackItem.key === "audience-strip" || merged.key === "audience-strip") {
+        delete merged.title;
+      }
+      return merged;
     });
     setSectionsDraft(rawSections.map((section: Record<string, any>) => ({ ...section })));
-    setOpenSectionIndices(new Set([0]));
+    setOpenSectionIndices(new Set());
   }, [settings, page]);
 
   const toggleSectionAccordion = (index: number) => {

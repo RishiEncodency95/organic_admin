@@ -306,7 +306,6 @@ export const defaultLandingSections: LandingSectionContent[] = [
     key: "audience-strip",
     name: "AudienceStrip",
     enabled: true,
-    title: "WHO SHOULD VISIT & EXHIBIT",
     items: [
       { title: "UNIVERSITY", subtitle: "ACADEMIC PARTNERS", icon: "GraduationCap", color: "text-orange-500", label: "UNIVERSITY ACADEMIC PARTNERS" },
       { title: "HEALTHCARE", subtitle: "LEADERS", icon: "Stethoscope", color: "text-[#3b8c2a]", label: "HEALTHCARE LEADERS" },
