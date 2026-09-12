@@ -1,4 +1,5 @@
 import { Settings } from "./types";
+import { api } from "./api";
 
 const SETTINGS_KEY = "bharat_organic_admin_settings_v3";
 
@@ -12,6 +13,19 @@ const defaultMockSettings: Settings = {
 
 export const settingsApi = {
   get: async (): Promise<Settings> => {
+    try {
+      const res: any = await api.get("/settings?website=Organicexpo");
+      const backendData = res?.data || res || {};
+      if (backendData && Object.keys(backendData).length > 0) {
+        if (typeof window !== "undefined") {
+          localStorage.setItem(SETTINGS_KEY, JSON.stringify(backendData));
+        }
+        return { ...defaultMockSettings, ...backendData };
+      }
+    } catch (e) {
+      console.warn("Failed to fetch settings from backend API, using local storage:", e);
+    }
+
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem(SETTINGS_KEY);
       if (stored) {
@@ -36,10 +50,22 @@ export const settingsApi = {
           // ignore
         }
       }
-      const updated = { ...current, ...payload };
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(updated));
+    }
+    const updated = { ...current, ...payload };
+
+    try {
+      const res: any = await api.put("/settings?website=Organicexpo", updated);
+      const saved = res?.data || res || updated;
+      if (typeof window !== "undefined") {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(saved));
+      }
+      return saved;
+    } catch (e) {
+      console.warn("Failed to sync settings to backend API, falling back to local storage:", e);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(updated));
+      }
       return updated;
     }
-    return { ...defaultMockSettings, ...payload };
   },
 };

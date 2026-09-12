@@ -557,42 +557,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
           </button>
 
           {/* ACTIVE PAGE TITLE / BREADCRUMB */}
-          {isDashboard ? (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
-              className="flex items-center gap-2.5 bg-slate-50/80 px-3 py-1 rounded-xl border border-[#23471d]/25 group transition-all duration-300 hover:bg-white hover:border-[#23471d]/50 shadow-xs"
-            >
-              {/* Icon Circle */}
-              <div className="flex items-center justify-center w-7 h-7 rounded-full bg-white border border-slate-100 shadow-xs">
-                {greeting.icon}
-              </div>
-
-              {/* Text Content */}
-              <div className="flex flex-col leading-tight">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[12px] font-medium text-slate-700 tracking-tight">
-                    {greeting.text},
-                  </span>
-                  <span className="text-[12px] font-extrabold text-slate-400">/</span>
-                  <span className="text-[11px] font-extrabold text-[#23471d] bg-[#23471d]/10 px-2 py-0.5 rounded-md border border-[#23471d]/20 shadow-2xs tracking-wide uppercase">
-                    Dashboard
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <div className="relative flex items-center justify-center">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                    <div className="absolute inset-0 w-1.5 h-1.5 rounded-full bg-green-500 animate-ping opacity-75" />
-                  </div>
-                  <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest">
-                    {displayRole}
-                  </span>
-                </div>
-              </div>
-            </motion.div>
-          ) : pagesSubRouteLabel(pathname) ? (
+          {pagesSubRouteLabel(pathname) ? (
             <h1 className="flex min-w-0 items-center gap-1.5 text-[15px] font-semibold tracking-tight">
               <span
                 className="truncate"
@@ -614,8 +579,45 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
             </h1>
           )}
 
+          {/* GREETING BADGE (DASHBOARD ONLY) */}
+          {isDashboard && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="flex items-center gap-2.5 bg-slate-50/80 px-3 py-1 rounded-xl border border-[#23471d]/25 group transition-all duration-300 hover:bg-white hover:border-[#23471d]/50 shadow-xs"
+            >
+              {/* Icon Circle */}
+              <div className="flex items-center justify-center w-7 h-7 rounded-full bg-white border border-slate-100 shadow-xs">
+                {greeting.icon}
+              </div>
+
+              {/* Text Content */}
+              <div className="flex flex-col leading-tight">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[12px] font-medium text-slate-700 tracking-tight">
+                    {greeting.text},
+                  </span>
+                  <span className="text-[12px] font-bold text-[#23471d] tracking-tight">
+                    {firstName}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <div className="relative flex items-center justify-center">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                    <div className="absolute inset-0 w-1.5 h-1.5 rounded-full bg-green-500 animate-ping opacity-75" />
+                  </div>
+                  <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest">
+                    {displayRole}
+                  </span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {/* SEARCH BOX */}
-          <div className="hidden lg:flex items-center relative ml-3">
+          <div className="hidden lg:flex items-center relative ml-4 xl:ml-8">
             <Search className="absolute left-3 text-slate-400 pointer-events-none" size={14} />
             <input
               type="text"

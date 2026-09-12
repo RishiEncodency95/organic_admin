@@ -36,6 +36,7 @@ import {
   EyeOff,
   FileText,
   FormInput,
+  Globe,
   ImageIcon,
   Italic,
   Link2,
@@ -50,10 +51,12 @@ import {
   Strikethrough,
   Table2,
   Trash2,
+  RotateCcw,
   Underline,
   Upload,
   UserRound,
   Video,
+  X,
 } from "lucide-react";
 import { uploadApi } from "@/lib/uploadApi";
 
@@ -121,6 +124,8 @@ type FormState = {
   metaDescription: string;
   metaKeywords: string;
   canonicalUrl: string;
+  canonicalTag: string;
+  openGraphTags: string;
   ogTitle: string;
   ogDescription: string;
   ogImage: string;
@@ -129,6 +134,7 @@ type FormState = {
   schemaMarkup: string;
   robotsIndex: boolean;
   robotsFollow: boolean;
+  isActive: boolean;
   status: Status;
   visibility: Visibility;
   author: string;
@@ -179,16 +185,17 @@ function TextInput({
   onChange,
   placeholder,
   maxLength = 120,
+  hideLimit = false,
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   maxLength?: number;
+  hideLimit?: boolean;
 }) {
   const currentLength = (value || "").length;
-  // Dynamic max allowed: allows expanding up to the specified field capacity (e.g. 120, 140, 350)
-  const maxAllowed = Math.max(currentLength, maxLength);
-  const isAtLimit = currentLength >= maxAllowed;
+  const maxAllowed = hideLimit ? 5000 : Math.max(currentLength, maxLength);
+  const isAtLimit = !hideLimit && currentLength >= maxAllowed;
 
   return (
     <div className="relative w-full">
@@ -202,7 +209,7 @@ function TextInput({
             onChange(event.target.value);
           }
         }}
-        className="
+        className={`
           h-[35px]
           w-full
           cursor-default
@@ -210,7 +217,7 @@ function TextInput({
           rounded-none
           shadow-[0_1px_3px_0_rgba(0,0,0,0.02),0_0_0_1px_rgba(27,31,35,0.15)]
           pl-[10px]
-          pr-[62px]
+          ${hideLimit ? "pr-[10px]" : "pr-[62px]"}
           text-[11px]
           font-medium
           text-[#414b5e]
@@ -218,16 +225,18 @@ function TextInput({
           placeholder:text-[10.5px]
           placeholder:text-[#9aa0aa]
           focus:border-[#8fa98e]
-        "
+        `}
       />
-      <span
-        className={`absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none px-1.5 py-0.5 text-[8.5px] font-mono font-bold rounded ${isAtLimit
-            ? "bg-[#fee2e2] text-[#dc2626] border border-[#fca5a5]"
-            : "bg-[#f1f5f9] text-[#64748b]"
-          }`}
-      >
-        {currentLength}/{maxAllowed}
-      </span>
+      {!hideLimit && (
+        <span
+          className={`absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none px-1.5 py-0.5 text-[8.5px] font-mono font-bold rounded ${isAtLimit
+              ? "bg-[#fee2e2] text-[#dc2626] border border-[#fca5a5]"
+              : "bg-[#f1f5f9] text-[#64748b]"
+            }`}
+        >
+          {currentLength}/{maxAllowed}
+        </span>
+      )}
     </div>
   );
 }
@@ -425,6 +434,114 @@ function Toggle({
 }
 
 /* =========================================================
+   EDITOR TOOLBAR (MATCHING AddSeo)
+========================================================= */
+
+function EditorToolbar({
+  targetRef,
+  onCommand,
+}: {
+  targetRef: React.RefObject<HTMLDivElement | null>;
+  onCommand: (command: string, value?: string | null) => void;
+}) {
+  return (
+    <div className="border-b-2 border-gray-200 bg-gray-50 p-2 flex flex-wrap gap-1 items-center">
+      <button
+        type="button"
+        onClick={() => onCommand("bold")}
+        className="px-3 py-1 border-2 border-gray-300 bg-white hover:bg-gray-100 font-bold shadow-sm rounded text-xs text-gray-800 transition-colors"
+        title="Bold"
+      >
+        B
+      </button>
+      <button
+        type="button"
+        onClick={() => onCommand("italic")}
+        className="px-3 py-1 border-2 border-gray-300 bg-white hover:bg-gray-100 italic shadow-sm rounded text-xs text-gray-800 transition-colors"
+        title="Italic"
+      >
+        I
+      </button>
+      <button
+        type="button"
+        onClick={() => onCommand("underline")}
+        className="px-3 py-1 border-2 border-gray-300 bg-white hover:bg-gray-100 underline shadow-sm rounded text-xs text-gray-800 transition-colors"
+        title="Underline"
+      >
+        U
+      </button>
+      <div className="w-px h-5 bg-gray-300 mx-1" />
+      <button
+        type="button"
+        onClick={() => onCommand("justifyLeft")}
+        className="px-3 py-1 border-2 border-gray-300 bg-white hover:bg-gray-100 shadow-sm rounded text-xs text-gray-800 transition-colors"
+        title="Align Left"
+      >
+        ≡
+      </button>
+      <button
+        type="button"
+        onClick={() => onCommand("justifyCenter")}
+        className="px-3 py-1 border-2 border-gray-300 bg-white hover:bg-gray-100 shadow-sm rounded text-xs text-gray-800 transition-colors"
+        title="Align Center"
+      >
+        ≡
+      </button>
+      <button
+        type="button"
+        onClick={() => onCommand("justifyRight")}
+        className="px-3 py-1 border-2 border-gray-300 bg-white hover:bg-gray-100 shadow-sm rounded text-xs text-gray-800 transition-colors"
+        title="Align Right"
+      >
+        ≡
+      </button>
+      <div className="w-px h-5 bg-gray-300 mx-1" />
+      <button
+        type="button"
+        onClick={() => onCommand("insertUnorderedList")}
+        className="px-3 py-1 border-2 border-gray-300 bg-white hover:bg-gray-100 shadow-sm rounded text-xs text-gray-800 transition-colors"
+        title="Bullet List"
+      >
+        • List
+      </button>
+      <button
+        type="button"
+        onClick={() => onCommand("insertOrderedList")}
+        className="px-3 py-1 border-2 border-gray-300 bg-white hover:bg-gray-100 shadow-sm rounded text-xs text-gray-800 transition-colors"
+        title="Numbered List"
+      >
+        1. List
+      </button>
+      <div className="w-px h-5 bg-gray-300 mx-1" />
+      <select
+        onChange={(e) => onCommand("formatBlock", e.target.value)}
+        className="px-2 py-1 border-2 border-gray-300 bg-white hover:bg-gray-100 shadow-sm rounded text-xs text-gray-800 focus:outline-none"
+        defaultValue=""
+      >
+        <option value="">Normal</option>
+        <option value="h1">H1</option>
+        <option value="h2">H2</option>
+        <option value="h3">H3</option>
+        <option value="h4">H4</option>
+        <option value="h5">H5</option>
+        <option value="h6">H6</option>
+      </select>
+      <button
+        type="button"
+        onClick={() => {
+          const url = prompt("Enter URL:");
+          if (url) onCommand("createLink", url);
+        }}
+        className="px-3 py-1 border-2 border-gray-300 bg-white hover:bg-gray-100 shadow-sm rounded text-xs text-gray-800 transition-colors"
+        title="Insert Link"
+      >
+        🔗
+      </button>
+    </div>
+  );
+}
+
+/* =========================================================
    TEXTAREA
 ========================================================= */
 
@@ -435,6 +552,7 @@ function Textarea({
   rows = 3,
   mono = false,
   maxLength = 450,
+  noLimit = false,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -442,37 +560,40 @@ function Textarea({
   rows?: number;
   mono?: boolean;
   maxLength?: number;
+  noLimit?: boolean;
 }) {
   const currentLength = (value || "").length;
   const initialLengthRef = useRef<number | null>(null);
   if (initialLengthRef.current === null) {
     initialLengthRef.current = currentLength > 0 ? currentLength : maxLength;
   }
-  const maxAllowed = initialLengthRef.current;
-  const isAtLimit = currentLength >= maxAllowed;
+  const maxAllowed = noLimit ? 10000 : initialLengthRef.current;
+  const isAtLimit = !noLimit && currentLength >= maxAllowed;
 
   return (
     <div className="relative w-full">
       <textarea
         value={value}
-        maxLength={maxAllowed}
+        maxLength={noLimit ? undefined : maxAllowed}
         placeholder={placeholder}
         rows={rows}
         onChange={(event) => {
-          if (event.target.value.length <= maxAllowed) {
+          if (noLimit || event.target.value.length <= maxAllowed) {
             onChange(event.target.value);
           }
         }}
-        className={`w-full cursor-default resize-none bg-white rounded-none shadow-[0_1px_3px_0_rgba(0,0,0,0.02),0_0_0_1px_rgba(27,31,35,0.15)] px-[10px] py-[8px] text-[11px] font-medium text-[#414b5e] outline-none placeholder:text-[10.5px] placeholder:text-[#9aa0aa] focus:shadow-[0_1px_3px_0_rgba(0,0,0,0.02),0_0_0_1px_rgba(143,169,142,1)] ${mono ? "font-mono text-[10px]" : ""}`}
+        className={`w-full cursor-text resize-y bg-white rounded-none shadow-[0_1px_3px_0_rgba(0,0,0,0.02),0_0_0_1px_rgba(27,31,35,0.15)] px-[10px] py-[8px] text-[11px] font-medium text-[#414b5e] outline-none placeholder:text-[10.5px] placeholder:text-[#9aa0aa] focus:shadow-[0_1px_3px_0_rgba(0,0,0,0.02),0_0_0_1px_rgba(143,169,142,1)] ${mono ? "font-mono text-[10px]" : ""}`}
       />
-      <span
-        className={`absolute right-2 bottom-2.5 pointer-events-none px-1.5 py-0.5 text-[8.5px] font-mono font-bold rounded ${isAtLimit
-            ? "bg-[#fee2e2] text-[#dc2626] border border-[#fca5a5]"
-            : "bg-[#f1f5f9] text-[#64748b]"
-          }`}
-      >
-        {currentLength}/{maxAllowed}
-      </span>
+      {!noLimit && (
+        <span
+          className={`absolute right-2 bottom-2.5 pointer-events-none px-1.5 py-0.5 text-[8.5px] font-mono font-bold rounded ${isAtLimit
+              ? "bg-[#fee2e2] text-[#dc2626] border border-[#fca5a5]"
+              : "bg-[#f1f5f9] text-[#64748b]"
+            }`}
+        >
+          {currentLength}/{maxAllowed}
+        </span>
+      )}
     </div>
   );
 }
@@ -545,9 +666,11 @@ function humanizeKey(key: string) {
 function ImageUploadField({
   value,
   onChange,
+  defaultValue,
 }: {
   value: string;
   onChange: (url: string) => void;
+  defaultValue?: string;
 }) {
   const [uploading, setUploading] = useState(false);
 
@@ -572,14 +695,25 @@ function ImageUploadField({
     onChange("");
   };
 
+  const handleReset = () => {
+    if (defaultValue) {
+      onChange(defaultValue);
+    }
+  };
+
+  const isDifferentFromDefault = Boolean(defaultValue && value !== defaultValue);
+
   return (
     <div className="flex flex-col gap-2 p-2 bg-[#f8fafc] border border-[#e2e8f0] rounded-[6px]">
-      <div className="flex items-center gap-1.5">
-        <TextInput
-          value={value}
-          onChange={onChange}
-          placeholder="https://... image URL"
-        />
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex-1 min-w-[140px]">
+          <TextInput
+            value={value}
+            onChange={onChange}
+            placeholder="https://... image URL"
+            hideLimit={true}
+          />
+        </div>
         <label className="flex shrink-0 cursor-pointer items-center gap-1 rounded border border-[#0f766e] bg-[#f0fdf4] px-2 py-1.5 text-[9px] font-bold text-[#0f766e] hover:bg-[#dcfce7] transition-colors shadow-2xs">
           <Upload className="h-3 w-3" />
           {uploading ? "Uploading..." : "Upload Image"}
@@ -596,12 +730,23 @@ function ImageUploadField({
             type="button"
             onClick={handleRemove}
             title="Remove/Delete image"
-            className="flex shrink-0 items-center gap-1 rounded border border-[#fca5a5] bg-[#fef2f2] px-2 py-1.5 text-[9px] font-bold text-[#dc2626] hover:bg-[#fee2e2] transition-colors shadow-2xs"
+            className="flex shrink-0 items-center gap-1 rounded border border-[#fca5a5] bg-[#fef2f2] px-2 py-1.5 text-[9px] font-bold text-[#dc2626] hover:bg-[#fee2e2] transition-colors shadow-2xs cursor-pointer"
           >
             <Trash2 className="h-3 w-3" />
             Delete Image
           </button>
         ) : null}
+        {isDifferentFromDefault && (
+          <button
+            type="button"
+            onClick={handleReset}
+            title="Reset to default original image"
+            className="flex shrink-0 items-center gap-1 rounded border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-[9px] font-bold text-amber-800 hover:bg-amber-100 transition-colors shadow-2xs cursor-pointer"
+          >
+            <RotateCcw className="h-3 w-3 text-amber-700" />
+            Reset Image
+          </button>
+        )}
       </div>
 
       {value && typeof value === "string" ? (() => {
@@ -623,14 +768,14 @@ function ImageUploadField({
                 type="button"
                 onClick={handleRemove}
                 title="Delete Image"
-                className="absolute top-1 right-1 bg-black/70 hover:bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                className="absolute top-1 right-1 bg-black/70 hover:bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow cursor-pointer"
               >
                 <Trash2 className="h-2.5 w-2.5" />
               </button>
             </div>
 
             <div className="flex flex-col gap-1 min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-[9px] font-bold text-[#0f766e] bg-[#ccfbf1] px-1.5 py-0.5 rounded">
                   Active Image
                 </span>
@@ -643,6 +788,17 @@ function ImageUploadField({
                   <ExternalLink className="h-2.5 w-2.5" />
                   View Full
                 </a>
+                {isDifferentFromDefault && (
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="flex items-center gap-1 text-[8.5px] font-bold text-amber-700 hover:text-amber-900 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 cursor-pointer transition-colors ml-auto"
+                    title="Reset to default image"
+                  >
+                    <RotateCcw className="h-2.5 w-2.5" />
+                    Reset to Default
+                  </button>
+                )}
               </div>
               <p className="text-[8.5px] text-[#64748b] truncate font-mono">
                 {value}
@@ -651,9 +807,21 @@ function ImageUploadField({
           </div>
         );
       })() : (
-        <div className="text-[9px] text-[#94a3b8] italic flex items-center gap-1 px-1">
-          <ImageIcon className="h-3 w-3 text-[#cbd5e1]" />
-          No background image set. Paste a URL or click "Upload Image".
+        <div className="text-[9px] text-[#94a3b8] italic flex items-center justify-between gap-1 px-1">
+          <span className="flex items-center gap-1">
+            <ImageIcon className="h-3 w-3 text-[#cbd5e1]" />
+            No image set. Upload, paste a URL, or click Reset.
+          </span>
+          {isDifferentFromDefault && (
+            <button
+              type="button"
+              onClick={handleReset}
+              className="flex items-center gap-1 text-[9px] font-bold text-amber-700 hover:underline cursor-pointer not-italic"
+            >
+              <RotateCcw className="h-3 w-3" />
+              Restore Default Image
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -792,15 +960,27 @@ function VideoUploadField({
     }
   };
 
+  const handleRemove = () => {
+    onChange("");
+  };
+
+  const displayUrl = value
+    ? value.startsWith("http")
+      ? value
+      : value.startsWith("/")
+        ? `http://localhost:4000${value}`
+        : `http://localhost:4000/${value}`
+    : "";
+
   return (
     <div className="flex flex-col gap-2 p-2 bg-[#f8fafc] border border-[#e2e8f0] rounded-[6px]">
       <div className="flex items-center gap-1.5">
         <TextInput
           value={value}
           onChange={onChange}
-          placeholder="https://youtube.com/... or video URL"
+          placeholder="https://... video URL or upload"
         />
-        <label className="flex shrink-0 cursor-pointer items-center gap-1 rounded border border-[#7c3aed] bg-[#f5f3ff] px-2 py-1.5 text-[9px] font-bold text-[#6d28d9] hover:bg-[#ede9fe] transition-colors shadow-2xs">
+        <label className="flex shrink-0 cursor-pointer items-center gap-1 rounded border border-[#7c3aed] bg-[#f5f3ff] px-2.5 py-1.5 text-[9px] font-bold text-[#6d28d9] hover:bg-[#ede9fe] transition-colors shadow-2xs">
           <Upload className="h-3 w-3" />
           {uploading ? "Uploading..." : "Upload Video"}
           <input
@@ -814,7 +994,7 @@ function VideoUploadField({
         {value ? (
           <button
             type="button"
-            onClick={() => onChange("")}
+            onClick={handleRemove}
             title="Remove Video"
             className="flex shrink-0 items-center gap-1 rounded border border-[#fca5a5] bg-[#fef2f2] px-2 py-1.5 text-[9px] font-bold text-[#dc2626] hover:bg-[#fee2e2] transition-colors shadow-2xs"
           >
@@ -823,6 +1003,14 @@ function VideoUploadField({
           </button>
         ) : null}
       </div>
+      {displayUrl && (
+        <div className="flex items-center gap-2 bg-white p-1.5 rounded border border-[#e2e8f0] text-[9.5px]">
+          <span className="font-bold text-[#6d28d9] bg-[#ede9fe] px-1.5 py-0.5 rounded">Active Video</span>
+          <a href={displayUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-0.5 truncate font-mono">
+            <ExternalLink className="h-3 w-3 inline" /> {value}
+          </a>
+        </div>
+      )}
     </div>
   );
 }
@@ -834,6 +1022,187 @@ function SectionFieldsEditor({
   section: Record<string, any>;
   onFieldChange: (key: string, value: unknown) => void;
 }) {
+  if (section.key === "footer" || section.name === "Footer & Social Links") {
+    return (
+      <div className="flex flex-col gap-4">
+        {/* Description (About Bharat Organic Expo in Footer Left Column) */}
+        <div className="flex flex-col gap-1.5 bg-white p-3 border border-[#e2e8f0] rounded-[6px]">
+          <FieldLabel required>Footer Description</FieldLabel>
+          <Textarea
+            value={
+              section.description !== undefined && !section.description.startsWith("Showcasing certified products")
+                ? String(section.description)
+                : "A global platform uniting over 500+ exhibitors from across the organic value chain, showcasing certified products, advanced agritech, sustainable practices, and the rich heritage of traditional wellness. Discover organic living with conferences and B2B opportunities."
+            }
+            onChange={(next) => onFieldChange("description", next)}
+            rows={4}
+            noLimit={true}
+            placeholder="A global platform uniting over 500+ exhibitors from across the organic value chain..."
+          />
+        </div>
+
+        {/* 5 Image Uploads with Previews & Reset */}
+        <div className="bg-white p-3 border border-[#e2e8f0] rounded-[6px] flex flex-col gap-3">
+          <div className="text-[11px] font-bold text-[#1e40af] border-b border-gray-100 pb-1.5 flex items-center gap-2">
+            <span>Footer Images & Decorations</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <FieldLabel>Main Logo Image</FieldLabel>
+              <ImageUploadField
+                value={String(section.logoImage || "")}
+                onChange={(next) => onFieldChange("logoImage", next)}
+                defaultValue="http://localhost:4000/uploads/bharat-organic_footer/1789129240083-112323989.png"
+              />
+            </div>
+            <div>
+              <FieldLabel>Left Leaf Decoration Image</FieldLabel>
+              <ImageUploadField
+                value={String(section.leafImage || "")}
+                onChange={(next) => onFieldChange("leafImage", next)}
+                defaultValue="http://localhost:4000/uploads/bharat-organic_footer/1789129240457-21656484.png"
+              />
+            </div>
+            <div>
+              <FieldLabel>Down / Mandala Pattern Image</FieldLabel>
+              <ImageUploadField
+                value={String(section.downImage || "")}
+                onChange={(next) => onFieldChange("downImage", next)}
+                defaultValue="http://localhost:4000/uploads/bharat-organic_footer/1789129240816-597711504.png"
+              />
+            </div>
+            <div>
+              <FieldLabel>Organised By Logo Image</FieldLabel>
+              <ImageUploadField
+                value={String(section.organisedByLogo || "")}
+                onChange={(next) => onFieldChange("organisedByLogo", next)}
+                defaultValue="http://localhost:4000/uploads/bharat-organic_footer/1789129241128-849314126.png"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <FieldLabel>Bottom Nature / Event Banner Image</FieldLabel>
+              <ImageUploadField
+                value={String(section.bottomBannerImage || "")}
+                onChange={(next) => onFieldChange("bottomBannerImage", next)}
+                defaultValue="http://localhost:4000/uploads/bharat-organic_footer/1789129242465-452827954.webp"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Contact Information (GET IN TOUCH) */}
+        <div className="bg-white p-3 border border-[#e2e8f0] rounded-[6px] flex flex-col gap-3">
+          <div className="text-[11px] font-bold text-[#1e40af] border-b border-gray-100 pb-1.5 flex items-center gap-2">
+            <span>Get In Touch (Contact Information)</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <FieldLabel required>Phone Number</FieldLabel>
+              <TextInput
+                value={String(section.phoneNumber || "")}
+                onChange={(next) => onFieldChange("phoneNumber", next)}
+                placeholder="+91 96549 00525"
+                hideLimit={true}
+              />
+            </div>
+            <div>
+              <FieldLabel required>Contact Email</FieldLabel>
+              <TextInput
+                value={String(section.contactEmail || "")}
+                onChange={(next) => onFieldChange("contactEmail", next)}
+                placeholder="info@namogangewellness.com"
+                hideLimit={true}
+              />
+            </div>
+            <div>
+              <FieldLabel required>Website URL</FieldLabel>
+              <TextInput
+                value={String(section.websiteUrl || "")}
+                onChange={(next) => onFieldChange("websiteUrl", next)}
+                placeholder="www.bharatorganicexpo.com"
+                hideLimit={true}
+              />
+            </div>
+            <div>
+              <FieldLabel>Conference Helpline (Phone)</FieldLabel>
+              <TextInput
+                value={String(section.conferenceHelpline || section.altPhoneNumber || "")}
+                onChange={(next) => {
+                  onFieldChange("conferenceHelpline", next);
+                  onFieldChange("altPhoneNumber", next);
+                }}
+                placeholder="+91 98183 53841"
+                hideLimit={true}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <FieldLabel required>Contact Address</FieldLabel>
+              <TextInput
+                value={String(section.contactAddress || "")}
+                onChange={(next) => onFieldChange("contactAddress", next)}
+                placeholder="Hall 12, Pragati Maidan, New Delhi, India 110001"
+                hideLimit={true}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* CONNECT WITH US (Social Media Links) */}
+        <div className="bg-white p-3 border border-[#e2e8f0] rounded-[6px] flex flex-col gap-3">
+          <div className="text-[11px] font-bold text-[#1e40af] border-b border-gray-100 pb-1.5 flex items-center gap-2">
+            <span>Connect With Us (Social Media Links)</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <FieldLabel>Facebook URL</FieldLabel>
+              <TextInput
+                value={String(section.facebookUrl || "")}
+                onChange={(next) => onFieldChange("facebookUrl", next)}
+                placeholder="https://facebook.com/bharatorganicexpo"
+                hideLimit={true}
+              />
+            </div>
+            <div>
+              <FieldLabel>Instagram URL</FieldLabel>
+              <TextInput
+                value={String(section.instagramUrl || "")}
+                onChange={(next) => onFieldChange("instagramUrl", next)}
+                placeholder="https://instagram.com/bharatorganicexpo"
+                hideLimit={true}
+              />
+            </div>
+            <div>
+              <FieldLabel>Twitter / X URL</FieldLabel>
+              <TextInput
+                value={String(section.twitterUrl || "")}
+                onChange={(next) => onFieldChange("twitterUrl", next)}
+                placeholder="https://twitter.com/bharatorganic"
+                hideLimit={true}
+              />
+            </div>
+            <div>
+              <FieldLabel>YouTube URL</FieldLabel>
+              <TextInput
+                value={String(section.youtubeUrl || "")}
+                onChange={(next) => onFieldChange("youtubeUrl", next)}
+                placeholder="https://youtube.com/@bharatorganicexpo"
+                hideLimit={true}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <FieldLabel>LinkedIn URL</FieldLabel>
+              <TextInput
+                value={String(section.linkedinUrl || "")}
+                onChange={(next) => onFieldChange("linkedinUrl", next)}
+                placeholder="https://linkedin.com/company/bharatorganicexpo"
+                hideLimit={true}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   const entries = Object.entries(section).filter(
     ([key, value]) => {
       if (SECTION_SKIP_KEYS.has(key)) return false;
@@ -893,6 +1262,7 @@ function SectionFieldsEditor({
           /brochure|pdf/i.test(key) ||
           (typeof value === "string" && /\.pdf$/i.test(value));
         const isDate = /date|time/i.test(key) && typeof value === "string";
+        const fieldLimit = isLong ? 450 : 140;
 
         return (
           <div
@@ -1577,7 +1947,20 @@ export default function CmsEditPage() {
 
         metaDescription: page.seo?.metaDescription ?? "",
         metaKeywords: page.seo?.metaKeywords ?? "",
-        canonicalUrl: page.seo?.canonicalUrl ?? "",
+        canonicalUrl:
+          page.seo?.canonicalUrl ||
+          (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+            ? `http://localhost:3002${page.slug === "/" ? "" : (page.slug ? (page.slug.startsWith("/") ? page.slug : `/${page.slug}`) : "")}`
+            : `https://bharatorganicexpo.com${page.slug === "/" ? "" : (page.slug ? (page.slug.startsWith("/") ? page.slug : `/${page.slug}`) : "")}`),
+        canonicalTag:
+          page.seo?.canonicalTag ||
+          `<link rel="canonical" href="${
+            page.seo?.canonicalUrl ||
+            (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+              ? `http://localhost:3002${page.slug === "/" ? "" : (page.slug ? (page.slug.startsWith("/") ? page.slug : `/${page.slug}`) : "")}`
+              : `https://bharatorganicexpo.com${page.slug === "/" ? "" : (page.slug ? (page.slug.startsWith("/") ? page.slug : `/${page.slug}`) : "")}`)
+          }" />`,
+        openGraphTags: page.seo?.openGraphTags ?? "",
         ogTitle: page.seo?.ogTitle ?? "",
         ogDescription: page.seo?.ogDescription ?? "",
         ogImage: page.seo?.ogImage ?? "",
@@ -1586,6 +1969,7 @@ export default function CmsEditPage() {
         schemaMarkup: page.seo?.schemaMarkup ?? "",
         robotsIndex: page.seo?.robotsIndex ?? true,
         robotsFollow: page.seo?.robotsFollow ?? true,
+        isActive: page.seo?.isActive ?? (page.status === "Published"),
 
         status:
           page.status,
@@ -1657,7 +2041,20 @@ export default function CmsEditPage() {
       metaTitle: page.seo?.metaTitle ?? "",
       metaDescription: page.seo?.metaDescription ?? "",
       metaKeywords: page.seo?.metaKeywords ?? "",
-      canonicalUrl: page.seo?.canonicalUrl ?? "",
+      canonicalUrl:
+        page.seo?.canonicalUrl ||
+        (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+          ? `http://localhost:3002${page.slug === "/" ? "" : (page.slug ? (page.slug.startsWith("/") ? page.slug : `/${page.slug}`) : "")}`
+          : `https://bharatorganicexpo.com${page.slug === "/" ? "" : (page.slug ? (page.slug.startsWith("/") ? page.slug : `/${page.slug}`) : "")}`),
+      canonicalTag:
+        page.seo?.canonicalTag ||
+        `<link rel="canonical" href="${
+          page.seo?.canonicalUrl ||
+          (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+            ? `http://localhost:3002${page.slug === "/" ? "" : (page.slug ? (page.slug.startsWith("/") ? page.slug : `/${page.slug}`) : "")}`
+            : `https://bharatorganicexpo.com${page.slug === "/" ? "" : (page.slug ? (page.slug.startsWith("/") ? page.slug : `/${page.slug}`) : "")}`)
+        }" />`,
+      openGraphTags: page.seo?.openGraphTags ?? "",
       ogTitle: page.seo?.ogTitle ?? "",
       ogDescription: page.seo?.ogDescription ?? "",
       ogImage: page.seo?.ogImage ?? "",
@@ -1666,6 +2063,7 @@ export default function CmsEditPage() {
       schemaMarkup: page.seo?.schemaMarkup ?? "",
       robotsIndex: page.seo?.robotsIndex ?? true,
       robotsFollow: page.seo?.robotsFollow ?? true,
+      isActive: page.seo?.isActive ?? (page.status === "Published"),
       status: page.status,
       visibility: "Public",
       author: page.author,
@@ -1676,6 +2074,126 @@ export default function CmsEditPage() {
 
   const [sectionsDraft, setSectionsDraft] = useState<Array<Record<string, any>>>([]);
   const [openSectionIndices, setOpenSectionIndices] = useState<Set<number>>(new Set());
+
+  const canonicalEditorRef = useRef<HTMLDivElement | null>(null);
+  const [ogUploading, setOgUploading] = useState(false);
+  const [ogPreview, setOgPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (canonicalEditorRef.current) {
+      const isLocal = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+      const defaultSiteUrl = isLocal ? "http://localhost:3002" : "https://bharatorganicexpo.com";
+      const pagePath = page.slug === "/" ? "" : (page.slug ? (page.slug.startsWith("/") ? page.slug : `/${page.slug}`) : "");
+      const defaultTag = `<link rel="canonical" href="${defaultSiteUrl}${pagePath}" />`;
+
+      const target = (form.canonicalTag || form.canonicalUrl || defaultTag).trim();
+      const currentText = canonicalEditorRef.current.innerText.trim();
+      if (target && currentText !== target && !canonicalEditorRef.current.contains(document.activeElement)) {
+        canonicalEditorRef.current.innerText = target;
+      }
+    }
+  }, [form.canonicalTag, form.canonicalUrl, page.slug]);
+
+  const execCommand = (command: string, value: string | null = null) => {
+    document.execCommand(command, false, value ?? undefined);
+    if (canonicalEditorRef.current) {
+      canonicalEditorRef.current.focus();
+      const val = (canonicalEditorRef.current.innerText || "").trim();
+      updateField("canonicalTag", val);
+      const match = val.match(/href=["']([^"']+)["']/i);
+      const cleanUrl = match ? match[1] : val.replace(/<[^>]*>/g, "").trim();
+      updateField("canonicalUrl", cleanUrl);
+    }
+  };
+
+  const handleCanonicalInput = () => {
+    if (canonicalEditorRef.current) {
+      const val = (canonicalEditorRef.current.innerText || "").trim();
+      updateField("canonicalTag", val);
+      const match = val.match(/href=["']([^"']+)["']/i);
+      const cleanUrl = match ? match[1] : val.replace(/<[^>]*>/g, "").trim();
+      updateField("canonicalUrl", cleanUrl);
+    }
+  };
+
+  const handleCanonicalPaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData("text/plain");
+    document.execCommand("insertText", false, text);
+    if (canonicalEditorRef.current) {
+      const val = (canonicalEditorRef.current.innerText || "").trim();
+      updateField("canonicalTag", val);
+      const match = val.match(/href=["']([^"']+)["']/i);
+      const cleanUrl = match ? match[1] : val.replace(/<[^>]*>/g, "").trim();
+      updateField("canonicalUrl", cleanUrl);
+    }
+  };
+
+  const handleOgImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setOgPreview(URL.createObjectURL(file));
+    setOgUploading(true);
+    try {
+      const res: any = await uploadApi.file(file, "bharat-organic/seo");
+      const url = res?.url || res?.data?.url;
+      if (url) {
+        updateField("ogImage", url);
+      }
+    } catch (err) {
+      console.error("Failed to upload OG image", err);
+    } finally {
+      setOgUploading(false);
+    }
+  };
+
+  const removeOgImage = () => {
+    updateField("ogImage", "");
+    setOgPreview(null);
+  };
+
+  const autoGenerateSeo = async (envType: "local" | "live") => {
+    const pageKey = page.slug === "/" ? "home" : (page.slug ? page.slug.replace(/^\//, "") : "home");
+    try {
+      const res: any = await api.post("/seo/generate", {
+        page: pageKey,
+        envType,
+        metaTitle: form.metaTitle || undefined,
+        metaDescription: form.metaDescription || undefined,
+      });
+      const gen = res?.data?.data || res?.data || res;
+      if (gen) {
+        updateField("canonicalUrl", gen.canonicalUrl || "");
+        updateField("canonicalTag", gen.canonicalTag || "");
+        updateField("openGraphTags", gen.openGraphTags || "");
+        updateField("schemaMarkup", gen.schemaMarkup || "");
+        if (!form.metaTitle && gen.metaTitle) updateField("metaTitle", gen.metaTitle);
+        if (!form.metaDescription && gen.metaDescription) updateField("metaDescription", gen.metaDescription);
+        if (!form.metaKeywords && gen.metaKeywords) updateField("metaKeywords", gen.metaKeywords);
+        if (!form.ogImage && gen.ogImage) updateField("ogImage", gen.ogImage);
+
+        if (canonicalEditorRef.current) {
+          canonicalEditorRef.current.innerText = gen.canonicalTag || gen.canonicalUrl || "";
+        }
+
+        Swal.fire({
+          title: `Auto-Generated for ${envType.toUpperCase()}`,
+          text: `Canonical, OG Tags & Schema markup generated for ${
+            envType === "local" ? "http://localhost:3002" : "https://bharatorganicexpo.com"
+          }. You can edit any field manually anytime!`,
+          icon: "success",
+          timer: 2500,
+          confirmButtonColor: "#134698",
+        });
+      }
+    } catch (err: any) {
+      Swal.fire({
+        title: "Generation Failed",
+        text: err?.message || "Failed to auto-generate SEO tags",
+        icon: "error",
+      });
+    }
+  };
 
   useEffect(() => {
     const cfg = page.configKey && settings ? settings[page.configKey] : undefined;
@@ -1883,6 +2401,57 @@ export default function CmsEditPage() {
         if (!merged.keyPoint8) merged.keyPoint8 = "Investors, Franchise Seekers & Green Business";
         if (!merged.keyPoint9) merged.keyPoint9 = "Supermarkets & Organic Grocery Chains";
         if (!merged.keyPoint10) merged.keyPoint10 = "Health-Conscious Consumers & Eco-Enthusiasts";
+      }
+      if (fallbackItem.key === "footer" || merged.key === "footer") {
+        delete merged.title;
+        delete merged.subtitle;
+        delete merged.partnerLogoImage;
+        delete merged.secondaryImage;
+        delete merged.tertiaryImage;
+        delete merged.altPhoneNumber;
+        if (!merged.websiteUrl) merged.websiteUrl = "www.bharatorganicexpo.com";
+        if (merged.description === undefined || merged.description.startsWith("Showcasing certified products")) {
+          merged.description =
+            "A global platform uniting over 500+ exhibitors from across the organic value chain, showcasing certified products, advanced agritech, sustainable practices, and the rich heritage of traditional wellness. Discover organic living with conferences and B2B opportunities.";
+        }
+        if (merged.logoImage === undefined || merged.logoImage.includes("km.jpg")) {
+          merged.logoImage = "http://localhost:4000/uploads/bharat-organic_footer/1789129240083-112323989.png";
+        }
+        if (merged.leafImage === undefined) {
+          merged.leafImage = "http://localhost:4000/uploads/bharat-organic_footer/1789129240457-21656484.png";
+        }
+        if (merged.downImage === undefined) {
+          merged.downImage = "http://localhost:4000/uploads/bharat-organic_footer/1789129240816-597711504.png";
+        }
+        if (merged.organisedByLogo === undefined) {
+          merged.organisedByLogo = "http://localhost:4000/uploads/bharat-organic_footer/1789129241128-849314126.png";
+        }
+        if (merged.bottomBannerImage === undefined) {
+          merged.bottomBannerImage = "http://localhost:4000/uploads/bharat-organic_footer/1789129242465-452827954.webp";
+        }
+        if (merged.contactAddress === undefined) merged.contactAddress = "Hall 12, Pragati Maidan, New Delhi, India 110001";
+        if (merged.phoneNumber === undefined) merged.phoneNumber = "+91 96549 00525";
+        if (merged.conferenceHelpline === undefined) merged.conferenceHelpline = "+91 98183 53841";
+        if (merged.contactEmail === undefined) merged.contactEmail = "info@namogangewellness.com";
+        if (merged.facebookUrl === undefined) merged.facebookUrl = "https://facebook.com/bharatorganicexpo";
+        if (merged.twitterUrl === undefined) merged.twitterUrl = "https://twitter.com/bharatorganic";
+        if (merged.linkedinUrl === undefined) merged.linkedinUrl = "https://linkedin.com/company/bharatorganicexpo";
+        if (merged.instagramUrl === undefined) merged.instagramUrl = "https://instagram.com/bharatorganicexpo";
+        if (merged.youtubeUrl === undefined) merged.youtubeUrl = "https://youtube.com/@bharatorganicexpo";
+        if (!merged.items || merged.items.length === 0) {
+          merged.items = [
+            { label: "Home", href: "/" },
+            { label: "About Us", href: "/about" },
+            { label: "Exhibitor Registration", href: "/registration/book-a-stand" },
+            { label: "Delegate Registration", href: "https://arogya.namogange.org/" },
+            { label: "Conference Tracks", href: "https://arogya.namogange.org/" },
+            { label: "Buyer Seller Meet", href: "/buyer-seller-meet" },
+            { label: "Exhibitor List", href: "/exhibitors" },
+            { label: "Blogs", href: "/blog" },
+            { label: "Awards", href: "/awards" },
+            { label: "Contact Us", href: "/contact" },
+          ];
+        }
       }
       return merged;
     });
@@ -2213,6 +2782,44 @@ export default function CmsEditPage() {
         })
         .catch(() => {});
     }
+
+    const pageKey = page.slug === "/" ? "home" : (page.slug ? page.slug.replace(/^\//, "") : "home");
+    const isLocalEnv = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+    api.get(`/seo/${pageKey}?envType=${isLocalEnv ? "local" : "live"}`)
+      .then((res: any) => {
+        const seoData = res?.data?.data || res?.data || res;
+        if (seoData) {
+          const defaultSiteUrl = isLocalEnv ? "http://localhost:3002" : "https://bharatorganicexpo.com";
+          const pagePath = page.slug === "/" ? "" : (page.slug ? (page.slug.startsWith("/") ? page.slug : `/${page.slug}`) : "");
+          const defaultTag = `<link rel="canonical" href="${defaultSiteUrl}${pagePath}" />`;
+
+          const canonicalVal = (seoData.canonicalTag || seoData.canonicalUrl || defaultTag).trim();
+          const match = canonicalVal.match(/href=["']([^"']+)["']/i);
+          const cleanUrl = match ? match[1] : canonicalVal.replace(/<[^>]*>/g, "").trim() || `${defaultSiteUrl}${pagePath}`;
+
+          setForm((prev) => ({
+            ...prev,
+            metaTitle: seoData.metaTitle || prev.metaTitle,
+            metaDescription: seoData.metaDescription || prev.metaDescription,
+            metaKeywords: seoData.metaKeywords || prev.metaKeywords,
+            canonicalUrl: cleanUrl,
+            canonicalTag: canonicalVal,
+            openGraphTags: seoData.openGraphTags || prev.openGraphTags,
+            schemaMarkup: seoData.schemaMarkup || prev.schemaMarkup,
+            ogTitle: seoData.ogTitle || prev.ogTitle,
+            ogDescription: seoData.ogDescription || prev.ogDescription,
+            ogImage: seoData.ogImage || prev.ogImage,
+            robotsIndex: seoData.robotsIndex !== undefined ? seoData.robotsIndex : prev.robotsIndex,
+            robotsFollow: seoData.robotsFollow !== undefined ? seoData.robotsFollow : prev.robotsFollow,
+            isActive: seoData.isActive !== undefined ? seoData.isActive : prev.isActive,
+          }));
+
+          if (canonicalEditorRef.current) {
+            canonicalEditorRef.current.innerText = canonicalVal;
+          }
+        }
+      })
+      .catch(() => {});
   }, [settings, page]);
 
   const toggleSectionAccordion = (index: number) => {
@@ -2278,6 +2885,13 @@ export default function CmsEditPage() {
             icon: "Award",
           };
           return { ...section, items: [...items, blankItem] };
+        }
+        if (section.key === "footer") {
+          const blankLink = {
+            label: "New Link",
+            href: "/",
+          };
+          return { ...section, items: [...items, blankLink] };
         }
         const defaultItemTemplate: Record<string, any> = {
           title: "",
@@ -2659,7 +3273,9 @@ export default function CmsEditPage() {
             metaTitle: form.metaTitle,
             metaDescription: form.metaDescription,
             metaKeywords: form.metaKeywords,
-            canonicalUrl: form.canonicalUrl,
+            canonicalUrl: form.canonicalUrl || form.canonicalTag,
+            canonicalTag: form.canonicalTag || form.canonicalUrl,
+            openGraphTags: form.openGraphTags,
             ogTitle: form.ogTitle,
             ogDescription: form.ogDescription,
             ogImage: form.ogImage,
@@ -2671,6 +3287,41 @@ export default function CmsEditPage() {
           },
         },
       } as any);
+
+      // Sync SEO data directly to backend database
+      const pageKey = page.slug === "/" ? "home" : (page.slug ? page.slug.replace(/^\//, "") : "home");
+      const isLocalHost = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+      const defaultSite = isLocalHost ? "http://localhost:3002" : "https://bharatorganicexpo.com";
+      const pPath = page.slug === "/" ? "" : (page.slug ? (page.slug.startsWith("/") ? page.slug : `/${page.slug}`) : "");
+      const defTag = `<link rel="canonical" href="${defaultSite}${pPath}" />`;
+
+      const editorText = canonicalEditorRef.current?.innerText?.trim();
+      const finalCanonicalTag = (editorText || form.canonicalTag || form.canonicalUrl || defTag).trim();
+      const match = finalCanonicalTag.match(/href=["']([^"']+)["']/i);
+      const finalCanonicalUrl = match ? match[1] : finalCanonicalTag.replace(/<[^>]*>/g, "").trim() || `${defaultSite}${pPath}`;
+
+      try {
+        await api.put(`/seo/${pageKey}`, {
+          page: pageKey,
+          metaTitle: form.metaTitle,
+          metaDescription: form.metaDescription,
+          metaKeywords: form.metaKeywords,
+          canonicalUrl: finalCanonicalUrl,
+          canonicalTag: finalCanonicalTag,
+          openGraphTags: form.openGraphTags,
+          schemaMarkup: form.schemaMarkup,
+          ogTitle: form.ogTitle,
+          ogDescription: form.ogDescription,
+          ogImage: form.ogImage,
+          robotsIndex: form.robotsIndex,
+          robotsFollow: form.robotsFollow,
+          isActive: form.isActive,
+          updatedBy: "Admin User",
+        });
+      } catch (seoErr) {
+        console.error("Failed to sync SEO to backend:", seoErr);
+      }
+
       const raw = updated as unknown as Record<string, any>;
       setSettings(raw);
       setPages(cmsPagesFromSettings(raw));
@@ -3427,147 +4078,312 @@ export default function CmsEditPage() {
             </section>
 
             {/* =================================================
-                SEO SETTINGS
+                SEO SETTINGS (MATCHING AddSeo UI & EDITORS)
             ================================================= */}
 
-            <section
-              className="
-                shrink-0
-                border
-                border-[#dedfdb]
-                shadow-[0_1px_3px_0_rgba(0,0,0,0.02),0_0_0_1px_rgba(27,31,35,0.15)]
-                bg-white
-                px-[16px]
-                py-[11px]
-              "
-            >
-              <SectionTitle
-                number={3}
-                title="SEO Settings"
-              />
+            <section className="bg-white border-2 border-gray-200 p-6 mb-6 shadow-lg shrink-0">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-50 rounded">
+                    <Globe className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-semibold text-gray-900">
+                      3. SEO Information
+                    </h2>
+                    <p className="text-[11px] text-gray-500">
+                      Manage meta tags, Open Graph data, canonical URL, and schema markup for this page.
+                    </p>
+                  </div>
+                </div>
 
-              <div className="mt-[10px] grid grid-cols-2 gap-x-[20px] gap-y-[10px]">
-                <div className="col-span-2">
-                  <FieldLabel>Meta Title</FieldLabel>
-                  <TextInput
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => autoGenerateSeo("local")}
+                    className="px-2.5 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 rounded text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+                    title="Auto-generate tags for Local environment (http://localhost:3002)"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                    Auto Generate (Local)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => autoGenerateSeo("live")}
+                    className="px-2.5 py-1.5 bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 rounded text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+                    title="Auto-generate tags for Live environment (https://bharatorganicexpo.com)"
+                  >
+                    <Globe className="w-3.5 h-3.5 text-green-600" />
+                    Auto Generate (Live)
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Select Page (Auto-selected & disabled) */}
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Select Page <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="page"
+                    value={form.slug ? `/${form.slug}` : "/"}
+                    disabled={true}
+                    className="w-full px-3 py-2 border-2 border-gray-300 bg-gray-100 text-gray-700 focus:outline-none text-xs shadow-sm cursor-not-allowed font-medium"
+                  >
+                    <option value={form.slug ? `/${form.slug}` : "/"}>
+                      {form.pageTitle || page.title || "Home"} ({form.slug ? `/${form.slug}` : "/"})
+                    </option>
+                  </select>
+                </div>
+
+                {/* Meta Title */}
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-xs font-medium text-gray-700">
+                      Meta Title
+                    </label>
+                    <span
+                      className={`text-[10px] font-bold ${
+                        form.metaTitle.length > 55 ? "text-orange-500" : "text-gray-400"
+                      }`}
+                    >
+                      {form.metaTitle.length}/65
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    name="metaTitle"
                     value={form.metaTitle}
-                    onChange={(value) => updateField("metaTitle", value)}
-                    placeholder="SEO title (recommended 50-60 characters)"
+                    maxLength={65}
+                    onChange={(e) => {
+                      if (e.target.value.length <= 65) {
+                        updateField("metaTitle", e.target.value);
+                      }
+                    }}
+                    placeholder="Enter meta title"
+                    className="w-full px-3 py-2 border-2 border-gray-300 focus:outline-none focus:border-[#134698] transition-colors text-xs shadow-sm"
                   />
                 </div>
 
-                <div className="col-span-2">
-                  <FieldLabel>Meta Description</FieldLabel>
-                  <Textarea
-                    value={form.metaDescription}
-                    onChange={(value) => updateField("metaDescription", value)}
-                    placeholder="Recommended 150-160 characters"
-                    rows={3}
-                  />
-                </div>
-
+                {/* Meta Keywords */}
                 <div>
-                  <FieldLabel>Meta Keywords</FieldLabel>
-                  <TextInput
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Meta Keywords
+                  </label>
+                  <input
+                    type="text"
+                    name="metaKeywords"
                     value={form.metaKeywords}
-                    onChange={(value) => updateField("metaKeywords", value)}
-                    placeholder="comma, separated, keywords"
+                    onChange={(e) => updateField("metaKeywords", e.target.value)}
+                    placeholder="Enter meta keywords (comma separated)"
+                    className="w-full px-3 py-2 border-2 border-gray-300 focus:outline-none focus:border-[#134698] transition-colors text-xs shadow-sm"
                   />
                 </div>
 
-                <div>
-                  <FieldLabel>Canonical URL</FieldLabel>
-                  <TextInput
-                    value={form.canonicalUrl}
-                    onChange={(value) => updateField("canonicalUrl", value)}
-                    placeholder={`${PUBLIC_SITE_URL}/${form.slug}`}
-                  />
-                </div>
-
-                <div>
-                  <FieldLabel>Open Graph Title</FieldLabel>
-                  <TextInput
-                    value={form.ogTitle}
-                    onChange={(value) => updateField("ogTitle", value)}
-                  />
-                </div>
-
-                <div>
-                  <FieldLabel>H1 Tag</FieldLabel>
-                  <TextInput
-                    value={form.h1Tag}
-                    onChange={(value) => updateField("h1Tag", value)}
-                  />
-                </div>
-
-                <div className="col-span-2">
-                  <FieldLabel>Open Graph Description</FieldLabel>
-                  <Textarea
-                    value={form.ogDescription}
-                    onChange={(value) => updateField("ogDescription", value)}
-                    rows={2}
-                  />
-                </div>
-
-                <div>
-                  <FieldLabel>Open Graph Image URL</FieldLabel>
-                  <TextInput
-                    value={form.ogImage}
-                    onChange={(value) => updateField("ogImage", value)}
-                    placeholder="https://..."
-                  />
-                </div>
-
-                <div>
-                  <FieldLabel>Breadcrumb Name</FieldLabel>
-                  <TextInput
-                    value={form.breadcrumbName}
-                    onChange={(value) => updateField("breadcrumbName", value)}
-                  />
-                </div>
-
-                <div className="col-span-2">
-                  <FieldLabel>Schema Markup (JSON-LD)</FieldLabel>
-                  <Textarea
-                    value={form.schemaMarkup}
-                    onChange={(value) => updateField("schemaMarkup", value)}
+                {/* Meta Description */}
+                <div className="md:col-span-2">
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-xs font-medium text-gray-700">
+                      Meta Description
+                    </label>
+                    <span
+                      className={`text-[10px] font-bold ${
+                        form.metaDescription.length > 155 ? "text-red-500" : "text-gray-400"
+                      }`}
+                    >
+                      {form.metaDescription.length}/155
+                    </span>
+                  </div>
+                  <textarea
+                    name="metaDescription"
+                    value={form.metaDescription}
+                    onChange={(e) => {
+                      if (e.target.value.length <= 155) {
+                        updateField("metaDescription", e.target.value);
+                      }
+                    }}
+                    placeholder="Enter meta description"
                     rows={3}
-                    mono
+                    maxLength={155}
+                    className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:border-[#134698] transition-colors text-xs shadow-sm"
                   />
                 </div>
 
-                <div className="col-span-2 flex items-center justify-between rounded-[6px] border border-[#e5e6e2] px-[12px] py-[9px]">
-                  <div>
-                    <p className="text-[11px] font-semibold text-[#3a4557]">
-                      Allow Search Engines to Index
-                    </p>
-
-                    <p className="mt-[2px] text-[9px] font-medium text-[#8b929c]">
-                      Turn off to add a noindex tag to this page.
-                    </p>
-                  </div>
-
-                  <Toggle
-                    checked={form.robotsIndex}
-                    onChange={(value) => updateField("robotsIndex", value)}
+                {/* Open Graph Tags Editor */}
+                <div className="md:col-span-2 space-y-2">
+                  <label className="block text-xs font-bold text-gray-700">
+                    Open Graph Tags (HTML/Text) <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    name="openGraphTags"
+                    value={form.openGraphTags || ""}
+                    onChange={(e) => updateField("openGraphTags", e.target.value)}
+                    placeholder="Paste OG tags here..."
+                    rows={6}
+                    className="w-full p-4 bg-[#1e1e1e] text-[#d4d4d4] font-mono text-[11px] focus:outline-none focus:ring-2 focus:ring-blue-500 border-2 border-gray-200 shadow-inner overflow-auto rounded"
                   />
                 </div>
 
-                <div className="col-span-2 flex items-center justify-between rounded-[6px] border border-[#e5e6e2] px-[12px] py-[9px]">
-                  <div>
-                    <p className="text-[11px] font-semibold text-[#3a4557]">
-                      Allow Search Engines to Follow Links
-                    </p>
+                {/* Schema Markup Editor */}
+                <div className="md:col-span-2 space-y-2">
+                  <label className="block text-xs font-bold text-gray-700">
+                    Schema Markup (JSON-LD) <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    name="schemaMarkup"
+                    value={form.schemaMarkup || ""}
+                    onChange={(e) => updateField("schemaMarkup", e.target.value)}
+                    placeholder="Paste JSON-LD schema here..."
+                    rows={10}
+                    className="w-full p-4 bg-[#1e1e1e] text-[#d4d4d4] font-mono text-[11px] focus:outline-none focus:ring-2 focus:ring-blue-500 border-2 border-gray-200 shadow-inner overflow-auto rounded"
+                  />
+                </div>
 
-                    <p className="mt-[2px] text-[9px] font-medium text-[#8b929c]">
-                      Turn off to add a nofollow tag to this page.
-                    </p>
+                {/* Canonical Tag Editor */}
+                <div className="md:col-span-2 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-gray-700">
+                      Canonical Tag <span className="text-red-500">*</span>
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const p = page.slug === "/" ? "" : (page.slug?.startsWith("/") ? page.slug : `/${page.slug || ""}`);
+                          const tag = `<link rel="canonical" href="http://localhost:3002${p}" />`;
+                          updateField("canonicalTag", tag);
+                          updateField("canonicalUrl", `http://localhost:3002${p}`);
+                          if (canonicalEditorRef.current) canonicalEditorRef.current.innerText = tag;
+                        }}
+                        className="text-[11px] px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded hover:bg-blue-100 cursor-pointer font-medium"
+                      >
+                        Set Local (3002)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const p = page.slug === "/" ? "" : (page.slug?.startsWith("/") ? page.slug : `/${page.slug || ""}`);
+                          const tag = `<link rel="canonical" href="https://bharatorganicexpo.com${p}" />`;
+                          updateField("canonicalTag", tag);
+                          updateField("canonicalUrl", `https://bharatorganicexpo.com${p}`);
+                          if (canonicalEditorRef.current) canonicalEditorRef.current.innerText = tag;
+                        }}
+                        className="text-[11px] px-2 py-0.5 bg-green-50 text-green-700 border border-green-200 rounded hover:bg-green-100 cursor-pointer font-medium"
+                      >
+                        Set Live
+                      </button>
+                    </div>
+                  </div>
+                  <div className="border-2 border-gray-200">
+                    <EditorToolbar targetRef={canonicalEditorRef} onCommand={execCommand} />
+                    <div
+                      ref={canonicalEditorRef}
+                      contentEditable
+                      suppressContentEditableWarning
+                      onInput={handleCanonicalInput}
+                      onPaste={handleCanonicalPaste}
+                      className="min-h-[100px] p-3 bg-white focus:outline-none prose prose-sm max-w-none shadow-inner text-xs font-mono text-gray-800"
+                      style={{ whiteSpace: "pre-wrap" }}
+                      data-placeholder="Enter canonical URL or full tag..."
+                    />
+                  </div>
+                  <p className="text-[11px] text-gray-500">
+                    Auto-generated based on current environment (Local / Live). You can also edit or paste manually anytime.
+                  </p>
+                </div>
+
+                {/* OG Image Upload */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    OG Image
+                  </label>
+                  <div className="border-2 border-dashed border-gray-300 rounded p-2 text-center relative hover:bg-gray-50 transition-colors min-h-[100px] flex items-center justify-center">
+                    <input
+                      type="file"
+                      onChange={handleOgImageUpload}
+                      className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                      accept="image/*"
+                      disabled={ogUploading}
+                    />
+                    {ogUploading ? (
+                      <div className="py-2 flex flex-col items-center">
+                        <div className="w-5 h-5 border-2 border-[#134698] border-t-transparent rounded-full animate-spin mb-1" />
+                        <span className="text-[10px] text-gray-500">Uploading OG Image...</span>
+                      </div>
+                    ) : form.ogImage || ogPreview ? (
+                      <div className="relative w-full">
+                        <img
+                          src={ogPreview || form.ogImage}
+                          alt="OG Preview"
+                          className="h-24 w-full object-cover rounded shadow-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={removeOgImage}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full shadow-lg z-20 hover:bg-red-600"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="py-2">
+                        <Upload className="w-6 h-6 text-gray-300 mx-auto" />
+                        <span className="text-[10px] text-gray-400 block mt-1 uppercase font-bold tracking-tighter">
+                          Upload OG Image
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Status */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    name="isActive"
+                    value={form.isActive ? "true" : "false"}
+                    onChange={(e) => updateField("isActive", e.target.value === "true")}
+                    className="w-full px-3 py-2 border-2 border-gray-300 focus:outline-none focus:border-[#134698] transition-colors text-xs shadow-sm bg-white"
+                  >
+                    <option value="true">Active</option>
+                    <option value="false">Inactive</option>
+                  </select>
+                </div>
+
+                {/* Indexing / Crawlers */}
+                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                  <div className="flex items-center justify-between rounded-[6px] border border-[#e5e6e2] px-[12px] py-[9px] bg-gray-50">
+                    <div>
+                      <p className="text-[11px] font-semibold text-[#3a4557]">
+                        Allow Search Engines to Index
+                      </p>
+                      <p className="mt-[2px] text-[9px] font-medium text-[#8b929c]">
+                        Turn off to add a noindex tag to this page.
+                      </p>
+                    </div>
+                    <Toggle
+                      checked={form.robotsIndex}
+                      onChange={(value) => updateField("robotsIndex", value)}
+                    />
                   </div>
 
-                  <Toggle
-                    checked={form.robotsFollow}
-                    onChange={(value) => updateField("robotsFollow", value)}
-                  />
+                  <div className="flex items-center justify-between rounded-[6px] border border-[#e5e6e2] px-[12px] py-[9px] bg-gray-50">
+                    <div>
+                      <p className="text-[11px] font-semibold text-[#3a4557]">
+                        Allow Search Engines to Follow Links
+                      </p>
+                      <p className="mt-[2px] text-[9px] font-medium text-[#8b929c]">
+                        Turn off to add a nofollow tag to this page.
+                      </p>
+                    </div>
+                    <Toggle
+                      checked={form.robotsFollow}
+                      onChange={(value) => updateField("robotsFollow", value)}
+                    />
+                  </div>
                 </div>
               </div>
             </section>

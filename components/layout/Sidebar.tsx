@@ -269,50 +269,44 @@ export default function Sidebar({
           relative
           z-10
           shrink-0
-          px-[16px]
-          pt-[16px]
-          pb-[14px]
+          px-[14px]
+          pt-[14px]
+          pb-[12px]
           text-center
         "
       >
-        <Link href="/" className="group relative block">
-          {/* Ultra-subtle Soft Ambient Glow behind logo */}
-          <div
-            className="
-              pointer-events-none
-              absolute
-              left-1/2
-              top-1/2
-              h-[55px]
-              w-[140px]
-              -translate-x-1/2
-              -translate-y-1/2
-              rounded-full
-              bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.07)_0%,rgba(255,255,255,0.015)_50%,transparent_75%)]
-              blur-[8px]
-              transition-all
-              duration-300
-              group-hover:bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.11)_0%,rgba(255,255,255,0.02)_50%,transparent_75%)]
-            "
-          />
-
+        <Link
+          href="/"
+          className="
+            group
+            relative
+            flex
+            h-[78px]
+            items-center
+            justify-center
+            rounded-[12px]
+            bg-white
+            px-2
+            py-1
+            shadow-[0_2px_8px_rgba(0,0,0,0.18)]
+            transition-all
+            duration-200
+            hover:shadow-[0_4px_14px_rgba(0,0,0,0.25)]
+          "
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/admin.png"
             alt="Bharat Organic Expo Admin"
             className="
-              relative
-              z-10
-              mx-auto
-              h-auto
-              max-h-[75px]
+              h-full
+              max-h-[70px]
               w-auto
-              max-w-[195px]
+              max-w-[196px]
               object-contain
-              drop-shadow-[0_1px_4px_rgba(0,0,0,0.2)]
               transition-transform
               duration-200
-              hover:scale-[1.02]
+              group-hover:scale-[1.03]
             "
           />
         </Link>

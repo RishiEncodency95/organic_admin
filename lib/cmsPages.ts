@@ -29,6 +29,9 @@ export interface CmsPage {
     schemaMarkup?: string;
     robotsIndex?: boolean;
     robotsFollow?: boolean;
+    canonicalTag?: string;
+    openGraphTags?: string;
+    isActive?: boolean;
   };
 }
 export function getCmsPageRouteKey(page: Pick<CmsPage, "title">): string {
@@ -68,6 +71,9 @@ type SettingsPageConfig = {
     schemaMarkup?: string;
     robotsIndex?: boolean;
     robotsFollow?: boolean;
+    canonicalTag?: string;
+    openGraphTags?: string;
+    isActive?: boolean;
   };
   sections?: Array<{ enabled?: boolean }>;
 };
