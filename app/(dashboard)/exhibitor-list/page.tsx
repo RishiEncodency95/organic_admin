@@ -650,7 +650,7 @@ export default function ExhibitorListPage() {
 
   const [isUploading, setIsUploading] = useState(false);
 
-  // Upload file helper (Cloudinary / Backend API)
+  // Upload file helper (Cloudinary / Base64 Data URL)
   const uploadImageFile = async (file: File): Promise<string> => {
     try {
       setIsUploading(true);
@@ -661,21 +661,26 @@ export default function ExhibitorListPage() {
       let res = await fetch(`${BACKEND_URL}/api/uploads?folder=bharat-organic/exhibitors`, {
         method: "POST",
         body: formData,
-      });
+      }).catch(() => null);
 
-      if (!res.ok) {
+      if (!res || !res.ok) {
         res = await fetch(`/api/uploads?folder=bharat-organic/exhibitors`, {
           method: "POST",
           body: formData,
-        });
+        }).catch(() => null);
       }
 
-      if (res.ok) {
-        const json = await res.json();
-        const finalUrl = json.data?.url || json.url || json.data?.secure_url || json.secure_url;
-        if (finalUrl) {
-          if (finalUrl.startsWith("http")) return finalUrl;
-          return `${BACKEND_URL.replace(/\/$/, "")}${finalUrl.startsWith("/") ? "" : "/"}${finalUrl}`;
+      if (res && res.ok) {
+        const json = await res.json().catch(() => null);
+        if (json) {
+          let finalUrl = json.data?.url || json.url || json.data?.secure_url || json.secure_url;
+          if (finalUrl) {
+            if (finalUrl.startsWith("http://res.cloudinary.com")) {
+              finalUrl = finalUrl.replace("http://res.cloudinary.com", "https://res.cloudinary.com");
+            }
+            if (finalUrl.startsWith("http")) return finalUrl;
+            return `${BACKEND_URL.replace(/\/$/, "")}${finalUrl.startsWith("/") ? "" : "/"}${finalUrl}`;
+          }
         }
       }
     } catch (err) {
@@ -683,7 +688,15 @@ export default function ExhibitorListPage() {
     } finally {
       setIsUploading(false);
     }
-    return URL.createObjectURL(file);
+
+    // Convert file to Base64 Data URL instead of blob: temporary URL
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        resolve(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   // Handle Logo Upload file
