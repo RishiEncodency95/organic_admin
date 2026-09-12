@@ -1,4 +1,7 @@
 export interface LandingSectionItem {
+  code?: string;
+  step?: string;
+  statusText?: string;
   title?: string;
   label?: string;
   subtitle?: string;
