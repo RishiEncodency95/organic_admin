@@ -3798,65 +3798,65 @@ export default function CmsEditPage() {
                       value,
                     ) => {
                       updateField("parent", value);
-                      if (value === "Book a Stall" || value === "Book a Stand") {
-                        setSectionsDraft(defaultBookAStandSections.map((s) => ({ ...s })));
-                      } else if (value === "Nominate Advisory Board") {
+                      if (value === "Nominate Advisory Board Member" || value.includes("Nominate")) {
                         setSectionsDraft(defaultNominateAdvisorySections.map((s) => ({ ...s })));
-                      } else if (value === "Support Services Helpdesk") {
+                      } else if (value === "Support Services Helpdesk" || value.includes("Support")) {
                         setSectionsDraft(defaultSupportServicesSections.map((s) => ({ ...s })));
-                      } else if (value === "PMS Eligibility Check Calculator") {
+                      } else if (value === "PMS Eligibility Check Calculator" || value.includes("Eligibility")) {
                         setSectionsDraft(defaultMsmeEligibilityCheckSections.map((s) => ({ ...s })));
-                      } else if (value === "Apply for PMS Support Stepper") {
+                      } else if (value === "Apply for PMS Support Stepper" || value.includes("Apply")) {
                         setSectionsDraft(defaultMsmeApplySections.map((s) => ({ ...s })));
-                      } else if (value === "Awards Nomination Form") {
+                      } else if (value === "Awards Nomination Form" || value.includes("Awards Nomination")) {
                         setSectionsDraft(defaultAwardsNominationSections.map((s) => ({ ...s })));
-                      } else if (value === "About Page" || value === "About Us") {
+                      } else if (value.includes("About")) {
                         setSectionsDraft(defaultAboutSections.map((s) => ({ ...s })));
-                      } else if (value === "Advisory Board") {
+                      } else if (value.includes("Advisory")) {
                         setSectionsDraft(defaultAdvisorySections.map((s) => ({ ...s })));
-                      } else if (value === "Blogs & News") {
+                      } else if (value.includes("Blog")) {
                         setSectionsDraft(defaultBlogSections.map((s) => ({ ...s })));
-                      } else if (value === "Participate as Exhibitor") {
+                      } else if (value.includes("Participate as Exhibitor")) {
                         setSectionsDraft(defaultParticipateAsExhibitorSections.map((s) => ({ ...s })));
-                      } else if (value === "Exhibition Categories") {
+                      } else if (value.includes("Categories")) {
                         setSectionsDraft(defaultExhibitionCategoriesSections.map((s) => ({ ...s })));
-                      } else if (value === "Register as Visitor" || value === "Visitor Registration") {
+                      } else if (value.includes("BOOK A STALL") || value.includes("Book")) {
+                        setSectionsDraft(defaultBookAStandSections.map((s) => ({ ...s })));
+                      } else if (value.includes("VISITOR") || value.includes("Visitor")) {
                         setSectionsDraft(defaultVisitorRegistrationSections.map((s) => ({ ...s })));
-                      } else if (value === "Delegate Registration") {
+                      } else if (value.includes("DELEGATE") || value.includes("Delegate")) {
                         setSectionsDraft(defaultDelegateRegistrationSections.map((s) => ({ ...s })));
-                      } else if (value === "Register as Buyer" || value === "Buyer Registration") {
+                      } else if (value.includes("BUYER") || value.includes("Buyer Reg")) {
                         setSectionsDraft(defaultBuyerRegistrationSections.map((s) => ({ ...s })));
-                      } else if (value === "Terms & Conditions") {
+                      } else if (value.includes("Terms")) {
                         setSectionsDraft(defaultTermsAndConditionsSections.map((s) => ({ ...s })));
-                      } else if (value === "Privacy Policy") {
+                      } else if (value.includes("Privacy")) {
                         setSectionsDraft(defaultPrivacyPolicySections.map((s) => ({ ...s })));
-                      } else if (value === "Refund Policy") {
+                      } else if (value.includes("Refund")) {
                         setSectionsDraft(defaultRefundPolicySections.map((s) => ({ ...s })));
-                      } else if (value === "Why Visit") {
+                      } else if (value.includes("Why Visit")) {
                         setSectionsDraft(defaultWhyVisitSections.map((s) => ({ ...s })));
-                      } else if (value === "Why Exhibit") {
+                      } else if (value.includes("Why Exhibit")) {
                         setSectionsDraft(defaultWhyExhibitSections.map((s) => ({ ...s })));
-                      } else if (value === "MSME PMS Scheme") {
+                      } else if (value.includes("MSME PMS")) {
                         setSectionsDraft(defaultMsmeSections.map((s) => ({ ...s })));
-                      } else if (value === "Exhibitors List") {
+                      } else if (value.includes("Exhibitor")) {
                         setSectionsDraft(defaultExhibitorsSections.map((s) => ({ ...s })));
-                      } else if (value === "Buyer-Seller Meet") {
+                      } else if (value.includes("Buyer-Seller")) {
                         setSectionsDraft(defaultBuyerSellerMeetSections.map((s) => ({ ...s })));
-                      } else if (value === "Glimpses & Gallery" || value === "Gallery") {
+                      } else if (value.includes("Glimpses") || value.includes("Gallery")) {
                         setSectionsDraft(defaultGallerySections.map((s) => ({ ...s })));
-                      } else if (value === "Excellence Awards" || value === "Awards") {
+                      } else if (value.includes("Awards")) {
                         setSectionsDraft(defaultAwardsSections.map((s) => ({ ...s })));
-                      } else if (value === "Sponsorship Opportunities" || value === "Sponsorship") {
+                      } else if (value.includes("SPONSORSHIP") || value.includes("Sponsorship")) {
                         setSectionsDraft(defaultSponsorshipSections.map((s) => ({ ...s })));
-                      } else if (value === "E-Promotion Web") {
+                      } else if (value.includes("E-Promotion")) {
                         setSectionsDraft(defaultEPromotionSections.map((s) => ({ ...s })));
-                      } else if (value === "Partnership / Collaboration") {
+                      } else if (value.includes("Partnership")) {
                         setSectionsDraft(defaultPartnershipPageSections.map((s) => ({ ...s })));
-                      } else if (value === "Our Services") {
+                      } else if (value.includes("Services")) {
                         setSectionsDraft(defaultSupportServicesSections.map((s) => ({ ...s })));
-                      } else if (value === "Contact Us" || value === "Talk to Expo Advisor") {
+                      } else if (value.includes("Contact") || value.includes("EXPO ADVISOR")) {
                         setSectionsDraft(defaultContactSections.map((s) => ({ ...s })));
-                      } else if (value === "Home") {
+                      } else if (value.includes("Home") || value.includes("Landing")) {
                         setSectionsDraft(defaultLandingSections.map((s) => ({ ...s })));
                       }
                     }}

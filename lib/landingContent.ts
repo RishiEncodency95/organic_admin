@@ -1,4 +1,7 @@
 export interface LandingSectionItem {
+  code?: string;
+  step?: string;
+  statusText?: string;
   title?: string;
   label?: string;
   subtitle?: string;
@@ -41,6 +44,7 @@ export interface LandingSectionItem {
   category?: string;
   year?: string;
   rating?: number;
+  placeholder?: string;
 }
 
 export interface LandingHeroSlide {
