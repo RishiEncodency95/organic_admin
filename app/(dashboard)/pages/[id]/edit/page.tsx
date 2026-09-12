@@ -67,7 +67,7 @@ import {
 import { settingsApi } from "@/lib/settingsApi";
 import { defaultLandingSections } from "@/lib/landingContent";
 import { defaultAboutSections } from "@/lib/aboutContent";
-import { defaultAdvisorySections } from "@/lib/advisoryContent";
+import { defaultAdvisorySections, defaultNominateAdvisorySections } from "@/lib/advisoryContent";
 import { defaultBlogSections } from "@/lib/blogContent";
 import { defaultParticipateAsExhibitorSections } from "@/lib/participateAsExhibitorContent";
 import { defaultExhibitionCategoriesSections } from "@/lib/exhibitionCategoriesContent";
@@ -82,13 +82,14 @@ import {
 } from "@/lib/registrationPagesContent";
 import { defaultWhyVisitSections } from "@/lib/whyVisitContent";
 import { defaultWhyExhibitSections } from "@/lib/whyExhibitContent";
-import { defaultMsmeSections } from "@/lib/msmeContent";
+import { defaultMsmeSections, defaultMsmeEligibilityCheckSections, defaultMsmeApplySections } from "@/lib/msmeContent";
 import { defaultExhibitorsSections } from "@/lib/exhibitorsContent";
 import { defaultBuyerSellerMeetSections } from "@/lib/buyerSellerMeetContent";
 import { defaultGallerySections } from "@/lib/galleryContent";
-import { defaultAwardsSections } from "@/lib/awardsContent";
+import { defaultAwardsSections, defaultAwardsNominationSections } from "@/lib/awardsContent";
 import { defaultContactSections } from "@/lib/contactContent";
 import { defaultSponsorshipSections, defaultEPromotionSections, defaultPartnershipPageSections } from "@/lib/opportunityContent";
+import { defaultSupportServicesSections } from "@/lib/extraPagesContent";
 import typography from "../../PagesTypography.module.css";
 import Swal from "sweetalert2";
 
@@ -765,6 +766,67 @@ function PdfUploadField({
   );
 }
 
+function VideoUploadField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (url: string) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const res: any = await uploadApi.file(file, "bharat-organic/videos");
+      const uploadedUrl = res?.url || res?.data?.url;
+      if (uploadedUrl) {
+        onChange(uploadedUrl);
+      }
+    } catch (err) {
+      console.error("Failed to upload video", err);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-2 p-2 bg-[#f8fafc] border border-[#e2e8f0] rounded-[6px]">
+      <div className="flex items-center gap-1.5">
+        <TextInput
+          value={value}
+          onChange={onChange}
+          placeholder="https://youtube.com/... or video URL"
+        />
+        <label className="flex shrink-0 cursor-pointer items-center gap-1 rounded border border-[#7c3aed] bg-[#f5f3ff] px-2 py-1.5 text-[9px] font-bold text-[#6d28d9] hover:bg-[#ede9fe] transition-colors shadow-2xs">
+          <Upload className="h-3 w-3" />
+          {uploading ? "Uploading..." : "Upload Video"}
+          <input
+            type="file"
+            accept="video/*"
+            onChange={handleFileChange}
+            className="hidden"
+            disabled={uploading}
+          />
+        </label>
+        {value ? (
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            title="Remove Video"
+            className="flex shrink-0 items-center gap-1 rounded border border-[#fca5a5] bg-[#fef2f2] px-2 py-1.5 text-[9px] font-bold text-[#dc2626] hover:bg-[#fee2e2] transition-colors shadow-2xs"
+          >
+            <Trash2 className="h-3 w-3" />
+            Delete
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function SectionFieldsEditor({
   section,
   onFieldChange,
@@ -825,6 +887,7 @@ function SectionFieldsEditor({
       {entries.map(([key, value]) => {
         const isLong = LONG_TEXT_KEY_PATTERN.test(key);
         const isImage = IMAGE_KEY_PATTERN.test(key) && !/alt/i.test(key);
+        const isVideo = VIDEO_KEY_PATTERN.test(key);
         const isPdf =
           (section.key === "why-participate" && key === "secondaryButtonHref") ||
           /brochure|pdf/i.test(key) ||
@@ -834,26 +897,26 @@ function SectionFieldsEditor({
         return (
           <div
             key={key}
-            className={isLong || isImage || isPdf || typeof value === "boolean" || /^keyPoint/i.test(key) || /alt/i.test(key) ? "col-span-2" : ""}
+            className={isLong || isImage || isVideo || isPdf || typeof value === "boolean" || /^keyPoint/i.test(key) || /alt/i.test(key) ? "col-span-2" : ""}
           >
             <FieldLabel>{humanizeKey(key)}</FieldLabel>
 
             {typeof value === "boolean" ? (
-              <Toggle checked={value} onChange={(next) => onFieldChange(key, next)} />
+              <Toggle checked={value} onChange={(next: boolean) => onFieldChange(key, next)} />
             ) : isVideo ? (
               <VideoUploadField
                 value={String(value)}
-                onChange={(next) => onFieldChange(key, next)}
+                onChange={(next: string) => onFieldChange(key, next)}
               />
             ) : isImage ? (
               <ImageUploadField
                 value={String(value)}
-                onChange={(next) => onFieldChange(key, next)}
+                onChange={(next: string) => onFieldChange(key, next)}
               />
             ) : isPdf ? (
               <PdfUploadField
                 value={String(value)}
-                onChange={(next) => onFieldChange(key, next)}
+                onChange={(next: string) => onFieldChange(key, next)}
               />
             ) : isDate ? (
               <div className="flex items-center gap-2">
@@ -870,12 +933,12 @@ function SectionFieldsEditor({
                 <span className="text-[10px] text-[#64748b]">Select date and time for live countdown timer</span>
               </div>
             ) : isLong ? (
-              <Textarea value={String(value)} onChange={(next) => onFieldChange(key, next)} rows={3} />
+              <Textarea value={String(value)} onChange={(next: string) => onFieldChange(key, next)} rows={3} />
             ) : (
               <TextInput
                 value={String(value)}
-                onChange={(next) => onFieldChange(key, next)}
-                maxLength={fieldLimit}
+                onChange={(next: string) => onFieldChange(key, next)}
+                maxLength={120}
               />
             )}
           </div>
@@ -1101,10 +1164,11 @@ function SectionItemsEditor({
                 <div className="p-[12px] grid grid-cols-2 gap-[10px] bg-white">
                   {fieldEntries.map(([key, value]) => {
                     const isImageKey = IMAGE_KEY_PATTERN.test(key);
+                    const isVideoKey = VIDEO_KEY_PATTERN.test(key);
                     const isLong = LONG_TEXT_KEY_PATTERN.test(key);
 
                     return (
-                      <div key={key} className={isImageKey || isLong ? "col-span-2" : ""}>
+                      <div key={key} className={isImageKey || isVideoKey || isLong ? "col-span-2" : ""}>
                         <FieldLabel>{humanizeKey(key)}</FieldLabel>
 
                         {key === "icon" && sectionId !== "journey-glimpse" ? (
@@ -1620,6 +1684,11 @@ export default function CmsEditPage() {
     const slug = (page.slug || "").toLowerCase();
 
     const getFallbackForPage = () => {
+      if (key === "msmeeligibilitycheckpage" || slug.includes("eligibility-check")) return defaultMsmeEligibilityCheckSections;
+      if (key === "msmeapplypage" || slug.includes("participate/msme/apply")) return defaultMsmeApplySections;
+      if (key === "awardsnominationpage" || slug.includes("awards/nominations")) return defaultAwardsNominationSections;
+      if (key === "nominateadvisorypage" || slug.includes("nominate_advisory_board")) return defaultNominateAdvisorySections;
+      if (key === "supportservicespage" || slug.includes("suport_services")) return defaultSupportServicesSections;
       if (key === "aboutpage" || title.includes("about") || slug === "/about") return defaultAboutSections;
       if (key === "advisorypage" || title.includes("advisory") || slug.includes("advisory")) return defaultAdvisorySections;
       if (key === "blogpage" || title.includes("blog") || slug.includes("blog")) return defaultBlogSections;
@@ -2267,7 +2336,12 @@ export default function CmsEditPage() {
     const title = (page.title || "").toLowerCase();
     const slug = (page.slug || "").toLowerCase();
     let defaults = defaultLandingSections;
-    if (key === "aboutpage" || title.includes("about") || slug === "/about") defaults = defaultAboutSections;
+    if (key === "msmeeligibilitycheckpage" || slug.includes("eligibility-check")) defaults = defaultMsmeEligibilityCheckSections;
+    else if (key === "msmeapplypage" || slug.includes("participate/msme/apply")) defaults = defaultMsmeApplySections;
+    else if (key === "awardsnominationpage" || slug.includes("awards/nominations")) defaults = defaultAwardsNominationSections;
+    else if (key === "nominateadvisorypage" || slug.includes("nominate_advisory_board")) defaults = defaultNominateAdvisorySections;
+    else if (key === "supportservicespage" || slug.includes("suport_services")) defaults = defaultSupportServicesSections;
+    else if (key === "aboutpage" || title.includes("about") || slug === "/about") defaults = defaultAboutSections;
     else if (key === "advisorypage" || title.includes("advisory") || slug.includes("advisory")) defaults = defaultAdvisorySections;
     else if (key === "blogpage" || title.includes("blog") || slug.includes("blog")) defaults = defaultBlogSections;
     else if (key === "participateasexhibitorpage" || title.includes("participate as exhibitor") || slug.includes("participate-as-exhibitor")) defaults = defaultParticipateAsExhibitorSections;
@@ -2964,7 +3038,128 @@ export default function CmsEditPage() {
                       value,
                     ) => {
                       updateField("template", value);
-                      if (value === "About Page" || value === "About Us") {
+                      if (value === "Nominate Advisory Board Member" || value === "Nominate Advisory Board") {
+                        setSectionsDraft(defaultNominateAdvisorySections.map((s) => ({ ...s })));
+                      } else if (value === "Support Services Helpdesk") {
+                        setSectionsDraft(defaultSupportServicesSections.map((s) => ({ ...s })));
+                      } else if (value === "PMS Eligibility Check Calculator") {
+                        setSectionsDraft(defaultMsmeEligibilityCheckSections.map((s) => ({ ...s })));
+                      } else if (value === "Apply for PMS Support Stepper") {
+                        setSectionsDraft(defaultMsmeApplySections.map((s) => ({ ...s })));
+                      } else if (value === "Awards Nomination Form") {
+                        setSectionsDraft(defaultAwardsNominationSections.map((s) => ({ ...s })));
+                      } else if (value === "About Expo" || value === "About Page" || value === "About Us") {
+                        setSectionsDraft(defaultAboutSections.map((s) => ({ ...s })));
+                      } else if (value === "Advisory Board Members" || value === "Advisory Board") {
+                        setSectionsDraft(defaultAdvisorySections.map((s) => ({ ...s })));
+                      } else if (value === "Blogs & News") {
+                        setSectionsDraft(defaultBlogSections.map((s) => ({ ...s })));
+                      } else if (value === "Participate as Exhibitor") {
+                        setSectionsDraft(defaultParticipateAsExhibitorSections.map((s) => ({ ...s })));
+                      } else if (value === "Exhibition Categories") {
+                        setSectionsDraft(defaultExhibitionCategoriesSections.map((s) => ({ ...s })));
+                      } else if (value === "BOOK A STALL" || value === "Book a Stall" || value === "Book a Stand") {
+                        setSectionsDraft(defaultBookAStandSections.map((s) => ({ ...s })));
+                      } else if (value === "REGISTER AS VISITOR" || value === "Register as Visitor" || value === "Visitor Registration") {
+                        setSectionsDraft(defaultVisitorRegistrationSections.map((s) => ({ ...s })));
+                      } else if (value === "DELEGATE REGISTRATION" || value === "Delegate Registration") {
+                        setSectionsDraft(defaultDelegateRegistrationSections.map((s) => ({ ...s })));
+                      } else if (value === "REGISTER AS BUYER" || value === "Register as Buyer" || value === "Buyer Registration") {
+                        setSectionsDraft(defaultBuyerRegistrationSections.map((s) => ({ ...s })));
+                      } else if (value === "Terms & Conditions") {
+                        setSectionsDraft(defaultTermsAndConditionsSections.map((s) => ({ ...s })));
+                      } else if (value === "Privacy Policy") {
+                        setSectionsDraft(defaultPrivacyPolicySections.map((s) => ({ ...s })));
+                      } else if (value === "Refund Policy") {
+                        setSectionsDraft(defaultRefundPolicySections.map((s) => ({ ...s })));
+                      } else if (value.includes("Why Visit")) {
+                        setSectionsDraft(defaultWhyVisitSections.map((s) => ({ ...s })));
+                      } else if (value.includes("Why Exhibit")) {
+                        setSectionsDraft(defaultWhyExhibitSections.map((s) => ({ ...s })));
+                      } else if (value === "MSME PMS Scheme") {
+                        setSectionsDraft(defaultMsmeSections.map((s) => ({ ...s })));
+                      } else if (value.includes("Exhibitor")) {
+                        setSectionsDraft(defaultExhibitorsSections.map((s) => ({ ...s })));
+                      } else if (value === "Buyer-Seller Meet") {
+                        setSectionsDraft(defaultBuyerSellerMeetSections.map((s) => ({ ...s })));
+                      } else if (value === "Glimpses & Gallery" || value === "Gallery") {
+                        setSectionsDraft(defaultGallerySections.map((s) => ({ ...s })));
+                      } else if (value.includes("Awards")) {
+                        setSectionsDraft(defaultAwardsSections.map((s) => ({ ...s })));
+                      } else if (value.includes("SPONSORSHIP") || value.includes("Sponsorship")) {
+                        setSectionsDraft(defaultSponsorshipSections.map((s) => ({ ...s })));
+                      } else if (value.includes("E-Promotion")) {
+                        setSectionsDraft(defaultEPromotionSections.map((s) => ({ ...s })));
+                      } else if (value === "Partnership / Collaboration" || value === "Partnership") {
+                        setSectionsDraft(defaultPartnershipPageSections.map((s) => ({ ...s })));
+                      } else if (value.includes("Contact") || value.includes("EXPO ADVISOR")) {
+                        setSectionsDraft(defaultContactSections.map((s) => ({ ...s })));
+                      } else if (value === "Homepage" || value === "Landing Page" || value === "Home") {
+                        setSectionsDraft(defaultLandingSections.map((s) => ({ ...s })));
+                      }
+                    }}
+                    options={[
+                      "Homepage",
+                      "About Expo",
+                      "Advisory Board Members",
+                      "Nominate Advisory Board Member",
+                      "Support Services Helpdesk",
+                      "Blogs & News",
+                      "Participate as Exhibitor",
+                      "Exhibition Categories",
+                      "BOOK A STALL",
+                      "REGISTER AS VISITOR",
+                      "DELEGATE REGISTRATION",
+                      "REGISTER AS BUYER",
+                      "SPONSORSHIP OPPORTUNITIES",
+                      "TALK TO EXPO ADVISOR",
+                      "Terms & Conditions",
+                      "Privacy Policy",
+                      "Refund Policy",
+                      "Why Visit ORGANIC EXPO",
+                      "Why Exhibit at ORGANIC EXPO?",
+                      "MSME PMS Scheme",
+                      "PMS Eligibility Check Calculator",
+                      "Apply for PMS Support Stepper",
+                      "Exhibitor List",
+                      "Buyer-Seller Meet",
+                      "Glimpses & Gallery",
+                      "Excellence Awards",
+                      "Awards Nomination Form",
+                      "E-Promotion Opportunity",
+                      "Partnership / Collaboration",
+                      "Our Services",
+                      "Contact Us",
+                    ]}
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>
+                    Page Parent
+                  </FieldLabel>
+
+                  <SelectField
+                    value={
+                      form.parent
+                    }
+                    onChange={(
+                      value,
+                    ) => {
+                      updateField("parent", value);
+                      if (value === "Book a Stall" || value === "Book a Stand") {
+                        setSectionsDraft(defaultBookAStandSections.map((s) => ({ ...s })));
+                      } else if (value === "Nominate Advisory Board") {
+                        setSectionsDraft(defaultNominateAdvisorySections.map((s) => ({ ...s })));
+                      } else if (value === "Support Services Helpdesk") {
+                        setSectionsDraft(defaultSupportServicesSections.map((s) => ({ ...s })));
+                      } else if (value === "PMS Eligibility Check Calculator") {
+                        setSectionsDraft(defaultMsmeEligibilityCheckSections.map((s) => ({ ...s })));
+                      } else if (value === "Apply for PMS Support Stepper") {
+                        setSectionsDraft(defaultMsmeApplySections.map((s) => ({ ...s })));
+                      } else if (value === "Awards Nomination Form") {
+                        setSectionsDraft(defaultAwardsNominationSections.map((s) => ({ ...s })));
+                      } else if (value === "About Page" || value === "About Us") {
                         setSectionsDraft(defaultAboutSections.map((s) => ({ ...s })));
                       } else if (value === "Advisory Board") {
                         setSectionsDraft(defaultAdvisorySections.map((s) => ({ ...s })));
@@ -2974,8 +3169,6 @@ export default function CmsEditPage() {
                         setSectionsDraft(defaultParticipateAsExhibitorSections.map((s) => ({ ...s })));
                       } else if (value === "Exhibition Categories") {
                         setSectionsDraft(defaultExhibitionCategoriesSections.map((s) => ({ ...s })));
-                      } else if (value === "Book a Stall") {
-                        setSectionsDraft(defaultBookAStandSections.map((s) => ({ ...s })));
                       } else if (value === "Register as Visitor" || value === "Visitor Registration") {
                         setSectionsDraft(defaultVisitorRegistrationSections.map((s) => ({ ...s })));
                       } else if (value === "Delegate Registration") {
@@ -3004,149 +3197,43 @@ export default function CmsEditPage() {
                         setSectionsDraft(defaultAwardsSections.map((s) => ({ ...s })));
                       } else if (value === "Sponsorship Opportunities" || value === "Sponsorship") {
                         setSectionsDraft(defaultSponsorshipSections.map((s) => ({ ...s })));
-                      } else if (value === "E-Promotion Web" || value === "E-Promotion") {
+                      } else if (value === "E-Promotion Web") {
                         setSectionsDraft(defaultEPromotionSections.map((s) => ({ ...s })));
-                      } else if (value === "Partnership / Collaboration" || value === "Partnership") {
+                      } else if (value === "Partnership / Collaboration") {
                         setSectionsDraft(defaultPartnershipPageSections.map((s) => ({ ...s })));
-                      } else if (value === "Contact Us" || value === "Contact") {
+                      } else if (value === "Our Services") {
+                        setSectionsDraft(defaultSupportServicesSections.map((s) => ({ ...s })));
+                      } else if (value === "Contact Us" || value === "Talk to Expo Advisor") {
                         setSectionsDraft(defaultContactSections.map((s) => ({ ...s })));
-                      } else if (value === "Homepage" || value === "Landing Page" || value === "Home") {
-                        setSectionsDraft(defaultLandingSections.map((s) => ({ ...s })));
-                      }
-                    }}
-                    options={[
-                      "Homepage",
-                      "About Page",
-                      "Advisory Board",
-                      "Blogs & News",
-                      "Participate as Exhibitor",
-                      "Exhibition Categories",
-                      "Book a Stall",
-                      "Register as Visitor",
-                      "Delegate Registration",
-                      "Register as Buyer",
-                      "Sponsorship Opportunities",
-                      "Talk to Expo Advisor",
-                      "Terms & Conditions",
-                      "Privacy Policy",
-                      "Refund Policy",
-                      "Why Visit",
-                      "Why Exhibit",
-                      "MSME PMS Scheme",
-                      "Exhibitors List",
-                      "Buyer-Seller Meet",
-                      "Glimpses & Gallery",
-                      "Excellence Awards",
-                      "E-Promotion Web",
-                      "Partnership / Collaboration",
-                      "Our Services",
-                      "Contact Us",
-                    ]}
-                  />
-                </div>
-
-                <div>
-                  <FieldLabel>
-                    Page Parent
-                  </FieldLabel>
-
-                  <SelectField
-                    value={
-                      form.parent
-                    }
-                    onChange={(
-                      value,
-                    ) => {
-                      updateField("parent", value);
-                      if (value === "About Us" || value === "About Page") {
-                        setSectionsDraft(defaultAboutSections.map((s) => ({ ...s })));
-                        updateField("template", "About Page");
-                      } else if (value === "Advisory Board") {
-                        setSectionsDraft(defaultAdvisorySections.map((s) => ({ ...s })));
-                        updateField("template", "Advisory Board");
-                      } else if (value === "Blogs & News") {
-                        setSectionsDraft(defaultBlogSections.map((s) => ({ ...s })));
-                        updateField("template", "Blogs & News");
-                      } else if (value === "Why Visit") {
-                        setSectionsDraft(defaultWhyVisitSections.map((s) => ({ ...s })));
-                        updateField("template", "Why Visit");
-                      } else if (value === "Why Exhibit") {
-                        setSectionsDraft(defaultWhyExhibitSections.map((s) => ({ ...s })));
-                        updateField("template", "Why Exhibit");
-                      } else if (value === "MSME PMS Scheme") {
-                        setSectionsDraft(defaultMsmeSections.map((s) => ({ ...s })));
-                        updateField("template", "MSME PMS Scheme");
-                      } else if (value === "Exhibitors List") {
-                        setSectionsDraft(defaultExhibitorsSections.map((s) => ({ ...s })));
-                        updateField("template", "Exhibitors List");
-                      } else if (value === "Buyer-Seller Meet") {
-                        setSectionsDraft(defaultBuyerSellerMeetSections.map((s) => ({ ...s })));
-                        updateField("template", "Buyer-Seller Meet");
-                      } else if (value === "Glimpses & Gallery") {
-                        setSectionsDraft(defaultGallerySections.map((s) => ({ ...s })));
-                        updateField("template", "Glimpses & Gallery");
-                      } else if (value === "Participate as Exhibitor") {
-                        setSectionsDraft(defaultParticipateAsExhibitorSections.map((s) => ({ ...s })));
-                        updateField("template", "Participate as Exhibitor");
-                      } else if (value === "Exhibition Categories") {
-                        setSectionsDraft(defaultExhibitionCategoriesSections.map((s) => ({ ...s })));
-                        updateField("template", "Exhibition Categories");
-                      } else if (value === "Book a Stall") {
-                        setSectionsDraft(defaultBookAStandSections.map((s) => ({ ...s })));
-                        updateField("template", "Book a Stall");
-                      } else if (value === "Register as Visitor" || value === "Visitor Registration") {
-                        setSectionsDraft(defaultVisitorRegistrationSections.map((s) => ({ ...s })));
-                        updateField("template", "Register as Visitor");
-                      } else if (value === "Delegate Registration") {
-                        setSectionsDraft(defaultDelegateRegistrationSections.map((s) => ({ ...s })));
-                        updateField("template", "Delegate Registration");
-                      } else if (value === "Register as Buyer" || value === "Buyer Registration") {
-                        setSectionsDraft(defaultBuyerRegistrationSections.map((s) => ({ ...s })));
-                        updateField("template", "Register as Buyer");
-                      } else if (value === "Terms & Conditions") {
-                        setSectionsDraft(defaultTermsAndConditionsSections.map((s) => ({ ...s })));
-                        updateField("template", "Terms & Conditions");
-                      } else if (value === "Privacy Policy") {
-                        setSectionsDraft(defaultPrivacyPolicySections.map((s) => ({ ...s })));
-                        updateField("template", "Privacy Policy");
-                      } else if (value === "Refund Policy") {
-                        setSectionsDraft(defaultRefundPolicySections.map((s) => ({ ...s })));
-                        updateField("template", "Refund Policy");
-                      } else if (value === "Excellence Awards" || value === "Awards") {
-                        setSectionsDraft(defaultAwardsSections.map((s) => ({ ...s })));
-                        updateField("template", "Excellence Awards");
-                      } else if (value === "Sponsorship Opportunities" || value === "Sponsorship") {
-                        setSectionsDraft(defaultSponsorshipSections.map((s) => ({ ...s })));
-                        updateField("template", "Sponsorship Opportunities");
-                      } else if (value === "E-Promotion Web" || value === "E-Promotion") {
-                        setSectionsDraft(defaultEPromotionSections.map((s) => ({ ...s })));
-                        updateField("template", "E-Promotion Web");
-                      } else if (value === "Partnership / Collaboration" || value === "Partnership") {
-                        setSectionsDraft(defaultPartnershipPageSections.map((s) => ({ ...s })));
-                        updateField("template", "Partnership / Collaboration");
-                      } else if (value === "Contact Us" || value === "Contact" || value === "Talk to Expo Advisor") {
-                        setSectionsDraft(defaultContactSections.map((s) => ({ ...s })));
-                        updateField("template", "Contact Us");
                       } else if (value === "Home") {
                         setSectionsDraft(defaultLandingSections.map((s) => ({ ...s })));
-                        updateField("template", "Homepage");
                       }
                     }}
                     options={[
                       "— No Parent (Top Level) —",
                       "Home",
-                      "About Us",
-                      "Advisory Board",
+                      "About Expo",
+                      "Advisory Board Members",
                       "Blogs & News",
-                      "Why Visit",
-                      "Why Exhibit",
+                      "Why Visit ORGANIC EXPO",
+                      "Why Exhibit at ORGANIC EXPO?",
                       "MSME PMS Scheme",
-                      "Exhibitors List",
+                      "Exhibitor List",
                       "Buyer-Seller Meet",
                       "Glimpses & Gallery",
                       "Our Services",
                       "Contact Us",
-                      ...pages.map((p) => p.title).filter((t) => !["Home", "About Us", "Advisory Board", "Blogs & News", "Why Visit", "Why Exhibit", "MSME PMS Scheme", "Exhibitors List", "Buyer-Seller Meet", "Glimpses & Gallery", "Our Services", "Contact Us"].includes(t)),
+                      "BOOK A STALL",
+                      "REGISTER AS VISITOR",
+                      "DELEGATE REGISTRATION",
+                      "REGISTER AS BUYER",
+                      "SPONSORSHIP OPPORTUNITIES",
+                      "Nominate Advisory Board Member",
+                      "Support Services Helpdesk",
+                      "PMS Eligibility Check Calculator",
+                      "Apply for PMS Support Stepper",
+                      "Awards Nomination Form",
+                      ...pages.map((p) => p.title).filter((t) => !["Home", "About Expo", "Advisory Board Members", "Blogs & News", "Why Visit ORGANIC EXPO", "Why Exhibit at ORGANIC EXPO?", "MSME PMS Scheme", "Exhibitor List", "Buyer-Seller Meet", "Glimpses & Gallery", "Our Services", "Contact Us", "BOOK A STALL", "REGISTER AS VISITOR", "DELEGATE REGISTRATION", "REGISTER AS BUYER", "SPONSORSHIP OPPORTUNITIES", "Nominate Advisory Board Member", "Support Services Helpdesk", "PMS Eligibility Check Calculator", "Apply for PMS Support Stepper", "Awards Nomination Form"].includes(t)),
                     ]}
                   />
 

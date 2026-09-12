@@ -275,3 +275,52 @@ export const defaultMsmeSections: LandingSectionContent[] = [
   },
 ];
 
+export const defaultMsmeEligibilityCheckSections: LandingSectionContent[] = [
+  {
+    key: "eligibility-hero",
+    name: "Eligibility Calculator Hero",
+    enabled: true,
+    eyebrow: "PRELIMINARY CALCULATOR",
+    titlePrimary: "CHECK YOUR PMS",
+    titleSecondary: "SCHEME ELIGIBILITY",
+    subtitle: "Instant Subsidy & Subsidy Percentage Estimate",
+    description: "Enter your Udyam enterprise details below to calculate eligible stall subsidy, travel & freight assistance percentages under the PMS Scheme.",
+  },
+  {
+    key: "eligibility-steps-list",
+    name: "Calculation Logic & Steps",
+    enabled: true,
+    title: "How Your Subsidy Score Is Calculated",
+    items: [
+      { title: "Step 1: Enterprise Scale", description: "Micro & Small Enterprises receive maximum subsidy priority." },
+      { title: "Step 2: Social Category", description: "SC/ST, Women & Divyang entrepreneurs get up to 100% space rent support." },
+      { title: "Step 3: Location / Region", description: "Enterprises from NER / Special Hill States receive full admissible assistance." },
+      { title: "Step 4: Product Alignment", description: "Verified organic & natural product categories qualify for PMS." },
+    ],
+  },
+];
+
+export const defaultMsmeApplySections: LandingSectionContent[] = [
+  {
+    key: "msme-stepper-config",
+    name: "MSME Application Stepper Bar",
+    enabled: true,
+    title: "PMS Application Wizard",
+    items: [
+      { num: "1", title: "Enterprise Details", subtitle: "Basic Info & Udyam" },
+      { num: "2", title: "Participation Details", subtitle: "Stall Size & Products" },
+      { num: "3", title: "Payment & Confirmation", subtitle: "Subsidy Filing" },
+    ],
+  },
+  {
+    key: "msme-apply-hero",
+    name: "MSME Apply Wizard Hero",
+    enabled: true,
+    eyebrow: "GOVERNMENT SUBSIDY FILING",
+    titlePrimary: "APPLY FOR PMS",
+    titleSecondary: "EXHIBITION SUPPORT",
+    subtitle: "Complete your 3-step application for stall allotment.",
+    description: "Provide your enterprise details and Udyam certificate to register for subsidised space at Bharat Organic Expo 2027.",
+  },
+];
+

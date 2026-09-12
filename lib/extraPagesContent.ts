@@ -2096,3 +2096,42 @@ export function mergeConductSections(sections?: ExtraSectionContent[]): ExtraSec
     return normalizeLandingSection({ ...fallback, ...saved, items, enabled: saved.enabled !== false }, fallback);
   });
 }
+
+export const defaultSupportServicesSections: ExtraSectionContent[] = [
+  {
+    key: "support-hero",
+    name: "Support Services Hero",
+    enabled: true,
+    eyebrow: "HOW CAN WE HELP YOU?",
+    title: "Support Services Helpdesk",
+    description: "We are committed to providing you with the best support. Find the resources and help you need for a successful experience at the Expo.",
+  },
+  {
+    key: "support-cards",
+    name: "Support Service Offerings",
+    enabled: true,
+    items: [
+      {
+        title: "Exhibitor Support",
+        description: "Assistance with booth setup, logistics, and technical requirements to ensure a smooth exhibiting experience.",
+        icon: "Headphones",
+        label: "Read More",
+        href: "/participate-as-exhibitor",
+      },
+      {
+        title: "Visitor Information",
+        description: "Help with registration, travel accommodations, visa assistance, and navigating the venue.",
+        icon: "Ticket",
+        label: "Read More",
+        href: "/registration/visitor-registration",
+      },
+      {
+        title: "Media & Press",
+        description: "Resources, press kits, and accreditation details for media professionals and journalists.",
+        icon: "Megaphone",
+        label: "Read More",
+        href: "/contact",
+      },
+    ],
+  },
+];

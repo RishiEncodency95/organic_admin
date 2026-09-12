@@ -150,3 +150,31 @@ export const defaultAdvisorySections: LandingSectionContent[] = [
     ],
   },
 ];
+
+export const defaultNominateAdvisorySections: LandingSectionContent[] = [
+  {
+    key: "nominate-hero",
+    name: "Nominate Advisory Hero",
+    enabled: true,
+    eyebrow: "NOMINATE A LEADER",
+    titlePrimary: "NOMINATE AN",
+    titleSecondary: "ADVISORY BOARD MEMBER",
+    subtitle: "Help shape the future of Bharat Organic Expo 2027.",
+    description: "Do you know a visionary leader, industry pioneer, or subject matter expert who can guide the organic & natural ecosystem? Submit your nomination below.",
+    image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
+    buttonLabel: "VIEW ADVISORY BOARD",
+    buttonHref: "/about/advisory_board_member",
+  },
+  {
+    key: "nominate-sidebar-info",
+    name: "Nomination Guidelines & Criteria",
+    enabled: true,
+    eyebrow: "NOMINATION GUIDELINES",
+    title: "Why Nominate?",
+    description: "Our Advisory Board plays a crucial role in steering event strategy, fostering international trade ties, and ensuring highest standards.",
+    keyPoint1: "15+ Years Industry Experience Preferred",
+    keyPoint2: "Proven Leadership in Organic/Ayush/AgriTech",
+    keyPoint3: "Commitment to Attending Strategic Meetings",
+    keyPoint4: "Global or National Recognition in Sustainability",
+  },
+];

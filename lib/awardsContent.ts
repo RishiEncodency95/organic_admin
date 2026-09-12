@@ -160,3 +160,27 @@ export function mergeAwardsSections(sections?: AwardsSectionContent[]): AwardsSe
     return normalizeLandingSection({ ...fallback, ...saved, items, enabled: saved.enabled !== false }, fallback);
   });
 }
+
+export const defaultAwardsNominationSections: AwardsSectionContent[] = [
+  {
+    key: "awards-nomination-hero",
+    name: "Awards Nomination Form Hero",
+    enabled: true,
+    eyebrow: "EXCELLENCE AWARDS NOMINATION",
+    title: "SUBMIT YOUR AWARD NOMINATION",
+    subtitle: "Celebrate your brand & enterprise innovation.",
+    description: "Fill out the nomination form below. Choose your target category, upload supporting documentation, and showcase your achievements to our esteemed jury.",
+  },
+  {
+    key: "awards-nomination-steps",
+    name: "Nomination Submission Steps",
+    enabled: true,
+    title: "Nomination Process Steps",
+    items: [
+      { num: "1", title: "Select Category", description: "Choose the award category matching your enterprise." },
+      { num: "2", title: "Enterprise Information", description: "Provide organization, contact & Udyam/registration details." },
+      { num: "3", title: "Achievements & Dossier", description: "Upload presentation, certifications & impact evidence." },
+      { num: "4", title: "Final Review", description: "Submit for jury evaluation & confirmation." },
+    ],
+  },
+];
