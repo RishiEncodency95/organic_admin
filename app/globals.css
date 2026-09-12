@@ -136,6 +136,16 @@ html.swal2-shown, body.swal2-shown, html.swal2-height-auto, body.swal2-height-au
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   box-shadow: 0 20px 45px rgba(0, 0, 0, 0.5) !important;
 }
+.swal2-popup.swal2-toast,
+.swal-toast-popup,
+.swal2-popup.swal-toast-popup,
+div:where(.swal2-container) .swal2-popup.swal2-toast,
+div:where(.swal2-container) .swal-toast-popup {
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  filter: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
 .swal2-title {
   color: #ffffff !important;
   font-weight: 700 !important;

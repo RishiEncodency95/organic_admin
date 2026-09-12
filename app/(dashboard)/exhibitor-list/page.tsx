@@ -52,6 +52,11 @@ const Toast = Swal.mixin({
     popup: "swal-toast-popup",
     title: "swal-toast-title",
   },
+  didOpen: (toast) => {
+    toast.style.boxShadow = "none";
+    (toast.style as any).webkitBoxShadow = "none";
+    toast.style.filter = "none";
+  },
 });
 
 function showSuccess(message: string) {
@@ -1116,15 +1121,11 @@ export default function ExhibitorListPage() {
         {/* SECTION HEADER EDIT BAR (Heading & Subheading Settings) */}
         <section
           className="mt-[14px] rounded-[6px] border border-[#cbe2fc] bg-[#f0f7ff] p-[12px] px-[14px]"
-          style={{
-            boxShadow:
-              "rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px",
-          }}
         >
           <form onSubmit={handleSaveHeading} className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between w-full">
             {/* Title Info */}
             <div className="flex items-center gap-2.5 shrink-0">
-              <span className="grid h-[32px] w-[32px] shrink-0 place-items-center rounded-[5px] bg-[#0284c7] text-white shadow-sm">
+              <span className="grid h-[32px] w-[32px] shrink-0 place-items-center rounded-[5px] bg-[#0284c7] text-white">
                 <Settings className="h-[16px] w-[16px]" />
               </span>
               <div>
@@ -1167,7 +1168,7 @@ export default function ExhibitorListPage() {
 
               <button
                 type="submit"
-                className="h-[32px] shrink-0 inline-flex items-center justify-center gap-1 rounded-[4px] bg-[#0284c7] px-3.5 text-[9.5px] font-bold text-white shadow-sm transition hover:bg-[#0369a1]"
+                className="h-[32px] shrink-0 inline-flex items-center justify-center gap-1 rounded-[4px] bg-[#0284c7] px-3.5 text-[9.5px] font-bold text-white transition hover:bg-[#0369a1]"
               >
                 {headingSaved ? <Check className="h-3 w-3 text-emerald-200" /> : null}
                 {headingSaved ? "Saved!" : "Update Header"}
