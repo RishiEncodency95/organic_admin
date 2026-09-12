@@ -85,7 +85,15 @@ import {
 } from "@/lib/registrationPagesContent";
 import { defaultWhyVisitSections } from "@/lib/whyVisitContent";
 import { defaultWhyExhibitSections } from "@/lib/whyExhibitContent";
-import { defaultMsmeSections, defaultMsmeEligibilityCheckSections, defaultMsmeApplySections } from "@/lib/msmeContent";
+import {
+  defaultMsmeSections,
+  defaultMsmeEligibilityCheckSections,
+  defaultMsmeApplySections,
+  defaultExhibitorLoginSections,
+  defaultBuyerLoginSections,
+  defaultDelegatesLoginSections,
+  defaultUserLoginSections,
+} from "@/lib/msmeContent";
 import { defaultExhibitorsSections } from "@/lib/exhibitorsContent";
 import { defaultBuyerSellerMeetSections } from "@/lib/buyerSellerMeetContent";
 import { defaultGallerySections } from "@/lib/galleryContent";
@@ -2229,6 +2237,10 @@ export default function CmsEditPage() {
       if (key === "sponsorshippage" || title.includes("sponsorship") || slug.includes("sponsorship")) return defaultSponsorshipSections;
       if (key === "epromotionpage" || title.includes("e-promotion") || slug.includes("e-promotion")) return defaultEPromotionSections;
       if (key === "partnershippage" || title.includes("partnership") || slug.includes("partnership")) return defaultPartnershipPageSections;
+      if (key === "exhibitorloginpage" || title.includes("exhibitor login") || slug.includes("exhibitor-login")) return defaultExhibitorLoginSections;
+      if (key === "buyerloginpage" || title.includes("buyer login") || slug.includes("buyer-login")) return defaultBuyerLoginSections;
+      if (key === "delegatesloginpage" || title.includes("delegates login") || slug.includes("delegates-login")) return defaultDelegatesLoginSections;
+      if (key === "userloginpage" || title.includes("user login") || slug.includes("/login")) return defaultUserLoginSections;
       if (key === "contactpage" || title.includes("contact") || title.includes("advisor") || slug.includes("contact")) return defaultContactSections;
       return defaultLandingSections;
     };
@@ -2977,6 +2989,10 @@ export default function CmsEditPage() {
     else if (key === "sponsorshippage" || title.includes("sponsorship") || slug.includes("sponsorship")) defaults = defaultSponsorshipSections;
     else if (key === "epromotionpage" || title.includes("e-promotion") || slug.includes("e-promotion")) defaults = defaultEPromotionSections;
     else if (key === "partnershippage" || title.includes("partnership") || slug.includes("partnership")) defaults = defaultPartnershipPageSections;
+    else if (key === "exhibitorloginpage" || title.includes("exhibitor login") || slug.includes("exhibitor-login")) defaults = defaultExhibitorLoginSections;
+    else if (key === "buyerloginpage" || title.includes("buyer login") || slug.includes("buyer-login")) defaults = defaultBuyerLoginSections;
+    else if (key === "delegatesloginpage" || title.includes("delegates login") || slug.includes("delegates-login")) defaults = defaultDelegatesLoginSections;
+    else if (key === "userloginpage" || title.includes("user login") || slug.includes("/login")) defaults = defaultUserLoginSections;
     else if (key === "contactpage" || title.includes("contact") || title.includes("advisor") || slug.includes("contact")) defaults = defaultContactSections;
 
     setSectionsDraft(defaults.map((s) => ({ ...s })));

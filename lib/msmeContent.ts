@@ -438,3 +438,119 @@ export const defaultMsmeApplySections: LandingSectionContent[] = [
   },
 ];
 
+export const defaultExhibitorLoginSections: LandingSectionContent[] = [
+  {
+    key: "exhibitor-login-hero",
+    name: "Exhibitor Login Portal Hero",
+    enabled: true,
+    eyebrow: "EXHIBITOR PORTAL",
+    titlePrimary: "EXHIBITOR LOGIN",
+    titleSecondary: "ACCESS YOUR EXHIBITOR DASHBOARD",
+    subtitle: "Manage stall bookings, product showcase, and buyer inquiries.",
+    description: "Sign in with your registered email or phone to manage your booth space, submit documents, and access attendee leads for Bharat Organic Expo 2027.",
+    buttonLabel: "Sign In",
+    secondaryButtonLabel: "Book a Stall",
+    secondaryButtonHref: "/registration/book-a-stand",
+  },
+  {
+    key: "exhibitor-login-form-config",
+    name: "Exhibitor Login Form Configuration",
+    enabled: true,
+    title: "Exhibitor Portal Sign In",
+    subtitle: "Enter your registered credentials below",
+    items: [
+      { title: "Registered Email / Phone", placeholder: "e.g. exhibitor@company.com" },
+      { title: "Password", placeholder: "••••••••" },
+      { title: "Remember Me" },
+      { title: "Forgot Password Link", href: "/forgot-password" },
+    ],
+  },
+];
+
+export const defaultBuyerLoginSections: LandingSectionContent[] = [
+  {
+    key: "buyer-login-hero",
+    name: "Buyer Login Portal Hero",
+    enabled: true,
+    eyebrow: "BUYER & DELEGATE PORTAL",
+    titlePrimary: "BUYER LOGIN",
+    titleSecondary: "CONNECT WITH TOP ORGANIC PRODUCERS",
+    subtitle: "Access B2B buyer-seller networking calendar and meetings.",
+    description: "Sign in to view verified exhibitor catalogs, schedule 1-on-1 B2B meetings, and track your trade pass for Bharat Organic Expo 2027.",
+    buttonLabel: "Sign In",
+    secondaryButtonLabel: "Register as Buyer",
+    secondaryButtonHref: "/registration/buyer-registration",
+  },
+  {
+    key: "buyer-login-form-config",
+    name: "Buyer Login Form Configuration",
+    enabled: true,
+    title: "Buyer Portal Sign In",
+    subtitle: "Enter your registered buyer credentials below",
+    items: [
+      { title: "Registered Email / Phone", placeholder: "e.g. buyer@company.com" },
+      { title: "Password", placeholder: "••••••••" },
+      { title: "Remember Me" },
+      { title: "Forgot Password Link", href: "/forgot-password" },
+    ],
+  },
+];
+
+export const defaultDelegatesLoginSections: LandingSectionContent[] = [
+  {
+    key: "delegates-login-hero",
+    name: "Delegates Login Portal Hero",
+    enabled: true,
+    eyebrow: "CONFERENCE & DELEGATE PORTAL",
+    titlePrimary: "DELEGATES LOGIN",
+    titleSecondary: "ACCESS CONFERENCE SESSIONS & E-CERTIFICATES",
+    subtitle: "View agenda, speaker presentations, and delegate badge.",
+    description: "Sign in to your conference delegate account to download session resources, network with keynote speakers, and manage your event schedule.",
+    buttonLabel: "Sign In",
+    secondaryButtonLabel: "Delegate Registration",
+    secondaryButtonHref: "/registration/delegate-registration",
+  },
+  {
+    key: "delegates-login-form-config",
+    name: "Delegates Login Form Configuration",
+    enabled: true,
+    title: "Delegate Portal Sign In",
+    subtitle: "Enter your registered delegate credentials below",
+    items: [
+      { title: "Registered Email / Phone", placeholder: "e.g. delegate@org.com" },
+      { title: "Password", placeholder: "••••••••" },
+      { title: "Remember Me" },
+      { title: "Forgot Password Link", href: "/forgot-password" },
+    ],
+  },
+];
+
+export const defaultUserLoginSections: LandingSectionContent[] = [
+  {
+    key: "user-login-hero",
+    name: "User Login Portal Hero",
+    enabled: true,
+    eyebrow: "MEMBER & VISITOR PORTAL",
+    titlePrimary: "USER LOGIN",
+    titleSecondary: "BHARAT ORGANIC EXPO MEMBER PORTAL",
+    subtitle: "Access visitor pass, saved exhibitors, and event notifications.",
+    description: "Sign in to your member account to view your entry pass, bookmark favorite organic brands, and receive live event updates.",
+    buttonLabel: "Sign In",
+    secondaryButtonLabel: "Register as Visitor",
+    secondaryButtonHref: "/registration/visitor-registration",
+  },
+  {
+    key: "user-login-form-config",
+    name: "User Login Form Configuration",
+    enabled: true,
+    title: "User Portal Sign In",
+    subtitle: "Enter your registered account credentials below",
+    items: [
+      { title: "Email / Phone Number", placeholder: "e.g. user@gmail.com" },
+      { title: "Password", placeholder: "••••••••" },
+      { title: "Remember Me" },
+      { title: "Forgot Password Link", href: "/forgot-password" },
+    ],
+  },
+];
+

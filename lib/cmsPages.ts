@@ -109,6 +109,10 @@ const pageDefinitions = [
   ["epromotionPage", "E-Promotion Opportunity", "/e-promotion-web", "page"],
   ["partnershipPage", "Partnership / Collaboration", "/partnership", "page"],
   ["servicesPage", "Our Services", "/our-services", "page"],
+  ["exhibitorLoginPage", "Exhibitor Login Portal", "/exhibitor-login", "page"],
+  ["buyerLoginPage", "Buyer Login Portal", "/buyer-login", "page"],
+  ["delegatesLoginPage", "Delegates Login Portal", "/delegates-login", "page"],
+  ["userLoginPage", "User Login Portal", "/login", "page"],
 ] as const;
 
 function seoScore(config: SettingsPageConfig): number {
