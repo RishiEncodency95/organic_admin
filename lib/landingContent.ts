@@ -44,6 +44,7 @@ export interface LandingSectionItem {
   category?: string;
   year?: string;
   rating?: number;
+  placeholder?: string;
 }
 
 export interface LandingHeroSlide {
