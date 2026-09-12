@@ -492,17 +492,22 @@ export default function ExhibitorListPage() {
       // ignore
     }
 
-    // Fetch live exhibitors and header from backend API
+    // Fetch live exhibitors and header from backend API with robust fallback
     const fetchBackendData = async () => {
       try {
-        const [itemsRes, headerRes] = await Promise.all([
-          fetch(`${BACKEND_URL}/api/website/participate/exhibitor-list/items`),
-          fetch(`${BACKEND_URL}/api/website/participate/exhibitor-list/header`),
-        ]);
+        let itemsRes = await fetch(`${BACKEND_URL}/api/website/participate/exhibitor-list/items`).catch(() => null);
+        if (!itemsRes || !itemsRes.ok) {
+          itemsRes = await fetch(`/api/website/participate/exhibitor-list/items`).catch(() => null);
+        }
 
-        if (itemsRes.ok) {
-          const json = await itemsRes.json();
-          if (Array.isArray(json.data) && json.data.length > 0) {
+        let headerRes = await fetch(`${BACKEND_URL}/api/website/participate/exhibitor-list/header`).catch(() => null);
+        if (!headerRes || !headerRes.ok) {
+          headerRes = await fetch(`/api/website/participate/exhibitor-list/header`).catch(() => null);
+        }
+
+        if (itemsRes && itemsRes.ok) {
+          const json = await itemsRes.json().catch(() => null);
+          if (json && Array.isArray(json.data) && json.data.length > 0) {
             const mapped: ExhibitorItem[] = json.data.map((item: any, idx: number) => ({
               id: typeof item.order === "number" ? item.order : idx + 1,
               _id: item._id,
@@ -526,9 +531,9 @@ export default function ExhibitorListPage() {
           }
         }
 
-        if (headerRes.ok) {
-          const json = await headerRes.json();
-          if (json.data) {
+        if (headerRes && headerRes.ok) {
+          const json = await headerRes.json().catch(() => null);
+          if (json && json.data) {
             if (json.data.title) {
               setHeading(json.data.title);
               try {
@@ -611,6 +616,8 @@ export default function ExhibitorListPage() {
     return exhibitors.find((item) => item.id === selectedId) || exhibitors[0];
   }, [exhibitors, selectedId]);
 
+  const defaultCloudinaryLogo = "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg";
+
   // Open modal for Create
   const handleOpenCreate = () => {
     setEditingItem(null);
@@ -618,11 +625,11 @@ export default function ExhibitorListPage() {
     setFormCategory("ORGANIC FOOD");
     setFormLocation("India");
     setFormOrder(exhibitors.length + 1);
-    setFormLogo("");
-    setFormAltText("");
+    setFormLogo(defaultCloudinaryLogo);
+    setFormAltText("Exhibitor Brand Logo - Bharat Organic Expo");
     setFormStatus("Published");
     setFormWebsiteUrl("");
-    setFormFileSize("");
+    setFormFileSize("15.0 KB");
     setIsModalOpen(true);
   };
 
@@ -641,29 +648,40 @@ export default function ExhibitorListPage() {
     setIsModalOpen(true);
   };
 
-  // Upload file helper
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Upload file helper (Cloudinary / Backend API)
   const uploadImageFile = async (file: File): Promise<string> => {
     try {
+      setIsUploading(true);
       const formData = new FormData();
       formData.append("file", file);
-      let res = await fetch(`/api/uploads`, {
+      formData.append("folder", "bharat-organic/exhibitors");
+
+      let res = await fetch(`${BACKEND_URL}/api/uploads?folder=bharat-organic/exhibitors`, {
         method: "POST",
         body: formData,
       });
+
       if (!res.ok) {
-        res = await fetch(`${BACKEND_URL}/api/uploads`, {
+        res = await fetch(`/api/uploads?folder=bharat-organic/exhibitors`, {
           method: "POST",
           body: formData,
         });
       }
+
       if (res.ok) {
         const json = await res.json();
-        if (json.data && json.data.url) {
-          return json.data.url;
+        const finalUrl = json.data?.url || json.url || json.data?.secure_url || json.secure_url;
+        if (finalUrl) {
+          if (finalUrl.startsWith("http")) return finalUrl;
+          return `${BACKEND_URL.replace(/\/$/, "")}${finalUrl.startsWith("/") ? "" : "/"}${finalUrl}`;
         }
       }
     } catch (err) {
-      console.error("Upload error:", err);
+      console.error("Cloudinary upload error:", err);
+    } finally {
+      setIsUploading(false);
     }
     return URL.createObjectURL(file);
   };
@@ -675,6 +693,7 @@ export default function ExhibitorListPage() {
       const activeAdmin = getAdminName();
       const sizeStr = `${(file.size / 1024).toFixed(1)} KB`;
       const timeNow = formatTimestamp();
+      
       const uploadedUrl = await uploadImageFile(file);
 
       if (isReplace && selected) {
@@ -1096,31 +1115,32 @@ export default function ExhibitorListPage() {
 
         {/* SECTION HEADER EDIT BAR (Heading & Subheading Settings) */}
         <section
-          className="mt-[14px] border border-[#cbe2fc] bg-[#f0f7ff] p-[14px]"
+          className="mt-[14px] rounded-[6px] border border-[#cbe2fc] bg-[#f0f7ff] p-[12px] px-[14px]"
           style={{
-            borderRadius: "0px",
             boxShadow:
               "rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px",
           }}
         >
-          <form onSubmit={handleSaveHeading} className="flex flex-col gap-[12px] lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-3">
-              <span className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-[4px] bg-[#0284c7] text-white shadow-sm">
-                <Settings className="h-[18px] w-[18px]" />
+          <form onSubmit={handleSaveHeading} className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between w-full">
+            {/* Title Info */}
+            <div className="flex items-center gap-2.5 shrink-0">
+              <span className="grid h-[32px] w-[32px] shrink-0 place-items-center rounded-[5px] bg-[#0284c7] text-white shadow-sm">
+                <Settings className="h-[16px] w-[16px]" />
               </span>
               <div>
-                <h2 className="text-[12px] font-bold text-[#0369a1]">
+                <h2 className="text-[11.5px] font-bold text-[#0369a1]">
                   Exhibitors Showcase Section Content
                 </h2>
-                <p className="text-[9px] text-[#52637a]">
+                <p className="text-[9px] font-medium text-[#52637a]">
                   Changes here directly update the title and subtitle on the live website exhibitors page.
                 </p>
               </div>
             </div>
 
-            <div className="flex flex-1 flex-wrap items-center gap-[10px] lg:max-w-[700px]">
-              <div className="min-w-[220px] flex-1">
-                <label className="mb-1 block text-[8.5px] font-bold uppercase tracking-wider text-[#34445f]">
+            {/* Inputs + Button Container - Compact & Auto-fitting */}
+            <div className="flex flex-1 items-end justify-end gap-2 min-w-0">
+              <div className="flex-1 min-w-[130px] max-w-[180px]">
+                <label className="mb-0.5 block text-[8px] font-bold uppercase tracking-wider text-[#34445f]">
                   Heading
                 </label>
                 <input
@@ -1128,12 +1148,12 @@ export default function ExhibitorListPage() {
                   value={heading}
                   onChange={(e) => setHeading(e.target.value)}
                   placeholder="e.g. Our Previous Exhibitors"
-                  className="h-[36px] w-full rounded-[4px] border border-[#cbd8d1] bg-white px-3 text-[11px] font-semibold text-[#142347] outline-none focus:border-[#0284c7]"
+                  className="h-[32px] w-full rounded-[4px] border border-[#cbd8d1] bg-white px-2 text-[10px] font-semibold text-[#142347] outline-none focus:border-[#0284c7]"
                 />
               </div>
 
-              <div className="min-w-[260px] flex-1">
-                <label className="mb-1 block text-[8.5px] font-bold uppercase tracking-wider text-[#34445f]">
+              <div className="flex-1 min-w-[150px] max-w-[210px]">
+                <label className="mb-0.5 block text-[8px] font-bold uppercase tracking-wider text-[#34445f]">
                   Sub Heading
                 </label>
                 <input
@@ -1141,15 +1161,15 @@ export default function ExhibitorListPage() {
                   value={subheading}
                   onChange={(e) => setSubheading(e.target.value)}
                   placeholder="e.g. A Platform Trusted by Industry Leaders"
-                  className="h-[36px] w-full rounded-[4px] border border-[#cbd8d1] bg-white px-3 text-[11px] font-semibold text-[#142347] outline-none focus:border-[#0284c7]"
+                  className="h-[32px] w-full rounded-[4px] border border-[#cbd8d1] bg-white px-2 text-[10px] font-semibold text-[#142347] outline-none focus:border-[#0284c7]"
                 />
               </div>
 
               <button
                 type="submit"
-                className="mt-4 inline-flex h-[36px] items-center gap-1.5 rounded-[4px] bg-[#0284c7] px-4 text-[10px] font-semibold text-white shadow-sm transition hover:bg-[#0369a1]"
+                className="h-[32px] shrink-0 inline-flex items-center justify-center gap-1 rounded-[4px] bg-[#0284c7] px-3.5 text-[9.5px] font-bold text-white shadow-sm transition hover:bg-[#0369a1]"
               >
-                {headingSaved ? <Check className="h-3.5 w-3.5 text-emerald-200" /> : null}
+                {headingSaved ? <Check className="h-3 w-3 text-emerald-200" /> : null}
                 {headingSaved ? "Saved!" : "Update Header"}
               </button>
             </div>
@@ -1172,7 +1192,7 @@ export default function ExhibitorListPage() {
                     setSearchQuery(e.target.value);
                     setCurrentPage(1);
                   }}
-                  placeholder="Search exhibitor by name or alt text..."
+                  placeholder="Search exhibitor by name..."
                   className="h-[40px] w-full rounded-[6px] border border-[#dfe4e8] bg-white px-[14px] pr-[40px] text-[10.5px] font-semibold text-[#273655] outline-none placeholder:text-[#8b95a7]"
                 />
               </label>
@@ -1249,7 +1269,7 @@ export default function ExhibitorListPage() {
                           Exhibitor
                         </th>
                         <th className="px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">
-                          Alt Text
+                          Updated By
                         </th>
                         <th className="px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">
                           Status
@@ -1270,6 +1290,11 @@ export default function ExhibitorListPage() {
                       ) : (
                         paginatedRows.map((item) => {
                           const isCurrent = selectedId === item.id;
+                          const adminName = item.updatedBy || loggedInAdminName || "Super Admin";
+                          const formattedDate = item.updatedAt && (item.updatedAt.includes(":") || item.updatedAt.includes("AM") || item.updatedAt.includes("PM"))
+                            ? item.updatedAt
+                            : `${item.updatedAt || "12 Sept 2026"}, 04:30 PM`;
+
                           return (
                             <tr
                               key={item.id}
@@ -1314,14 +1339,16 @@ export default function ExhibitorListPage() {
                                 </div>
                               </td>
 
+                              {/* UPDATED BY COLUMN WITH ADMIN NAME & DATE */}
                               <td className="px-[12px] py-[8px] max-w-[280px]">
-                                <span
-                                  className="font-medium text-[#334155] line-clamp-2"
-                                  style={{ fontSize: "8px", lineHeight: "1.35" }}
-                                  title={item.altText}
-                                >
-                                  {item.altText}
-                                </span>
+                                <div className="flex flex-col">
+                                  <span className="text-[8.5px] font-semibold text-[#dc2626]">
+                                    {adminName}
+                                  </span>
+                                  <span className="text-[7.5px] font-medium text-[#64748b]">
+                                    {formattedDate}
+                                  </span>
+                                </div>
                               </td>
 
                               {/* STATUS DROPDOWN — Styled Native Select identical to CMS publish dropdown */}
@@ -1781,15 +1808,25 @@ export default function ExhibitorListPage() {
                     />
                     <button
                       type="button"
+                      disabled={isUploading}
                       onClick={() => fileInputRef.current?.click()}
-                      className="inline-flex h-[28px] items-center gap-1.5 border border-[#cbd5e1] bg-[#f8fafc] px-3 text-[11px] font-semibold text-[#334155] transition hover:bg-slate-100 active:scale-95"
+                      className="inline-flex h-[28px] items-center gap-1.5 border border-[#cbd5e1] bg-[#f8fafc] px-3 text-[11px] font-semibold text-[#334155] transition hover:bg-slate-100 disabled:opacity-50 active:scale-95"
                       style={{
                         borderRadius: "4px",
                         boxShadow: "rgba(0,0,0,0.02) 0px 1px 3px 0px, rgba(27,31,35,0.15) 0px 0px 0px 1px",
                       }}
                     >
-                      <Upload className="h-3 w-3 text-slate-600" />
-                      Choose Local Image
+                      {isUploading ? (
+                        <>
+                          <RefreshCw className="h-3 w-3 text-slate-600 animate-spin" />
+                          Uploading to Cloudinary...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-3 w-3 text-slate-600" />
+                          Choose Local Image
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
