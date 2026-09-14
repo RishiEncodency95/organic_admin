@@ -48,11 +48,7 @@ import { dashboardApi } from "@/lib/dashboardApi";
    ASSETS
 ========================================================= */
 
-const MOKSHA_LOGO_URL =
-  "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165236/moksha-sewa/assets/logo-moksha-seva.png";
 
-const DIGNITY_BG_URL =
-  "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg";
 
 /* =========================================================
    TYPES
@@ -272,12 +268,9 @@ function WebsitePreview() {
         "
       >
         <div className="flex w-[205px] shrink-0 items-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={MOKSHA_LOGO_URL}
-            alt="Moksha Sewa"
-            className="h-[31px] w-auto object-contain"
-          />
+          <span className="text-[14px] font-bold tracking-tight text-[#164e2a]">
+            BHARAT ORGANIC EXPO
+          </span>
         </div>
 
         <div
@@ -299,10 +292,10 @@ function WebsitePreview() {
           </span>
 
           <span>About Us</span>
-          <span>Our Services</span>
-          <span>How Sewa Works</span>
-          <span>Get Involved</span>
-          <span>Resources</span>
+          <span>Exhibitors</span>
+          <span>Sectors</span>
+          <span>Why Visit</span>
+          <span>Media</span>
           <span>Contact Us</span>
 
           <button
@@ -310,20 +303,20 @@ function WebsitePreview() {
             className="
               h-[29px]
               rounded-[5px]
-              bg-[linear-gradient(135deg,#c68b20,#a97619)]
+              bg-[linear-gradient(135deg,#08723e,#075832)]
               px-[12px]
               text-[7.5px]
               font-semibold
               text-white
             "
           >
-            Request Sewa Help
+            Book Stall
           </button>
         </div>
       </div>
 
       {/* =================================================
-          DIGNITY HERO
+          ORGANIC EXPO HERO
       ================================================= */}
 
       <div
@@ -335,23 +328,6 @@ function WebsitePreview() {
           bg-[#f6f2e7]
         "
       >
-        {/* NEW KM.JPG BACKGROUND */}
-
-        <div
-          className="
-            absolute
-            inset-0
-            bg-cover
-            bg-center
-            bg-no-repeat
-          "
-          style={{
-            backgroundImage: `url("${DIGNITY_BG_URL}")`,
-            backgroundPosition:
-              "center center",
-          }}
-        />
-
         {/* CREAM OVERLAY */}
 
         <div
@@ -391,9 +367,9 @@ function WebsitePreview() {
               backdrop-blur-[2px]
             "
           >
-            <HeartHandshake className="h-[9px] w-[9px]" />
+            <Globe2 className="h-[9px] w-[9px]" />
 
-            Dignity in every final journey
+            India's Premier Organic &amp; Natural Trade Expo
           </div>
 
           <h2
@@ -408,13 +384,13 @@ function WebsitePreview() {
               text-[#243d2f]
             "
           >
-            No One Should Leave
+            Empowering Organic
             <br />
-            This World Without
+            Agriculture &amp; Sustainable
             <br />
 
             <span className="text-[#176d44]">
-              Dignity
+              Living
             </span>
           </h2>
 
@@ -428,10 +404,7 @@ function WebsitePreview() {
               text-[#58625f]
             "
           >
-            Moksha Sewa provides free last rites,
-            cremation, rituals and support for unclaimed
-            and financially weak families with compassion,
-            respect and responsibility.
+            Bharat Organic Expo brings together organic producers, farmers, global B2B buyers, retailers, and sustainable brands under one roof at Yashobhoomi, New Delhi.
           </p>
 
           <div className="mt-[13px] flex items-center gap-[8px]">
@@ -450,7 +423,7 @@ function WebsitePreview() {
                 text-white
               "
             >
-              Request Sewa Help
+              Register as Visitor
 
               <ChevronRight className="h-[9px] w-[9px]" />
             </button>
@@ -469,7 +442,7 @@ function WebsitePreview() {
                 text-[#9b7126]
               "
             >
-              Learn Our Mission
+              Book a Stand
             </button>
           </div>
         </div>
@@ -492,31 +465,31 @@ function WebsitePreview() {
       >
         <FeatureItem
           icon={ShieldCheck}
-          title="Free & Compassionate"
-          description="100% free support"
+          title="Certified Organic"
+          description="100% verified brands"
         />
 
         <FeatureItem
           icon={Home}
-          title="Verified & Transparent"
-          description="Complete verification"
-        />
-
-        <FeatureItem
-          icon={HeartHandshake}
-          title="Respect & Dignity"
-          description="Every life matters"
+          title="Global B2B Connect"
+          description="International buyers"
         />
 
         <FeatureItem
           icon={Globe2}
-          title="Pan India Sewa"
-          description="Helping everywhere"
+          title="Sustainable Innovation"
+          description="Agri-tech & wellness"
+        />
+
+        <FeatureItem
+          icon={UsersRound}
+          title="500+ Exhibitors"
+          description="Pan India participation"
         />
       </div>
 
       {/* =================================================
-          SERVICES
+          SERVICES / SECTORS
       ================================================= */}
 
       <div
@@ -532,16 +505,15 @@ function WebsitePreview() {
       >
         <div className="text-center">
           <p className="text-[7px] font-bold uppercase tracking-[0.08em] text-[#50815f]">
-            Our Sewa
+            Featured Sectors
           </p>
 
           <h2 className="mt-[3px] font-serif text-[17px] font-bold leading-[20px] text-[#314238]">
-            We Are Here To Help
+            Explore Organic Opportunities
           </h2>
 
           <p className="mt-[4px] text-[8.3px] font-medium text-[#757d7a]">
-            Complete support for last rites and final
-            journey with dignity and respect.
+            Connect with top industry leaders, organic suppliers, and market innovators.
           </p>
         </div>
 
@@ -549,31 +521,31 @@ function WebsitePreview() {
           <ServiceCard
             icon={
               <div className="text-[23px] leading-none">
-                🚑
+                🌾
               </div>
             }
-            title="Final Journey & Transport"
-            text="We arrange respectful transport of the departed with care."
+            title="Organic Farming & Produce"
+            text="Discover certified organic grains, pulses, fruits and vegetables."
           />
 
           <ServiceCard
             icon={
               <div className="text-[23px] leading-none">
-                🔥
+                🌿
               </div>
             }
-            title="Cremation & Last Rites"
-            text="Complete cremation arrangements and essentials."
+            title="Herbal & Ayush Products"
+            text="Explore natural wellness, Ayurvedic formulations and herbal care."
           />
 
           <ServiceCard
             icon={
               <div className="text-[23px] leading-none">
-                🪔
+                🍏
               </div>
             }
-            title="Ritual & Priest Support"
-            text="Purohit and rituals as per traditions and beliefs."
+            title="Organic Processed Foods"
+            text="Healthy snacks, packaged organic foods, and superfoods."
           />
 
           <ServiceCard
@@ -583,8 +555,8 @@ function WebsitePreview() {
                 strokeWidth={1.45}
               />
             }
-            title="Family & On-Ground Support"
-            text="Emotional support and assistance at every step."
+            title="B2B Buyer & Seller Lounge"
+            text="High-value networking and trade matchmaking opportunities."
           />
         </div>
       </div>

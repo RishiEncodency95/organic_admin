@@ -379,3 +379,41 @@ export function mergePartnershipPageSections(sections?: OpportunitySectionConten
     return normalizeLandingSection({ ...fallback, ...saved, items, enabled: saved.enabled !== false }, fallback);
   });
 }
+
+export const defaultSubPartnershipSections: OpportunitySectionContent[] = [
+  {
+    key: "sub-partnership-hero",
+    name: "Sub-Partnership Hero Banner",
+    enabled: true,
+    eyebrow: "PARTNERSHIP OPPORTUNITY",
+    title: "Official Expo Partner",
+    subtitle: "Collaborate with Bharat Organic Expo 2027 to expand your business network.",
+    description: "Access direct networking, exclusive brand positioning, and year-round lead generation.",
+    date: "19 - 21 February 2027",
+    location: "Bharat Mandapam, New Delhi",
+    image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
+  },
+  {
+    key: "sub-partnership-benefits",
+    name: "Partner Benefits & Scope",
+    enabled: true,
+    eyebrow: "KEY ADVANTAGES",
+    title: "Partner Category Benefits",
+    subtitle: "Why Become an Official Partner?",
+    items: [
+      { title: "High Brand Exposure", description: "Prominent logo placement on event website & venue collaterals." },
+      { title: "Verified Lead Generation", description: "Direct access to participating exhibitors & VIP delegates." },
+      { title: "Long-Term Partnership", description: "Sustained brand presence before, during, and after the expo." },
+      { title: "Priority Booking & Network", description: "Direct referral inquiries and business networking opportunities." },
+    ],
+  },
+  {
+    key: "sub-partnership-enquiry",
+    name: "Partner Application & Enquiry Form",
+    enabled: true,
+    eyebrow: "EXPRESS INTEREST",
+    title: "Apply for Official Partnership",
+    subtitle: "Submit your company profile and partnership proposal below.",
+    buttonLabel: "Submit Proposal",
+  },
+];

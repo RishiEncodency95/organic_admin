@@ -9,13 +9,13 @@ try {
   apiOrigin = "http://localhost:4000";
 }
 
-let siteOrigin = "http://localhost:3000";
+let siteOrigin = "http://localhost:3002";
 try {
   if (process.env.NEXT_PUBLIC_SITE_URL && process.env.NEXT_PUBLIC_SITE_URL.startsWith("http")) {
     siteOrigin = new URL(process.env.NEXT_PUBLIC_SITE_URL).origin;
   }
 } catch {
-  siteOrigin = "http://localhost:3000";
+  siteOrigin = "http://localhost:3002";
 }
 
 const isProd = process.env.NODE_ENV === "production";
@@ -30,7 +30,7 @@ const csp = [
   "media-src 'self' https://res.cloudinary.com",
   "font-src 'self' data:",
   `connect-src 'self' ${apiOrigin} http://localhost:4000 https://res.cloudinary.com https://lottie.host https://cdn.jsdelivr.net blob: data:`,
-  `frame-src ${siteOrigin}`,
+  `frame-src ${siteOrigin} http://localhost:3002`,
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
