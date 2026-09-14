@@ -74,6 +74,7 @@ export interface LandingSectionContent {
   subtitle?: string;
   description?: string;
   image?: string;
+  bgImage?: string;
   imageAlt?: string;
   logoImage?: string;
   partnerLogoImage?: string;

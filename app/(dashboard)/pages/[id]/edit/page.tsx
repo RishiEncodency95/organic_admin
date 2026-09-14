@@ -66,6 +66,7 @@ import {
   findCmsPageByRouteKey,
   getCmsPageRouteKey,
   PUBLIC_SITE_URL,
+  type CmsPage,
 } from "@/lib/cmsPages";
 import { settingsApi } from "@/lib/settingsApi";
 import { defaultLandingSections } from "@/lib/landingContent";
@@ -616,7 +617,7 @@ function Textarea({
 ========================================================= */
 
 const SECTION_SKIP_KEYS = new Set(["_id", "key", "slides", "items", "enabled", "name"]);
-const LONG_TEXT_KEY_PATTERN = /description|subtitle|quote|message|statement|notice/i;
+const LONG_TEXT_KEY_PATTERN = /description|shortDescription|subtitle|quote|message|statement|notice|bullets/i;
 const IMAGE_KEY_PATTERN = /image|img|logo|photo|banner|picture|bg|avatar|thumbnail/i;
 const VIDEO_KEY_PATTERN = /video|youtube|embed|vimeo|clip|mediaUrl/i;
 
@@ -656,6 +657,11 @@ function humanizeKey(key: string) {
   if (key === "stat5Title") return "Stat 5: Session Count";
   if (key === "stat5Sub") return "Stat 5: Session Label";
   if (key === "sectionTag") return "Section Tag";
+  if (key === "feature1") return "Key Feature 1";
+  if (key === "feature2") return "Key Feature 2";
+  if (key === "feature3") return "Key Feature 3";
+  if (key === "shortDescription") return "Short Description";
+  if (key === "description") return "Short Description";
   if (key === "titleMain") return "Title Main";
   if (key === "titleHighlight") return "Title Highlight";
   if (key === "descriptionPrefix") return "Description Prefix";
@@ -663,6 +669,10 @@ function humanizeKey(key: string) {
   if (key === "buttonHref") return "Button Link (Href)";
   if (key === "exploreText") return "Explore Text";
   if (key === "href") return "Explore Link (Href)";
+  if (key === "bgImage") return "Hero Background Banner Image (Upload / URL)";
+  if (key === "image") return "Block Image / Icon (Upload / URL)";
+  if (key === "main") return "Highlight Title";
+  if (key === "sub") return "Highlight Subtitle";
   return key
     .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
     .replace(/([a-zA-Z])([0-9])/g, "$1 $2")
@@ -1253,6 +1263,30 @@ function SectionFieldsEditor({
       ) {
         return false;
       }
+      if (
+        (section.key === "why-exhibit-hero" || section.name === "HeroSection") &&
+        (key === "date" || key === "location")
+      ) {
+        return false;
+      }
+      if (
+        (section.key === "industries-section" || section.name === "IndustriesSection") &&
+        (key === "subtitle" || key === "description" || key === "shortDescription")
+      ) {
+        return false;
+      }
+      if (
+        (section.key === "why-visit-matters" || section.name === "WhyVisitMatters") &&
+        key === "eyebrow"
+      ) {
+        return false;
+      }
+      if (
+        (section.key === "testimonials-section" || section.name === "TestimonialsSection") &&
+        (key === "subtitle" || key === "description" || key === "shortDescription")
+      ) {
+        return false;
+      }
       return typeof value === "string" || typeof value === "boolean";
     },
   );
@@ -1363,18 +1397,29 @@ function SectionItemsEditor({
   };
 
   const FIELD_ORDER_PRIORITY: Record<string, number> = {
-    tagline: 1,
+    image: 1,
+    img: 1.1,
+    tagline: 1.2,
     titlePrimary: 2,
     titleSecondary: 3,
+    title1: 3.1,
+    title2: 3.2,
     subtitle: 4,
     title: 5,
     name: 6,
+    main: 6.2,
+    sub: 6.4,
     label: 7,
     description: 8,
+    shortDescription: 8,
+    feature1: 8.1,
+    feature2: 8.2,
+    feature3: 8.3,
+    features: 8.4,
+    points: 8.5,
+    num: 8.8,
     date: 9,
     location: 10,
-    image: 11,
-    img: 12,
     alt: 13,
     buttonLabel: 14,
     buttonHref: 15,
@@ -1385,6 +1430,9 @@ function SectionItemsEditor({
 
   const getSectionAddLabel = () => {
     if (sectionId === "hero") return "Add Hero Slide";
+    if (sectionId === "why-exhibit-hero") return "Add Hero Highlight Block";
+    if (sectionId === "why-visit-hero") return "Add Impact Stat Counter";
+    if (sectionId === "why-visit-matters") return "Add Opportunity Card";
     if (sectionId === "audience-strip") return "Add Target Audience Group";
     if (sectionId === "introduction-section") return "Add Feature Highlight";
     if (sectionId === "global-platform") return "Add Platform Metric / Highlight";
@@ -1401,8 +1449,12 @@ function SectionItemsEditor({
   };
 
   const getItemLabel = (item: Record<string, any>, index: number) => {
-    const mainTitle = item.name || item.title || item.label || item.question || item.tagline || item.companyName1;
+    const mainTitle = item.name || item.title || item.label || (item.title1 ? `${item.title1} ${item.title2 || ""}`.trim() : null) || item.question || item.tagline || item.companyName1;
     if (mainTitle) return String(mainTitle);
+    if (sectionId === "why-exhibit-hero") return item.main ? `${item.main} ${item.sub || ""}`.trim() : `Highlight Block ${index + 1}`;
+    if (sectionId === "why-visit-hero") return item.label ? `${item.val || ""} ${item.label}`.trim() : `Stat Counter ${index + 1}`;
+    if (sectionId === "why-visit-matters") return item.title ? String(item.title) : `Opportunity Card ${index + 1}`;
+    if (sectionId === "reasons-to-exhibit") return item.title1 ? `${item.title1} ${item.title2 || ""}`.trim() : `Reason Block ${index + 1}`;
     if (sectionId === "hero") return `Hero Slide ${index + 1}`;
     if (sectionId === "audience-strip") return `Audience Group ${index + 1}`;
     if (sectionId === "conference-section") return `Session ${index + 1}`;
@@ -1438,7 +1490,7 @@ function SectionItemsEditor({
           </span>
         </div>
 
-        {sectionId !== "audience-strip" && sectionId !== "beyond-exhibition" && (
+        {sectionId !== "audience-strip" && sectionId !== "beyond-exhibition" && sectionId !== "reasons-to-exhibit" && sectionId !== "industries-section" && (
           <button
             type="button"
             onClick={onAddItem}
@@ -1474,6 +1526,89 @@ function SectionItemsEditor({
             delete itemToEdit.imageAlt;
             if (itemToEdit.description === undefined) itemToEdit.description = item.subtitle || "";
             if (!itemToEdit.icon) itemToEdit.icon = "Users";
+          } else if (sectionId === "why-exhibit-hero") {
+            delete itemToEdit.icon;
+            delete itemToEdit.img;
+            const defaultImg = `/uploads/icons/x${(index % 4) + 1}.png`;
+            if (!itemToEdit.image) {
+              itemToEdit.image = item.img || defaultImg;
+            }
+          } else if (sectionId === "reasons-to-exhibit") {
+            delete itemToEdit.icon;
+            delete itemToEdit.img;
+            delete itemToEdit.descLines;
+            delete itemToEdit.points;
+            delete itemToEdit.features;
+
+            const defaultIcons = [
+              "/uploads/icons/11og.webp",
+              "/uploads/icons/12og.webp",
+              "/uploads/icons/13og.webp",
+              "/uploads/icons/14og.webp",
+              "/uploads/icons/15og.webp",
+              "/uploads/icons/i6.png",
+            ];
+            const defaultDescs = [
+              "Meet thousands of qualified buyers, importers, distributors and decision-makers from around the world.",
+              "Showcase your brand to a highly targeted audience and stand out in the competitive market.",
+              "Build valuable connections with industry leaders, partners and potential collaborators.",
+              "Introduce new organic products, technologies and solutions to the right audience.",
+              "Pre-scheduled B2B meetings to generate quality leads and new business.",
+              "Explore new markets, increase exports and drive long-term business growth.",
+            ];
+            const defaultFeatures = [
+              ["Access new global markets", "Connect with key buyers", "Increase international reach"],
+              ["High brand recall", "Media & PR exposure", "Digital promotions"],
+              ["New partnerships", "Business alliances", "Long-term relationships"],
+              ["Product launches", "Live demonstrations", "Market validation"],
+              ["One-to-one meetings", "Targeted matchmaking", "Better conversions"],
+              ["Increase revenue", "Expand customer base", "Sustainable growth"],
+            ];
+
+            const defaultImg = defaultIcons[index % defaultIcons.length];
+            if (!itemToEdit.image) {
+              itemToEdit.image = item.img || item.image || defaultImg;
+            }
+            if (itemToEdit.description === undefined) {
+              itemToEdit.description = item.description || defaultDescs[index % defaultDescs.length];
+            }
+            const currentFeatures = Array.isArray(item.features) && item.features.length > 0
+              ? item.features
+              : Array.isArray(item.points) && item.points.length > 0
+              ? item.points
+              : defaultFeatures[index % defaultFeatures.length];
+
+            if (itemToEdit.feature1 === undefined) itemToEdit.feature1 = item.feature1 ?? currentFeatures[0] ?? "";
+            if (itemToEdit.feature2 === undefined) itemToEdit.feature2 = item.feature2 ?? currentFeatures[1] ?? "";
+            if (itemToEdit.feature3 === undefined) itemToEdit.feature3 = item.feature3 ?? currentFeatures[2] ?? "";
+          } else if (sectionId === "why-visit-matters") {
+            delete itemToEdit.icon;
+            delete itemToEdit.img;
+            delete itemToEdit.desc;
+            const defaultImgs = [
+              "/uploads/icons/v1og.png",
+              "/uploads/icons/v2og.png",
+              "/uploads/icons/v3og.png",
+              "/uploads/icons/v4og.png",
+              "/uploads/icons/v5og.png",
+              "/uploads/icons/v6og.png",
+            ];
+            if (!itemToEdit.image) {
+              itemToEdit.image = item.img || item.image || defaultImgs[index % defaultImgs.length];
+            }
+            if (itemToEdit.description === undefined) {
+              itemToEdit.description = item.description || item.desc || "";
+            }
+            if (itemToEdit.num === undefined) {
+              itemToEdit.num = item.num || `0${index + 1}`;
+            }
+          } else if (sectionId === "industries-section") {
+            delete itemToEdit.icon;
+            delete itemToEdit.color;
+            delete itemToEdit.imageAlt;
+            delete itemToEdit.desc;
+            if (itemToEdit.description === undefined) itemToEdit.description = item.desc || "";
+            if (itemToEdit.image === undefined) itemToEdit.image = "";
           } else {
             let defaultIcon = "";
             if (!item.icon) {
@@ -1498,7 +1633,10 @@ function SectionItemsEditor({
                 key !== "_id" &&
                 key !== "img" &&
                 key !== "status" &&
+                !(sectionId === "why-exhibit-hero" && key === "icon") &&
                 !(sectionId === "expo-categories" && key === "icon") &&
+                !(sectionId === "industries-section" && key === "icon") &&
+                !(sectionId === "why-visit-matters" && key === "icon") &&
                 (typeof value === "string" ||
                   typeof value === "number" ||
                   typeof value === "boolean" ||
@@ -1528,16 +1666,18 @@ function SectionItemsEditor({
                   </span>
                 </div>
 
-                <div className="flex items-center gap-[8px]" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    type="button"
-                    onClick={() => onRemoveItem(index)}
-                    className="flex items-center gap-[3px] text-[9.5px] font-semibold text-[#dc2626] hover:underline"
-                  >
-                    <Trash2 className="h-[11px] w-[11px]" />
-                    Remove
-                  </button>
-                </div>
+                {sectionId !== "reasons-to-exhibit" && sectionId !== "industries-section" && (
+                  <div className="flex items-center gap-[8px]" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => onRemoveItem(index)}
+                      className="flex items-center gap-[3px] text-[9.5px] font-semibold text-[#dc2626] hover:underline"
+                    >
+                      <Trash2 className="h-[11px] w-[11px]" />
+                      Remove
+                    </button>
+                  </div>
+                )}
               </div>
 
               {isOpen && (
@@ -1545,10 +1685,10 @@ function SectionItemsEditor({
                   {fieldEntries.map(([key, value]) => {
                     const isImageKey = IMAGE_KEY_PATTERN.test(key);
                     const isVideoKey = VIDEO_KEY_PATTERN.test(key);
-                    const isLong = LONG_TEXT_KEY_PATTERN.test(key);
+                    const isLong = (LONG_TEXT_KEY_PATTERN.test(key) || Array.isArray(value)) && !key.startsWith("feature");
 
                     return (
-                      <div key={key} className={isImageKey || isVideoKey || isLong ? "col-span-2" : ""}>
+                      <div key={key} className={isImageKey || isVideoKey || isLong ? "col-span-2 w-full" : "col-span-1"}>
                         <FieldLabel>{humanizeKey(key)}</FieldLabel>
 
                         {key === "icon" && sectionId !== "journey-glimpse" ? (
@@ -1614,6 +1754,29 @@ function SectionItemsEditor({
                           <ImageUploadField
                             value={String(value)}
                             onChange={(next) => onChangeItem(index, key, next)}
+                            defaultValue={
+                              sectionId === "why-exhibit-hero"
+                                ? `/uploads/icons/x${(index % 4) + 1}.png`
+                                : sectionId === "reasons-to-exhibit"
+                                  ? [
+                                      "/uploads/icons/11og.webp",
+                                      "/uploads/icons/12og.webp",
+                                      "/uploads/icons/13og.webp",
+                                      "/uploads/icons/14og.webp",
+                                      "/uploads/icons/15og.webp",
+                                      "/uploads/icons/i6.png",
+                                    ][index % 6]
+                                  : sectionId === "why-visit-matters"
+                                    ? [
+                                        "/uploads/icons/v1og.png",
+                                        "/uploads/icons/v2og.png",
+                                        "/uploads/icons/v3og.png",
+                                        "/uploads/icons/v4og.png",
+                                        "/uploads/icons/v5og.png",
+                                        "/uploads/icons/v6og.png",
+                                      ][index % 6]
+                                    : undefined
+                            }
                           />
                         ) : Array.isArray(value) ? (
                           <TextInput
@@ -1827,6 +1990,50 @@ function SeoRow({
   );
 }
 
+function getTemplateForPage(p: { type?: string; configKey?: string; title: string }): string {
+  if (p.type === "home" || p.configKey === "landingPage") return "Homepage";
+  return p.title;
+}
+
+function getPageForTemplate(templateName: string, allPages: CmsPage[]): CmsPage | undefined {
+  if (templateName === "Homepage" || templateName === "Home") {
+    return allPages.find((p) => p.configKey === "landingPage") ?? allPages[0];
+  }
+  const byExactTitle = allPages.find((p) => p.title.toLowerCase() === templateName.toLowerCase());
+  if (byExactTitle) return byExactTitle;
+  if (templateName.includes("Contact") || templateName.includes("ADVISOR")) {
+    return allPages.find((p) => p.configKey === "contactPage");
+  }
+  if (templateName.includes("Why Exhibit")) {
+    return allPages.find((p) => p.configKey === "whyExhibitPage");
+  }
+  if (templateName.includes("Why Visit")) {
+    return allPages.find((p) => p.configKey === "whyVisitPage");
+  }
+  if (templateName.includes("About")) {
+    return allPages.find((p) => p.configKey === "aboutPage");
+  }
+  if (templateName.includes("MSME")) {
+    return allPages.find((p) => p.configKey === "msmePage");
+  }
+  if (templateName.includes("Exhibitor List")) {
+    return allPages.find((p) => p.configKey === "exhibitorsPage");
+  }
+  if (templateName.includes("Buyer-Seller")) {
+    return allPages.find((p) => p.configKey === "buyerSellerMeetPage");
+  }
+  if (templateName.includes("Gallery")) {
+    return allPages.find((p) => p.configKey === "galleryPage");
+  }
+  if (templateName.includes("Awards")) {
+    return allPages.find((p) => p.configKey === "awardsPage");
+  }
+  if (templateName.includes("Sponsorship")) {
+    return allPages.find((p) => p.configKey === "sponsorshipPage");
+  }
+  return undefined;
+}
+
 /* =========================================================
    MAIN PAGE
 ========================================================= */
@@ -1884,7 +2091,28 @@ export default function CmsEditPage() {
   const [settings, setSettings] = useState<Record<string, any> | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const page = findCmsPageByRouteKey(pages, params.id) ?? pages[0] ?? cmsPages[0];
+  const initialResolved = useMemo(() => {
+    return findCmsPageByRouteKey(cmsPages, params.id) ?? cmsPages[0];
+  }, [params.id]);
+
+  const [activeConfigKey, setActiveConfigKey] = useState<string>(
+    () => initialResolved.configKey || "landingPage"
+  );
+
+  useEffect(() => {
+    const found = findCmsPageByRouteKey(pages, params.id);
+    if (found?.configKey) {
+      setActiveConfigKey(found.configKey);
+    }
+  }, [params.id, pages]);
+
+  const page = useMemo(() => {
+    if (activeConfigKey) {
+      const byKey = pages.find((p) => p.configKey === activeConfigKey);
+      if (byKey) return byKey;
+    }
+    return findCmsPageByRouteKey(pages, params.id) ?? pages[0] ?? cmsPages[0];
+  }, [activeConfigKey, pages, params.id]);
 
   useEffect(() => {
     settingsApi.get().then((value) => {
@@ -1910,40 +2138,7 @@ export default function CmsEditPage() {
               "",
             ),
 
-        template:
-          page.type === "home"
-            ? "Homepage"
-            : page.configKey === "aboutPage"
-              ? "About Page"
-              : page.configKey === "advisoryPage"
-                ? "Advisory Board"
-                : page.configKey === "blogPage"
-                  ? "Blogs & News"
-                  : page.configKey === "whyVisitPage"
-                    ? "Why Visit"
-                    : page.configKey === "whyExhibitPage"
-                      ? "Why Exhibit"
-                      : page.configKey === "msmePage"
-                        ? "MSME PMS Scheme"
-                        : page.configKey === "exhibitorsPage"
-                          ? "Exhibitors List"
-                          : page.configKey === "buyerSellerMeetPage"
-                            ? "Buyer-Seller Meet"
-                            : page.configKey === "galleryPage"
-                              ? "Glimpses & Gallery"
-                              : page.configKey === "awardsPage"
-                                ? "Excellence Awards"
-                                : page.configKey === "sponsorshipPage"
-                                  ? "Sponsorship Opportunities"
-                                  : page.configKey === "epromotionPage"
-                                    ? "E-Promotion Web"
-                                    : page.configKey === "partnershipPage"
-                                      ? "Partnership / Collaboration"
-                                      : page.configKey === "servicesPage"
-                                        ? "Our Services"
-                                        : page.configKey === "contactPage"
-                                          ? "Contact Us"
-                                          : "Standard Page",
+        template: getTemplateForPage(page),
 
         parent:
           page.type === "home"
@@ -1998,7 +2193,7 @@ export default function CmsEditPage() {
             ? "1"
             : "4",
       }),
-      [page],
+      [page.configKey],
     );
 
   const [
@@ -2013,42 +2208,9 @@ export default function CmsEditPage() {
     setForm({
       pageTitle: page.title,
       slug: page.slug === "/" ? "" : page.slug.replace(/^\//, ""),
-      template:
-        page.type === "home"
-          ? "Homepage"
-          : page.configKey === "aboutPage"
-            ? "About Page"
-            : page.configKey === "advisoryPage"
-              ? "Advisory Board"
-              : page.configKey === "blogPage"
-                ? "Blogs & News"
-                : page.configKey === "whyVisitPage"
-                  ? "Why Visit"
-                  : page.configKey === "whyExhibitPage"
-                    ? "Why Exhibit"
-                    : page.configKey === "msmePage"
-                      ? "MSME PMS Scheme"
-                      : page.configKey === "exhibitorsPage"
-                        ? "Exhibitors List"
-                        : page.configKey === "buyerSellerMeetPage"
-                          ? "Buyer-Seller Meet"
-                          : page.configKey === "galleryPage"
-                            ? "Glimpses & Gallery"
-                            : page.configKey === "awardsPage"
-                              ? "Excellence Awards"
-                              : page.configKey === "sponsorshipPage"
-                                ? "Sponsorship Opportunities"
-                                : page.configKey === "epromotionPage"
-                                  ? "E-Promotion Web"
-                                  : page.configKey === "partnershipPage"
-                                    ? "Partnership / Collaboration"
-                                    : page.configKey === "servicesPage"
-                                      ? "Our Services"
-                                      : page.configKey === "contactPage"
-                                        ? "Contact Us"
-                                        : "Standard Page",
+      template: getTemplateForPage(page),
       parent: page.type === "home" ? "— No Parent (Top Level) —" : "Home",
-      metaTitle: page.seo?.metaTitle ?? "",
+      metaTitle: page.seo?.metaTitle ?? (page.type === "home" ? "Bharat Organic Expo – International Trade Fair on Organic Products" : `${page.title} – Bharat Organic Expo`),
       metaDescription: page.seo?.metaDescription ?? "",
       metaKeywords: page.seo?.metaKeywords ?? "",
       canonicalUrl:
@@ -2080,7 +2242,7 @@ export default function CmsEditPage() {
       showInNavigation: true,
       menuOrder: page.type === "home" ? "1" : "4",
     });
-  }, [page]);
+  }, [page.configKey]);
 
   const [sectionsDraft, setSectionsDraft] = useState<Array<Record<string, any>>>([]);
   const [openSectionIndices, setOpenSectionIndices] = useState<Set<number>>(new Set());
@@ -2265,6 +2427,30 @@ export default function CmsEditPage() {
           }))
         ) : undefined,
       };
+      if (fallbackItem.key === "why-exhibit-hero" || merged.key === "why-exhibit-hero") {
+        delete merged.date;
+        delete merged.location;
+        if (merged.bgImage === undefined) merged.bgImage = "";
+        if (Array.isArray(merged.items)) {
+          merged.items = merged.items.map((it: any, idx: number) => {
+            const copy = { ...it };
+            delete copy.icon;
+            return {
+              ...copy,
+              image: copy.image || copy.img || `/uploads/icons/x${(idx % 4) + 1}.png`,
+            };
+          });
+        }
+      }
+      if (fallbackItem.key === "industries-section" || merged.key === "industries-section") {
+        delete merged.subtitle;
+        delete merged.description;
+        delete merged.shortDescription;
+      }
+      if (fallbackItem.key === "testimonials-section" || merged.key === "testimonials-section") {
+        delete merged.subtitle;
+        delete merged.items;
+      }
       if (fallbackItem.key === "audience-strip" || merged.key === "audience-strip") {
         delete merged.title;
       }
@@ -2801,6 +2987,135 @@ export default function CmsEditPage() {
         .catch(() => {});
     }
 
+    if (page.configKey === "whyExhibitPage" || page.slug?.includes("why-exhibit")) {
+      api.get("/website/participate/why-exhibit/hero")
+        .then((res: any) => {
+          const data = res?.data?.data || res?.data || res;
+          if (data) {
+            setSectionsDraft((prev) =>
+              prev.map((sec) =>
+                sec.key === "why-exhibit-hero"
+                  ? {
+                      ...sec,
+                      enabled: data.enabled !== false,
+                      eyebrow: data.tagline ?? sec.eyebrow,
+                      titlePrimary: data.titlePrefix ?? sec.titlePrimary,
+                      titleSecondary: data.titleHighlight ?? sec.titleSecondary,
+                      description: data.description ?? sec.description,
+                      bgImage: data.bgImage ?? sec.bgImage ?? "",
+                      buttonLabel: data.buttons?.[0]?.label ?? sec.buttonLabel,
+                      buttonHref: data.buttons?.[0]?.href ?? sec.buttonHref,
+                      secondaryButtonLabel: data.buttons?.[1]?.label ?? sec.secondaryButtonLabel,
+                      secondaryButtonHref: data.buttons?.[1]?.href ?? sec.secondaryButtonHref,
+                      items: Array.isArray(data.highlights) && data.highlights.length > 0
+                        ? data.highlights.map((h: any, idx: number) => ({
+                            main: h.main ?? sec.items?.[idx]?.main ?? "",
+                            sub: h.sub ?? sec.items?.[idx]?.sub ?? "",
+                            image: h.image || h.img || sec.items?.[idx]?.image || `/uploads/icons/x${(idx % 4) + 1}.png`,
+                          }))
+                        : sec.items,
+                    }
+                  : sec
+              )
+            );
+          }
+        })
+        .catch(() => {});
+
+      api.get("/website/participate/why-exhibit/stats-band")
+        .then((res: any) => {
+          const data = res?.data?.data || res?.data || res;
+          if (Array.isArray(data) && data.length > 0) {
+            setSectionsDraft((prev) =>
+              prev.map((sec) =>
+                sec.key === "exhibitors-stats" || sec.name === "StatsBand"
+                  ? {
+                      ...sec,
+                      items: data.map((it: any, idx: number) => ({
+                        val: it.val ?? sec.items?.[idx]?.val ?? "",
+                        label: it.label ?? sec.items?.[idx]?.label ?? "",
+                        icon: it.icon ?? it.iconName ?? sec.items?.[idx]?.icon ?? "Users",
+                      })),
+                    }
+                  : sec
+              )
+            );
+          }
+        })
+        .catch(() => {});
+
+      api.get("/website/participate/why-exhibit/reasons")
+        .then((res: any) => {
+          const data = res?.data?.data || res?.data || res;
+          if (Array.isArray(data) && data.length > 0) {
+            setSectionsDraft((prev) =>
+              prev.map((sec) =>
+                sec.key === "reasons-to-exhibit" || sec.name === "ReasonsSection"
+                  ? {
+                      ...sec,
+                      items: data.map((it: any, idx: number) => {
+                        const defaultIcons = [
+                          "/uploads/icons/11og.webp",
+                          "/uploads/icons/12og.webp",
+                          "/uploads/icons/13og.webp",
+                          "/uploads/icons/14og.webp",
+                          "/uploads/icons/15og.webp",
+                          "/uploads/icons/i6.png",
+                        ];
+                        const imgVal = it.image || it.img || sec.items?.[idx]?.image || defaultIcons[idx % defaultIcons.length];
+                        const featVal = Array.isArray(it.features) && it.features.length > 0
+                          ? it.features
+                          : Array.isArray(it.points) && it.points.length > 0
+                          ? it.points
+                          : sec.items?.[idx]?.features || [];
+                        return {
+                          title1: it.title1 ?? sec.items?.[idx]?.title1 ?? "",
+                          title2: it.title2 ?? sec.items?.[idx]?.title2 ?? "",
+                          description: it.description ?? sec.items?.[idx]?.description ?? "",
+                          image: imgVal,
+                          feature1: it.feature1 ?? featVal[0] ?? sec.items?.[idx]?.feature1 ?? "",
+                          feature2: it.feature2 ?? featVal[1] ?? sec.items?.[idx]?.feature2 ?? "",
+                          feature3: it.feature3 ?? featVal[2] ?? sec.items?.[idx]?.feature3 ?? "",
+                          features: featVal,
+                        };
+                      }),
+                    }
+                  : sec
+              )
+            );
+          }
+        })
+        .catch(() => {});
+
+      api.get("/website/home/expo-categories")
+        .then((res: any) => {
+          const data = res?.data?.data || res?.data || res;
+          const expoList = Array.isArray(data?.items) && data.items.length > 0
+            ? data.items
+            : Array.isArray(data?.categories) && data.categories.length > 0
+            ? data.categories
+            : null;
+          if (expoList && expoList.length > 0) {
+            setSectionsDraft((prev) =>
+              prev.map((sec) =>
+                sec.key === "industries-section" || sec.name === "IndustriesSection"
+                  ? {
+                      ...sec,
+                      items: expoList.map((c: any, idx: number) => ({
+                        title: c.title ?? sec.items?.[idx]?.title ?? "",
+                        desc: c.description ?? c.desc ?? sec.items?.[idx]?.desc ?? "",
+                        description: c.description ?? c.desc ?? sec.items?.[idx]?.description ?? "",
+                        image: c.image || sec.items?.[idx]?.image || "",
+                      })),
+                    }
+                  : sec
+              )
+            );
+          }
+        })
+        .catch(() => {});
+    }
+
     const pageKey = page.slug === "/" ? "home" : (page.slug ? page.slug.replace(/^\//, "") : "home");
     const isLocalEnv = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
     api.get(`/seo/${pageKey}?envType=${isLocalEnv ? "local" : "live"}`)
@@ -2876,6 +3191,14 @@ export default function CmsEditPage() {
       previous.map((section, index) => {
         if (index !== sectionIndex) return section;
         const items = [...(section.items ?? [])];
+        if (section.key === "why-exhibit-hero") {
+          const blankHighlight = {
+            main: "New Highlight",
+            sub: "Feature",
+            image: `/uploads/icons/x${(items.length % 4) + 1}.png`,
+          };
+          return { ...section, items: [...items, blankHighlight] };
+        }
         if (section.key === "audience-strip") {
           const blankAudience = {
             title: "NEW AUDIENCE",
@@ -3017,8 +3340,10 @@ export default function CmsEditPage() {
   const savePage = async () => {
     if (!settings || !page.configKey) return;
     setSaving(true);
+    const savingKey = page.configKey;
+    setActiveConfigKey(savingKey);
     try {
-      if (page.configKey === "landingPage" || page.type === "home") {
+      if (savingKey === "landingPage" || page.type === "home") {
         const heroSec = sectionsDraft.find((s) => s.key === "hero");
         if (heroSec && Array.isArray(heroSec.slides) && heroSec.slides.length > 0) {
           try {
@@ -3288,9 +3613,127 @@ export default function CmsEditPage() {
         }
       }
 
-      const current = settings[page.configKey] ?? {};
+      if (savingKey === "whyExhibitPage" || page.slug?.includes("why-exhibit")) {
+        const whyHeroSec = sectionsDraft.find((s) => s.key === "why-exhibit-hero");
+        if (whyHeroSec) {
+          try {
+            await api.put("/website/participate/why-exhibit/hero", {
+              tagline: whyHeroSec.eyebrow,
+              titlePrefix: whyHeroSec.titlePrimary,
+              titleHighlight: whyHeroSec.titleSecondary,
+              description: whyHeroSec.description,
+              bgImage: whyHeroSec.bgImage || "",
+              buttons: [
+                {
+                  label: whyHeroSec.buttonLabel || "Book Your Stall",
+                  href: whyHeroSec.buttonHref || "/registration/book-a-stand",
+                  variant: "orange",
+                },
+                {
+                  label: whyHeroSec.secondaryButtonLabel || "Download Brochure",
+                  href: whyHeroSec.secondaryButtonHref || "/download/invited card.pdf",
+                  variant: "blue",
+                },
+              ],
+              highlights: Array.isArray(whyHeroSec.items)
+                ? whyHeroSec.items.map((it: any, idx: number) => {
+                    const fallbackImg = `/uploads/icons/x${(idx % 4) + 1}.png`;
+                    const imageVal = it.image || it.img || fallbackImg;
+                    return {
+                      main: it.main || "",
+                      sub: it.sub || "",
+                      image: imageVal,
+                      img: imageVal,
+                      icon: "",
+                    };
+                  })
+                : [],
+            });
+          } catch (err) {
+            console.error("Failed to sync why exhibit hero to backend:", err);
+          }
+        }
+
+        const statsSec = sectionsDraft.find((s) => s.key === "exhibitors-stats" || s.name === "StatsBand");
+        if (statsSec && Array.isArray(statsSec.items)) {
+          try {
+            await api.put("/website/participate/why-exhibit/stats-band", {
+              title: statsSec.title || "EXPECTED IMPACT",
+              items: statsSec.items.map((it: any) => ({
+                val: it.val || "",
+                label: it.label || "",
+                icon: it.icon || "Users",
+              })),
+            });
+          } catch (err) {
+            console.error("Failed to sync stats band:", err);
+          }
+        }
+
+        const reasonsSec = sectionsDraft.find((s) => s.key === "reasons-to-exhibit" || s.name === "ReasonsSection");
+        if (reasonsSec && Array.isArray(reasonsSec.items)) {
+          try {
+            await api.put("/website/participate/why-exhibit/reasons", {
+              title: reasonsSec.title || "Top Reasons to Exhibit at Bharat Organic Expo 2027",
+              items: reasonsSec.items.map((it: any, idx: number) => {
+                const defaultIcons = [
+                  "/uploads/icons/11og.webp",
+                  "/uploads/icons/12og.webp",
+                  "/uploads/icons/13og.webp",
+                  "/uploads/icons/14og.webp",
+                  "/uploads/icons/15og.webp",
+                  "/uploads/icons/i6.png",
+                ];
+                const imageVal = it.image || it.img || defaultIcons[idx % defaultIcons.length];
+                const featList = [it.feature1, it.feature2, it.feature3].filter((f) => f && typeof f === "string" && f.trim() !== "");
+                const featuresVal = featList.length > 0
+                  ? featList
+                  : Array.isArray(it.features) && it.features.length > 0
+                  ? it.features
+                  : typeof it.features === "string" && it.features.trim() !== ""
+                  ? it.features.split(",").map((s: string) => s.trim()).filter(Boolean)
+                  : [];
+                return {
+                  image: imageVal,
+                  img: imageVal,
+                  title1: it.title1 || "",
+                  title2: it.title2 || "",
+                  description: it.description || "",
+                  feature1: it.feature1 || featuresVal[0] || "",
+                  feature2: it.feature2 || featuresVal[1] || "",
+                  feature3: it.feature3 || featuresVal[2] || "",
+                  features: featuresVal,
+                  points: featuresVal,
+                };
+              }),
+            });
+          } catch (err) {
+            console.error("Failed to sync reasons to exhibit:", err);
+          }
+        }
+
+        const industriesSec = sectionsDraft.find((s) => s.key === "industries-section" || s.name === "IndustriesSection");
+        if (industriesSec && Array.isArray(industriesSec.items) && industriesSec.items.length > 0) {
+          try {
+            await api.put("/website/home/expo-categories", {
+              items: industriesSec.items.map((it: any) => ({
+                title: it.title || "",
+                desc: it.description || it.desc || "",
+                description: it.description || it.desc || "",
+                image: it.image || "",
+                href: it.href || "/exhibition-categories",
+                exploreText: it.exploreText || "Explore",
+              })),
+            });
+          } catch (err) {
+            console.error("Failed to sync industries section to expo categories:", err);
+          }
+        }
+      }
+
+      const current = settings[savingKey] ?? {};
       const updated = await settingsApi.update({
-        [page.configKey]: {
+        [savingKey]: {
           ...current,
           sections: sectionsDraft.length ? sectionsDraft : current.sections,
           seo: {
@@ -3350,9 +3793,10 @@ export default function CmsEditPage() {
       const raw = updated as unknown as Record<string, any>;
       setSettings(raw);
       setPages(cmsPagesFromSettings(raw));
+      setActiveConfigKey(savingKey);
       Swal.fire({
         title: "Page Updated",
-        text: "Your changes have been saved successfully.",
+        text: `Changes to "${form.pageTitle || page.title}" have been saved successfully.`,
         icon: "success",
         confirmButtonColor: "#218DAE",
         timer: 2000,
@@ -3712,78 +4156,25 @@ export default function CmsEditPage() {
                     }
                     onChange={(value) => {
                       updateField("template", value);
-                      if (value === "Nominate Advisory Board Member" || value === "Nominate Advisory Board") {
-                        setSectionsDraft(defaultNominateAdvisorySections.map((s) => ({ ...s })));
-                      } else if (value === "Support Services Helpdesk") {
-                        setSectionsDraft(defaultSupportServicesSections.map((s) => ({ ...s })));
-                      } else if (value === "PMS Eligibility Check Calculator") {
-                        setSectionsDraft(defaultMsmeEligibilityCheckSections.map((s) => ({ ...s })));
-                      } else if (value === "Apply for PMS Support Stepper" || value === "Apply for PMS Support") {
-                        setSectionsDraft(defaultMsmeApplySections.map((s) => ({ ...s })));
-                      } else if (value === "PMS Participation Details") {
-                        setSectionsDraft(defaultMsmeParticipationDetailsSections.map((s) => ({ ...s })));
-                      } else if (value === "PMS Payment Details") {
-                        setSectionsDraft(defaultMsmeApplyPaymentSections.map((s) => ({ ...s })));
-                      } else if (value === "Exhibitor Login Portal" || value === "Exhibitor Login") {
-                        setSectionsDraft(defaultExhibitorLoginSections.map((s) => ({ ...s })));
-                      } else if (value === "Buyer Login Portal" || value === "Buyer Login") {
-                        setSectionsDraft(defaultBuyerLoginSections.map((s) => ({ ...s })));
-                      } else if (value === "Delegates Login Portal" || value === "Delegates Login") {
-                        setSectionsDraft(defaultDelegatesLoginSections.map((s) => ({ ...s })));
-                      } else if (value === "User Login Portal" || value === "User Login") {
-                        setSectionsDraft(defaultUserLoginSections.map((s) => ({ ...s })));
-                      } else if (value.includes("Partner") && value !== "Partnership / Collaboration") {
-                        setSectionsDraft(defaultSubPartnershipSections.map((s) => ({ ...s })));
-                      } else if (value === "Awards Nomination Form") {
-                        setSectionsDraft(defaultAwardsNominationSections.map((s) => ({ ...s })));
-                      } else if (value === "About Expo" || value === "About Page" || value === "About Us") {
-                        setSectionsDraft(defaultAboutSections.map((s) => ({ ...s })));
-                      } else if (value === "Advisory Board Members" || value === "Advisory Board") {
-                        setSectionsDraft(defaultAdvisorySections.map((s) => ({ ...s })));
-                      } else if (value === "Blogs & News") {
-                        setSectionsDraft(defaultBlogSections.map((s) => ({ ...s })));
-                      } else if (value === "Participate as Exhibitor") {
-                        setSectionsDraft(defaultParticipateAsExhibitorSections.map((s) => ({ ...s })));
-                      } else if (value === "Exhibition Categories") {
-                        setSectionsDraft(defaultExhibitionCategoriesSections.map((s) => ({ ...s })));
-                      } else if (value === "BOOK A STALL" || value === "Book a Stall" || value === "Book a Stand") {
-                        setSectionsDraft(defaultBookAStandSections.map((s) => ({ ...s })));
-                      } else if (value === "REGISTER AS VISITOR" || value === "Register as Visitor" || value === "Visitor Registration") {
-                        setSectionsDraft(defaultVisitorRegistrationSections.map((s) => ({ ...s })));
-                      } else if (value === "DELEGATE REGISTRATION" || value === "Delegate Registration") {
-                        setSectionsDraft(defaultDelegateRegistrationSections.map((s) => ({ ...s })));
-                      } else if (value === "REGISTER AS BUYER" || value === "Register as Buyer" || value === "Buyer Registration") {
-                        setSectionsDraft(defaultBuyerRegistrationSections.map((s) => ({ ...s })));
-                      } else if (value === "Terms & Conditions") {
-                        setSectionsDraft(defaultTermsAndConditionsSections.map((s) => ({ ...s })));
-                      } else if (value === "Privacy Policy") {
-                        setSectionsDraft(defaultPrivacyPolicySections.map((s) => ({ ...s })));
-                      } else if (value === "Refund Policy") {
-                        setSectionsDraft(defaultRefundPolicySections.map((s) => ({ ...s })));
-                      } else if (value.includes("Why Visit")) {
-                        setSectionsDraft(defaultWhyVisitSections.map((s) => ({ ...s })));
-                      } else if (value.includes("Why Exhibit")) {
-                        setSectionsDraft(defaultWhyExhibitSections.map((s) => ({ ...s })));
-                      } else if (value === "MSME PMS Scheme") {
-                        setSectionsDraft(defaultMsmeSections.map((s) => ({ ...s })));
-                      } else if (value.includes("Exhibitor")) {
-                        setSectionsDraft(defaultExhibitorsSections.map((s) => ({ ...s })));
-                      } else if (value === "Buyer-Seller Meet") {
-                        setSectionsDraft(defaultBuyerSellerMeetSections.map((s) => ({ ...s })));
-                      } else if (value === "Glimpses & Gallery" || value === "Gallery") {
-                        setSectionsDraft(defaultGallerySections.map((s) => ({ ...s })));
-                      } else if (value.includes("Awards")) {
-                        setSectionsDraft(defaultAwardsSections.map((s) => ({ ...s })));
-                      } else if (value.includes("SPONSORSHIP") || value.includes("Sponsorship")) {
-                        setSectionsDraft(defaultSponsorshipSections.map((s) => ({ ...s })));
-                      } else if (value.includes("E-Promotion")) {
-                        setSectionsDraft(defaultEPromotionSections.map((s) => ({ ...s })));
-                      } else if (value === "Partnership / Collaboration" || value === "Partnership") {
-                        setSectionsDraft(defaultPartnershipPageSections.map((s) => ({ ...s })));
-                      } else if (value.includes("Contact") || value.includes("EXPO ADVISOR")) {
-                        setSectionsDraft(defaultContactSections.map((s) => ({ ...s })));
-                      } else if (value === "Homepage" || value === "Landing Page" || value === "Home") {
-                        setSectionsDraft(defaultLandingSections.map((s) => ({ ...s })));
+                      const targetPage = getPageForTemplate(value, pages);
+                      if (targetPage && targetPage.configKey) {
+                        setActiveConfigKey(targetPage.configKey);
+                        const newRouteKey = getCmsPageRouteKey(targetPage);
+                        if (typeof window !== "undefined") {
+                          window.history.replaceState(null, "", `/pages/${newRouteKey}/edit`);
+                        }
+                        setForm((prev) => ({
+                          ...prev,
+                          pageTitle: targetPage.title,
+                          slug: targetPage.slug === "/" ? "" : targetPage.slug.replace(/^\//, ""),
+                          template: getTemplateForPage(targetPage),
+                          parent: targetPage.type === "home" ? "— No Parent (Top Level) —" : "Home",
+                          metaTitle: targetPage.seo?.metaTitle ?? (targetPage.type === "home" ? "Bharat Organic Expo – International Trade Fair on Organic Products" : `${targetPage.title} – Bharat Organic Expo`),
+                          metaDescription: targetPage.seo?.metaDescription ?? "",
+                          metaKeywords: targetPage.seo?.metaKeywords ?? "",
+                          canonicalUrl: targetPage.seo?.canonicalUrl || "",
+                          canonicalTag: targetPage.seo?.canonicalTag || "",
+                        }));
                       }
                     }}
                     options={[
@@ -3828,6 +4219,7 @@ export default function CmsEditPage() {
                       "Buyer Login Portal",
                       "Delegates Login Portal",
                       "User Login Portal",
+                      "Our Services",
                       "Contact Us",
                     ]}
                   />
@@ -3846,82 +4238,6 @@ export default function CmsEditPage() {
                       value,
                     ) => {
                       updateField("parent", value);
-                      if (value && value !== "— No Parent (Top Level) —") {
-                        const targetName = value.trim();
-                        if (targetName.includes("Nominate Advisory")) {
-                          setSectionsDraft(defaultNominateAdvisorySections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("Support Services")) {
-                          setSectionsDraft(defaultSupportServicesSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("Eligibility Check")) {
-                          setSectionsDraft(defaultMsmeEligibilityCheckSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("Apply for PMS Support") || targetName.includes("Apply for PMS")) {
-                          setSectionsDraft(defaultMsmeApplySections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("Participation Details")) {
-                          setSectionsDraft(defaultMsmeParticipationDetailsSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("Payment Details")) {
-                          setSectionsDraft(defaultMsmeApplyPaymentSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("Exhibitor Login")) {
-                          setSectionsDraft(defaultExhibitorLoginSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("Buyer Login")) {
-                          setSectionsDraft(defaultBuyerLoginSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("Delegates Login")) {
-                          setSectionsDraft(defaultDelegatesLoginSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("User Login")) {
-                          setSectionsDraft(defaultUserLoginSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("Partner") && !targetName.includes("Collaboration")) {
-                          setSectionsDraft(defaultSubPartnershipSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("Awards Nomination")) {
-                          setSectionsDraft(defaultAwardsNominationSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("About")) {
-                          setSectionsDraft(defaultAboutSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("Advisory")) {
-                          setSectionsDraft(defaultAdvisorySections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("Blog")) {
-                          setSectionsDraft(defaultBlogSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("Participate as Exhibitor")) {
-                          setSectionsDraft(defaultParticipateAsExhibitorSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("Exhibition Categories")) {
-                          setSectionsDraft(defaultExhibitionCategoriesSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("BOOK A STALL") || targetName.includes("Book a Stand") || targetName.includes("Book a Stall")) {
-                          setSectionsDraft(defaultBookAStandSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("VISITOR")) {
-                          setSectionsDraft(defaultVisitorRegistrationSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("DELEGATE")) {
-                          setSectionsDraft(defaultDelegateRegistrationSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("BUYER") && !targetName.includes("Buyer-Seller")) {
-                          setSectionsDraft(defaultBuyerRegistrationSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("Terms")) {
-                          setSectionsDraft(defaultTermsAndConditionsSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("Privacy")) {
-                          setSectionsDraft(defaultPrivacyPolicySections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("Refund")) {
-                          setSectionsDraft(defaultRefundPolicySections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("Why Visit")) {
-                          setSectionsDraft(defaultWhyVisitSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("Why Exhibit")) {
-                          setSectionsDraft(defaultWhyExhibitSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("MSME")) {
-                          setSectionsDraft(defaultMsmeSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("Exhibitor")) {
-                          setSectionsDraft(defaultExhibitorsSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("Buyer-Seller")) {
-                          setSectionsDraft(defaultBuyerSellerMeetSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("Gallery")) {
-                          setSectionsDraft(defaultGallerySections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("Awards")) {
-                          setSectionsDraft(defaultAwardsSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("SPONSORSHIP") || targetName.includes("Sponsorship")) {
-                          setSectionsDraft(defaultSponsorshipSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("E-Promotion")) {
-                          setSectionsDraft(defaultEPromotionSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("Partnership")) {
-                          setSectionsDraft(defaultPartnershipPageSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("Contact") || targetName.includes("ADVISOR")) {
-                          setSectionsDraft(defaultContactSections.map((s) => ({ ...s })));
-                        } else if (targetName.includes("Home")) {
-                          setSectionsDraft(defaultLandingSections.map((s) => ({ ...s })));
-                        }
-                      }
                     }}
                     options={[
                       "— No Parent (Top Level) —",
@@ -4135,7 +4451,7 @@ export default function CmsEditPage() {
                             </div>
                           )}
 
-                          {Array.isArray(section.items) && section.key !== "hero" && section.key !== "introduction-section" && section.key !== "why-participate" && section.key !== "conference-section" && section.key !== "sponsors-attend" && (
+                          {Array.isArray(section.items) && section.key !== "hero" && section.key !== "introduction-section" && section.key !== "why-participate" && section.key !== "conference-section" && section.key !== "sponsors-attend" && section.key !== "testimonials-section" && (
                             <SectionItemsEditor
                               items={section.items}
                               onChangeItem={(itemIndex, key, value) => updateSectionItem(sectionIndex, itemIndex, key, value)}

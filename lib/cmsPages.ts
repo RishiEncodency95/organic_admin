@@ -43,18 +43,154 @@ export function getCmsPageRouteKey(page: Pick<CmsPage, "title">): string {
     .replace(/^-+|-+$/g, "");
 }
 
+const routeAliases: Record<string, string> = {
+  "home": "landingPage",
+  "homepage": "landingPage",
+  "about": "aboutPage",
+  "about-us": "aboutPage",
+  "about-expo": "aboutPage",
+  "advisory": "advisoryPage",
+  "advisory-board": "advisoryPage",
+  "advisory-board-members": "advisoryPage",
+  "advisory_board_member": "advisoryPage",
+  "nominate-advisory": "nominateAdvisoryPage",
+  "nominate-advisory-board": "nominateAdvisoryPage",
+  "nominate_advisory_board": "nominateAdvisoryPage",
+  "support-services": "supportServicesPage",
+  "support-services-helpdesk": "supportServicesPage",
+  "suport_services": "supportServicesPage",
+  "blog": "blogPage",
+  "blogs": "blogPage",
+  "blogs-and-news": "blogPage",
+  "participate-as-exhibitor": "participateAsExhibitorPage",
+  "exhibition-categories": "exhibitionCategoriesPage",
+  "book-a-stand": "bookAStandPage",
+  "book-a-stall": "bookAStandPage",
+  "visitor-registration": "visitorRegistrationPage",
+  "register-as-visitor": "visitorRegistrationPage",
+  "delegate-registration": "delegateRegistrationPage",
+  "buyer-registration": "buyerRegistrationPage",
+  "register-as-buyer": "buyerRegistrationPage",
+  "sponsorship": "sponsorshipPage",
+  "sponsorship-opportunities": "sponsorshipPage",
+  "contact": "contactPage",
+  "contact-us": "contactPage",
+  "talk-to-expo-advisor": "contactPage",
+  "terms": "termsAndConditionsPage",
+  "terms-and-conditions": "termsAndConditionsPage",
+  "privacy": "privacyPolicyPage",
+  "privacy-policy": "privacyPolicyPage",
+  "refund": "refundPolicyPage",
+  "refund-policy": "refundPolicyPage",
+  "why-visit": "whyVisitPage",
+  "why-visit-organic-expo": "whyVisitPage",
+  "why-exhibit": "whyExhibitPage",
+  "why-exhibit-at-organic-expo": "whyExhibitPage",
+  "msme": "msmePage",
+  "msme-pms-scheme": "msmePage",
+  "msme-eligibility-check": "msmeEligibilityCheckPage",
+  "eligibility-check": "msmeEligibilityCheckPage",
+  "pms-eligibility-check-calculator": "msmeEligibilityCheckPage",
+  "msme-apply": "msmeApplyPage",
+  "apply-for-pms-support-stepper": "msmeApplyPage",
+  "exhibitor": "exhibitorsPage",
+  "exhibitors": "exhibitorsPage",
+  "exhibitor-list": "exhibitorsPage",
+  "exhibitors-list": "exhibitorsPage",
+  "buyer-seller": "buyerSellerMeetPage",
+  "buyer-seller-meet": "buyerSellerMeetPage",
+  "gallery": "galleryPage",
+  "glimpses-and-gallery": "galleryPage",
+  "awards": "awardsPage",
+  "excellence-awards": "awardsPage",
+  "awards-nominations": "awardsNominationPage",
+  "awards-nomination-form": "awardsNominationPage",
+  "nominations": "awardsNominationPage",
+  "epromotion": "epromotionPage",
+  "e-promotion": "epromotionPage",
+  "e-promotion-opportunity": "epromotionPage",
+  "e-promotion-web": "epromotionPage",
+  "partnership": "partnershipPage",
+  "partnership-collaboration": "partnershipPage",
+  "services": "servicesPage",
+  "our-services": "servicesPage",
+  "exhibitor-login": "exhibitorLoginPage",
+  "exhibitor-login-portal": "exhibitorLoginPage",
+  "buyer-login": "buyerLoginPage",
+  "buyer-login-portal": "buyerLoginPage",
+  "delegates-login": "delegatesLoginPage",
+  "delegates-login-portal": "delegatesLoginPage",
+  "login": "userLoginPage",
+  "user-login": "userLoginPage",
+  "user-login-portal": "userLoginPage",
+  "msme-participation-details": "msmeApplyParticipationDetailsPage",
+  "pms-participation-details": "msmeApplyParticipationDetailsPage",
+  "msme-payment": "msmeApplyPaymentPage",
+  "pms-payment-details": "msmeApplyPaymentPage",
+  "printing-branding-partner": "printingBrandingPartnerPage",
+  "travel-partner": "travelPartnerPage",
+  "manpower-supply-partner": "manpowerSupplyPartnerPage",
+  "logistics-partner": "logisticsPartnerPage",
+  "stall-design-partner": "stallDesignPartnerPage",
+  "hotel-stay-partner": "hotelStayPartnerPage",
+};
+
 export function findCmsPageByRouteKey(pages: CmsPage[], routeKey?: string): CmsPage | undefined {
   if (!routeKey) return undefined;
   const decoded = decodeURIComponent(routeKey).toLowerCase().trim();
   const numericId = Number(decoded);
-  return pages.find((page) => {
-    if (Number.isInteger(numericId) && page.id === numericId) return true;
-    if (getCmsPageRouteKey(page) === decoded) return true;
-    if (page.configKey && page.configKey.toLowerCase() === decoded) return true;
-    const cleanSlug = page.slug.replace(/^\//, "").toLowerCase();
-    if (cleanSlug && cleanSlug === decoded) return true;
-    return false;
+
+  // 1. Numeric ID
+  if (Number.isInteger(numericId)) {
+    const byId = pages.find((p) => p.id === numericId);
+    if (byId) return byId;
+  }
+
+  // 2. Direct alias mapping
+  const aliasConfigKey = routeAliases[decoded];
+  if (aliasConfigKey) {
+    const byAlias = pages.find((p) => p.configKey?.toLowerCase() === aliasConfigKey.toLowerCase());
+    if (byAlias) return byAlias;
+  }
+
+  // 3. Exact route key from title
+  const byTitleRouteKey = pages.find((p) => getCmsPageRouteKey(p) === decoded);
+  if (byTitleRouteKey) return byTitleRouteKey;
+
+  // 4. Exact configKey
+  const byConfigKey = pages.find((p) => p.configKey && p.configKey.toLowerCase() === decoded);
+  if (byConfigKey) return byConfigKey;
+
+  // 5. Full slug match (e.g. /participate/why-exhibit or participate/why-exhibit)
+  const bySlug = pages.find((p) => {
+    const cleanSlug = p.slug.replace(/^\//, "").toLowerCase();
+    return cleanSlug && cleanSlug === decoded;
   });
+  if (bySlug) return bySlug;
+
+  // 6. Last segment of slug (e.g. "why-exhibit" matches "/participate/why-exhibit")
+  const byLastSegment = pages.find((p) => {
+    const cleanSlug = p.slug.replace(/^\//, "").toLowerCase();
+    const lastPart = cleanSlug.split("/").pop()?.toLowerCase();
+    return lastPart && lastPart === decoded;
+  });
+  if (byLastSegment) return byLastSegment;
+
+  // 7. Slug with slashes converted to hyphens
+  const byHyphenatedSlug = pages.find((p) => {
+    const cleanSlug = p.slug.replace(/^\//, "").toLowerCase().replace(/\//g, "-");
+    return cleanSlug && cleanSlug === decoded;
+  });
+  if (byHyphenatedSlug) return byHyphenatedSlug;
+
+  // 8. Loose / partial search on routeKey or title
+  const byPartial = pages.find((p) => {
+    const pageRouteKey = getCmsPageRouteKey(p);
+    return pageRouteKey.includes(decoded) || decoded.includes(pageRouteKey);
+  });
+  if (byPartial) return byPartial;
+
+  return undefined;
 }
 
 type SettingsPageConfig = {
@@ -97,7 +233,7 @@ const pageDefinitions = [
   ["privacyPolicyPage", "Privacy Policy", "/registration/privacy-policy", "page"],
   ["refundPolicyPage", "Refund Policy", "/registration/refund-policy", "page"],
   ["whyVisitPage", "Why Visit ORGANIC EXPO", "/participate/why-visit", "page"],
-  ["whyExhibitPage", "Why Exhibit at ORGANIC EXPO?", "/participate/why-exhibit", "page"],
+  ["whyExhibitPage", "Why Exhibit at ORGANIC EXPO?", "/why-exhibit", "page"],
   ["msmePage", "MSME PMS Scheme", "/participate/msme", "page"],
   ["msmeEligibilityCheckPage", "PMS Eligibility Check Calculator", "/participate/msme/eligibility-check", "page"],
   ["msmeApplyPage", "Apply for PMS Support Stepper", "/participate/msme/apply", "page"],
