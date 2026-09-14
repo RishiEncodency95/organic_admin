@@ -1,20 +1,32 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Modal from "@/components/ui/Modal";
+import { Input, Label } from "@/components/ui/Input";
+import typography from "../pages/PagesTypography.module.css";
+import { useAppSelector } from "@/store/hooks";
 import {
+  ArrowRight,
+  Calendar,
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   Copy,
   Download,
+  ExternalLink,
   Eye,
   FileImage,
   FileText,
   Filter,
   FolderClosed,
+  Globe,
+  Grid,
   HardDrive,
   Image as ImageIcon,
+  Layers,
+  List,
   MoreVertical,
   Music2,
   Pencil,
@@ -23,803 +35,1921 @@ import {
   Search,
   Settings,
   ShieldCheck,
+  Sparkles,
+  Tag,
   Trash2,
   Upload,
   Video,
+  X,
 } from "lucide-react";
+import Swal from "sweetalert2";
 
-type MediaType = "Image" | "Video" | "Document" | "Audio";
-type MediaStatus = "Published" | "Draft";
+// SweetAlert2 theme matching admin portal dark style with zero shadow
+const Toast = Swal.mixin({
+  toast: true,
+  position: "top-end",
+  showConfirmButton: false,
+  timer: 3500,
+  timerProgressBar: true,
+  background: "#1e2433",
+  color: "#e2e8f0",
+  iconColor: "#4ade80",
+  customClass: {
+    popup: "swal-toast-popup",
+    title: "swal-toast-title",
+  },
+  didOpen: (toast) => {
+    toast.style.boxShadow = "none";
+    (toast.style as any).webkitBoxShadow = "none";
+    toast.style.filter = "none";
+  },
+});
 
-type MediaItem = {
+function showSuccess(message: string) {
+  Toast.fire({ icon: "success", title: message });
+}
+
+function showError(message: string) {
+  Toast.fire({ icon: "error", title: message, iconColor: "#f87171" });
+}
+
+function showInfo(message: string) {
+  Toast.fire({ icon: "info", title: message, iconColor: "#60a5fa" });
+}
+
+export type MediaStatus = "Published" | "Draft";
+
+export interface MediaItem {
   id: number;
-  name: string;
-  meta: string;
-  type: MediaType;
-  size: string;
-  folder: string;
+  _id?: string;
+  title: string;
+  year: string;
+  category: string;
+  size?: string;
   uploadedBy: string;
   date: string;
   time: string;
   status: MediaStatus;
   image: string;
-};
+}
 
-const MEDIA_ITEMS: MediaItem[] = [
-  {
-    id: 1,
-    name: "hero-home-banner.jpg",
-    meta: "1920 × 1080",
-    type: "Image",
-    size: "245 KB",
-    folder: "Banners",
-    uploadedBy: "Admin User",
-    date: "30 May 2026",
-    time: "10:30 AM",
-    status: "Published",
-    image:
-      "https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&w=300&q=80",
-  },
-  {
-    id: 2,
-    name: "dignity-care.jpg",
-    meta: "1200 × 800",
-    type: "Image",
-    size: "189 KB",
-    folder: "Our Mission",
-    uploadedBy: "Admin User",
-    date: "29 May 2026",
-    time: "04:15 PM",
-    status: "Published",
-    image:
-      "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=300&q=80",
-  },
-  {
-    id: 3,
-    name: "volunteers-support.jpg",
-    meta: "1280 × 853",
-    type: "Image",
-    size: "312 KB",
-    folder: "About Us",
-    uploadedBy: "Seva Team",
-    date: "28 May 2026",
-    time: "02:20 PM",
-    status: "Published",
-    image:
-      "https://images.unsplash.com/photo-1559027615-cd4628902d4a?auto=format&fit=crop&w=300&q=80",
-  },
-  {
-    id: 4,
-    name: "sewa-steps-infographic.png",
-    meta: "1600 × 900",
-    type: "Image",
-    size: "157 KB",
-    folder: "How It Works",
-    uploadedBy: "Admin User",
-    date: "26 May 2026",
-    time: "11:45 AM",
-    status: "Published",
-    image:
-      "https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=300&q=80",
-  },
-  {
-    id: 5,
-    name: "policy-document.pdf",
-    meta: "",
-    type: "Document",
-    size: "1.24 MB",
-    folder: "Documents",
-    uploadedBy: "Admin User",
-    date: "24 May 2026",
-    time: "01:05 PM",
-    status: "Published",
-    image: "",
-  },
-  {
-    id: 6,
-    name: "moksha-sewa-video.mp4",
-    meta: "1920 × 1080",
-    type: "Video",
-    size: "24.6 MB",
-    folder: "Videos",
-    uploadedBy: "Seva Team",
-    date: "22 May 2026",
-    time: "05:30 PM",
-    status: "Published",
-    image:
-      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=300&q=80",
-  },
-  {
-    id: 7,
-    name: "mantra-chants.mp3",
-    meta: "03:45",
-    type: "Audio",
-    size: "8.7 MB",
-    folder: "Audio",
-    uploadedBy: "Admin User",
-    date: "20 May 2026",
-    time: "09:10 AM",
-    status: "Draft",
-    image: "",
-  },
+// Initial default categories from the live website gallery
+const INITIAL_CATEGORIES: string[] = [
+  "Inauguration",
+  "Scientific Sessions",
+  "Panel Discussions",
+  "Speakers",
+  "Workshops",
+  "Exhibition (Expo)",
+  "Cultural Programs",
+  "Awards",
+  "Networking",
 ];
 
-const typeTone: Record<MediaType, string> = {
-  Image: "bg-emerald-50 text-emerald-700",
-  Video: "bg-blue-50 text-blue-700",
-  Document: "bg-violet-50 text-violet-700",
-  Audio: "bg-orange-50 text-orange-700",
+// Initial default years from the live website gallery
+const INITIAL_YEARS: string[] = [
+  "2026",
+  "2025",
+  "2024",
+  "2023",
+  "2022",
+  "2021",
+  "2020",
+];
+
+const INITIAL_MEDIA: MediaItem[] = [];
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
+
+const formatTimestamp = () => {
+  const d = new Date();
+  const dateStr = d.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+  const timeStr = d.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+  return { date: dateStr, time: timeStr, full: `${dateStr}, ${timeStr}` };
 };
 
-function MetricCard({
-  icon,
-  iconClass,
-  label,
-  value,
-  note,
-  progress,
-}: {
-  icon: React.ReactNode;
-  iconClass: string;
-  label: string;
-  value: string;
-  note: string;
-  progress?: number;
-}) {
-  return (
-    <div className="relative flex h-[56px] min-w-0 items-center gap-[10px] overflow-hidden rounded-[7px] border border-[#e7e9ec] bg-white px-[12px] py-[7px] shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
-      <div className={`grid h-[34px] w-[34px] shrink-0 place-items-center rounded-full ${iconClass}`}>
-        {icon}
-      </div>
+// Animated Numeric Counter for KPI Cards
+function AnimatedCounter({ value, duration = 1200 }: { value: string | number; duration?: number }) {
+  const [displayValue, setDisplayValue] = useState<string>("0");
+  const spanRef = useRef<HTMLSpanElement>(null);
 
-      <div className="min-w-0 flex-1 overflow-hidden">
-        <p className="break-words text-[9px] font-semibold leading-[11px] text-[#34435e]">{label}</p>
-        <div className="mt-[2px] flex items-baseline gap-[6px]">
-          <span className="text-[17px] font-semibold leading-none tracking-[-0.03em] text-[#10204a]">
-            {value}
-          </span>
-          <span className="truncate text-[8.5px] font-semibold text-[#64748b]">
-            {note}
-          </span>
-        </div>
-      </div>
+  useEffect(() => {
+    const strVal = String(value);
+    const numericMatch = strVal.match(/^([^0-9]*)([0-9.,]+)([^0-9]*)$/);
 
-      {typeof progress === "number" ? (
-        <div className="absolute inset-x-0 bottom-0 h-[3px] bg-[#eef2f0]">
-          <div
-            className="h-full rounded-r-full bg-[#0b6a3b]"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      ) : null}
-    </div>
-  );
+    if (!numericMatch) {
+      setDisplayValue(strVal);
+      return;
+    }
+
+    const prefix = numericMatch[1];
+    const rawNumberStr = numericMatch[2].replace(/,/g, "");
+    const targetNum = parseFloat(rawNumberStr);
+    const suffix = numericMatch[3];
+
+    if (isNaN(targetNum)) {
+      setDisplayValue(strVal);
+      return;
+    }
+
+    if (targetNum === 0) {
+      setDisplayValue(`${prefix}0${suffix}`);
+      return;
+    }
+
+    const hasComma = numericMatch[2].includes(",");
+    const decimalPlaces = (rawNumberStr.split(".")[1] || "").length;
+
+    let animationFrameId: number | null = null;
+
+    const startCounting = () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      let startTime: number | null = null;
+
+      const step = (timestamp: number) => {
+        if (!startTime) startTime = timestamp;
+        const progress = Math.min((timestamp - startTime) / duration, 1);
+        const easeProgress = 1 - Math.pow(1 - progress, 3);
+        const currentNum = targetNum * easeProgress;
+        let formattedNum = currentNum.toFixed(decimalPlaces);
+
+        if (hasComma) {
+          const parts = formattedNum.split(".");
+          parts[0] = parseInt(parts[0], 10).toLocaleString();
+          formattedNum = parts.join(".");
+        }
+
+        setDisplayValue(`${prefix}${formattedNum}${suffix}`);
+
+        if (progress < 1) {
+          animationFrameId = requestAnimationFrame(step);
+        }
+      };
+
+      animationFrameId = requestAnimationFrame(step);
+    };
+
+    if (typeof IntersectionObserver !== "undefined") {
+      const el = spanRef.current;
+      if (!el) {
+        startCounting();
+        return;
+      }
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              startCounting();
+            } else {
+              setDisplayValue(`${prefix}0${suffix}`);
+            }
+          });
+        },
+        { threshold: 0.15 }
+      );
+
+      observer.observe(el);
+
+      return () => {
+        observer.disconnect();
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      };
+    } else {
+      startCounting();
+      return () => {
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      };
+    }
+  }, [value, duration]);
+
+  return <span ref={spanRef}>{displayValue}</span>;
 }
 
-function FilePreview({ item }: { item: MediaItem }) {
-  if (item.type === "Document") {
-    return (
-      <div className="grid h-[50px] w-[70px] shrink-0 place-items-center rounded-[7px] border border-[#e5e8eb] bg-[#fff6f6]">
-        <FileText className="h-[26px] w-[26px] text-red-500" />
-      </div>
-    );
-  }
-
-  if (item.type === "Audio") {
-    return (
-      <div className="grid h-[50px] w-[70px] shrink-0 place-items-center rounded-[7px] border border-[#e5e8eb] bg-[#eef3ff]">
-        <Music2 className="h-[28px] w-[28px] text-indigo-500" />
-      </div>
-    );
-  }
-
-  return (
-    <img
-      src={item.image}
-      alt=""
-      className="h-[50px] w-[70px] shrink-0 rounded-[7px] border border-[#e5e8eb] object-cover"
-    />
-  );
-}
+const toneClass = {
+  emerald: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+  violet: "bg-violet-50 text-violet-700 ring-violet-200",
+  amber: "bg-amber-50 text-amber-700 ring-amber-200",
+  blue: "bg-sky-50 text-sky-700 ring-sky-200",
+  rose: "bg-rose-50 text-rose-700 ring-rose-200",
+  teal: "bg-teal-50 text-teal-700 ring-teal-200",
+} as const;
 
 export default function MediaLibraryPage() {
   const router = useRouter();
-  const quickUploadRef = useRef<HTMLInputElement>(null);
-  const [query, setQuery] = useState("");
-  const [type, setType] = useState("All Types");
-  const [folder, setFolder] = useState("All Folders");
-  const [status, setStatus] = useState("All Status");
-  const [selectedId, setSelectedId] = useState(1);
+  const currentAdmin = useAppSelector((state) => state.auth.admin);
 
-  const rows = useMemo(() => {
-    return MEDIA_ITEMS.filter((item) => {
-      const searchMatch =
-        !query ||
-        `${item.name} ${item.type} ${item.folder}`
-          .toLowerCase()
-          .includes(query.toLowerCase());
+  const getAdminName = (): string => {
+    if (currentAdmin?.name && currentAdmin.name.trim().length > 0) {
+      return currentAdmin.name.trim();
+    }
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem("ms_admin_auth");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed?.admin?.name && typeof parsed.admin.name === "string" && parsed.admin.name.trim().length > 0) {
+            return parsed.admin.name.trim();
+          }
+        }
+      } catch {}
+      try {
+        const rawUser = localStorage.getItem("admin_user");
+        if (rawUser) {
+          const parsed = JSON.parse(rawUser);
+          if (parsed?.name && typeof parsed.name === "string" && parsed.name.trim().length > 0) {
+            return parsed.name.trim();
+          }
+        }
+      } catch {}
+    }
+    return "Vansh Chaudhary";
+  };
 
-      const typeMatch = type === "All Types" || item.type === type;
-      const folderMatch = folder === "All Folders" || item.folder === folder;
-      const statusMatch = status === "All Status" || item.status === status;
+  const loggedInAdminName = useMemo(() => getAdminName(), [currentAdmin]);
 
-      return searchMatch && typeMatch && folderMatch && statusMatch;
+  // Categories and Years state (with localStorage persistence)
+  const [categories, setCategories] = useState<string[]>(INITIAL_CATEGORIES);
+  const [years, setYears] = useState<string[]>(INITIAL_YEARS);
+
+  // New item input state for Category & Year Modal
+  const [newCategoryInput, setNewCategoryInput] = useState("");
+  const [newYearInput, setNewYearInput] = useState("");
+  const [isCategoryYearModalOpen, setIsCategoryYearModalOpen] = useState(false);
+
+  // Media items state (starts clean with 0 static items)
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All Activities");
+  const [selectedYear, setSelectedYear] = useState("All Years");
+  const [statusFilter, setStatusFilter] = useState("All Status");
+
+  // Upload modal state
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<MediaItem | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const replaceFileRef = useRef<HTMLInputElement>(null);
+
+  // Form states for upload / edit (Static fields as requested: Title, Year, Category, Status, Image)
+  const [formTitle, setFormTitle] = useState("");
+  const [formYear, setFormYear] = useState("2026");
+  const [formCategory, setFormCategory] = useState("Inauguration");
+  const [formStatus, setFormStatus] = useState<MediaStatus>("Published");
+  const [formImageUrl, setFormImageUrl] = useState("");
+  const [formFileSize, setFormFileSize] = useState("250 KB");
+
+  // Load from localStorage and backend MongoDB on mount
+  useEffect(() => {
+    try {
+      const savedCats = localStorage.getItem("bharat_gallery_categories");
+      if (savedCats) {
+        const parsed = JSON.parse(savedCats);
+        if (Array.isArray(parsed) && parsed.length > 0) setCategories(parsed);
+      }
+      const savedYears = localStorage.getItem("bharat_gallery_years");
+      if (savedYears) {
+        const parsed = JSON.parse(savedYears);
+        if (Array.isArray(parsed) && parsed.length > 0) setYears(parsed);
+      }
+      const savedMedia = localStorage.getItem("bharat_media_library_items");
+      if (savedMedia) {
+        const parsed = JSON.parse(savedMedia);
+        const clean = Array.isArray(parsed)
+          ? parsed.filter((item: any) => !item.image?.includes("images.unsplash.com"))
+          : [];
+        setMediaItems(clean);
+        if (clean.length > 0) setSelectedId(clean[0].id);
+        else setSelectedId(null);
+      }
+    } catch {}
+
+    const fetchBackendData = async () => {
+      try {
+        const [metaRes, itemsRes] = await Promise.all([
+          fetch(`${BACKEND_URL}/api/website/gallery/meta`).catch(() => null),
+          fetch(`${BACKEND_URL}/api/website/gallery/items`).catch(() => null),
+        ]);
+
+        if (metaRes && metaRes.ok) {
+          const metaJson = await metaRes.json();
+          if (metaJson.data) {
+            if (Array.isArray(metaJson.data.categories) && metaJson.data.categories.length > 0) {
+              setCategories(metaJson.data.categories);
+              saveCatsToLocal(metaJson.data.categories);
+            }
+            if (Array.isArray(metaJson.data.years) && metaJson.data.years.length > 0) {
+              setYears(metaJson.data.years);
+              saveYearsToLocal(metaJson.data.years);
+            }
+          }
+        }
+
+        if (itemsRes && itemsRes.ok) {
+          const itemsJson = await itemsRes.json();
+          if (Array.isArray(itemsJson.data)) {
+            const clean = itemsJson.data.filter((item: any) => !item.image?.includes("images.unsplash.com"));
+            const mapped: MediaItem[] = clean.map((item: any, idx: number) => ({
+              id: item.order || idx + 1,
+              _id: item._id,
+              title: item.title,
+              year: item.year,
+              category: item.category,
+              size: item.size || "",
+              uploadedBy: item.uploadedBy || "Vansh Chaudhary",
+              date: item.date || "12 Sept 2026",
+              time: item.time || "10:30 AM",
+              status: item.status || "Published",
+              image: item.image,
+            }));
+            setMediaItems(mapped);
+            saveMediaToLocal(mapped);
+            if (mapped.length > 0) {
+              setSelectedId(mapped[0].id);
+            } else {
+              setSelectedId(null);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching gallery backend data:", err);
+      }
+    };
+
+    fetchBackendData();
+  }, []);
+
+  const saveMediaToLocal = (items: MediaItem[]) => {
+    try {
+      localStorage.setItem("bharat_media_library_items", JSON.stringify(items));
+    } catch {}
+  };
+
+  const saveCatsToLocal = (cats: string[]) => {
+    try {
+      localStorage.setItem("bharat_gallery_categories", JSON.stringify(cats));
+    } catch {}
+  };
+
+  const saveYearsToLocal = (yrs: string[]) => {
+    try {
+      localStorage.setItem("bharat_gallery_years", JSON.stringify(yrs));
+    } catch {}
+  };
+
+  // Add Category handler
+  const handleAddCategory = () => {
+    const val = newCategoryInput.trim();
+    if (!val) return;
+    if (categories.includes(val)) {
+      showInfo("This category already exists!");
+      return;
+    }
+    const updated = [...categories, val];
+    setCategories(updated);
+    saveCatsToLocal(updated);
+    fetch(`${BACKEND_URL}/api/website/gallery/meta`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ categories: updated }),
+    }).catch(() => null);
+    setNewCategoryInput("");
+    showSuccess(`Category "${val}" added!`);
+  };
+
+  // Remove Category handler
+  const handleRemoveCategory = (cat: string) => {
+    const updated = categories.filter((c) => c !== cat);
+    setCategories(updated);
+    saveCatsToLocal(updated);
+    fetch(`${BACKEND_URL}/api/website/gallery/meta`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ categories: updated }),
+    }).catch(() => null);
+    showSuccess(`Category "${cat}" removed.`);
+  };
+
+  // Add Year handler
+  const handleAddYear = () => {
+    const val = newYearInput.trim();
+    if (!val) return;
+    if (years.includes(val)) {
+      showInfo("This year already exists!");
+      return;
+    }
+    const updated = [val, ...years];
+    setYears(updated);
+    saveYearsToLocal(updated);
+    fetch(`${BACKEND_URL}/api/website/gallery/meta`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ years: updated }),
+    }).catch(() => null);
+    setNewYearInput("");
+    showSuccess(`Year "${val}" added!`);
+  };
+
+  // Remove Year handler
+  const handleRemoveYear = (yr: string) => {
+    const updated = years.filter((y) => y !== yr);
+    setYears(updated);
+    saveYearsToLocal(updated);
+    fetch(`${BACKEND_URL}/api/website/gallery/meta`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ years: updated }),
+    }).catch(() => null);
+    showSuccess(`Year "${yr}" removed.`);
+  };
+
+  // Upload helper directly to Cloudinary CDN
+  const uploadToCloudinary = async (file: File): Promise<string> => {
+    try {
+      setIsUploading(true);
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", `bharat-organic/gallery/${formYear}/${formCategory.toLowerCase().replace(/\s+/g, "-")}`);
+
+      let res = await fetch(`${BACKEND_URL}/api/uploads?folder=bharat-organic/gallery`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        res = await fetch(`/api/uploads?folder=bharat-organic/gallery`, {
+          method: "POST",
+          body: formData,
+        });
+      }
+
+      if (res.ok) {
+        const json = await res.json();
+        const finalUrl = json.data?.url || json.url || json.data?.secure_url || json.secure_url;
+        if (finalUrl) {
+          if (finalUrl.startsWith("http")) return finalUrl;
+          return `${BACKEND_URL.replace(/\/$/, "")}${finalUrl.startsWith("/") ? "" : "/"}${finalUrl}`;
+        }
+      }
+    } catch (err) {
+      console.error("Cloudinary upload error:", err);
+    } finally {
+      setIsUploading(false);
+    }
+    return URL.createObjectURL(file);
+  };
+
+  // Stat calculations
+  const totalFiles = mediaItems.length;
+  const publishedCount = useMemo(() => mediaItems.filter((x) => x.status === "Published").length, [mediaItems]);
+  const draftCount = useMemo(() => mediaItems.filter((x) => x.status === "Draft").length, [mediaItems]);
+  const currentYearCount = useMemo(() => mediaItems.filter((x) => x.year === "2025" || x.year === "2026").length, [mediaItems]);
+
+  const statCards = useMemo(
+    () => [
+      {
+        title: "TOTAL PHOTOS",
+        value: totalFiles,
+        suffix: "",
+        icon: ImageIcon,
+        tone: "emerald" as const,
+        gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #bbf7d0 100%)",
+        borderColor: "#bbf7d0",
+        numColor: "#15803d",
+        footer: "View all photos",
+        onClick: () => {
+          setSelectedCategory("All Activities");
+          setSelectedYear("All Years");
+        },
+      },
+      {
+        title: "PUBLISHED ASSETS",
+        value: publishedCount,
+        suffix: "",
+        icon: Check,
+        tone: "violet" as const,
+        gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #ddd6fe 100%)",
+        borderColor: "#ddd6fe",
+        numColor: "#6d28d9",
+        footer: "View published",
+        onClick: () => setStatusFilter("Published"),
+      },
+      {
+        title: "ACTIVE CATEGORIES",
+        value: categories.length,
+        suffix: "",
+        icon: Tag,
+        tone: "amber" as const,
+        gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #fed7aa 100%)",
+        borderColor: "#fed7aa",
+        numColor: "#c2410c",
+        footer: "Manage categories",
+        onClick: () => setIsCategoryYearModalOpen(true),
+      },
+      {
+        title: "EVENT YEARS",
+        value: years.length,
+        suffix: "",
+        icon: Calendar,
+        tone: "blue" as const,
+        gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #bae6fd 100%)",
+        borderColor: "#bae6fd",
+        numColor: "#0284c7",
+        footer: "Manage years",
+        onClick: () => setIsCategoryYearModalOpen(true),
+      },
+      {
+        title: "DRAFT ASSETS",
+        value: draftCount,
+        suffix: "",
+        icon: Sparkles,
+        tone: "rose" as const,
+        gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #fecdd3 100%)",
+        borderColor: "#fecdd3",
+        numColor: "#be123c",
+        footer: "Review drafts",
+        onClick: () => setStatusFilter("Draft"),
+      },
+      {
+        title: "WEBSITE STATUS",
+        value: "Active",
+        suffix: "",
+        icon: Globe,
+        tone: "teal" as const,
+        gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #99f6e4 100%)",
+        borderColor: "#99f6e4",
+        numColor: "#0f766e",
+        footer: "Live on website",
+        onClick: () => window.open("http://localhost:3002/gallery", "_blank"),
+      },
+    ],
+    [totalFiles, publishedCount, draftCount, categories.length, years.length]
+  );
+
+  // Filtered rows
+  const filteredRows = useMemo(() => {
+    return mediaItems.filter((item) => {
+      const matchesSearch =
+        searchQuery === "" ||
+        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.year.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesCat = selectedCategory === "All Activities" || item.category === selectedCategory;
+      const matchesYr = selectedYear === "All Years" || item.year === selectedYear;
+      const matchesStatus = statusFilter === "All Status" || item.status === statusFilter;
+
+      return matchesSearch && matchesCat && matchesYr && matchesStatus;
     });
-  }, [query, type, folder, status]);
+  }, [mediaItems, searchQuery, selectedCategory, selectedYear, statusFilter]);
 
-  const selected =
-    MEDIA_ITEMS.find((item) => item.id === selectedId) ?? MEDIA_ITEMS[0];
+  // Paginated rows
+  const totalPages = Math.ceil(filteredRows.length / pageSize) || 1;
+  const paginatedRows = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredRows.slice(start, start + pageSize);
+  }, [filteredRows, currentPage, pageSize]);
+
+  // Selected item for right details panel
+  const selected = useMemo(() => {
+    return mediaItems.find((item) => item.id === selectedId) || mediaItems[0] || null;
+  }, [mediaItems, selectedId]);
 
   const clearFilters = () => {
-    setQuery("");
-    setType("All Types");
-    setFolder("All Folders");
-    setStatus("All Status");
+    setSearchQuery("");
+    setSelectedCategory("All Activities");
+    setSelectedYear("All Years");
+    setStatusFilter("All Status");
+    setCurrentPage(1);
+  };
+
+  const handleToggleSelectAll = () => {
+    if (selectedIds.length === paginatedRows.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(paginatedRows.map((x) => x.id));
+    }
+  };
+
+  const handleToggleRowSelect = (id: number) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  // Status Change
+  const handleStatusChange = async (id: number, newStatus: MediaStatus) => {
+    const target = mediaItems.find((x) => x.id === id);
+    if (target?._id) {
+      await fetch(`${BACKEND_URL}/api/website/gallery/items/${target._id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      }).catch(() => null);
+    }
+
+    const updated = mediaItems.map((item) =>
+      item.id === id ? { ...item, status: newStatus } : item
+    );
+    setMediaItems(updated);
+    saveMediaToLocal(updated);
+    showSuccess(`Status updated to "${newStatus}" for ${target?.title || "Photo"}`);
+  };
+
+  // Delete media item
+  const handleDelete = async (item: MediaItem) => {
+    const confirm = await Swal.fire({
+      title: `Delete "${item.title}"?`,
+      text: "This photo asset will be removed from the Media Library.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, Delete",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#64748b",
+      background: "#1e2433",
+      color: "#f8fafc",
+      customClass: {
+        popup: "swal-toast-popup",
+      },
+    });
+
+    if (confirm.isConfirmed) {
+      if (item._id) {
+        await fetch(`${BACKEND_URL}/api/website/gallery/items/${item._id}`, {
+          method: "DELETE",
+        }).catch(() => null);
+      }
+      const updated = mediaItems.filter((x) => x.id !== item.id);
+      setMediaItems(updated);
+      saveMediaToLocal(updated);
+      if (selectedId === item.id && updated.length > 0) {
+        setSelectedId(updated[0].id);
+      }
+      showSuccess(`"${item.title}" removed from Media Library.`);
+    }
+  };
+
+  // Open Upload Modal
+  const handleOpenUploadModal = () => {
+    setFormTitle("");
+    setFormYear(years[0] || "2026");
+    setFormCategory(categories[0] || "Inauguration");
+    setFormStatus("Published");
+    setFormImageUrl("");
+    setFormFileSize("250 KB");
+    setIsUploadModalOpen(true);
+  };
+
+  // Open Edit Modal
+  const handleOpenEdit = (item: MediaItem) => {
+    setEditingItem(item);
+    setFormTitle(item.title);
+    setFormYear(item.year);
+    setFormCategory(item.category);
+    setFormStatus(item.status);
+    setFormImageUrl(item.image);
+    setFormFileSize(item.size || "250 KB");
+    setIsEditModalOpen(true);
+  };
+
+  // Handle Create Media Submission (Synced with MongoDB Backend)
+  const handleCreateMedia = async () => {
+    if (!formImageUrl) {
+      showError("Please choose an image to upload first!");
+      return;
+    }
+
+    const finalTitle = formTitle.trim() || formCategory || "Photo Asset";
+    const ts = formatTimestamp();
+
+    try {
+      const payload = {
+        title: finalTitle,
+        year: formYear,
+        category: formCategory,
+        image: formImageUrl,
+        uploadedBy: loggedInAdminName,
+        status: formStatus,
+        order: mediaItems.length + 1,
+        date: ts.date,
+        time: ts.time,
+      };
+
+      const res = await fetch(`${BACKEND_URL}/api/website/gallery/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      let newItem: MediaItem;
+      if (res.ok) {
+        const json = await res.json();
+        const serverItem = json.data;
+        newItem = {
+          id: serverItem.order || mediaItems.length + 1,
+          _id: serverItem._id,
+          title: serverItem.title || finalTitle,
+          year: serverItem.year || formYear,
+          category: serverItem.category || formCategory,
+          size: formFileSize || "250 KB",
+          uploadedBy: serverItem.uploadedBy || loggedInAdminName,
+          date: serverItem.date || ts.date,
+          time: serverItem.time || ts.time,
+          status: serverItem.status || formStatus,
+          image: serverItem.image || formImageUrl,
+        };
+      } else {
+        newItem = {
+          id: mediaItems.length > 0 ? Math.max(...mediaItems.map((x) => x.id)) + 1 : 1,
+          title: finalTitle,
+          year: formYear,
+          category: formCategory,
+          size: formFileSize || "250 KB",
+          uploadedBy: loggedInAdminName,
+          date: ts.date,
+          time: ts.time,
+          status: formStatus,
+          image: formImageUrl,
+        };
+      }
+
+      const updated = [newItem, ...mediaItems];
+      setMediaItems(updated);
+      saveMediaToLocal(updated);
+      setSelectedId(newItem.id);
+      setIsUploadModalOpen(false);
+      showSuccess(`"${finalTitle}" uploaded successfully!`);
+    } catch (err) {
+      console.error("Failed to save media item:", err);
+      const newItem: MediaItem = {
+        id: mediaItems.length > 0 ? Math.max(...mediaItems.map((x) => x.id)) + 1 : 1,
+        title: finalTitle,
+        year: formYear,
+        category: formCategory,
+        size: formFileSize || "250 KB",
+        uploadedBy: loggedInAdminName,
+        date: ts.date,
+        time: ts.time,
+        status: formStatus,
+        image: formImageUrl,
+      };
+      const updated = [newItem, ...mediaItems];
+      setMediaItems(updated);
+      saveMediaToLocal(updated);
+      setSelectedId(newItem.id);
+      setIsUploadModalOpen(false);
+      showSuccess(`"${finalTitle}" uploaded successfully!`);
+    }
+  };
+
+  // Handle Edit Media Submission
+  const handleSaveEdit = async () => {
+    if (!editingItem) return;
+
+    const ts = formatTimestamp();
+    const finalTitle = formTitle.trim() || formCategory || editingItem.title;
+
+    if (editingItem._id) {
+      await fetch(`${BACKEND_URL}/api/website/gallery/items/${editingItem._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: finalTitle,
+          year: formYear,
+          category: formCategory,
+          status: formStatus,
+          image: formImageUrl || editingItem.image,
+          uploadedBy: loggedInAdminName,
+          date: ts.date,
+          time: ts.time,
+        }),
+      }).catch(() => null);
+    }
+
+    const updated = mediaItems.map((item) =>
+      item.id === editingItem.id
+        ? {
+            ...item,
+            title: finalTitle,
+            year: formYear,
+            category: formCategory,
+            status: formStatus,
+            image: formImageUrl || item.image,
+            size: formFileSize || item.size,
+            uploadedBy: loggedInAdminName,
+            date: ts.date,
+            time: ts.time,
+          }
+        : item
+    );
+
+    setMediaItems(updated);
+    saveMediaToLocal(updated);
+    setIsEditModalOpen(false);
+    showSuccess(`"${finalTitle}" updated successfully!`);
+  };
+
+  // Quick Replace Image File
+  const handleQuickReplace = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && selected) {
+      const sizeStr = `${(file.size / 1024).toFixed(1)} KB`;
+      const ts = formatTimestamp();
+      const newUrl = await uploadToCloudinary(file);
+      if (selected._id) {
+        await fetch(`${BACKEND_URL}/api/website/gallery/items/${selected._id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            image: newUrl,
+            uploadedBy: loggedInAdminName,
+            date: ts.date,
+            time: ts.time,
+          }),
+        }).catch(() => null);
+      }
+      const updated = mediaItems.map((item) =>
+        item.id === selected.id
+          ? {
+              ...item,
+              image: newUrl,
+              size: sizeStr,
+              uploadedBy: loggedInAdminName,
+              date: ts.date,
+              time: ts.time,
+            }
+          : item
+      );
+      setMediaItems(updated);
+      saveMediaToLocal(updated);
+      showSuccess("Photo asset replaced on Cloudinary CDN!");
+    }
   };
 
   return (
     <main
-      style={{
-        fontFamily:
-          'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-      }}
-      className="h-full min-h-0 w-full overflow-y-auto overflow-x-hidden bg-[#fffefb] px-[18px] py-[14px] text-[#142347] [&::-webkit-scrollbar]:w-[6px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300"
+      className={`${typography.pages} h-full min-h-0 w-full overflow-y-auto overflow-x-hidden bg-[#fffefb] px-[18px] py-[14px] text-[#142347] [&::-webkit-scrollbar]:w-[6px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300`}
     >
       <div className="min-h-full w-full">
-        {/* HEADER */}
-        <header className="flex items-start justify-between gap-[16px]">
+        {/* TOP HEADING — Matching Staff & Exhibitor List Style */}
+        <div className="mb-[18px] flex shrink-0 items-center justify-between border-b-[2px] border-[#293681] pb-[8px]">
           <div>
-            <h1 className="text-[24px] font-semibold leading-none tracking-[-0.02em] text-[#075b33]">
+            <h1
+              className="text-[19px] font-bold leading-[1.15] tracking-[-0.018em] text-[#23471d]"
+              style={{ color: "#23471d" }}
+            >
               Media Library
             </h1>
-
-            <nav className="mt-[9px] flex items-center gap-[8px] text-[10.5px] font-semibold text-[#1d2b58]">
-              <span>Dashboard</span>
-              <span className="text-[#7b8597]">›</span>
-              <span>Media Library</span>
-            </nav>
+            <p className="mt-0.5 text-[9px] font-medium text-[#6c7587]">
+              Upload, organize, and manage photo assets, gallery categories, and past expo event media.
+            </p>
           </div>
 
           <div className="flex items-center gap-[10px]">
-            <input
-              type="file"
-              ref={quickUploadRef}
-              className="hidden"
-              multiple
-              accept="image/*,video/*,application/pdf,audio/*"
-              onChange={(e) => {
-                if (e.target.files && e.target.files.length > 0) {
-                  router.push("/gallery/created");
-                }
-              }}
-            />
+            {/* 1. LIVE WEBSITE PREVIEW BUTTON (Aage/First) */}
+            <a
+              href="http://localhost:3002/gallery"
+              target="_blank"
+              rel="noreferrer"
+              className="flex h-[30px] items-center justify-center gap-[5px] rounded-[6px] border border-[#fed7aa] bg-[#fff7ed] px-[14px] text-[8.5px] font-semibold text-[#ea580c] transition hover:bg-[#ffedd5] shadow-sm active:scale-95"
+            >
+              <ExternalLink className="h-[12px] w-[12px] text-[#ea580c]" strokeWidth={1.7} />
+              View on Website
+            </a>
 
+            {/* 2. ADD CATEGORY & YEAR BUTTON (Second, Blue #006199 bg, White text) */}
             <button
               type="button"
-              onClick={() => router.push("/gallery/1")}
-              className="inline-flex h-[40px] items-center gap-[8px] rounded-[6px] border border-[#dfe3e7] bg-white px-[18px] text-[10.5px] font-semibold text-[#273655] transition hover:bg-slate-50"
+              onClick={() => setIsCategoryYearModalOpen(true)}
+              className="flex h-[30px] items-center justify-center gap-[5px] rounded-[6px] bg-[#006199] px-[14px] text-[8.5px] font-semibold text-white shadow-sm transition hover:bg-[#005180] active:scale-95"
+              style={{ backgroundColor: "#006199", color: "#ffffff" }}
             >
-              <FolderClosed className="h-[15px] w-[15px]" />
-              Add New Folder
+              <Tag className="h-[12px] w-[12px] text-white" strokeWidth={1.7} />
+              Add Category & Year
             </button>
 
+            {/* 3. UPLOAD NEW MEDIA BUTTON */}
             <button
               type="button"
-              onClick={() => quickUploadRef.current?.click()}
-              className="inline-flex h-[40px] items-center gap-[8px] rounded-[6px] border border-[#b9d7c4] bg-white px-[18px] text-[10.5px] font-semibold text-[#14683d] transition hover:bg-emerald-50"
+              onClick={handleOpenUploadModal}
+              className="flex h-[30px] items-center justify-center gap-[5px] rounded-[6px] bg-[#4B1426] px-[14px] text-[8.5px] font-semibold text-white shadow-[0_5px_12px_rgba(75,20,38,0.25)] transition hover:bg-[#3a0f1d] active:scale-95"
             >
-              <Upload className="h-[15px] w-[15px]" />
-              Upload Files
-            </button>
-
-            <button
-              type="button"
-              onClick={() => router.push("/gallery/created")}
-              className="inline-flex h-[40px] items-center gap-[8px] rounded-[6px] bg-[linear-gradient(180deg,#076636_0%,#03542c_100%)] px-[20px] text-[10.5px] font-semibold text-white shadow-[0_7px_16px_rgba(5,94,49,.12)] transition hover:opacity-95"
-            >
-              <Plus className="h-[15px] w-[15px]" />
+              <Plus className="h-[12px] w-[12px]" strokeWidth={1.7} />
               Upload New Media
             </button>
-
-            <button
-              type="button"
-              onClick={() => router.push("/gallery/uploaded")}
-              className="grid h-[40px] w-[40px] place-items-center rounded-[6px] border border-[#dfe3e7] bg-white text-[#43516a] transition hover:bg-slate-50"
-            >
-              <MoreVertical className="h-[15px] w-[15px]" />
-            </button>
           </div>
-        </header>
+        </div>
 
-        {/* STATS */}
-        <section className="mt-[10px] grid grid-cols-6 gap-[10px]">
-          <MetricCard
-            icon={<FolderClosed className="h-[16px] w-[16px]" />}
-            iconClass="bg-emerald-50 text-emerald-700"
-            label="Total Files"
-            value="1,248"
-            note="+ 23 this month"
-          />
+        {/* METRIC STATS CARDS (Exact Match to Exhibitor List KPI Cards) */}
+        <div className="mt-[12px] grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
+          {statCards.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div
+                key={item.title}
+                className="relative flex h-[98px] flex-col overflow-hidden rounded-[11px] border border-[#e5e7e6] bg-white p-2 !pb-5.5 transition-all hover:translate-y-[-1px]"
+                style={{
+                  background: item.gradient,
+                  borderColor: item.borderColor || undefined,
+                  boxShadow:
+                    "rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px",
+                }}
+              >
+                <div className="flex items-start gap-1.5">
+                  <div
+                    className={`grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full ring-1 bg-white/80 shadow-xs ${
+                      toneClass[item.tone as keyof typeof toneClass]
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </div>
 
-          <MetricCard
-            icon={<ImageIcon className="h-[16px] w-[16px]" />}
-            iconClass="bg-emerald-50 text-emerald-700"
-            label="Images"
-            value="832"
-            note="66.7% of total"
-          />
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className="truncate text-[8.5px] !font-semibold tracking-[0.01em] text-slate-900"
+                      style={{
+                        fontWeight: 600,
+                        color: "#0f172a",
+                      }}
+                    >
+                      {item.title}
+                    </p>
 
-          <MetricCard
-            icon={<Video className="h-[16px] w-[16px]" />}
-            iconClass="bg-blue-50 text-blue-700"
-            label="Videos"
-            value="148"
-            note="11.9% of total"
-          />
+                    <div className="mt-1.5 flex items-end gap-1">
+                      <span
+                        className="text-[21px] !font-semibold leading-none tracking-[-0.04em]"
+                        style={{
+                          color: item.numColor,
+                          fontWeight: 600,
+                        }}
+                      >
+                        <AnimatedCounter value={item.value} />
+                      </span>
 
-          <MetricCard
-            icon={<FileText className="h-[16px] w-[16px]" />}
-            iconClass="bg-emerald-50 text-emerald-700"
-            label="Documents"
-            value="196"
-            note="15.7% of total"
-          />
+                      {item.suffix && (
+                        <span className="mb-0.5 text-[9.5px] font-bold">
+                          {item.suffix}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
-          <MetricCard
-            icon={<Music2 className="h-[16px] w-[16px]" />}
-            iconClass="bg-violet-50 text-violet-700"
-            label="Audio"
-            value="72"
-            note="5.8% of total"
-          />
+                <div
+                  onClick={item.onClick}
+                  className="absolute bottom-1 left-2 right-2 flex cursor-pointer items-center justify-center gap-1 text-[8px] font-semibold text-[#293957] transition hover:text-blue-600"
+                >
+                  {item.footer}
+                  <ArrowRight className="h-3 w-3" />
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
-          <MetricCard
-            icon={<HardDrive className="h-[16px] w-[16px]" />}
-            iconClass="bg-stone-100 text-stone-700"
-            label="Storage Used"
-            value="2.48 GB"
-            note="24.8% of 10GB"
-            progress={24.8}
-          />
-        </section>
-
-        {/* CONTENT */}
-        <section className="mt-[16px] grid items-start gap-[14px] xl:grid-cols-[minmax(0,1fr)_285px]">
-          {/* LEFT */}
+        {/* MAIN SPLIT CONTENT */}
+        <section className="mt-[14px] grid items-start gap-[14px] xl:grid-cols-[minmax(0,1fr)_310px]">
+          {/* LEFT COLUMN: FILTERS + TABLE / GRID */}
           <div className="min-w-0 overflow-hidden">
-            {/* FILTERS */}
+            {/* SEARCH & SECONDARY CONTROLS */}
             <div className="flex flex-wrap items-center gap-[10px]">
-              <label className="relative min-w-[180px] flex-1">
+              <label className="relative min-w-[200px] flex-1">
                 <Search className="absolute right-[13px] top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-[#5d6b84]" />
                 <input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search media by name, type or tag..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  placeholder="Search photos by title, category, year..."
                   className="h-[40px] w-full rounded-[6px] border border-[#dfe4e8] bg-white px-[14px] pr-[40px] text-[10.5px] font-semibold text-[#273655] outline-none placeholder:text-[#8b95a7]"
                 />
               </label>
 
+              {/* YEAR SELECT FILTER */}
               <select
-                value={type}
-                onChange={(event) => setType(event.target.value)}
-                className="h-[40px] min-w-[120px] rounded-[6px] border border-[#dfe4e8] bg-white px-[10px] text-[10px] font-semibold text-[#2a3855] outline-none"
-              >
-                <option>All Types</option>
-                <option>Image</option>
-                <option>Video</option>
-                <option>Document</option>
-                <option>Audio</option>
-              </select>
-
-              <select
-                value={folder}
-                onChange={(event) => setFolder(event.target.value)}
-                className="h-[40px] min-w-[125px] rounded-[6px] border border-[#dfe4e8] bg-white px-[10px] text-[10px] font-semibold text-[#2a3855] outline-none"
-              >
-                <option>All Folders</option>
-                <option>Banners</option>
-                <option>Our Mission</option>
-                <option>About Us</option>
-                <option>How It Works</option>
-                <option>Documents</option>
-                <option>Videos</option>
-                <option>Audio</option>
-              </select>
-
-              <select
-                value={status}
-                onChange={(event) => setStatus(event.target.value)}
+                value={selectedYear}
+                onChange={(e) => {
+                  setSelectedYear(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="h-[40px] min-w-[110px] rounded-[6px] border border-[#dfe4e8] bg-white px-[10px] text-[10px] font-semibold text-[#2a3855] outline-none"
               >
-                <option>All Status</option>
-                <option>Published</option>
-                <option>Draft</option>
+                <option value="All Years">All Years</option>
+                {years.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
               </select>
 
-              <button
-                type="button"
-                className="inline-flex h-[40px] items-center justify-center gap-[6px] rounded-[6px] border border-[#cfe4d7] bg-white px-[12px] text-[10px] font-semibold text-[#146a3f] shrink-0"
+              {/* CATEGORY SELECT FILTER */}
+              <select
+                value={selectedCategory}
+                onChange={(e) => {
+                  setSelectedCategory(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="h-[40px] min-w-[140px] rounded-[6px] border border-[#dfe4e8] bg-white px-[10px] text-[10px] font-semibold text-[#2a3855] outline-none"
               >
-                <Filter className="h-[14px] w-[14px]" />
-                More Filters
-              </button>
+                <option value="All Activities">All Activities</option>
+                {categories.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+
+              {/* STATUS FILTER */}
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="h-[40px] min-w-[110px] rounded-[6px] border border-[#dfe4e8] bg-white px-[10px] text-[10px] font-semibold text-[#2a3855] outline-none"
+              >
+                <option value="All Status">All Status</option>
+                <option value="Published">Published</option>
+                <option value="Draft">Draft</option>
+              </select>
+
+              {/* VIEW SWITCHER: TABLE / GRID */}
+              <div className="flex items-center gap-[4px] rounded-[6px] border border-[#dfe4e8] bg-white p-[3px]">
+                <button
+                  type="button"
+                  onClick={() => setViewMode("table")}
+                  className={`flex h-[32px] w-[32px] items-center justify-center rounded-[4px] transition ${
+                    viewMode === "table"
+                      ? "bg-[#233D4D] text-white shadow-xs"
+                      : "text-[#59657a] hover:bg-slate-100"
+                  }`}
+                  title="Table View"
+                >
+                  <List className="h-[15px] w-[15px]" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("grid")}
+                  className={`flex h-[32px] w-[32px] items-center justify-center rounded-[4px] transition ${
+                    viewMode === "grid"
+                      ? "bg-[#233D4D] text-white shadow-xs"
+                      : "text-[#59657a] hover:bg-slate-100"
+                  }`}
+                  title="Grid View"
+                >
+                  <Grid className="h-[15px] w-[15px]" />
+                </button>
+              </div>
 
               <button
                 type="button"
                 onClick={clearFilters}
-                className="inline-flex h-[40px] items-center justify-center gap-[6px] rounded-[6px] border border-[#dfe4e8] bg-white px-[12px] text-[10px] font-semibold text-[#35445f] shrink-0"
+                className="inline-flex h-[40px] items-center justify-center gap-[6px] rounded-[6px] border border-[#dfe4e8] bg-white px-[12px] text-[10px] font-semibold text-[#35445f] shrink-0 hover:bg-slate-50"
               >
-                <RefreshCw className="h-[14px] w-[14px]" />
+                <RefreshCw className="h-[13px] w-[13px]" />
                 Clear
               </button>
             </div>
 
-            {/* TABLE */}
-            <div className="mt-[12px] overflow-hidden rounded-[8px] border border-[#e7e9ec] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.025)]">
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[930px] border-collapse text-left">
-                  <thead>
-                    <tr className="h-[42px] border-b border-[#e7e9ec] bg-[#fafbfc] text-[8.5px] font-semibold uppercase tracking-[0.04em] text-[#44516a]">
-                      <th className="w-[42px] px-[12px] text-center">
-                        <input type="checkbox" />
-                      </th>
-                      <th className="px-[8px]">File</th>
-                      <th className="px-[8px] whitespace-nowrap">Type</th>
-                      <th className="px-[8px] whitespace-nowrap">Size</th>
-                      <th className="px-[8px] whitespace-nowrap">Folder</th>
-                      <th className="px-[8px] whitespace-nowrap">Uploaded</th>
-                      <th className="px-[8px] whitespace-nowrap">Date</th>
-                      <th className="px-[8px]">Status</th>
-                      <th className="px-[8px] text-center">Actions</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {rows.map((item) => (
-                      <tr
-                        key={item.id}
-                        onClick={() => setSelectedId(item.id)}
-                        className={`h-[66px] cursor-pointer border-b border-[#eef0f2] align-middle last:border-b-0 hover:bg-slate-50/60 ${selectedId === item.id ? "bg-[#fbfefc]" : ""
-                          }`}
-                      >
-                        <td className="px-[12px] text-center">
+            {/* MEDIA DATA: TABLE VIEW */}
+            {viewMode === "table" ? (
+              <div className="mt-[12px] flex min-h-0 flex-1 flex-col overflow-hidden rounded-[7px] bg-white border border-[#e8e5df]">
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[920px] border-collapse text-left">
+                    <thead>
+                      <tr className="h-[32px] border-b border-[#e8e5df] bg-[#233D4D]">
+                        <th className="w-[42px] rounded-tl-[6px] px-[12px] py-[6px] text-center">
                           <input
                             type="checkbox"
-                            onClick={(event) => event.stopPropagation()}
+                            className="accent-[#233D4D]"
+                            checked={paginatedRows.length > 0 && selectedIds.length === paginatedRows.length}
+                            onChange={handleToggleSelectAll}
                           />
-                        </td>
-
-                        <td className="px-[8px]">
-                          <div className="flex min-w-[220px] items-center gap-[12px]">
-                            <FilePreview item={item} />
-                            <div className="min-w-0 overflow-hidden">
-                              <p className="truncate text-[10px] font-semibold text-[#19274a]">
-                                {item.name}
-                              </p>
-                              {item.meta ? (
-                                <p className="mt-[4px] text-[8.5px] font-semibold text-[#68758d]">
-                                  {item.meta}
-                                </p>
-                              ) : null}
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="px-[8px]">
-                          <span
-                            className={`inline-flex rounded-[5px] px-[8px] py-[4px] text-[8px] font-semibold ${typeTone[item.type]}`}
-                          >
-                            {item.type}
-                          </span>
-                        </td>
-
-                        <td className="px-[8px] whitespace-nowrap text-[9px] font-semibold text-[#35445f]">
-                          {item.size}
-                        </td>
-
-                        <td className="px-[8px] whitespace-nowrap text-[9px] font-semibold text-[#35445f]">
-                          {item.folder}
-                        </td>
-
-                        <td className="px-[8px] whitespace-nowrap text-[9px] font-semibold text-[#35445f]">
-                          {item.uploadedBy}
-                        </td>
-
-                        <td className="px-[8px] whitespace-nowrap">
-                          <span className="text-[9px] font-semibold text-[#35445f]">
-                            {item.date}
-                          </span>
-                          <span className="ml-[4px] text-[8px] font-semibold text-[#68758d]">
-                            {item.time}
-                          </span>
-                        </td>
-
-                        <td className="px-[8px]">
-                          <span
-                            className={`inline-flex items-center gap-[5px] rounded-[5px] px-[8px] py-[4px] text-[8px] font-semibold ${item.status === "Published"
-                              ? "bg-emerald-50 text-emerald-700"
-                              : "bg-amber-50 text-amber-700"
-                              }`}
-                          >
-                            <span
-                              className={`h-[5px] w-[5px] rounded-full ${item.status === "Published"
-                                ? "bg-emerald-500"
-                                : "bg-amber-500"
-                                }`}
-                            />
-                            {item.status}
-                          </span>
-                        </td>
-
-                        <td className="px-[8px]">
-                          <div className="flex items-center justify-center gap-[8px]">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                router.push("/gallery/created");
-                              }}
-                              className="grid h-[30px] w-[30px] place-items-center rounded-[5px] border border-[#e1e5e9] bg-white text-[#4b5871] hover:bg-slate-50"
-                            >
-                              <Eye className="h-[12px] w-[12px]" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                alert(`Downloading ${item.name}`);
-                              }}
-                              className="grid h-[30px] w-[30px] place-items-center rounded-[5px] border border-[#e1e5e9] bg-white text-[#4b5871] hover:bg-slate-50"
-                            >
-                              <Download className="h-[12px] w-[12px]" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                router.push("/gallery/uploaded");
-                              }}
-                              className="grid h-[30px] w-[30px] place-items-center rounded-[5px] border border-[#e1e5e9] bg-white text-[#4b5871] hover:bg-slate-50"
-                            >
-                              <MoreVertical className="h-[12px] w-[12px]" />
-                            </button>
-                          </div>
-                        </td>
+                        </th>
+                        <th className="px-[12px] py-[6px] whitespace-nowrap text-[8.5px] font-bold text-white uppercase tracking-wider">
+                          Order
+                        </th>
+                        <th className="px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">
+                          Photo Asset
+                        </th>
+                        <th className="px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">
+                          Category
+                        </th>
+                        <th className="px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">
+                          Updated By
+                        </th>
+                        <th className="px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="rounded-tr-[6px] px-[12px] py-[6px] text-right text-[8.5px] font-bold text-white uppercase tracking-wider">
+                          Actions
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
 
-              {/* PAGINATION */}
-              <div className="flex min-h-[58px] items-center justify-between gap-[12px] border-t border-[#e7e9ec] px-[12px]">
-                <p className="text-[9px] font-semibold text-[#47546c]">
-                  Showing 1 to {rows.length} of 1,248 files
-                </p>
+                    <tbody className="divide-y divide-[#f0f0ec]">
+                      {paginatedRows.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="py-12 text-center text-xs font-medium text-slate-500">
+                            No photos match your filter criteria.
+                          </td>
+                        </tr>
+                      ) : (
+                        paginatedRows.map((item) => {
+                          const isCurrent = selectedId === item.id;
+                          const adminName = item.uploadedBy || loggedInAdminName || "Super Admin";
+                          const formattedDate = `${item.date || "12 Sept 2026"}, ${item.time || "04:30 PM"}`;
 
-                <div className="flex items-center gap-[6px]">
-                  <button type="button" className="grid h-[32px] w-[32px] place-items-center rounded-[5px] border border-[#dfe3e7] bg-white">
-                    <ChevronLeft className="h-[13px] w-[13px]" />
-                  </button>
+                          return (
+                            <tr
+                              key={item.id}
+                              onClick={() => setSelectedId(item.id)}
+                              className={`transition hover:bg-slate-50/80 cursor-pointer ${
+                                isCurrent ? "bg-[#f4faf6]" : ""
+                              }`}
+                            >
+                              <td className="px-[12px] py-[8px] text-center">
+                                <input
+                                  type="checkbox"
+                                  className="accent-[#233D4D]"
+                                  checked={selectedIds.includes(item.id)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onChange={() => handleToggleRowSelect(item.id)}
+                                />
+                              </td>
 
-                  {[1, 2, 3, 4, 5].map((page) => (
+                              <td className="px-[12px] py-[8px] whitespace-nowrap">
+                                <span className="text-[8px] font-semibold text-[#293681]">
+                                  #{item.id}
+                                </span>
+                              </td>
+
+                              <td className="px-[12px] py-[8px]">
+                                <div className="relative flex h-[36px] w-[54px] shrink-0 items-center justify-center rounded-[4px] border border-[#e4e7eb] bg-[#f8fafc] p-0.5 shadow-xs overflow-hidden">
+                                  <img
+                                    src={item.image}
+                                    alt={item.title || "Photo Asset"}
+                                    className="h-full w-full object-cover rounded-[2px]"
+                                  />
+                                </div>
+                              </td>
+
+                              <td className="px-[12px] py-[8px]">
+                                <div className="flex flex-col items-start gap-[2px]">
+                                  <span className="text-[8.5px] font-semibold text-[#006199]">
+                                    {item.category}
+                                  </span>
+                                  <span className="inline-flex items-center rounded-[3px] bg-[#fff7ed] border border-[#fed7aa] px-[5px] py-[0.5px] text-[7.5px] font-bold text-[#c2410c]">
+                                    {item.year}
+                                  </span>
+                                </div>
+                              </td>
+
+                              {/* UPDATED BY COLUMN WITH ADMIN NAME & DATE */}
+                              <td className="px-[12px] py-[8px] max-w-[280px]">
+                                <div className="flex flex-col">
+                                  <span className="text-[8.5px] font-semibold text-[#dc2626]">
+                                    {adminName}
+                                  </span>
+                                  <span className="text-[7.5px] font-medium text-[#64748b]">
+                                    {formattedDate}
+                                  </span>
+                                </div>
+                              </td>
+
+                              {/* STATUS DROPDOWN — Styled Native Select identical to Exhibitor list */}
+                              <td className="px-[12px] py-[8px]">
+                                <select
+                                  key={`${item.id}-${item.status}`}
+                                  value={item.status}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onChange={(e) => {
+                                    handleStatusChange(item.id, e.target.value as MediaStatus);
+                                  }}
+                                  className={`h-[24px] cursor-pointer appearance-none rounded-[4px] px-[8px] pr-[22px] text-[8px] font-bold outline-none bg-no-repeat bg-[right_6px_center] shadow-xs transition ${
+                                    item.status === "Published"
+                                      ? "bg-[#e8f5e9] text-[#23714a] border border-[#a5d6a7]"
+                                      : "bg-[#ffebee] text-[#c62828] border border-[#ef9a9a]"
+                                  }`}
+                                  style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                                  }}
+                                >
+                                  <option value="Published" className="bg-white text-[#23714a] font-bold">
+                                    Published
+                                  </option>
+                                  <option value="Draft" className="bg-white text-[#c62828] font-bold">
+                                    Draft
+                                  </option>
+                                </select>
+                              </td>
+
+                              {/* ACTIONS — Glassmorphism Effect matching Exhibitor List */}
+                              <td className="px-[12px] py-[8px] text-right">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  {/* View (Orange Glassmorphism) */}
+                                  <button
+                                    type="button"
+                                    title="View Details"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedId(item.id);
+                                    }}
+                                    className="flex h-[25px] w-[25px] items-center justify-center rounded-[6px] bg-orange-500/10 text-orange-600 backdrop-blur-md border border-orange-400/30 shadow-[0_2px_6px_rgba(249,115,22,0.12)] transition-all hover:bg-orange-500/20 hover:border-orange-400/50 hover:shadow-[0_3px_10px_rgba(249,115,22,0.25)] hover:scale-105 active:scale-95"
+                                  >
+                                    <Eye className="h-[12px] w-[12px] text-orange-600" />
+                                  </button>
+
+                                  {/* Edit (Blue Glassmorphism) */}
+                                  <button
+                                    type="button"
+                                    title="Edit Photo"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleOpenEdit(item);
+                                    }}
+                                    className="flex h-[25px] w-[25px] items-center justify-center rounded-[6px] bg-blue-500/10 text-blue-600 backdrop-blur-md border border-blue-400/30 shadow-[0_2px_6px_rgba(37,99,235,0.12)] transition-all hover:bg-blue-500/20 hover:border-blue-400/50 hover:shadow-[0_3px_10px_rgba(37,99,235,0.25)] hover:scale-105 active:scale-95"
+                                  >
+                                    <Pencil className="h-[12px] w-[12px] text-blue-600" />
+                                  </button>
+
+                                  {/* Delete (Red Glassmorphism) */}
+                                  <button
+                                    type="button"
+                                    title="Delete Photo"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDelete(item);
+                                    }}
+                                    className="flex h-[25px] w-[25px] items-center justify-center rounded-[6px] bg-red-500/10 text-red-600 backdrop-blur-md border border-red-400/30 shadow-[0_2px_6px_rgba(220,38,38,0.12)] transition-all hover:bg-red-500/20 hover:border-red-400/50 hover:shadow-[0_3px_10px_rgba(220,38,38,0.25)] hover:scale-105 active:scale-95"
+                                  >
+                                    <Trash2 className="h-[12px] w-[12px] text-red-600" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Table Footer Stats & Pagination (Staff & Exhibitor List style) */}
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#e8e5df] bg-[#fafafa] px-[12px] py-[6px] text-[8px]">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-[#2563eb]">
+                      Total Photos: <strong className="font-bold text-[#1d4ed8]">{filteredRows.length}</strong>
+                    </span>
+                    <span className="text-[7.5px] text-[#8a92a0]">
+                      (Showing {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filteredRows.length)} of {filteredRows.length})
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-[4px]">
                     <button
                       type="button"
-                      key={page}
-                      className={`grid h-[32px] min-w-[32px] place-items-center rounded-[5px] px-[6px] text-[9px] font-semibold ${page === 1
-                        ? "bg-[#075b33] text-white"
-                        : "border border-[#dfe3e7] bg-white text-[#35445f]"
-                        }`}
+                      disabled={currentPage <= 1}
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      className="flex h-[22px] w-[22px] items-center justify-center rounded-[4px] border border-[#d8dce2] bg-white text-[#334155] transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-30"
+                      title="Previous Page"
                     >
-                      {page}
+                      <ChevronLeft className="h-3 w-3" />
                     </button>
-                  ))}
 
-                  <span className="px-[2px] text-[10px] font-semibold text-[#64748b]">…</span>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                      <button
+                        key={pageNum}
+                        type="button"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`flex h-[22px] min-w-[22px] px-1.5 items-center justify-center rounded-[4px] border text-[8px] font-bold transition ${
+                          currentPage === pageNum
+                            ? "border-[#233D4D] bg-[#233D4D] text-white shadow-xs"
+                            : "border-[#d8dce2] bg-white text-[#334155] hover:bg-slate-50"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    ))}
 
-                  <button type="button" className="grid h-[32px] min-w-[38px] place-items-center rounded-[5px] border border-[#dfe3e7] bg-white px-[6px] text-[9px] font-semibold text-[#35445f]">
-                    125
-                  </button>
+                    <button
+                      type="button"
+                      disabled={currentPage >= totalPages}
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      className="flex h-[22px] w-[22px] items-center justify-center rounded-[4px] border border-[#d8dce2] bg-white text-[#334155] transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-30"
+                      title="Next Page"
+                    >
+                      <ChevronRight className="h-3 w-3" />
+                    </button>
 
-                  <button type="button" className="grid h-[32px] w-[32px] place-items-center rounded-[5px] border border-[#dfe3e7] bg-white">
-                    <ChevronRight className="h-[13px] w-[13px]" />
-                  </button>
-                </div>
-
-                <select className="h-[32px] rounded-[5px] border border-[#dfe3e7] bg-white px-[10px] text-[9px] font-semibold text-[#35445f]">
-                  <option>10 / page</option>
-                </select>
-              </div>
-            </div>
-
-            {/* BOTTOM MESSAGE (Inside Left Column directly below table) */}
-            <div className="mt-[12px] flex min-h-[60px] items-center justify-between gap-[16px] rounded-[8px] border border-[#dce8df] bg-[linear-gradient(90deg,#eef7f1,#f7fbf8)] px-[16px] py-[12px]">
-              <div className="flex min-w-0 items-center gap-[12px]">
-                <ShieldCheck className="h-[24px] w-[24px] shrink-0 text-[#14683d]" />
-                <div className="min-w-0 overflow-hidden">
-                  <p className="text-[10.5px] font-semibold text-[#274735]">
-                    Keep your media library organized!
-                  </p>
-                  <p className="mt-[2px] truncate text-[9px] font-semibold text-[#64748b]">
-                    Use folders, meaningful names and alt text for better performance and accessibility.
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => router.push("/gallery/uploaded")}
-                className="inline-flex h-[36px] shrink-0 items-center gap-[8px] rounded-[6px] border border-[#d8e4dc] bg-white px-[14px] text-[9px] font-semibold text-[#14683d] transition hover:bg-emerald-50"
-              >
-                Media Library Best Practices
-                <ChevronRight className="h-[13px] w-[13px]" />
-              </button>
-            </div>
-          </div>
-
-          {/* RIGHT SIDEBAR */}
-          <aside className="space-y-[12px]">
-            {/* MEDIA DETAILS */}
-            <section className="rounded-[8px] border border-[#e7e9ec] bg-white px-[14px] py-[13px] shadow-[0_1px_3px_rgba(15,23,42,0.025)]">
-              <div className="flex items-center justify-between">
-                <h2 className="text-[12px] font-semibold text-[#19274a]">
-                  Media Details
-                </h2>
-                <ChevronDown className="h-[14px] w-[14px] rotate-180 text-[#59657a]" />
-              </div>
-
-              <div className="mt-[12px]">
-                {selected.image ? (
-                  <img
-                    src={selected.image}
-                    alt=""
-                    className="h-[120px] w-full rounded-[8px] border border-[#e4e7eb] object-cover"
-                  />
-                ) : (
-                  <div className="grid h-[120px] w-full place-items-center rounded-[8px] border border-[#e4e7eb] bg-[#f6f8fa]">
-                    {selected.type === "Audio" ? (
-                      <Music2 className="h-[46px] w-[46px] text-indigo-500" />
-                    ) : (
-                      <FileText className="h-[46px] w-[46px] text-violet-500" />
-                    )}
-                  </div>
-                )}
-
-                <div className="mt-[12px] flex items-center justify-between gap-[8px]">
-                  <p className="truncate text-[10px] font-semibold text-[#19274a]">
-                    {selected.name}
-                  </p>
-                  <span
-                    className={`shrink-0 rounded-[5px] px-[8px] py-[4px] text-[8px] font-semibold ${typeTone[selected.type]}`}
-                  >
-                    {selected.type}
-                  </span>
-                </div>
-
-                <div className="mt-[12px] space-y-[7px] text-[9px]">
-                  <p>
-                    <span className="font-semibold text-[#69758c]">Uploaded on:</span>{" "}
-                    <span className="text-[#34425e]">
-                      {selected.date}, {selected.time}
-                    </span>
-                  </p>
-                  <p>
-                    <span className="font-semibold text-[#69758c]">Uploaded by:</span>{" "}
-                    <span className="text-[#34425e]">{selected.uploadedBy}</span>
-                  </p>
-                  <p>
-                    <span className="font-semibold text-[#69758c]">Folder:</span>{" "}
-                    <span className="text-emerald-700">{selected.folder}</span>
-                  </p>
-                  <p>
-                    <span className="font-semibold text-[#69758c]">Size:</span>{" "}
-                    <span className="text-[#34425e]">{selected.size}</span>
-                  </p>
-                  <p>
-                    <span className="font-semibold text-[#69758c]">Dimensions:</span>{" "}
-                    <span className="text-[#34425e]">
-                      {selected.meta || "—"}
-                    </span>
-                  </p>
-                </div>
-
-                <div className="mt-[12px]">
-                  <p className="mb-[6px] text-[9px] font-semibold text-[#34425e]">URL:</p>
-                  <div className="flex items-center gap-[8px] rounded-[6px] border border-[#e2e6ea] bg-[#fbfcfd] px-[9px] py-[8px]">
-                    <p className="min-w-0 flex-1 break-all text-[8px] font-semibold leading-[1.35] text-[#59657a]">
-                      https://bharatorganicexpo.com/uploads/2026/05/{selected.name}
-                    </p>
-                    <Copy className="h-[13px] w-[13px] shrink-0 text-[#60708a] cursor-pointer" onClick={() => navigator.clipboard?.writeText(`https://bharatorganicexpo.com/uploads/2026/05/${selected.name}`)} />
+                    <select
+                      value={pageSize}
+                      onChange={(e) => {
+                        setPageSize(Number(e.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="ml-2 h-[22px] rounded-[4px] border border-[#d8dce2] bg-white px-[6px] text-[8px] font-semibold text-[#334155] outline-none"
+                    >
+                      <option value={10}>10 / page</option>
+                      <option value={20}>20 / page</option>
+                      <option value={50}>50 / page</option>
+                    </select>
                   </div>
                 </div>
-
-                <div className="mt-[12px] grid grid-cols-3 gap-[7px]">
-                  <button
-                    type="button"
-                    onClick={() => alert(`Editing details for ${selected.name}`)}
-                    className="inline-flex h-[34px] items-center justify-center gap-[6px] rounded-[5px] border border-[#e0e4e8] bg-white text-[8.5px] font-semibold text-[#33415b] transition hover:bg-slate-50"
-                  >
-                    <Pencil className="h-[12px] w-[12px]" />
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => quickUploadRef.current?.click()}
-                    className="inline-flex h-[34px] items-center justify-center gap-[6px] rounded-[5px] border border-[#e0e4e8] bg-white text-[8.5px] font-semibold text-[#33415b] transition hover:bg-slate-50"
-                  >
-                    <RefreshCw className="h-[12px] w-[12px]" />
-                    Replace
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => alert(`Deleting ${selected.name}`)}
-                    className="inline-flex h-[34px] items-center justify-center gap-[6px] rounded-[5px] border border-rose-200 bg-white text-[8.5px] font-semibold text-rose-600 transition hover:bg-rose-50"
-                  >
-                    <Trash2 className="h-[12px] w-[12px]" />
-                    Delete
-                  </button>
-                </div>
               </div>
-            </section>
-
-            {/* FILE USAGE */}
-            <section className="rounded-[8px] border border-[#e7e9ec] bg-white px-[14px] py-[13px] shadow-[0_1px_3px_rgba(15,23,42,0.025)]">
-              <div className="flex items-center justify-between">
-                <h2 className="text-[12px] font-semibold text-[#19274a]">
-                  File Usage
-                </h2>
-                <ChevronDown className="h-[14px] w-[14px] rotate-180 text-[#59657a]" />
-              </div>
-
-              <p className="mt-[11px] text-[9px] font-semibold text-[#44516a]">
-                Used in 5 pages
-              </p>
-
-              <div className="mt-[10px] space-y-[9px]">
-                {["Home", "Exhibitors", "B2B Buyers", "Sponsorships", "Schedule & Venue"].map(
-                  (item) => (
-                    <div key={item} className="flex items-center gap-[8px]">
-                      <span className="h-[7px] w-[7px] rounded-full bg-emerald-600" />
-                      <span className="text-[8.8px] font-semibold text-[#34425e]">
-                        {item}
+            ) : (
+              /* GRID VIEW */
+              <div className="mt-[12px] grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                {paginatedRows.map((item) => {
+                  const isCurrent = selectedId === item.id;
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => setSelectedId(item.id)}
+                      className={`group relative flex flex-col items-center justify-center rounded-[10px] border bg-white p-2.5 shadow-sm transition-all cursor-pointer ${
+                        isCurrent
+                          ? "border-[#075b33] ring-2 ring-[#075b33]/20"
+                          : "border-[#e4e7eb] hover:border-slate-300"
+                      }`}
+                    >
+                      <div className="relative flex h-[110px] w-full items-center justify-center overflow-hidden rounded-[6px] bg-slate-50">
+                        <img
+                          src={item.image}
+                          alt={item.title}
+                          className="h-full w-full object-cover group-hover:scale-105 transition-all duration-300"
+                        />
+                        <span className="absolute top-1.5 left-1.5 rounded-[4px] bg-black/60 px-1.5 py-0.5 text-[7.5px] font-bold text-white backdrop-blur-xs">
+                          {item.year}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-center text-[9.5px] font-bold text-[#19274a] line-clamp-1 w-full">
+                        {item.title}
+                      </p>
+                      <span className="text-[8px] font-semibold text-[#006199]">
+                        {item.category}
                       </span>
                     </div>
-                  ),
-                )}
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT SIDEBAR: MEDIA DETAILS (Exact Match to Exhibitor List Right Panel) */}
+          <aside className="space-y-[12px]">
+            {/* MEDIA DETAILS CARD */}
+            <section
+              className="bg-white px-[14px] py-[13px]"
+              style={{
+                borderRadius: "0px",
+                boxShadow:
+                  "rgba(0, 0, 0, 0.05) 0px 0px 0px 1px, rgb(209, 213, 219) 0px 0px 0px 1px inset",
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <h2 className="text-[12px] font-bold text-[#19274a]">
+                  Photo Details
+                </h2>
+                <ChevronDown className="h-[14px] w-[14px] rotate-180 text-[#59657a]" />
+              </div>
+
+              {selected ? (
+                <div className="mt-[12px]">
+                  {/* PREVIEW CONTAINER */}
+                  <div className="relative flex h-[140px] w-full items-center justify-center rounded-[8px] border border-[#e4e7eb] bg-white p-2 shadow-inner overflow-hidden">
+                    <img
+                      src={selected.image}
+                      alt={selected.title}
+                      className="max-h-[125px] max-w-full object-contain rounded-[4px]"
+                    />
+                  </div>
+
+                  {/* TITLE AND STATUS */}
+                  <div className="mt-[12px] flex items-center justify-between gap-[8px]">
+                    <p className="truncate text-[11px] font-bold text-[#19274a]">
+                      {selected.title}
+                    </p>
+                    <span
+                      className={`shrink-0 rounded-[4px] px-[8px] py-[2px] text-[8.5px] font-bold ${
+                        selected.status === "Published"
+                          ? "bg-[#e8f5e9] text-[#23714a] border border-[#a5d6a7]"
+                          : "bg-[#ffebee] text-[#c62828] border border-[#ef9a9a]"
+                      }`}
+                    >
+                      {selected.status}
+                    </span>
+                  </div>
+
+                  {/* DETAILS LIST */}
+                  <div className="mt-[12px] space-y-[7px] text-[9px]">
+                    <p>
+                      <span className="font-semibold text-[#69758c]">Category:</span>{" "}
+                      <span className="font-bold" style={{ color: "#006199" }}>
+                        {selected.category}
+                      </span>
+                    </p>
+                    <p>
+                      <span className="font-semibold text-[#69758c]">Event Year:</span>{" "}
+                      <span className="font-bold text-[#c2410c]">{selected.year}</span>
+                    </p>
+                    <p>
+                      <span className="font-semibold text-[#69758c]">Updated on:</span>{" "}
+                      <span className="font-semibold" style={{ color: "#4B1426" }}>
+                        {selected.date}, {selected.time}
+                      </span>
+                    </p>
+                    <p>
+                      <span className="font-semibold text-[#69758c]">Updated by:</span>{" "}
+                      <span className="font-semibold" style={{ color: "#dc2626" }}>
+                        {selected.uploadedBy || loggedInAdminName}
+                      </span>
+                    </p>
+                  </div>
+
+                  {/* ASSET URL DISPLAY WITH COPY BUTTON */}
+                  <div className="mt-[12px]">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-[9px] font-bold text-[#34425e]">Asset CDN URL:</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard?.writeText(selected.image);
+                          showSuccess("Asset CDN URL copied to clipboard!");
+                        }}
+                        className="inline-flex items-center gap-1 text-[8px] font-bold text-[#0284c7] hover:underline"
+                      >
+                        <Copy className="h-2.5 w-2.5" />
+                        Copy URL
+                      </button>
+                    </div>
+                    <div className="rounded-[4px] border border-[#e4e7eb] bg-[#f8fafc] px-2.5 py-1.5 font-mono text-[7.5px] text-[#475569] break-all select-all">
+                      {selected.image}
+                    </div>
+                  </div>
+
+                  {/* ACTIONS: EDIT, REPLACE, DELETE */}
+                  <div className="mt-[14px] flex items-center gap-2 border-t border-[#f0f2f5] pt-3">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEdit(selected)}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-[4px] border border-[#d8dce2] bg-white py-1.5 text-[8.5px] font-bold text-[#334155] shadow-xs transition hover:bg-slate-50"
+                    >
+                      <Pencil className="h-3 w-3 text-blue-600" />
+                      Edit
+                    </button>
+
+                    <input
+                      type="file"
+                      ref={replaceFileRef}
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleQuickReplace}
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => replaceFileRef.current?.click()}
+                      disabled={isUploading}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-[4px] border border-[#d8dce2] bg-white py-1.5 text-[8.5px] font-bold text-[#334155] shadow-xs transition hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      <RefreshCw className={`h-3 w-3 text-emerald-600 ${isUploading ? "animate-spin" : ""}`} />
+                      {isUploading ? "Uploading..." : "Replace"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(selected)}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-[4px] border border-rose-200 bg-rose-50 py-1.5 text-[8.5px] font-bold text-rose-700 shadow-xs transition hover:bg-rose-100"
+                    >
+                      <Trash2 className="h-3 w-3 text-rose-600" />
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-[12px] flex flex-col items-center justify-center py-12 text-center">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400 mb-2.5">
+                    <ImageIcon className="h-5 w-5" />
+                  </div>
+                  <p className="text-[11px] font-bold text-[#19274a]">No Photo Selected</p>
+                  <p className="text-[8.5px] text-[#69758c] mt-1 max-w-[210px] leading-relaxed">
+                    Upload a photo using the button below or select an asset from the table.
+                  </p>
+                </div>
+              )}
+            </section>
+
+            {/* FILE USAGE CARD */}
+            <section
+              className="bg-white px-[14px] py-[13px]"
+              style={{
+                borderRadius: "0px",
+                boxShadow:
+                  "rgba(0, 0, 0, 0.05) 0px 0px 0px 1px, rgb(209, 213, 219) 0px 0px 0px 1px inset",
+              }}
+            >
+              <h2 className="text-[12px] font-bold text-[#19274a]">
+                File Usage
+              </h2>
+              <p className="mt-[6px] text-[8.5px] font-medium text-[#64748b]">
+                Active in 5 website components
+              </p>
+              <div className="mt-[8px] flex flex-wrap gap-1.5">
+                {["Home Highlights", "Gallery Glimpses", "Expo Showcase", "Conference", "Awards Gallery"].map((page) => (
+                  <span
+                    key={page}
+                    className="inline-flex items-center gap-1 rounded-[3px] bg-[#f1f5f9] px-2 py-0.5 text-[8px] font-semibold text-[#334155]"
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    {page}
+                  </span>
+                ))}
               </div>
             </section>
 
-            {/* QUICK ACTIONS */}
-            <section className="rounded-[8px] border border-[#e7e9ec] bg-white px-[14px] py-[13px] shadow-[0_1px_3px_rgba(15,23,42,0.025)]">
-              <h2 className="text-[12px] font-semibold text-[#19274a]">
+            {/* QUICK ACTIONS CARD */}
+            <section
+              className="bg-white px-[14px] py-[13px]"
+              style={{
+                borderRadius: "0px",
+                boxShadow:
+                  "rgba(0, 0, 0, 0.05) 0px 0px 0px 1px, rgb(209, 213, 219) 0px 0px 0px 1px inset",
+              }}
+            >
+              <h2 className="text-[12px] font-bold text-[#19274a]">
                 Quick Actions
               </h2>
 
               <div className="mt-[10px] grid grid-cols-2 gap-[8px]">
                 <button
                   type="button"
-                  onClick={() => {
-                    const name = prompt("Enter new folder name:");
-                    if (name) alert(`Folder '${name}' created!`);
-                  }}
-                  className="inline-flex h-[36px] items-center justify-center gap-[7px] rounded-[5px] border border-[#e2e6ea] bg-white text-[8.5px] font-semibold text-[#33415b] transition hover:bg-slate-50"
+                  onClick={handleOpenUploadModal}
+                  className="flex h-[32px] items-center justify-center gap-[6px] rounded-[5px] bg-[#4B1426] text-[8.5px] font-bold text-white shadow-xs transition hover:bg-[#3a0f1d] active:scale-95"
                 >
-                  <FolderClosed className="h-[13px] w-[13px]" />
-                  Create Folder
+                  <Plus className="h-3 w-3" />
+                  Upload Photo
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => alert("Media Settings Window Opened")}
-                  className="inline-flex h-[36px] items-center justify-center gap-[7px] rounded-[5px] border border-[#e2e6ea] bg-white text-[8.5px] font-semibold text-[#33415b] transition hover:bg-slate-50"
+                <a
+                  href="http://localhost:3002/gallery"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex h-[32px] items-center justify-center gap-[6px] rounded-[5px] border border-[#cbd5e1] bg-white text-[8.5px] font-bold text-[#334155] shadow-xs transition hover:bg-slate-50 active:scale-95"
                 >
-                  <Settings className="h-[13px] w-[13px]" />
-                  Media Settings
-                </button>
+                  <ExternalLink className="h-3 w-3 text-[#ea580c]" />
+                  Live Preview
+                </a>
               </div>
             </section>
           </aside>
         </section>
+
+        {/* MODAL 1: ADD / EDIT PHOTO MODAL (Exact match to "New Exhibitor" modal UI & animations) */}
+        <Modal
+          isOpen={isUploadModalOpen || isEditModalOpen}
+          onClose={() => {
+            setIsUploadModalOpen(false);
+            setIsEditModalOpen(false);
+          }}
+          title={isEditModalOpen ? "Edit Media Asset" : "Upload New Media Asset"}
+          size="md"
+          footer={
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsUploadModalOpen(false);
+                  setIsEditModalOpen(false);
+                }}
+                className="inline-flex h-[32px] items-center gap-1.5 px-[14px] text-[12px] font-semibold text-red-600 transition-all hover:bg-red-100 active:scale-95"
+                style={{
+                  background: "#fff1f2",
+                  borderRadius: "4px",
+                  boxShadow: "rgba(0,0,0,0.02) 0px 1px 3px 0px, rgba(220,38,38,0.15) 0px 0px 0px 1px",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (isEditModalOpen) handleSaveEdit();
+                  else handleCreateMedia();
+                }}
+                className="inline-flex h-[32px] items-center gap-1.5 px-[14px] text-[12px] font-semibold text-white transition-all hover:opacity-90 active:scale-95"
+                style={{
+                  background: "#16a34a",
+                  borderRadius: "4px",
+                  boxShadow: "rgba(0,0,0,0.02) 0px 1px 3px 0px, rgba(22,163,74,0.2) 0px 0px 0px 1px",
+                }}
+              >
+                {isEditModalOpen ? "Save Changes" : "Create Asset"}
+              </button>
+            </>
+          }
+        >
+          <div className="space-y-3">
+            {/* TITLE (Optional) */}
+            <Input
+              label="Title (Optional)"
+              value={formTitle}
+              onChange={(e) => setFormTitle(e.target.value)}
+              placeholder="e.g. Grand Inaugural Ceremony (Defaults to Category)"
+            />
+
+            {/* SELECT YEAR & SELECT CATEGORY GRID */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label required>Select Year</Label>
+                <select
+                  value={formYear}
+                  onChange={(e) => setFormYear(e.target.value)}
+                  className="h-[38px] w-full cursor-pointer appearance-none rounded-[4px] px-[12px] pr-[28px] text-[11px] font-semibold text-[#1e293b] outline-none border border-surface-border bg-surface-card bg-no-repeat bg-[right_10px_center] transition-all hover:border-[#FF9D50] focus:border-[#FF9D50] [box-shadow:rgba(0,0,0,0.02)_0px_1px_3px_0px,rgba(27,31,35,0.15)_0px_0px_0px_1px]"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                  }}
+                >
+                  {years.map((yr) => (
+                    <option key={yr} value={yr} className="bg-white text-[#1e293b]">
+                      {yr}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <Label required>Select Category</Label>
+                <select
+                  value={formCategory}
+                  onChange={(e) => setFormCategory(e.target.value)}
+                  className="h-[38px] w-full cursor-pointer appearance-none rounded-[4px] px-[12px] pr-[28px] text-[11px] font-semibold text-[#1e293b] outline-none border border-surface-border bg-surface-card bg-no-repeat bg-[right_10px_center] transition-all hover:border-[#FF9D50] focus:border-[#FF9D50] [box-shadow:rgba(0,0,0,0.02)_0px_1px_3px_0px,rgba(27,31,35,0.15)_0px_0px_0px_1px]"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                  }}
+                >
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat} className="bg-white text-[#1e293b]">
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* STATUS DROPDOWN */}
+            <div>
+              <Label>Status</Label>
+              <select
+                value={formStatus}
+                onChange={(e) => setFormStatus(e.target.value as MediaStatus)}
+                className={`h-[38px] w-full cursor-pointer appearance-none rounded-[4px] px-[12px] pr-[28px] text-[11px] font-bold outline-none bg-no-repeat bg-[right_10px_center] shadow-xs transition ${
+                  formStatus === "Published"
+                    ? "bg-[#e8f5e9] text-[#23714a] border border-[#a5d6a7]"
+                    : "bg-[#ffebee] text-[#c62828] border border-[#ef9a9a]"
+                }`}
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                }}
+              >
+                <option value="Published" className="bg-white text-[#23714a] font-bold">
+                  Published
+                </option>
+                <option value="Draft" className="bg-white text-[#c62828] font-bold">
+                  Draft
+                </option>
+              </select>
+            </div>
+
+            {/* FILE UPLOAD SECTION (Exact match to "New Exhibitor" modal UI) */}
+            <div>
+              <Label required>Media Photo File (Cloudinary CDN)</Label>
+              <div className="flex gap-3 items-center">
+                <div className="relative flex h-[64px] w-[80px] shrink-0 items-center justify-center overflow-hidden border border-surface-border bg-surface-card p-1 shadow-xs rounded-[4px]">
+                  {formImageUrl ? (
+                    <img src={formImageUrl} alt="Preview" className="h-full w-full object-cover rounded-[2px]" />
+                  ) : (
+                    <ImageIcon className="h-6 w-6 text-slate-300" />
+                  )}
+                </div>
+
+                <div className="flex flex-1 flex-col gap-2">
+                  <input
+                    type="text"
+                    value={formImageUrl}
+                    onChange={(e) => setFormImageUrl(e.target.value)}
+                    placeholder="https://res.cloudinary.com/ldlcnnhz/... or choose file"
+                    className="w-full border border-surface-border bg-surface-card px-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted transition-all hover:border-[#FF9D50] focus:border-[#FF9D50] focus:outline-none [box-shadow:rgba(0,0,0,0.02)_0px_1px_3px_0px,rgba(27,31,35,0.15)_0px_0px_0px_1px]"
+                  />
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          if (!formTitle) setFormTitle(file.name.replace(/\.[^/.]+$/, ""));
+                          setFormFileSize(`${(file.size / 1024).toFixed(1)} KB`);
+                          const cloudUrl = await uploadToCloudinary(file);
+                          setFormImageUrl(cloudUrl);
+                          showSuccess("Uploaded directly to Cloudinary!");
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      disabled={isUploading}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="inline-flex h-[28px] items-center gap-1.5 border border-[#cbd5e1] bg-[#f8fafc] px-3 text-[11px] font-semibold text-[#334155] transition hover:bg-slate-100 disabled:opacity-50 active:scale-95"
+                      style={{
+                        borderRadius: "4px",
+                        boxShadow: "rgba(0,0,0,0.02) 0px 1px 3px 0px, rgba(27,31,35,0.15) 0px 0px 0px 1px",
+                      }}
+                    >
+                      {isUploading ? (
+                        <>
+                          <RefreshCw className="h-3 w-3 text-slate-600 animate-spin" />
+                          Uploading to Cloudinary...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-3 w-3 text-slate-600" />
+                          Choose Local Image
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Modal>
+
+        {/* MODAL 2: MANAGE CATEGORIES & YEARS MODAL */}
+        <Modal
+          isOpen={isCategoryYearModalOpen}
+          onClose={() => setIsCategoryYearModalOpen(false)}
+          title="Manage Categories & Years"
+          size="md"
+          footer={
+            <button
+              type="button"
+              onClick={() => setIsCategoryYearModalOpen(false)}
+              className="inline-flex h-[32px] items-center gap-1.5 px-[16px] text-[12px] font-semibold text-white transition-all hover:opacity-90 active:scale-95"
+              style={{
+                background: "#16a34a",
+                borderRadius: "4px",
+                boxShadow: "rgba(0,0,0,0.02) 0px 1px 3px 0px, rgba(22,163,74,0.2) 0px 0px 0px 1px",
+              }}
+            >
+              Done / Close
+            </button>
+          }
+        >
+          <div className="space-y-4">
+            {/* SECTION 1: PHOTO CATEGORIES / ACTIVITIES */}
+            <div className="rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h3 className="text-[12px] font-bold text-[#0f172a]">
+                    Photo Categories / Activities
+                  </h3>
+                  <p className="text-[9.5px] text-[#64748b]">
+                    Manage categories visible on the gallery frontend & dropdowns
+                  </p>
+                </div>
+                <span className="rounded-[4px] bg-[#e0f2fe] px-2 py-0.5 text-[8.5px] font-bold text-[#0284c7]">
+                  {categories.length} Total
+                </span>
+              </div>
+
+              {/* Existing Categories Badges */}
+              <div className="flex flex-wrap gap-1.5 mb-3 max-h-[120px] overflow-y-auto p-1">
+                {categories.map((cat) => (
+                  <span
+                    key={cat}
+                    className="inline-flex items-center gap-1.5 rounded-[4px] border border-[#cbe2fc] bg-white px-2 py-1 text-[10px] font-semibold text-[#0369a1] shadow-xs"
+                  >
+                    <span>{cat}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveCategory(cat)}
+                      className="text-slate-400 hover:text-red-600 transition"
+                      title="Delete Category"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+
+              {/* Add New Category Input & Button */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newCategoryInput}
+                  onChange={(e) => setNewCategoryInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddCategory();
+                    }
+                  }}
+                  placeholder="Enter new category name (e.g. VIP Dinner)..."
+                  className="flex-1 h-[34px] px-3 rounded-[4px] border border-[#cbd5e1] bg-white text-[11px] font-medium text-[#1e293b] outline-none focus:border-[#FF9D50] [box-shadow:rgba(0,0,0,0.02)_0px_1px_3px_0px,rgba(27,31,35,0.15)_0px_0px_0px_1px]"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddCategory}
+                  className="h-[34px] px-3.5 rounded-[4px] bg-[#0284c7] text-white text-[10px] font-bold hover:bg-[#0369a1] transition shadow-xs flex items-center gap-1 active:scale-95"
+                >
+                  <Plus className="h-3 w-3" />
+                  Add Category
+                </button>
+              </div>
+            </div>
+
+            {/* SECTION 2: EVENT YEARS */}
+            <div className="rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h3 className="text-[12px] font-bold text-[#0f172a]">
+                    Event Years
+                  </h3>
+                  <p className="text-[9.5px] text-[#64748b]">
+                    Manage years available for past expo editions
+                  </p>
+                </div>
+                <span className="rounded-[4px] bg-[#fed7aa] px-2 py-0.5 text-[8.5px] font-bold text-[#c2410c]">
+                  {years.length} Total
+                </span>
+              </div>
+
+              {/* Existing Years Badges */}
+              <div className="flex flex-wrap gap-1.5 mb-3 p-1">
+                {years.map((yr) => (
+                  <span
+                    key={yr}
+                    className="inline-flex items-center gap-1.5 rounded-[4px] border border-[#fed7aa] bg-white px-2.5 py-1 text-[10px] font-bold text-[#c2410c] shadow-xs"
+                  >
+                    <span>{yr}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveYear(yr)}
+                      className="text-slate-400 hover:text-red-600 transition"
+                      title="Delete Year"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+
+              {/* Add New Year Input & Button */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newYearInput}
+                  onChange={(e) => setNewYearInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddYear();
+                    }
+                  }}
+                  placeholder="Enter new year (e.g. 2027)..."
+                  className="flex-1 h-[34px] px-3 rounded-[4px] border border-[#cbd5e1] bg-white text-[11px] font-medium text-[#1e293b] outline-none focus:border-[#FF9D50] [box-shadow:rgba(0,0,0,0.02)_0px_1px_3px_0px,rgba(27,31,35,0.15)_0px_0px_0px_1px]"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddYear}
+                  className="h-[34px] px-3.5 rounded-[4px] bg-[#ea580c] text-white text-[10px] font-bold hover:bg-[#c2410c] transition shadow-xs flex items-center gap-1 active:scale-95"
+                >
+                  <Plus className="h-3 w-3" />
+                  Add Year
+                </button>
+              </div>
+            </div>
+          </div>
+        </Modal>
       </div>
     </main>
   );
