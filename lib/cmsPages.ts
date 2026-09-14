@@ -109,6 +109,18 @@ const pageDefinitions = [
   ["epromotionPage", "E-Promotion Opportunity", "/e-promotion-web", "page"],
   ["partnershipPage", "Partnership / Collaboration", "/partnership", "page"],
   ["servicesPage", "Our Services", "/our-services", "page"],
+  ["exhibitorLoginPage", "Exhibitor Login Portal", "/exhibitor-login", "page"],
+  ["buyerLoginPage", "Buyer Login Portal", "/buyer-login", "page"],
+  ["delegatesLoginPage", "Delegates Login Portal", "/delegates-login", "page"],
+  ["userLoginPage", "User Login Portal", "/login", "page"],
+  ["msmeApplyParticipationDetailsPage", "PMS Participation Details", "/participate/msme/apply/participation-details", "page"],
+  ["msmeApplyPaymentPage", "PMS Payment Details", "/participate/msme/apply/payment", "page"],
+  ["printingBrandingPartnerPage", "Printing & Branding Partner", "/partnership/printing-branding-partner", "page"],
+  ["travelPartnerPage", "Travel Partner", "/partnership/travel-partner", "page"],
+  ["manpowerSupplyPartnerPage", "Manpower Supply Partner", "/partnership/manpower-supply-partner", "page"],
+  ["logisticsPartnerPage", "Logistics Partner", "/partnership/logistics-partner", "page"],
+  ["stallDesignPartnerPage", "Stall Design Partner", "/partnership/stall-design-partner", "page"],
+  ["hotelStayPartnerPage", "Hotel & Stay Partner", "/partnership/hotel-stay-partner", "page"],
 ] as const;
 
 function seoScore(config: SettingsPageConfig): number {

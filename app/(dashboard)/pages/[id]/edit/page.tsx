@@ -85,13 +85,23 @@ import {
 } from "@/lib/registrationPagesContent";
 import { defaultWhyVisitSections } from "@/lib/whyVisitContent";
 import { defaultWhyExhibitSections } from "@/lib/whyExhibitContent";
-import { defaultMsmeSections, defaultMsmeEligibilityCheckSections, defaultMsmeApplySections } from "@/lib/msmeContent";
+import {
+  defaultMsmeSections,
+  defaultMsmeEligibilityCheckSections,
+  defaultMsmeApplySections,
+  defaultMsmeParticipationDetailsSections,
+  defaultMsmeApplyPaymentSections,
+  defaultExhibitorLoginSections,
+  defaultBuyerLoginSections,
+  defaultDelegatesLoginSections,
+  defaultUserLoginSections,
+} from "@/lib/msmeContent";
 import { defaultExhibitorsSections } from "@/lib/exhibitorsContent";
 import { defaultBuyerSellerMeetSections } from "@/lib/buyerSellerMeetContent";
 import { defaultGallerySections } from "@/lib/galleryContent";
 import { defaultAwardsSections, defaultAwardsNominationSections } from "@/lib/awardsContent";
 import { defaultContactSections } from "@/lib/contactContent";
-import { defaultSponsorshipSections, defaultEPromotionSections, defaultPartnershipPageSections } from "@/lib/opportunityContent";
+import { defaultSponsorshipSections, defaultEPromotionSections, defaultPartnershipPageSections, defaultSubPartnershipSections } from "@/lib/opportunityContent";
 import { defaultSupportServicesSections } from "@/lib/extraPagesContent";
 import typography from "../../PagesTypography.module.css";
 import Swal from "sweetalert2";
@@ -2203,7 +2213,10 @@ export default function CmsEditPage() {
 
     const getFallbackForPage = () => {
       if (key === "msmeeligibilitycheckpage" || slug.includes("eligibility-check")) return defaultMsmeEligibilityCheckSections;
-      if (key === "msmeapplypage" || slug.includes("participate/msme/apply")) return defaultMsmeApplySections;
+      if (key === "msmeapplypaymentpage" || slug.includes("participate/msme/apply/payment")) return defaultMsmeApplyPaymentSections;
+      if (key === "msmeapplyparticipationdetailspage" || slug.includes("participation-details")) return defaultMsmeParticipationDetailsSections;
+      if (key === "msmeapplypage" || (slug.includes("participate/msme/apply") && !slug.includes("participation-details") && !slug.includes("payment"))) return defaultMsmeApplySections;
+      if (key.includes("partnerpage") || (slug.includes("partnership/") && slug !== "/partnership")) return defaultSubPartnershipSections;
       if (key === "awardsnominationpage" || slug.includes("awards/nominations")) return defaultAwardsNominationSections;
       if (key === "nominateadvisorypage" || slug.includes("nominate_advisory_board")) return defaultNominateAdvisorySections;
       if (key === "supportservicespage" || slug.includes("suport_services")) return defaultSupportServicesSections;
@@ -2229,6 +2242,10 @@ export default function CmsEditPage() {
       if (key === "sponsorshippage" || title.includes("sponsorship") || slug.includes("sponsorship")) return defaultSponsorshipSections;
       if (key === "epromotionpage" || title.includes("e-promotion") || slug.includes("e-promotion")) return defaultEPromotionSections;
       if (key === "partnershippage" || title.includes("partnership") || slug.includes("partnership")) return defaultPartnershipPageSections;
+      if (key === "exhibitorloginpage" || title.includes("exhibitor login") || slug.includes("exhibitor-login")) return defaultExhibitorLoginSections;
+      if (key === "buyerloginpage" || title.includes("buyer login") || slug.includes("buyer-login")) return defaultBuyerLoginSections;
+      if (key === "delegatesloginpage" || title.includes("delegates login") || slug.includes("delegates-login")) return defaultDelegatesLoginSections;
+      if (key === "userloginpage" || title.includes("user login") || slug.includes("/login")) return defaultUserLoginSections;
       if (key === "contactpage" || title.includes("contact") || title.includes("advisor") || slug.includes("contact")) return defaultContactSections;
       return defaultLandingSections;
     };
@@ -2455,7 +2472,8 @@ export default function CmsEditPage() {
       }
       return merged;
     });
-    setSectionsDraft(rawSections.map((section: Record<string, any>) => ({ ...section })));
+    const finalSections = rawSections && rawSections.length > 0 ? rawSections : fallbackSections;
+    setSectionsDraft(finalSections.map((section: Record<string, any>) => ({ ...section })));
     setOpenSectionIndices(new Set());
 
     if (page.configKey === "landingPage" || page.type === "home") {
@@ -2951,7 +2969,10 @@ export default function CmsEditPage() {
     const slug = (page.slug || "").toLowerCase();
     let defaults = defaultLandingSections;
     if (key === "msmeeligibilitycheckpage" || slug.includes("eligibility-check")) defaults = defaultMsmeEligibilityCheckSections;
-    else if (key === "msmeapplypage" || slug.includes("participate/msme/apply")) defaults = defaultMsmeApplySections;
+    else if (key === "msmeapplypaymentpage" || slug.includes("participate/msme/apply/payment")) defaults = defaultMsmeApplyPaymentSections;
+    else if (key === "msmeapplyparticipationdetailspage" || slug.includes("participation-details")) defaults = defaultMsmeParticipationDetailsSections;
+    else if (key === "msmeapplypage" || (slug.includes("participate/msme/apply") && !slug.includes("participation-details") && !slug.includes("payment"))) defaults = defaultMsmeApplySections;
+    else if (key.includes("partnerpage") || (slug.includes("partnership/") && slug !== "/partnership")) defaults = defaultSubPartnershipSections;
     else if (key === "awardsnominationpage" || slug.includes("awards/nominations")) defaults = defaultAwardsNominationSections;
     else if (key === "nominateadvisorypage" || slug.includes("nominate_advisory_board")) defaults = defaultNominateAdvisorySections;
     else if (key === "supportservicespage" || slug.includes("suport_services")) defaults = defaultSupportServicesSections;
@@ -2977,6 +2998,10 @@ export default function CmsEditPage() {
     else if (key === "sponsorshippage" || title.includes("sponsorship") || slug.includes("sponsorship")) defaults = defaultSponsorshipSections;
     else if (key === "epromotionpage" || title.includes("e-promotion") || slug.includes("e-promotion")) defaults = defaultEPromotionSections;
     else if (key === "partnershippage" || title.includes("partnership") || slug.includes("partnership")) defaults = defaultPartnershipPageSections;
+    else if (key === "exhibitorloginpage" || title.includes("exhibitor login") || slug.includes("exhibitor-login")) defaults = defaultExhibitorLoginSections;
+    else if (key === "buyerloginpage" || title.includes("buyer login") || slug.includes("buyer-login")) defaults = defaultBuyerLoginSections;
+    else if (key === "delegatesloginpage" || title.includes("delegates login") || slug.includes("delegates-login")) defaults = defaultDelegatesLoginSections;
+    else if (key === "userloginpage" || title.includes("user login") || slug.includes("/login")) defaults = defaultUserLoginSections;
     else if (key === "contactpage" || title.includes("contact") || title.includes("advisor") || slug.includes("contact")) defaults = defaultContactSections;
 
     setSectionsDraft(defaults.map((s) => ({ ...s })));
@@ -3685,9 +3710,7 @@ export default function CmsEditPage() {
                     value={
                       form.template
                     }
-                    onChange={(
-                      value,
-                    ) => {
+                    onChange={(value) => {
                       updateField("template", value);
                       if (value === "Nominate Advisory Board Member" || value === "Nominate Advisory Board") {
                         setSectionsDraft(defaultNominateAdvisorySections.map((s) => ({ ...s })));
@@ -3695,8 +3718,22 @@ export default function CmsEditPage() {
                         setSectionsDraft(defaultSupportServicesSections.map((s) => ({ ...s })));
                       } else if (value === "PMS Eligibility Check Calculator") {
                         setSectionsDraft(defaultMsmeEligibilityCheckSections.map((s) => ({ ...s })));
-                      } else if (value === "Apply for PMS Support Stepper") {
+                      } else if (value === "Apply for PMS Support Stepper" || value === "Apply for PMS Support") {
                         setSectionsDraft(defaultMsmeApplySections.map((s) => ({ ...s })));
+                      } else if (value === "PMS Participation Details") {
+                        setSectionsDraft(defaultMsmeParticipationDetailsSections.map((s) => ({ ...s })));
+                      } else if (value === "PMS Payment Details") {
+                        setSectionsDraft(defaultMsmeApplyPaymentSections.map((s) => ({ ...s })));
+                      } else if (value === "Exhibitor Login Portal" || value === "Exhibitor Login") {
+                        setSectionsDraft(defaultExhibitorLoginSections.map((s) => ({ ...s })));
+                      } else if (value === "Buyer Login Portal" || value === "Buyer Login") {
+                        setSectionsDraft(defaultBuyerLoginSections.map((s) => ({ ...s })));
+                      } else if (value === "Delegates Login Portal" || value === "Delegates Login") {
+                        setSectionsDraft(defaultDelegatesLoginSections.map((s) => ({ ...s })));
+                      } else if (value === "User Login Portal" || value === "User Login") {
+                        setSectionsDraft(defaultUserLoginSections.map((s) => ({ ...s })));
+                      } else if (value.includes("Partner") && value !== "Partnership / Collaboration") {
+                        setSectionsDraft(defaultSubPartnershipSections.map((s) => ({ ...s })));
                       } else if (value === "Awards Nomination Form") {
                         setSectionsDraft(defaultAwardsNominationSections.map((s) => ({ ...s })));
                       } else if (value === "About Expo" || value === "About Page" || value === "About Us") {
@@ -3772,6 +3809,8 @@ export default function CmsEditPage() {
                       "MSME PMS Scheme",
                       "PMS Eligibility Check Calculator",
                       "Apply for PMS Support Stepper",
+                      "PMS Participation Details",
+                      "PMS Payment Details",
                       "Exhibitor List",
                       "Buyer-Seller Meet",
                       "Glimpses & Gallery",
@@ -3779,7 +3818,16 @@ export default function CmsEditPage() {
                       "Awards Nomination Form",
                       "E-Promotion Opportunity",
                       "Partnership / Collaboration",
-                      "Our Services",
+                      "Printing & Branding Partner",
+                      "Travel Partner",
+                      "Manpower Supply Partner",
+                      "Logistics Partner",
+                      "Stall Design Partner",
+                      "Hotel & Stay Partner",
+                      "Exhibitor Login Portal",
+                      "Buyer Login Portal",
+                      "Delegates Login Portal",
+                      "User Login Portal",
                       "Contact Us",
                     ]}
                   />
@@ -3798,66 +3846,81 @@ export default function CmsEditPage() {
                       value,
                     ) => {
                       updateField("parent", value);
-                      if (value === "Nominate Advisory Board Member" || value.includes("Nominate")) {
-                        setSectionsDraft(defaultNominateAdvisorySections.map((s) => ({ ...s })));
-                      } else if (value === "Support Services Helpdesk" || value.includes("Support")) {
-                        setSectionsDraft(defaultSupportServicesSections.map((s) => ({ ...s })));
-                      } else if (value === "PMS Eligibility Check Calculator" || value.includes("Eligibility")) {
-                        setSectionsDraft(defaultMsmeEligibilityCheckSections.map((s) => ({ ...s })));
-                      } else if (value === "Apply for PMS Support Stepper" || value.includes("Apply")) {
-                        setSectionsDraft(defaultMsmeApplySections.map((s) => ({ ...s })));
-                      } else if (value === "Awards Nomination Form" || value.includes("Awards Nomination")) {
-                        setSectionsDraft(defaultAwardsNominationSections.map((s) => ({ ...s })));
-                      } else if (value.includes("About")) {
-                        setSectionsDraft(defaultAboutSections.map((s) => ({ ...s })));
-                      } else if (value.includes("Advisory")) {
-                        setSectionsDraft(defaultAdvisorySections.map((s) => ({ ...s })));
-                      } else if (value.includes("Blog")) {
-                        setSectionsDraft(defaultBlogSections.map((s) => ({ ...s })));
-                      } else if (value.includes("Participate as Exhibitor")) {
-                        setSectionsDraft(defaultParticipateAsExhibitorSections.map((s) => ({ ...s })));
-                      } else if (value.includes("Categories")) {
-                        setSectionsDraft(defaultExhibitionCategoriesSections.map((s) => ({ ...s })));
-                      } else if (value.includes("BOOK A STALL") || value.includes("Book")) {
-                        setSectionsDraft(defaultBookAStandSections.map((s) => ({ ...s })));
-                      } else if (value.includes("VISITOR") || value.includes("Visitor")) {
-                        setSectionsDraft(defaultVisitorRegistrationSections.map((s) => ({ ...s })));
-                      } else if (value.includes("DELEGATE") || value.includes("Delegate")) {
-                        setSectionsDraft(defaultDelegateRegistrationSections.map((s) => ({ ...s })));
-                      } else if (value.includes("BUYER") || value.includes("Buyer Reg")) {
-                        setSectionsDraft(defaultBuyerRegistrationSections.map((s) => ({ ...s })));
-                      } else if (value.includes("Terms")) {
-                        setSectionsDraft(defaultTermsAndConditionsSections.map((s) => ({ ...s })));
-                      } else if (value.includes("Privacy")) {
-                        setSectionsDraft(defaultPrivacyPolicySections.map((s) => ({ ...s })));
-                      } else if (value.includes("Refund")) {
-                        setSectionsDraft(defaultRefundPolicySections.map((s) => ({ ...s })));
-                      } else if (value.includes("Why Visit")) {
-                        setSectionsDraft(defaultWhyVisitSections.map((s) => ({ ...s })));
-                      } else if (value.includes("Why Exhibit")) {
-                        setSectionsDraft(defaultWhyExhibitSections.map((s) => ({ ...s })));
-                      } else if (value.includes("MSME PMS")) {
-                        setSectionsDraft(defaultMsmeSections.map((s) => ({ ...s })));
-                      } else if (value.includes("Exhibitor")) {
-                        setSectionsDraft(defaultExhibitorsSections.map((s) => ({ ...s })));
-                      } else if (value.includes("Buyer-Seller")) {
-                        setSectionsDraft(defaultBuyerSellerMeetSections.map((s) => ({ ...s })));
-                      } else if (value.includes("Glimpses") || value.includes("Gallery")) {
-                        setSectionsDraft(defaultGallerySections.map((s) => ({ ...s })));
-                      } else if (value.includes("Awards")) {
-                        setSectionsDraft(defaultAwardsSections.map((s) => ({ ...s })));
-                      } else if (value.includes("SPONSORSHIP") || value.includes("Sponsorship")) {
-                        setSectionsDraft(defaultSponsorshipSections.map((s) => ({ ...s })));
-                      } else if (value.includes("E-Promotion")) {
-                        setSectionsDraft(defaultEPromotionSections.map((s) => ({ ...s })));
-                      } else if (value.includes("Partnership")) {
-                        setSectionsDraft(defaultPartnershipPageSections.map((s) => ({ ...s })));
-                      } else if (value.includes("Services")) {
-                        setSectionsDraft(defaultSupportServicesSections.map((s) => ({ ...s })));
-                      } else if (value.includes("Contact") || value.includes("EXPO ADVISOR")) {
-                        setSectionsDraft(defaultContactSections.map((s) => ({ ...s })));
-                      } else if (value.includes("Home") || value.includes("Landing")) {
-                        setSectionsDraft(defaultLandingSections.map((s) => ({ ...s })));
+                      if (value && value !== "— No Parent (Top Level) —") {
+                        const targetName = value.trim();
+                        if (targetName.includes("Nominate Advisory")) {
+                          setSectionsDraft(defaultNominateAdvisorySections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("Support Services")) {
+                          setSectionsDraft(defaultSupportServicesSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("Eligibility Check")) {
+                          setSectionsDraft(defaultMsmeEligibilityCheckSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("Apply for PMS Support") || targetName.includes("Apply for PMS")) {
+                          setSectionsDraft(defaultMsmeApplySections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("Participation Details")) {
+                          setSectionsDraft(defaultMsmeParticipationDetailsSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("Payment Details")) {
+                          setSectionsDraft(defaultMsmeApplyPaymentSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("Exhibitor Login")) {
+                          setSectionsDraft(defaultExhibitorLoginSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("Buyer Login")) {
+                          setSectionsDraft(defaultBuyerLoginSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("Delegates Login")) {
+                          setSectionsDraft(defaultDelegatesLoginSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("User Login")) {
+                          setSectionsDraft(defaultUserLoginSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("Partner") && !targetName.includes("Collaboration")) {
+                          setSectionsDraft(defaultSubPartnershipSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("Awards Nomination")) {
+                          setSectionsDraft(defaultAwardsNominationSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("About")) {
+                          setSectionsDraft(defaultAboutSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("Advisory")) {
+                          setSectionsDraft(defaultAdvisorySections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("Blog")) {
+                          setSectionsDraft(defaultBlogSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("Participate as Exhibitor")) {
+                          setSectionsDraft(defaultParticipateAsExhibitorSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("Exhibition Categories")) {
+                          setSectionsDraft(defaultExhibitionCategoriesSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("BOOK A STALL") || targetName.includes("Book a Stand") || targetName.includes("Book a Stall")) {
+                          setSectionsDraft(defaultBookAStandSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("VISITOR")) {
+                          setSectionsDraft(defaultVisitorRegistrationSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("DELEGATE")) {
+                          setSectionsDraft(defaultDelegateRegistrationSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("BUYER") && !targetName.includes("Buyer-Seller")) {
+                          setSectionsDraft(defaultBuyerRegistrationSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("Terms")) {
+                          setSectionsDraft(defaultTermsAndConditionsSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("Privacy")) {
+                          setSectionsDraft(defaultPrivacyPolicySections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("Refund")) {
+                          setSectionsDraft(defaultRefundPolicySections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("Why Visit")) {
+                          setSectionsDraft(defaultWhyVisitSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("Why Exhibit")) {
+                          setSectionsDraft(defaultWhyExhibitSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("MSME")) {
+                          setSectionsDraft(defaultMsmeSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("Exhibitor")) {
+                          setSectionsDraft(defaultExhibitorsSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("Buyer-Seller")) {
+                          setSectionsDraft(defaultBuyerSellerMeetSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("Gallery")) {
+                          setSectionsDraft(defaultGallerySections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("Awards")) {
+                          setSectionsDraft(defaultAwardsSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("SPONSORSHIP") || targetName.includes("Sponsorship")) {
+                          setSectionsDraft(defaultSponsorshipSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("E-Promotion")) {
+                          setSectionsDraft(defaultEPromotionSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("Partnership")) {
+                          setSectionsDraft(defaultPartnershipPageSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("Contact") || targetName.includes("ADVISOR")) {
+                          setSectionsDraft(defaultContactSections.map((s) => ({ ...s })));
+                        } else if (targetName.includes("Home")) {
+                          setSectionsDraft(defaultLandingSections.map((s) => ({ ...s })));
+                        }
                       }
                     }}
                     options={[
@@ -3955,6 +4018,18 @@ export default function CmsEditPage() {
               </div>
 
               {/* INDIVIDUAL COLLAPSIBLE SECTION CARDS */}
+              {sectionsDraft.length === 0 && (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-md text-center my-3">
+                  <p className="text-[12px] font-semibold text-amber-800 mb-2">No sections currently loaded for this page.</p>
+                  <button
+                    type="button"
+                    onClick={resetToWebsiteDefaults}
+                    className="px-4 py-1.5 bg-[#4B1426] text-white text-[11px] font-bold rounded hover:bg-[#380e1c] transition-colors shadow-sm"
+                  >
+                    Load Live Website Defaults
+                  </button>
+                </div>
+              )}
               <div className="flex flex-col gap-[10px]">
                 {sectionsDraft.map((section, sectionIndex) => {
                   const isOpen = openSectionIndices.has(sectionIndex);
