@@ -907,11 +907,11 @@ export default function PagesCmsPage() {
                       {/* UPDATED */}
 
                       <div className="min-w-0 overflow-hidden px-[4px] pl-[12px]">
-                        <p className="truncate text-[7.5px] font-semibold leading-[1.3] text-[#293681]">
+                        <p suppressHydrationWarning className="truncate text-[7.5px] font-semibold leading-[1.3] text-[#293681]">
                           {page.updated.split(",")[0]}
                         </p>
 
-                        <p className="mt-[2px] truncate text-[7.5px] font-semibold leading-[1.3] text-blue-600">
+                        <p suppressHydrationWarning className="mt-[2px] truncate text-[7.5px] font-semibold leading-[1.3] text-blue-600">
                           {page.updated.split(",")[1]?.trim()}
                         </p>
                       </div>
@@ -1139,7 +1139,7 @@ export default function PagesCmsPage() {
                   </button>
 
                   <div className="mt-[4px] flex items-center justify-between gap-[8px]">
-                    <p className="truncate text-[10px] font-semibold text-[#17433F]">
+                    <p suppressHydrationWarning className="truncate text-[10px] font-semibold text-[#17433F]">
                       Last updated {selectedPage.updated}
                     </p>
 
