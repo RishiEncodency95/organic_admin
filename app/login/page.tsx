@@ -287,7 +287,7 @@ export default function LoginPage() {
       }
 
       // 429 — Too Many Login Attempts → show prominent lock alert
-      if (err instanceof ApiRequestError && err.status === 429) {
+      if ((err instanceof ApiRequestError && err.status === 429) || err?.status === 429) {
         const lockMsg = "Account temporarily locked. Too many failed login attempts. Please try again in 15 minutes.";
         setError(lockMsg);
         Swal.fire({

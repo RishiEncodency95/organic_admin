@@ -574,11 +574,7 @@ function Textarea({
   noLimit?: boolean;
 }) {
   const currentLength = (value || "").length;
-  const initialLengthRef = useRef<number | null>(null);
-  if (initialLengthRef.current === null) {
-    initialLengthRef.current = currentLength > 0 ? currentLength : maxLength;
-  }
-  const maxAllowed = noLimit ? 10000 : initialLengthRef.current;
+  const maxAllowed = noLimit ? 10000 : Math.max(currentLength, maxLength);
   const isAtLimit = !noLimit && currentLength >= maxAllowed;
 
   return (
@@ -670,7 +666,8 @@ function humanizeKey(key: string) {
   if (key === "exploreText") return "Explore Text";
   if (key === "href") return "Explore Link (Href)";
   if (key === "bgImage") return "Hero Background Banner Image (Upload / URL)";
-  if (key === "image") return "Block Image / Icon (Upload / URL)";
+  if (key === "image") return "Right Image (Upload / URL)";
+  if (key === "iconImage") return "Top Image / Icon (Upload / URL)";
   if (key === "main") return "Highlight Title";
   if (key === "sub") return "Highlight Subtitle";
   return key
@@ -734,7 +731,7 @@ function ImageUploadField({
             hideLimit={true}
           />
         </div>
-        <label className="flex shrink-0 cursor-pointer items-center gap-1 rounded border border-[#0f766e] bg-[#f0fdf4] px-2 py-1.5 text-[9px] font-bold text-[#0f766e] hover:bg-[#dcfce7] transition-colors shadow-2xs">
+        <label className="flex shrink-0 cursor-pointer items-center gap-1 rounded border border-[#0f766e] bg-[#f0fdf4] px-2.5 py-1.5 text-[9px] font-bold text-[#0f766e] hover:bg-[#dcfce7] transition-colors shadow-2xs">
           <Upload className="h-3 w-3" />
           {uploading ? "Uploading..." : "Upload Image"}
           <input
@@ -770,19 +767,32 @@ function ImageUploadField({
       </div>
 
       {value && typeof value === "string" ? (() => {
-        const displayUrl = value.startsWith("http")
+        const directUrl = value.startsWith("http")
+          ? value
+          : value.startsWith("/")
+            ? value
+            : `/${value}`;
+        const fullBackendUrl = value.startsWith("http")
           ? value
           : value.startsWith("/")
             ? `http://localhost:4000${value}`
             : `http://localhost:4000/${value}`;
+        const displayUrl = fullBackendUrl;
 
         return (
           <div className="flex items-center gap-3 bg-white p-1.5 rounded border border-[#e2e8f0]">
-            <div className="relative h-[60px] w-[100px] shrink-0 overflow-hidden rounded border border-[#cbd5e1] bg-black/5 group">
+            <div className="relative h-[60px] w-[100px] shrink-0 overflow-hidden rounded border border-[#cbd5e1] bg-slate-50 flex items-center justify-center group">
               <img
-                src={displayUrl}
-                alt="Background Preview"
-                className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                src={directUrl}
+                alt="Preview"
+                className="h-full w-full object-contain transition-transform group-hover:scale-105"
+                onError={(e) => {
+                  const img = e.currentTarget;
+                  if (img.src !== fullBackendUrl && !img.dataset.retry) {
+                    img.dataset.retry = "true";
+                    img.src = fullBackendUrl;
+                  }
+                }}
               />
               <button
                 type="button"
@@ -1270,8 +1280,8 @@ function SectionFieldsEditor({
         return false;
       }
       if (
-        (section.key === "industries-section" || section.name === "IndustriesSection") &&
-        (key === "subtitle" || key === "description" || key === "shortDescription")
+        (section.key === "industry-segments" || section.name === "IndustrySegments") &&
+        (key === "description" || key === "shortDescription" || key === "buttonLabel" || key === "buttonHref")
       ) {
         return false;
       }
@@ -1347,12 +1357,18 @@ function SectionFieldsEditor({
                 <span className="text-[10px] text-[#64748b]">Select date and time for live countdown timer</span>
               </div>
             ) : isLong ? (
-              <Textarea value={String(value)} onChange={(next: string) => onFieldChange(key, next)} rows={3} />
+              <Textarea
+                value={String(value)}
+                onChange={(next: string) => onFieldChange(key, next)}
+                rows={3}
+                noLimit={section.key === "why-visit-matters"}
+              />
             ) : (
               <TextInput
                 value={String(value)}
                 onChange={(next: string) => onFieldChange(key, next)}
-                maxLength={120}
+                maxLength={section.key === "why-visit-matters" ? 5000 : 120}
+                hideLimit={section.key === "why-visit-matters"}
               />
             )}
           </div>
@@ -1397,15 +1413,16 @@ function SectionItemsEditor({
   };
 
   const FIELD_ORDER_PRIORITY: Record<string, number> = {
-    image: 1,
+    iconImage: 0.8,
+    image: 0.9,
     img: 1.1,
     tagline: 1.2,
     titlePrimary: 2,
     titleSecondary: 3,
     title1: 3.1,
     title2: 3.2,
-    subtitle: 4,
-    title: 5,
+    title: 4,
+    subtitle: 4.5,
     name: 6,
     main: 6.2,
     sub: 6.4,
@@ -1490,7 +1507,7 @@ function SectionItemsEditor({
           </span>
         </div>
 
-        {sectionId !== "audience-strip" && sectionId !== "beyond-exhibition" && sectionId !== "reasons-to-exhibit" && sectionId !== "industries-section" && (
+        {sectionId !== "audience-strip" && sectionId !== "beyond-exhibition" && sectionId !== "reasons-to-exhibit" && sectionId !== "industry-segments" && (
           <button
             type="button"
             onClick={onAddItem}
@@ -1602,13 +1619,35 @@ function SectionItemsEditor({
             if (itemToEdit.num === undefined) {
               itemToEdit.num = item.num || `0${index + 1}`;
             }
-          } else if (sectionId === "industries-section") {
+          } else if (sectionId === "industry-segments") {
             delete itemToEdit.icon;
             delete itemToEdit.color;
             delete itemToEdit.imageAlt;
             delete itemToEdit.desc;
-            if (itemToEdit.description === undefined) itemToEdit.description = item.desc || "";
-            if (itemToEdit.image === undefined) itemToEdit.image = "";
+            delete itemToEdit.description;
+            const defaultBgImgs = [
+              "/uploads/icons/x1.webp",
+              "/uploads/icons/x2.webp",
+              "/uploads/icons/x3.webp",
+              "/uploads/icons/x4.webp",
+              "/uploads/icons/x5.webp",
+              "/uploads/icons/x6.webp",
+            ];
+            const defaultIconImgs = [
+              "/uploads/icons/x1og.png",
+              "/uploads/icons/x2og.png",
+              "/uploads/icons/x3og.png",
+              "/uploads/icons/x4og.png",
+              "/uploads/icons/x5og.png",
+              "/uploads/icons/x6og.png",
+            ];
+            if (!itemToEdit.iconImage) {
+              itemToEdit.iconImage = item.iconImage || item.iconImg || defaultIconImgs[index % defaultIconImgs.length];
+            }
+            if (!itemToEdit.image) {
+              itemToEdit.image = item.image || defaultBgImgs[index % defaultBgImgs.length];
+            }
+            if (itemToEdit.subtitle === undefined) itemToEdit.subtitle = item.subtitle || item.items || "";
           } else {
             let defaultIcon = "";
             if (!item.icon) {
@@ -1635,8 +1674,9 @@ function SectionItemsEditor({
                 key !== "status" &&
                 !(sectionId === "why-exhibit-hero" && key === "icon") &&
                 !(sectionId === "expo-categories" && key === "icon") &&
-                !(sectionId === "industries-section" && key === "icon") &&
+                !(sectionId === "industry-segments" && key === "icon") &&
                 !(sectionId === "why-visit-matters" && key === "icon") &&
+                !(sectionId === "awards-health-camp" && key === "icon") &&
                 (typeof value === "string" ||
                   typeof value === "number" ||
                   typeof value === "boolean" ||
@@ -1666,7 +1706,7 @@ function SectionItemsEditor({
                   </span>
                 </div>
 
-                {sectionId !== "reasons-to-exhibit" && sectionId !== "industries-section" && (
+                {sectionId !== "reasons-to-exhibit" && sectionId !== "industry-segments" && (
                   <div className="flex items-center gap-[8px]" onClick={(e) => e.stopPropagation()}>
                     <button
                       type="button"
@@ -1689,7 +1729,13 @@ function SectionItemsEditor({
 
                     return (
                       <div key={key} className={isImageKey || isVideoKey || isLong ? "col-span-2 w-full" : "col-span-1"}>
-                        <FieldLabel>{humanizeKey(key)}</FieldLabel>
+                        <FieldLabel>
+                          {sectionId === "industry-segments" && key === "image"
+                            ? "Main Image (Upload / URL)"
+                            : sectionId === "industry-segments" && key === "iconImage"
+                              ? "Top Image / Icon (Upload / URL)"
+                              : humanizeKey(key)}
+                        </FieldLabel>
 
                         {key === "icon" && sectionId !== "journey-glimpse" ? (
                           <SelectField
@@ -1775,7 +1821,25 @@ function SectionItemsEditor({
                                         "/uploads/icons/v5og.png",
                                         "/uploads/icons/v6og.png",
                                       ][index % 6]
-                                    : undefined
+                                    : sectionId === "industry-segments"
+                                      ? key === "iconImage"
+                                        ? [
+                                            "/uploads/icons/x1og.png",
+                                            "/uploads/icons/x2og.png",
+                                            "/uploads/icons/x3og.png",
+                                            "/uploads/icons/x4og.png",
+                                            "/uploads/icons/x5og.png",
+                                            "/uploads/icons/x6og.png",
+                                          ][index % 6]
+                                        : [
+                                            "/uploads/icons/x1.webp",
+                                            "/uploads/icons/x2.webp",
+                                            "/uploads/icons/x3.webp",
+                                            "/uploads/icons/x4.webp",
+                                            "/uploads/icons/x5.webp",
+                                            "/uploads/icons/x6.webp",
+                                          ][index % 6]
+                                      : undefined
                             }
                           />
                         ) : Array.isArray(value) ? (
@@ -1814,9 +1878,19 @@ function SectionItemsEditor({
                         ) : typeof value === "boolean" ? (
                           <Toggle checked={value} onChange={(next) => onChangeItem(index, key, next)} />
                         ) : isLong ? (
-                          <Textarea value={String(value)} onChange={(next) => onChangeItem(index, key, next)} rows={3} />
+                          <Textarea
+                            value={String(value)}
+                            onChange={(next) => onChangeItem(index, key, next)}
+                            rows={3}
+                            noLimit={sectionId === "why-visit-matters" || sectionId === "industry-segments"}
+                          />
                         ) : (
-                          <TextInput value={String(value)} onChange={(next) => onChangeItem(index, key, next)} />
+                          <TextInput
+                            value={String(value)}
+                            onChange={(next) => onChangeItem(index, key, next)}
+                            maxLength={(sectionId === "why-visit-matters" || sectionId === "industry-segments") ? 5000 : 120}
+                            hideLimit={sectionId === "why-visit-matters" || sectionId === "industry-segments"}
+                          />
                         )}
                       </div>
                     );
@@ -2099,10 +2173,15 @@ export default function CmsEditPage() {
     () => initialResolved.configKey || "landingPage"
   );
 
+  const lastParamIdRef = useRef(params.id);
+
   useEffect(() => {
-    const found = findCmsPageByRouteKey(pages, params.id);
-    if (found?.configKey) {
-      setActiveConfigKey(found.configKey);
+    if (lastParamIdRef.current !== params.id) {
+      lastParamIdRef.current = params.id;
+      const found = findCmsPageByRouteKey(pages, params.id);
+      if (found?.configKey) {
+        setActiveConfigKey(found.configKey);
+      }
     }
   }, [params.id, pages]);
 
@@ -2442,10 +2521,11 @@ export default function CmsEditPage() {
           });
         }
       }
-      if (fallbackItem.key === "industries-section" || merged.key === "industries-section") {
-        delete merged.subtitle;
+      if (fallbackItem.key === "industry-segments" || merged.key === "industry-segments") {
         delete merged.description;
         delete merged.shortDescription;
+        delete merged.buttonLabel;
+        delete merged.buttonHref;
       }
       if (fallbackItem.key === "testimonials-section" || merged.key === "testimonials-section") {
         delete merged.subtitle;
@@ -3087,26 +3167,72 @@ export default function CmsEditPage() {
         })
         .catch(() => {});
 
-      api.get("/website/home/expo-categories")
+      api.get("/website/participate/why-visit/segments")
         .then((res: any) => {
           const data = res?.data?.data || res?.data || res;
-          const expoList = Array.isArray(data?.items) && data.items.length > 0
-            ? data.items
-            : Array.isArray(data?.categories) && data.categories.length > 0
-            ? data.categories
+          const defaultImgs = [
+            "/uploads/icons/x1.webp",
+            "/uploads/icons/x2.webp",
+            "/uploads/icons/x3.webp",
+            "/uploads/icons/x4.webp",
+            "/uploads/icons/x5.webp",
+            "/uploads/icons/x6.webp",
+          ];
+          const segList = Array.isArray(data?.segments) && data.segments.length > 0
+            ? data.segments
             : null;
-          if (expoList && expoList.length > 0) {
+          if (segList && segList.length > 0) {
             setSectionsDraft((prev) =>
               prev.map((sec) =>
-                sec.key === "industries-section" || sec.name === "IndustriesSection"
+                sec.key === "industry-segments" || sec.name === "IndustrySegments"
                   ? {
                       ...sec,
-                      items: expoList.map((c: any, idx: number) => ({
+                      eyebrow: data.badge ?? sec.eyebrow ?? "WHAT CAN YOU SOURCE?",
+                      subtitle: data.subline ?? sec.subtitle ?? "ONE EXPO • COMPLETE ECOSYSTEM",
+                      title: `${data.mainTitleLine1 ?? "Explore "}${data.segmentCount ?? "6"}${data.mainTitleLine2 ?? " Major Industry Segments"}`,
+                      items: segList.map((c: any, idx: number) => ({
+                        num: c.num ?? `0${idx + 1}`,
                         title: c.title ?? sec.items?.[idx]?.title ?? "",
-                        desc: c.description ?? c.desc ?? sec.items?.[idx]?.desc ?? "",
-                        description: c.description ?? c.desc ?? sec.items?.[idx]?.description ?? "",
-                        image: c.image || sec.items?.[idx]?.image || "",
+                        subtitle: c.items ?? c.subtitle ?? sec.items?.[idx]?.subtitle ?? "",
+                        iconImage: c.iconImage || c.iconImg || sec.items?.[idx]?.iconImage || `/uploads/icons/x${idx + 1}og.png`,
+                        image: c.image || sec.items?.[idx]?.image || defaultImgs[idx % 6],
                       })),
+                    }
+                  : sec
+              )
+            );
+          }
+        })
+        .catch(() => {});
+    }
+
+    if (page.configKey === "whyVisitPage" || page.slug?.includes("why-visit")) {
+      api.get("/website/participate/why-visit/matters")
+        .then((res: any) => {
+          const data = res?.data?.data || res?.data || res;
+          if (data) {
+            setSectionsDraft((prev) =>
+              prev.map((sec) =>
+                sec.key === "why-visit-matters" || sec.name === "WhyVisitMatters"
+                  ? {
+                      ...sec,
+                      enabled: data.enabled !== false,
+                      image: data.image || data.bandImg || sec.image || "/uploads/icons/band.png",
+                      imageAlt: data.imageAlt ?? sec.imageAlt ?? "Business Opportunities Under One Roof",
+                      title: data.title ?? sec.title ?? "Why Your Visit Matters",
+                      subtitle: data.subtitle ?? data.subline1 ?? sec.subtitle,
+                      description: data.description ?? data.shortDescription ?? data.subline2 ?? sec.description,
+                      shortDescription: data.shortDescription ?? data.description ?? data.subline2 ?? sec.shortDescription,
+                      lowerTitle: data.lowerTitle ?? data.bannerTitle ?? sec.lowerTitle,
+                      lowerDescription: data.lowerDescription ?? data.bannerDesc ?? sec.lowerDescription,
+                      items: Array.isArray(data.items || data.cards) && (data.items || data.cards).length > 0
+                        ? (data.items || data.cards).map((it: any, idx: number) => ({
+                            num: it.num ?? `0${idx + 1}`,
+                            title: it.title ?? sec.items?.[idx]?.title ?? "",
+                            description: it.description ?? it.desc ?? sec.items?.[idx]?.description ?? "",
+                            image: it.image || it.img || sec.items?.[idx]?.image || `/uploads/icons/v${idx + 1}og.png`,
+                          }))
+                        : sec.items,
                     }
                   : sec
               )
@@ -3711,22 +3837,75 @@ export default function CmsEditPage() {
             console.error("Failed to sync reasons to exhibit:", err);
           }
         }
+      }
 
-        const industriesSec = sectionsDraft.find((s) => s.key === "industries-section" || s.name === "IndustriesSection");
-        if (industriesSec && Array.isArray(industriesSec.items) && industriesSec.items.length > 0) {
+      if (savingKey === "whyVisitPage" || page.slug?.includes("why-visit")) {
+        const mattersSec = sectionsDraft.find((s) => s.key === "why-visit-matters" || s.name === "WhyVisitMatters");
+        if (mattersSec) {
           try {
-            await api.put("/website/home/expo-categories", {
-              items: industriesSec.items.map((it: any) => ({
-                title: it.title || "",
-                desc: it.description || it.desc || "",
-                description: it.description || it.desc || "",
-                image: it.image || "",
-                href: it.href || "/exhibition-categories",
-                exploreText: it.exploreText || "Explore",
-              })),
+            await api.put("/website/participate/why-visit/matters", {
+              enabled: mattersSec.enabled !== false,
+              image: mattersSec.image || "/uploads/icons/band.png",
+              bandImg: mattersSec.image || "/uploads/icons/band.png",
+              imageAlt: mattersSec.imageAlt || "Business Opportunities Under One Roof",
+              title: mattersSec.title || "Why Your Visit Matters",
+              subtitle: mattersSec.subtitle || "Bharat Organic Expo brings the right products, suppliers and decision-makers together,",
+              subline1: mattersSec.subtitle || "Bharat Organic Expo brings the right products, suppliers and decision-makers together,",
+              description: mattersSec.description || mattersSec.shortDescription || "creating real opportunities for your business growth.",
+              shortDescription: mattersSec.shortDescription || mattersSec.description || "creating real opportunities for your business growth.",
+              subline2: mattersSec.description || mattersSec.shortDescription || "creating real opportunities for your business growth.",
+              lowerTitle: mattersSec.lowerTitle || "One Visit. Multiple Opportunities.",
+              lowerDescription: mattersSec.lowerDescription || "Save time, meet the right people and take your business to the next level.",
+              bannerTitle: mattersSec.lowerTitle || "One Visit. Multiple Opportunities.",
+              bannerDesc: mattersSec.lowerDescription || "Save time, meet the right people and take your business to the next level.",
+              items: Array.isArray(mattersSec.items)
+                ? mattersSec.items.map((it: any, idx: number) => ({
+                    num: it.num || `0${idx + 1}`,
+                    title: it.title || "",
+                    description: it.description || it.desc || "",
+                    desc: it.description || it.desc || "",
+                    image: it.image || it.img || `/uploads/icons/v${idx + 1}og.png`,
+                    img: it.image || it.img || `/uploads/icons/v${idx + 1}og.png`,
+                  }))
+                : [],
+              cards: Array.isArray(mattersSec.items)
+                ? mattersSec.items.map((it: any, idx: number) => ({
+                    num: it.num || `0${idx + 1}`,
+                    title: it.title || "",
+                    description: it.description || it.desc || "",
+                    desc: it.description || it.desc || "",
+                    image: it.image || it.img || `/uploads/icons/v${idx + 1}og.png`,
+                    img: it.image || it.img || `/uploads/icons/v${idx + 1}og.png`,
+                  }))
+                : [],
             });
           } catch (err) {
-            console.error("Failed to sync industries section to expo categories:", err);
+            console.error("Failed to sync why visit matters to backend:", err);
+          }
+        }
+
+        const industriesSec = sectionsDraft.find((s) => s.key === "industry-segments" || s.name === "IndustrySegments");
+        if (industriesSec) {
+          try {
+            await api.put("/website/participate/why-visit/segments", {
+              badge: industriesSec.eyebrow || "WHAT CAN YOU SOURCE?",
+              subline: industriesSec.subtitle || "ONE EXPO • COMPLETE ECOSYSTEM",
+              mainTitleLine1: industriesSec.title || "Explore 6 Major Industry Segments",
+              segmentCount: "",
+              mainTitleLine2: "",
+              segments: Array.isArray(industriesSec.items)
+                ? industriesSec.items.map((it: any, idx: number) => ({
+                    num: it.num || `0${idx + 1}`,
+                    title: it.title || "",
+                    items: it.subtitle || it.items || "",
+                    image: it.image || `/uploads/icons/x${idx + 1}.webp`,
+                    iconImg: it.iconImage || it.iconImg || `/uploads/icons/x${idx + 1}og.png`,
+                    iconImage: it.iconImage || it.iconImg || `/uploads/icons/x${idx + 1}og.png`,
+                  }))
+                : [],
+            });
+          } catch (err) {
+            console.error("Failed to sync industries section to backend:", err);
           }
         }
       }
@@ -4160,9 +4339,11 @@ export default function CmsEditPage() {
                       if (targetPage && targetPage.configKey) {
                         setActiveConfigKey(targetPage.configKey);
                         const newRouteKey = getCmsPageRouteKey(targetPage);
+                        lastParamIdRef.current = newRouteKey;
                         if (typeof window !== "undefined") {
                           window.history.replaceState(null, "", `/pages/${newRouteKey}/edit`);
                         }
+                        router.replace(`/pages/${newRouteKey}/edit`, { scroll: false });
                         setForm((prev) => ({
                           ...prev,
                           pageTitle: targetPage.title,

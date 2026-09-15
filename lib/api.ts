@@ -6,10 +6,13 @@ const getCache = new Map<string, { expiresAt: number; value: unknown }>();
 
 export class ApiRequestError extends Error {
   status: number;
+  isApiRequestError = true;
 
   constructor(status: number, message: string) {
     super(message);
+    this.name = "ApiRequestError";
     this.status = status;
+    Object.setPrototypeOf(this, ApiRequestError.prototype);
   }
 }
 
@@ -595,28 +598,42 @@ async function request<T>(path: string, options?: ApiRequestOptions, isRetry = f
     clearTimeout(timeoutId);
   }
 
-  if (res.status === 401 && !isRetry && path !== "/auth/refresh-token") {
+  // Only refresh token on 401 for authenticated endpoints (exclude public login/auth routes)
+  const isPublicAuthPath =
+    path.startsWith("/auth/login") ||
+    path.startsWith("/auth/forgot-password") ||
+    path.startsWith("/auth/reset-password") ||
+    path === "/auth/refresh-token";
+
+  if (res.status === 401 && !isRetry && !isPublicAuthPath) {
     const refreshed = await refreshAccessToken();
     if (refreshed) return request<T>(path, options, true);
     onRefreshFailed?.();
   }
 
+  let body: any = null;
   try {
-    const body: ApiEnvelope<T> = await res.json();
-    if (!res.ok || !body.success) {
-      if (isRealBackendPath) {
-        throw new ApiRequestError(res.status, body.message || `Request failed with status ${res.status}`);
-      }
-      return getMockDataForPath(path, options?.method ?? "GET") as T;
-    }
-    return body.data;
-  } catch (e) {
-    if (e instanceof ApiRequestError) throw e;
+    body = await res.json();
+  } catch {
+    // Non-JSON response
+  }
+
+  if (!res.ok || (body && body.success === false)) {
+    const errorMessage = body?.message || (res.status === 401 ? "Invalid email, staff ID, or password" : `Request failed with status ${res.status}`);
     if (isRealBackendPath) {
-      throw new ApiRequestError(res.status, "An unexpected server error occurred.");
+      throw new ApiRequestError(res.status, errorMessage);
     }
     return getMockDataForPath(path, options?.method ?? "GET") as T;
   }
+
+  if (body !== null) {
+    return (body.data !== undefined ? body.data : body) as T;
+  }
+
+  if (isRealBackendPath) {
+    throw new ApiRequestError(res.status, "An unexpected server error occurred.");
+  }
+  return getMockDataForPath(path, options?.method ?? "GET") as T;
 }
 
 /** For endpoints that return raw HTML (not the {success,message,data} envelope) — e.g. the
