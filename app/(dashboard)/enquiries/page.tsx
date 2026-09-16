@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Suspense,
   useEffect,
   useMemo,
   useState,
@@ -704,7 +705,7 @@ function FilterSelect({
    MAIN PAGE
 ============================================================ */
 
-export default function EnquiriesPage() {
+function EnquiriesPageContent() {
   const [enquiries, setEnquiries] =
     useState<Enquiry[]>([]);
 
@@ -3281,5 +3282,13 @@ export default function EnquiriesPage() {
         )}
       </Modal>
     </section>
+  );
+}
+
+export default function EnquiriesPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-500 font-medium">Loading enquiries...</div>}>
+      <EnquiriesPageContent />
+    </Suspense>
   );
 }

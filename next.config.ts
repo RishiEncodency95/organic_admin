@@ -27,10 +27,10 @@ const csp = [
   "worker-src 'self' blob: data:",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https: blob: http:",
-  "media-src 'self' https://res.cloudinary.com",
+  "media-src 'self' https://res.cloudinary.com http://localhost:4000 http://localhost:3001 blob: data:",
   "font-src 'self' data:",
   `connect-src 'self' ${apiOrigin} http://localhost:4000 https://res.cloudinary.com https://lottie.host https://cdn.jsdelivr.net blob: data:`,
-  `frame-src ${siteOrigin} http://localhost:3002`,
+  `frame-src 'self' ${siteOrigin} http://localhost:3002 https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://www.instagram.com https://instagram.com`,
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -48,6 +48,15 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      {
+        source: "/testimonial_videos",
+        destination: "/testimonial-videos",
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

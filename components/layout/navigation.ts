@@ -25,6 +25,7 @@ import {
   Star,
   UserCog,
   Users,
+  Video,
   type LucideIcon,
 } from "lucide-react";
 
@@ -69,6 +70,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "Media Library", href: "/gallery", icon: GalleryHorizontalEnd },
       { label: "Exhibitor List", href: "/exhibitor-list", icon: Building2 },
       { label: "Testimonials", href: "/testimonials", icon: MessageSquare },
+      { label: "Testimonial Videos", href: "/testimonial-videos", icon: Video },
       { label: "FAQs", href: "/faqs", icon: MessageSquare },
       { label: "Navigation Menus", href: "/navigation-menus", icon: ListTree },
     ],

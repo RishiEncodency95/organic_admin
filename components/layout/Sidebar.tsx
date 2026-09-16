@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import {
   usePathname,
@@ -46,7 +47,7 @@ function isActive(
   return true;
 }
 
-export default function Sidebar({
+function SidebarContent({
   onNavigate,
 }: {
   onNavigate?: () => void;
@@ -467,5 +468,17 @@ export default function Sidebar({
         </a>
       </div>
     </aside>
+  );
+}
+
+export default function Sidebar({
+  onNavigate,
+}: {
+  onNavigate?: () => void;
+}) {
+  return (
+    <Suspense fallback={<aside className="flex h-screen w-[218px] shrink-0 flex-col border-r border-[#e8ecef] bg-white" />}>
+      <SidebarContent onNavigate={onNavigate} />
+    </Suspense>
   );
 }
