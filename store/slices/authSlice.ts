@@ -43,7 +43,7 @@ export const loginAdmin = createAsyncThunk(
       const result = await authApi.login(email, password, totpCode);
       return result;
     } catch (err: any) {
-      return rejectWithValue(err);
+      return rejectWithValue(err?.message || "Login failed");
     }
   }
 );
@@ -55,7 +55,7 @@ export const verifyTwoFactor = createAsyncThunk(
       const result = await authApi.verifyTwoFactor(totpCode, tempToken);
       return result;
     } catch (err: any) {
-      return rejectWithValue(err);
+      return rejectWithValue(err?.message || "2FA verification failed");
     }
   }
 );

@@ -1,12 +1,12 @@
 import type { NextConfig } from "next";
 
-let apiOrigin = "http://localhost:4000";
+let apiOrigin = "http://localhost:4001";
 try {
   if (process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL.startsWith("http")) {
     apiOrigin = new URL(process.env.NEXT_PUBLIC_API_URL).origin;
   }
 } catch {
-  apiOrigin = "http://localhost:4000";
+  apiOrigin = "http://localhost:4001";
 }
 
 let siteOrigin = "http://localhost:3002";
@@ -27,9 +27,9 @@ const csp = [
   "worker-src 'self' blob: data:",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https: blob: http:",
-  "media-src 'self' https://res.cloudinary.com http://localhost:4000 http://localhost:3001 blob: data:",
+  "media-src 'self' https://res.cloudinary.com http://localhost:4001 http://localhost:4000 http://localhost:3001 blob: data:",
   "font-src 'self' data:",
-  `connect-src 'self' ${apiOrigin} http://localhost:4000 https://res.cloudinary.com https://lottie.host https://cdn.jsdelivr.net blob: data:`,
+  `connect-src 'self' ${apiOrigin} http://localhost:4001 http://localhost:4000 https://res.cloudinary.com https://lottie.host https://cdn.jsdelivr.net blob: data:`,
   `frame-src 'self' ${siteOrigin} http://localhost:3002 https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://www.instagram.com https://instagram.com`,
   "object-src 'none'",
   "base-uri 'self'",
@@ -64,11 +64,11 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:4000/api/:path*",
+        destination: `${apiOrigin}/api/:path*`,
       },
       {
         source: "/uploads/:path*",
-        destination: "http://localhost:4000/uploads/:path*",
+        destination: `${apiOrigin}/uploads/:path*`,
       },
     ];
   },

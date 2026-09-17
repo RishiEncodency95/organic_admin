@@ -1883,10 +1883,17 @@ export default function DashboardPage() {
             overflow-visible
             pl-5
             pr-5
-            pt-4
+            pt-3
             pb-5
           "
         >
+          {/* DASHBOARD PAGE TITLE (ABOVE SEO HEALTH SCORE & STAT CARDS) */}
+          <div className="mb-2.5 flex items-center justify-between">
+            <h1 className="text-[17px] font-bold tracking-tight text-slate-800">
+              Dashboard
+            </h1>
+          </div>
+
           {/* =================================================
               IMPORTANT HEIGHT CHANGE
 

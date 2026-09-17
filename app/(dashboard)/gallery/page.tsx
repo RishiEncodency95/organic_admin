@@ -119,7 +119,7 @@ const INITIAL_YEARS: string[] = [
 
 const INITIAL_MEDIA: MediaItem[] = [];
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4001";
 
 const formatTimestamp = () => {
   const d = new Date();
@@ -478,32 +478,36 @@ export default function MediaLibraryPage() {
     showSuccess(`Year "${yr}" removed.`);
   };
 
-  // Upload helper directly to Cloudinary CDN
+  // Upload helper directly to Cloudinary CDN (or backend local upload)
   const uploadToCloudinary = async (file: File): Promise<string> => {
     try {
       setIsUploading(true);
+      const targetFolder = `bharat-organic/gallery/${formYear || "2026"}/${(formCategory || "general").toLowerCase().replace(/\s+/g, "-")}`;
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("folder", `bharat-organic/gallery/${formYear}/${formCategory.toLowerCase().replace(/\s+/g, "-")}`);
+      formData.append("folder", targetFolder);
 
-      let res = await fetch(`${BACKEND_URL}/api/uploads?folder=bharat-organic/gallery`, {
+      // Primary: Use relative endpoint /api/uploads (proxied by Next.js to backend port 4001)
+      let res = await fetch(`/api/uploads?folder=${encodeURIComponent(targetFolder)}`, {
         method: "POST",
         body: formData,
-      });
+      }).catch(() => null);
 
-      if (!res.ok) {
-        res = await fetch(`/api/uploads?folder=bharat-organic/gallery`, {
+      // Secondary fallback: Direct to BACKEND_URL
+      if (!res || !res.ok) {
+        res = await fetch(`${BACKEND_URL}/api/uploads?folder=${encodeURIComponent(targetFolder)}`, {
           method: "POST",
           body: formData,
-        });
+        }).catch(() => null);
       }
 
-      if (res.ok) {
-        const json = await res.json();
-        const finalUrl = json.data?.url || json.url || json.data?.secure_url || json.secure_url;
-        if (finalUrl) {
-          if (finalUrl.startsWith("http")) return finalUrl;
-          return `${BACKEND_URL.replace(/\/$/, "")}${finalUrl.startsWith("/") ? "" : "/"}${finalUrl}`;
+      if (res && res.ok) {
+        const json = await res.json().catch(() => null);
+        if (json) {
+          const finalUrl = json.data?.url || json.url || json.data?.secure_url || json.secure_url;
+          if (finalUrl) {
+            return finalUrl;
+          }
         }
       }
     } catch (err) {
@@ -511,7 +515,15 @@ export default function MediaLibraryPage() {
     } finally {
       setIsUploading(false);
     }
-    return URL.createObjectURL(file);
+
+    // Convert file to Base64 Data URL so it saves and displays reliably even if upload network request failed
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        resolve(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   // Stat calculations

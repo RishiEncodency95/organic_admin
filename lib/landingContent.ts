@@ -50,6 +50,11 @@ export interface LandingSectionItem {
   feature1?: string;
   feature2?: string;
   feature3?: string;
+  keyPoint1?: string;
+  keyPoint2?: string;
+  keyPoint3?: string;
+  keyPoint4?: string;
+  [key: string]: any;
 }
 
 export interface LandingHeroSlide {

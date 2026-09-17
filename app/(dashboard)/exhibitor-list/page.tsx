@@ -87,7 +87,7 @@ export interface ExhibitorItem {
   updatedBy?: string;
 }
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4001";
 
 const formatTimestamp = () => {
   const d = new Date();

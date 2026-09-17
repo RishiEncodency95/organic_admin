@@ -69,6 +69,8 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "Blog & Insights", href: "/blogs", icon: BookOpenText },
       { label: "Media Library", href: "/gallery", icon: GalleryHorizontalEnd },
       { label: "Exhibitor List", href: "/exhibitor-list", icon: Building2 },
+      { label: "Trusted Leaders", href: "/trusted-leaders", icon: Handshake, badge: "NEW" },
+      { label: "Advisory Board Members", href: "/advisory-board-members", icon: Users, badge: "NEW" },
       { label: "Testimonials", href: "/testimonials", icon: MessageSquare },
       { label: "Testimonial Videos", href: "/testimonial-videos", icon: Video },
       { label: "FAQs", href: "/faqs", icon: MessageSquare },

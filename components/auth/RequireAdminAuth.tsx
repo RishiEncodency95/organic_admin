@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAppSelector } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { logout } from "@/store/slices/authSlice";
 import { authApi } from "@/lib/authApi";
 
 const AUTH_STORAGE_KEY = "ms_admin_auth";
 
-// Check synchronously if localStorage already has a saved admin session
+// Check synchronously if valid saved admin session exists
 const checkHasSavedAuth = (): boolean => {
   if (typeof window === "undefined") return false;
   try {
@@ -24,33 +25,35 @@ const checkHasSavedAuth = (): boolean => {
 
 /**
  * Gate for the dashboard shell.
- * Uses optimistic auth from localStorage so dashboard loads instantly without any white screen spinner flash.
- * Session validity is verified silently in the background.
+ * Loads instantly with ZERO preloader or artificial delay.
+ * Route protection is enforced at server-edge via middleware.ts.
  */
 export default function RequireAdminAuth({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const { admin, hydrated } = useAppSelector((state) => state.auth);
 
-  // Synchronous optimistic auth check so the UI loads instantly without white spinner flash
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return checkHasSavedAuth();
-  });
+  const [hasAuth, setHasAuth] = useState<boolean>(() => checkHasSavedAuth());
 
   useEffect(() => {
-    const hasLocalAuth = checkHasSavedAuth();
+    const hasLocal = checkHasSavedAuth();
 
     if (hydrated) {
-      if (!admin && !hasLocalAuth) {
+      if (!admin && !hasLocal) {
+        if (typeof document !== "undefined") {
+          document.cookie = "ms_admin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+        }
+        setHasAuth(false);
         router.replace("/login");
         return;
       }
-      setIsAuthenticated(true);
-    } else if (hasLocalAuth) {
-      setIsAuthenticated(true);
+      setHasAuth(true);
+    } else if (hasLocal) {
+      setHasAuth(true);
     }
 
-    // Verify session in the background silently without blocking the UI
-    if (hasLocalAuth || admin) {
+    // Verify session silently in background without blocking UI
+    if (hasLocal || admin) {
       authApi
         .getMe()
         .then((me) => {
@@ -59,14 +62,19 @@ export default function RequireAdminAuth({ children }: { children: React.ReactNo
           }
         })
         .catch(() => {
-          // If token expired or invalid, redirect to login
+          dispatch(logout());
+          if (typeof window !== "undefined") {
+            localStorage.removeItem(AUTH_STORAGE_KEY);
+            document.cookie = "ms_admin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+          }
+          setHasAuth(false);
           router.replace("/login");
         });
     }
-  }, [hydrated, admin, router]);
+  }, [hydrated, admin, router, dispatch]);
 
-  // If user is genuinely not logged in, render null while redirecting to /login
-  if (!isAuthenticated && hydrated && !admin) {
+  // If genuinely not authenticated, render null while redirecting (no slow preloader)
+  if (!hasAuth && hydrated && !admin) {
     return null;
   }
 

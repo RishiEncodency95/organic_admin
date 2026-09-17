@@ -516,6 +516,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 
       if (typeof window !== "undefined") {
         localStorage.removeItem("ms_admin_auth");
+        document.cookie = "ms_admin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
       }
 
       router.push("/login");
@@ -556,62 +557,49 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
             <Menu className="h-[18px] w-[18px]" />
           </button>
 
-          {/* ACTIVE PAGE TITLE / BREADCRUMB */}
-          {pagesSubRouteLabel(pathname) ? (
-            <h1 className="flex min-w-0 items-center gap-1.5 text-[15px] font-semibold tracking-tight">
-              <span
-                className="truncate"
+          {/* ACTIVE PAGE TITLE / BREADCRUMB (HIDDEN ON DASHBOARD AS IT IS PLACED IN CONTENT AREA) */}
+          {!isDashboard && (
+            pagesSubRouteLabel(pathname) ? (
+              <h1 className="flex min-w-0 items-center gap-1.5 text-[15px] font-semibold tracking-tight">
+                <span
+                  className="truncate"
+                  style={{ color: "#4B1426" }}
+                >
+                  {currentPageTitle(pathname)}
+                </span>
+                <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" />
+                <span className="truncate font-bold" style={{ color: "#23471d" }}>
+                  {pagesSubRouteLabel(pathname)}
+                </span>
+              </h1>
+            ) : (
+              <h1
+                className="truncate text-[15px] font-bold tracking-tight"
                 style={{ color: "#4B1426" }}
               >
                 {currentPageTitle(pathname)}
-              </span>
-              <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" />
-              <span className="truncate font-bold" style={{ color: "#23471d" }}>
-                {pagesSubRouteLabel(pathname)}
-              </span>
-            </h1>
-          ) : (
-            <h1
-              className="truncate text-[15px] font-bold tracking-tight"
-              style={{ color: "#4B1426" }}
-            >
-              {currentPageTitle(pathname)}
-            </h1>
+              </h1>
+            )
           )}
 
-          {/* GREETING BADGE (DASHBOARD ONLY) */}
+          {/* GREETING (DASHBOARD ONLY - NO BORDER, NO SHADOW) */}
           {isDashboard && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: "easeOut" }}
-              className="flex items-center gap-2.5 bg-slate-50/80 px-3 py-1 rounded-xl border border-[#23471d]/25 group transition-all duration-300 hover:bg-white hover:border-[#23471d]/50 shadow-xs"
+              className="flex items-center gap-1.5 py-1"
             >
-              {/* Icon Circle */}
-              <div className="flex items-center justify-center w-7 h-7 rounded-full bg-white border border-slate-100 shadow-xs">
+              {/* Icon */}
+              <div className="flex items-center justify-center">
                 {greeting.icon}
               </div>
 
               {/* Text Content */}
-              <div className="flex flex-col leading-tight">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[12px] font-medium text-slate-700 tracking-tight">
-                    {greeting.text},
-                  </span>
-                  <span className="text-[12px] font-bold text-[#23471d] tracking-tight">
-                    {firstName}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <div className="relative flex items-center justify-center">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                    <div className="absolute inset-0 w-1.5 h-1.5 rounded-full bg-green-500 animate-ping opacity-75" />
-                  </div>
-                  <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest">
-                    {displayRole}
-                  </span>
-                </div>
+              <div className="flex items-center">
+                <span className="text-[13px] font-semibold text-[#23471d] tracking-tight">
+                  {greeting.text}
+                </span>
               </div>
             </motion.div>
           )}
