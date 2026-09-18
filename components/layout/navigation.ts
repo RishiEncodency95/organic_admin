@@ -6,6 +6,7 @@ import {
   BriefcaseBusiness,
   Building2,
   DatabaseBackup,
+  FileCode,
   FileSearch,
   FileText,
   GalleryHorizontalEnd,
@@ -81,6 +82,7 @@ export const NAV_SECTIONS: NavSection[] = [
     title: "SEO & Performance",
     items: [
       { label: "SEO Audit", href: "/seo", icon: SearchCheck, badge: "NEW" },
+      { label: "Advanced SEO", href: "/advanced-seo", icon: FileCode, badge: "NEW" },
       { label: "Audited Pages", href: "/auditpage", icon: FileSearch },
       { label: "SEO Center", href: "/reports", icon: SearchCheck },
       { label: "Google Search Console", icon: BarChart3, disabled: true },
