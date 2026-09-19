@@ -1,584 +1,1089 @@
 "use client";
 
-import { useMemo, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, useRef, useMemo, Suspense } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import typography from "../../pages/PagesTypography.module.css";
+import Swal from "sweetalert2";
+import { uploadApi } from "@/lib/uploadApi";
+import { blogsApi } from "@/lib/blogsApi";
+import RichTextEditor from "@/components/RichTextEditor";
 import {
-  AlignCenter,
-  AlignLeft,
-  AlignRight,
   ArrowLeft,
-  Bold,
-  CalendarDays,
-  ChevronDown,
-  CircleHelp,
-  Clock3,
+  Calendar,
+  Check,
+  Code,
   Eye,
-  Globe2,
+  FileText,
+  Globe,
   Image as ImageIcon,
-  Info,
-  Italic,
-  Link2,
-  List,
-  ListOrdered,
-  Quote,
-  Redo2,
   Save,
-  Send,
-  Strikethrough,
-  Underline,
-  Undo2,
+  Trash2,
   Upload,
-  Video,
 } from "lucide-react";
 
-function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onChange}
-      aria-pressed={checked}
-      className={`relative h-[22px] w-[38px] shrink-0 rounded-full transition ${checked ? "bg-[#0b6a3b]" : "bg-[#d7dde6]"
-        }`}
-    >
-      <span
-        className={`absolute top-[2px] h-[18px] w-[18px] rounded-full bg-white shadow transition ${checked ? "left-[18px]" : "left-[2px]"
-          }`}
-      />
-    </button>
-  );
+// SweetAlert toast matching admin dark / light style
+const Toast = Swal.mixin({
+  toast: true,
+  position: "top-end",
+  showConfirmButton: false,
+  timer: 3000,
+  timerProgressBar: true,
+  background: "#1e2433",
+  color: "#e2e8f0",
+  iconColor: "#4ade80",
+});
+
+function showSuccess(msg: string) {
+  Toast.fire({ icon: "success", title: msg });
 }
 
-function FieldLabel({
-  children,
-  required,
-}: {
-  children: React.ReactNode;
-  required?: boolean;
-}) {
-  return (
-    <label className="mb-[6px] block text-[11px] font-semibold text-[#24345e]">
-      {children}
-      {required ? <span className="ml-[2px] text-[#dc3c3c]">*</span> : null}
-    </label>
-  );
+function showError(msg: string) {
+  Toast.fire({ icon: "error", title: msg, iconColor: "#f87171" });
 }
 
-function Panel({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-[9px] border border-[#e7e9ec] bg-white px-[16px] py-[14px] shadow-[0_1px_3px_rgba(15,23,42,0.025)]">
-      <h2 className="text-[14px] font-semibold text-[#17234a]">{title}</h2>
-      <div className="mt-[12px]">{children}</div>
-    </section>
-  );
+function showWarning(msg: string) {
+  Swal.fire({
+    icon: "warning",
+    title: "Missing Required Field",
+    text: msg,
+    confirmButtonColor: "#134698",
+    background: "#ffffff",
+  });
 }
 
-export default function AddNewPostPage() {
+function AddNewPostContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("id");
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const ogFileInputRef = useRef<HTMLInputElement>(null);
 
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("");
-  const [tags, setTags] = useState("");
-  const [excerpt, setExcerpt] = useState("");
-  const [content, setContent] = useState("");
+  const [blogData, setBlogData] = useState({
+    title: "",
+    h1Title: "",
+    slug: "",
+    excerpt: "",
+    content: "",
+    category: "Expo News",
+    author: "Bharat Organic Expo Admin",
+    tags: "organic expo, sustainable agriculture, ayurveda",
+    status: "published",
+    featured: false,
+    metaTitle: "",
+    metaDescription: "",
+    imageAlt: "",
+    ogTitle: "",
+    ogDescription: "",
+    canonicalTag: "",
+    schemaMarkup: "",
+    openGraphTags: "",
+    metaKeywords: "",
+    readTime: "4 min read",
+  });
 
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [ogImageFile, setOgImageFile] = useState<File | null>(null);
+  const [ogImagePreview, setOgImagePreview] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSlugDetached, setIsSlugDetached] = useState(false);
 
-  const [status, setStatus] = useState("Draft");
-  const [visibility, setVisibility] = useState("Public");
-  const [publishMode, setPublishMode] = useState<"now" | "later">("now");
-  const [publishDate, setPublishDate] = useState("02 Jun 2026");
-  const [publishTime, setPublishTime] = useState("10:00 AM");
+  // Schedule states
+  const [isScheduled, setIsScheduled] = useState(false);
+  const [scheduledDate, setScheduledDate] = useState(() => {
+    return new Date().toISOString().split("T")[0];
+  });
+  const [scheduledTime, setScheduledTime] = useState(() => {
+    const d = new Date();
+    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  });
 
-  const [comments, setComments] = useState(true);
-  const [homepage, setHomepage] = useState(true);
-  const [awareness, setAwareness] = useState(false);
+  // ================= INPUT HANDLER =================
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
 
-  const [metaTitle, setMetaTitle] = useState("");
-  const [metaDescription, setMetaDescription] = useState("");
-  const [slug, setSlug] = useState("");
+    setBlogData((prev) => {
+      const updated = {
+        ...prev,
+        [name]: type === "checkbox" ? checked : value,
+      };
 
-  const wordCount = useMemo(
-    () => (content.trim() ? content.trim().split(/\s+/).filter(Boolean).length : 0),
-    [content],
-  );
+      if (name === "status") {
+        if (value === "scheduled") {
+          setIsScheduled(true);
+        } else {
+          setIsScheduled(false);
+        }
+      }
 
-  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setUploadedImage(url);
+      // Auto-generate slug from title if user hasn't manually edited slug
+      if (name === "title" && !isSlugDetached) {
+        const autoSlug = value
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)/g, "");
+        updated.slug = autoSlug;
+        if (!prev.metaTitle || prev.metaTitle === prev.title) {
+          updated.metaTitle = value.slice(0, 65);
+        }
+        if (!prev.ogTitle || prev.ogTitle === prev.title) {
+          updated.ogTitle = value;
+        }
+      }
+
+      if (name === "slug") {
+        setIsSlugDetached(true);
+      }
+
+      return updated;
+    });
+  };
+
+  // ================= IMAGE HANDLERS =================
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+      if (!blogData.imageAlt && blogData.title) {
+        setBlogData((prev) => ({
+          ...prev,
+          imageAlt: `${blogData.title} - Bharat Organic Expo`,
+        }));
+      }
+      // Upload immediately so real URL is available
+      try {
+        const uploadRes = await uploadApi.file(file, "bharat-organic/blogs");
+        if (uploadRes && uploadRes.url) {
+          setImagePreview(uploadRes.url);
+        }
+      } catch (err) {
+        console.warn("Featured image background upload failed, will retry on submit:", err);
+      }
     }
+  };
+
+  const handleOgImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setOgImageFile(file);
+      setOgImagePreview(URL.createObjectURL(file));
+      try {
+        const uploadRes = await uploadApi.file(file, "bharat-organic/blogs");
+        if (uploadRes && uploadRes.url) {
+          setOgImagePreview(uploadRes.url);
+          setBlogData((prev) => ({ ...prev, ogImage: uploadRes.url }));
+        }
+      } catch (err) {
+        console.warn("OG image background upload failed, will retry on submit:", err);
+      }
+    }
+  };
+
+  // Calculate word count
+  const wordCount = useMemo(() => {
+    const rawText = blogData.content.replace(/<[^>]*>/g, " ").trim();
+    return rawText ? rawText.split(/\s+/).filter(Boolean).length : 0;
+  }, [blogData.content]);
+
+  // Handle Edit Mode / Pre-populate from API or LocalStorage
+  useEffect(() => {
+    if (editId) {
+      setIsLoading(true);
+      blogsApi
+        .getByIdOrSlug(editId)
+        .then((res: any) => {
+          const item = res?.data || res;
+          if (item && item.title) {
+            setBlogData({
+              title: item.title || "",
+              h1Title: item.h1Title || item.title || "",
+              slug: item.slug || "",
+              excerpt: item.excerpt || "",
+              content: item.content || "",
+              category: item.category || "Expo News",
+              author: item.author || "Bharat Organic Expo Admin",
+              tags: Array.isArray(item.tags) ? item.tags.join(", ") : (item.tags || ""),
+              status: item.status || "published",
+              featured: Boolean(item.showOnHome ?? item.featured),
+              metaTitle: item.metaTitle || item.title || "",
+              metaDescription: item.metaDescription || item.excerpt || "",
+              imageAlt: item.imageAlt || "",
+              ogTitle: item.ogTitle || item.title || "",
+              ogDescription: item.ogDescription || item.metaDescription || item.excerpt || "",
+              canonicalTag: item.canonicalTag || item.canonicalUrl || "",
+              schemaMarkup: typeof item.schemaMarkup === "object" ? JSON.stringify(item.schemaMarkup, null, 2) : (item.schemaMarkup || ""),
+              openGraphTags: item.openGraphTags || "",
+              metaKeywords: item.metaKeywords || "",
+              readTime: item.readTime || "4 min read",
+            });
+            if (item.image) setImagePreview(item.image);
+            if (item.ogImage) setOgImagePreview(item.ogImage);
+            if (item.status === "scheduled" && item.scheduledDate) {
+              setIsScheduled(true);
+              const dt = new Date(item.scheduledDate);
+              setScheduledDate(dt.toISOString().split("T")[0]);
+              setScheduledTime(dt.toTimeString().slice(0, 5));
+            }
+          }
+        })
+        .catch(() => {
+          // Fallback to local storage if offline
+          try {
+            const storedBlogs = JSON.parse(localStorage.getItem("admin_blogs_data") || "[]");
+            const found = storedBlogs.find((b: any) => String(b.id) === String(editId) || b.slug === editId);
+            if (found) {
+              setBlogData((prev) => ({
+                ...prev,
+                ...found,
+                author: "Bharat Organic Expo Admin",
+              }));
+              if (found.image) setImagePreview(found.image);
+            }
+          } catch {}
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    }
+  }, [editId]);
+
+  // ================= SUBMIT HANDLER =================
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!blogData.title.trim()) {
+      return showWarning("Please enter a blog main title.");
+    }
+    if (!blogData.slug.trim()) {
+      return showWarning("Please provide a permalink / URL slug.");
+    }
+    if (!blogData.content.trim()) {
+      return showWarning("Please enter the detailed blog description content.");
+    }
+    if (!blogData.category.trim()) {
+      return showWarning("Please select or enter a blog category.");
+    }
+    if (!imagePreview && !imageFile && !editId) {
+      return showWarning("Please upload a featured blog image.");
+    }
+
+    try {
+      setIsLoading(true);
+
+      // 1. Upload feature image if still blob URL
+      let finalImageUrl = imagePreview || "";
+      if (imageFile && (!finalImageUrl || finalImageUrl.startsWith("blob:"))) {
+        try {
+          const up = await uploadApi.file(imageFile, "bharat-organic/blogs");
+          if (up && up.url) {
+            finalImageUrl = up.url;
+            setImagePreview(up.url);
+          }
+        } catch (e) {
+          console.warn("Featured image upload fallback:", e);
+        }
+      }
+
+      // 2. Upload OG image if still blob URL
+      let finalOgImageUrl = ogImagePreview || "";
+      if (ogImageFile && (!finalOgImageUrl || finalOgImageUrl.startsWith("blob:"))) {
+        try {
+          const upOg = await uploadApi.file(ogImageFile, "bharat-organic/blogs");
+          if (upOg && upOg.url) {
+            finalOgImageUrl = upOg.url;
+            setOgImagePreview(upOg.url);
+          }
+        } catch (e) {
+          console.warn("OG image upload fallback:", e);
+        }
+      }
+
+      // 3. Normalize content so that any escaped tags or literal tags are clean HTML
+      let normalizedContent = blogData.content.trim();
+      if (/&lt;\s*\/?\s*(h[1-6]|p|div|ul|ol|li|strong|b|em|i|u|span|blockquote|br|a|img|hr)\b/i.test(normalizedContent)) {
+        normalizedContent = normalizedContent
+          .replace(/&lt;/gi, "<")
+          .replace(/&gt;/gi, ">")
+          .replace(/&quot;/gi, '"')
+          .replace(/&#39;/gi, "'")
+          .replace(/&amp;/gi, "&");
+      }
+      if (/&lt;\s*\/?\s*(h[1-6]|p|div|ul|ol|li|strong|b|em|i|u|span|blockquote|br|a|img|hr)\b/i.test(normalizedContent)) {
+        normalizedContent = normalizedContent
+          .replace(/&lt;/gi, "<")
+          .replace(/&gt;/gi, ">");
+      }
+      if (!/<(h[1-6]|p|div|ul|ol|li|blockquote|br)\b/i.test(normalizedContent)) {
+        normalizedContent = normalizedContent
+          .split(/\n{2,}/)
+          .map((b) => `<p>${b.replace(/\n/g, "<br>")}</p>`)
+          .join("");
+      }
+
+      // Auto-extract excerpt from detailed description without any tags
+      const plainText = normalizedContent
+        .replace(/&lt;[^&]*&gt;/gi, " ")
+        .replace(/<[^>]*>/g, " ")
+        .replace(/&nbsp;/gi, " ")
+        .replace(/&amp;/gi, "&")
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;/gi, "'")
+        .replace(/\s+/g, " ")
+        .trim();
+      const autoExcerpt = plainText.slice(0, 180) + (plainText.length > 180 ? "..." : "");
+
+      // 4. Build canonical URL
+      const canonicalTag =
+        blogData.canonicalTag.trim() || `http://localhost:3002/blog/${blogData.slug.trim()}`;
+
+      // 5. Build full payload with all SEO & configuration fields
+      const payload: any = {
+        title: blogData.title.trim(),
+        h1Title: blogData.h1Title.trim() || blogData.title.trim(),
+        slug: blogData.slug.trim(),
+        excerpt: autoExcerpt,
+        content: normalizedContent,
+        category: blogData.category.trim(),
+        author: "Bharat Organic Expo Admin",
+        tags: blogData.tags
+          ? typeof blogData.tags === "string"
+            ? blogData.tags.split(",").map((t: string) => t.trim()).filter(Boolean)
+            : blogData.tags
+          : [],
+        status: isScheduled ? "scheduled" : blogData.status,
+        showOnHome: Boolean(blogData.featured),
+        featured: Boolean(blogData.featured),
+        scheduledDate:
+          (isScheduled || blogData.status === "scheduled") && scheduledDate
+            ? `${scheduledDate}T${scheduledTime || "10:00"}:00`
+            : null,
+        publishDate:
+          (isScheduled || blogData.status === "scheduled") && scheduledDate
+            ? `${scheduledDate}T${scheduledTime || "10:00"}:00`
+            : new Date().toISOString(),
+        readTime: blogData.readTime || "4 min read",
+        image: finalImageUrl,
+        imageAlt: blogData.imageAlt.trim() || `${blogData.title} - Bharat Organic Expo`,
+
+        // SEO Fields
+        metaTitle: blogData.metaTitle.trim() || blogData.title.trim(),
+        metaDescription: blogData.metaDescription.trim() || autoExcerpt,
+        canonicalTag: canonicalTag,
+        canonicalUrl: canonicalTag,
+        ogTitle: blogData.ogTitle.trim() || blogData.title.trim(),
+        ogDescription: blogData.ogDescription.trim() || blogData.metaDescription.trim() || autoExcerpt,
+        ogImage: finalOgImageUrl || finalImageUrl,
+        openGraphTags: blogData.openGraphTags ? blogData.openGraphTags.trim() : "",
+        schemaMarkup: blogData.schemaMarkup,
+        metaKeywords: blogData.metaKeywords,
+      };
+
+      // 6. Call Backend API
+      let savedPost: any = null;
+      if (editId) {
+        savedPost = await blogsApi.update(editId, payload);
+      } else {
+        savedPost = await blogsApi.create(payload);
+      }
+
+      // 7. Also mirror to localStorage for instant offline/optimistic compatibility
+      try {
+        const storedBlogs = JSON.parse(localStorage.getItem("admin_blogs_data") || "[]");
+        const newPostItem = {
+          id: editId ? Number(editId) : Date.now(),
+          _id: savedPost?._id || editId,
+          ...payload,
+          views: editId ? 1245 : 0,
+          date: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+        };
+
+        if (editId) {
+          const idx = storedBlogs.findIndex((b: any) => String(b.id) === String(editId) || b._id === editId);
+          if (idx !== -1) storedBlogs[idx] = newPostItem;
+          else storedBlogs.unshift(newPostItem);
+        } else {
+          storedBlogs.unshift(newPostItem);
+        }
+        localStorage.setItem("admin_blogs_data", JSON.stringify(storedBlogs));
+      } catch {}
+
+      await Swal.fire({
+        icon: "success",
+        title: editId
+          ? "Blog Updated!"
+          : blogData.status === "scheduled"
+          ? "Blog Scheduled Successfully!"
+          : "Blog Story Published!",
+        text:
+          blogData.status === "scheduled"
+            ? `"${blogData.title}" is scheduled to publish on ${scheduledDate} at ${scheduledTime}.`
+            : `"${blogData.title}" has been saved successfully with full SEO configuration.`,
+        confirmButtonColor: "#4B1426",
+        timer: 2200,
+      });
+
+      router.push("/blogs");
+    } catch (err: any) {
+      console.error("Save blog post error:", err);
+      showError(err?.message || "Failed to save blog post. Please check inputs.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveDraft = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setBlogData((prev) => ({ ...prev, status: "draft" }));
+    showSuccess("Saved as Draft! You can continue editing.");
   };
 
   return (
     <main
-      style={{
-        fontFamily:
-          'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-      }}
-      className="h-full min-h-0 w-full overflow-y-auto overflow-x-hidden bg-[#fffefb] px-[18px] py-[14px] text-[#142347] [&::-webkit-scrollbar]:w-[6px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300"
+      className={`${typography.pages} h-full min-h-0 w-full overflow-y-auto overflow-x-hidden bg-[#fffefb] px-[18px] py-[14px] text-[#142347] [&::-webkit-scrollbar]:w-[6px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300`}
     >
       <div className="min-h-full w-full">
-        <header className="flex items-start justify-between gap-[16px]">
+        {/* ================= TOP HEADER (Matching Exhibitor List / Blogs) ================= */}
+        <div className="mb-[18px] flex shrink-0 items-center justify-between border-b-[2px] border-[#293681] pb-[8px]">
           <div>
-            <h1 className="text-[28px] font-semibold leading-none tracking-[-0.03em] text-[#075b33]">
-              Add New Post
+            <h1
+              className="text-[19px] font-bold leading-[1.15] tracking-[-0.018em] text-[#23471d]"
+              style={{ color: "#23471d" }}
+            >
+              {editId ? "Update Blog Post" : "Add New Post"}
             </h1>
-            <nav className="mt-[10px] flex items-center gap-[8px] text-[11px] font-semibold text-[#1d2b58]">
-              <span
-                onClick={() => router.push("/")}
-                className="cursor-pointer transition hover:text-[#075b33]"
-              >
-                Dashboard
-              </span>
-              <span className="text-[#7b8597]">›</span>
-              <span
-                onClick={() => router.push("/blogs")}
-                className="cursor-pointer transition hover:text-[#075b33]"
-              >
-                Blog &amp; Awareness
-              </span>
-              <span className="text-[#7b8597]">›</span>
-              <span className="text-[#075b33]">Add New Post</span>
-            </nav>
+            <p className="mt-0.5 text-[9px] font-medium text-[#6c7587]">
+              Super Admin only — defines what every internal role can see and do.
+            </p>
           </div>
 
-          <div className="flex items-center gap-[12px]">
+          <div className="flex items-center gap-[10px]">
+            {/* Back to List */}
             <button
               type="button"
               onClick={() => router.push("/blogs")}
-              className="inline-flex h-[40px] items-center gap-[8px] rounded-[6px] border border-[#dfe3e7] bg-white px-[18px] text-[10.5px] font-semibold text-[#273655] transition hover:bg-slate-50"
+              className="flex h-[30px] items-center justify-center gap-[5px] rounded-[6px] border border-[#fed7aa] bg-[#fff7ed] px-[14px] text-[8.5px] font-semibold text-[#ea580c] transition hover:bg-[#ffedd5] shadow-sm"
             >
-              <ArrowLeft className="h-[15px] w-[15px]" />
-              Back to Blog &amp; Awareness
+              <ArrowLeft className="h-[12px] w-[12px] text-[#ea580c]" strokeWidth={1.8} />
+              Back to List
             </button>
 
+            {/* Save Draft */}
             <button
               type="button"
-              onClick={() => router.push("/blogs")}
-              className="inline-flex h-[40px] items-center gap-[8px] rounded-[6px] bg-[linear-gradient(180deg,#076636_0%,#03542c_100%)] px-[20px] text-[10.5px] font-semibold text-white shadow-[0_7px_16px_rgba(5,94,49,.12)] transition hover:opacity-95"
+              onClick={handleSaveDraft}
+              className="flex h-[30px] items-center justify-center gap-[5px] rounded-[6px] border border-[#fecaca] bg-[#fef2f2] px-[14px] text-[8.5px] font-bold text-[#dc2626] transition hover:bg-[#fee2e2] shadow-sm"
             >
-              <Save className="h-[15px] w-[15px]" />
+              <Save className="h-[12px] w-[12px] text-[#dc2626]" strokeWidth={2} />
               Save Draft
             </button>
+
+            {/* Submit Button */}
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isLoading}
+              className="flex h-[30px] items-center justify-center gap-[5px] rounded-[6px] bg-[#075b33] px-[16px] text-[8.5px] font-bold text-white shadow-[0_5px_12px_rgba(7,91,51,0.25)] transition hover:bg-[#054626] disabled:opacity-50"
+            >
+              <Check className="h-[12px] w-[12px]" strokeWidth={2.2} />
+              <span>{isLoading ? "Saving..." : editId ? "Update Post" : "Publish Blog"}</span>
+            </button>
           </div>
-        </header>
+        </div>
 
-        <section className="mt-[16px] grid items-start gap-[14px] xl:grid-cols-[minmax(0,1.72fr)_minmax(350px,0.92fr)]">
-          <div className="space-y-[12px]">
-            <Panel title="1. Post Details">
-              <div className="space-y-[14px]">
+        {/* ================= MAIN FORM: 2 COLUMNS (1/4 LEFT, 3/4 RIGHT) ================= */}
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-start">
+          {/* ================= LEFT COLUMN: CONFIGURATION & SEO (1/4) ================= */}
+          <div className="lg:col-span-1 space-y-4">
+            {/* 1. CONFIGURATION CARD */}
+            <div
+              className="rounded-[7px] bg-white border border-[#e8e5df] p-4 text-left"
+              style={{
+                boxShadow:
+                  "rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px",
+              }}
+            >
+              <div className="space-y-3">
+                {/* Publication Status */}
                 <div>
-                  <FieldLabel required>Title</FieldLabel>
-                  <div className="relative">
-                    <input
-                      value={title}
-                      onChange={(event) => setTitle(event.target.value.slice(0, 150))}
-                      placeholder="Enter an engaging title"
-                      className="h-[40px] w-full rounded-[6px] border border-[#dfe4e8] bg-white px-[13px] pr-[54px] text-[10.5px] font-semibold text-[#2d3b58] outline-none placeholder:text-[#8d97aa]"
-                    />
-                    <span className="absolute right-[10px] top-1/2 -translate-y-1/2 text-[8.5px] font-semibold text-[#6d7890]">
-                      {title.length}/150
-                    </span>
-                  </div>
+                  <label className="block text-[8.5px] font-bold text-[#526078] uppercase tracking-wider mb-1">
+                    Publication Status
+                  </label>
+                  <select
+                    name="status"
+                    value={blogData.status}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 border rounded-[5px] font-bold text-[9px] uppercase tracking-wider outline-none transition ${
+                      blogData.status === "published"
+                        ? "bg-[#e8f5e9] border-[#a5d6a7] text-[#23714a]"
+                        : blogData.status === "scheduled"
+                        ? "bg-[#fef3c7] border-[#fde68a] text-[#b45309]"
+                        : "bg-[#ffebee] border-[#ef9a9a] text-[#c62828]"
+                    }`}
+                  >
+                    <option value="published">● Published (Live)</option>
+                    <option value="scheduled">⏰ Scheduled (Future)</option>
+                    <option value="draft">○ Draft (Hidden)</option>
+                    <option value="archived">○ Archived</option>
+                  </select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-[18px]">
-                  <div>
-                    <FieldLabel required>Category</FieldLabel>
-                    <select
-                      value={category}
-                      onChange={(event) => setCategory(event.target.value)}
-                      className="h-[40px] w-full rounded-[6px] border border-[#dfe4e8] bg-white px-[12px] text-[10.5px] font-semibold text-[#2f3d58] outline-none"
-                    >
-                      <option value="">Select Category</option>
-                      <option>Moksha Sewa</option>
-                      <option>Awareness</option>
-                      <option>Stories</option>
-                      <option>Guidance</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <FieldLabel>Tags</FieldLabel>
-                    <input
-                      value={tags}
-                      onChange={(event) => setTags(event.target.value)}
-                      placeholder="Add tags and press Enter"
-                      className="h-[40px] w-full rounded-[6px] border border-[#dfe4e8] bg-white px-[13px] text-[10.5px] font-semibold text-[#2d3b58] outline-none placeholder:text-[#8d97aa]"
-                    />
-                    <p className="mt-[5px] text-[8.8px] font-semibold text-[#728096]">
-                      E.g. moksha-sewa, awareness, dignity, support
-                    </p>
-                  </div>
-                </div>
-
-                <div>
-                  <FieldLabel>Excerpt (Short Description)</FieldLabel>
-                  <textarea
-                    value={excerpt}
-                    onChange={(event) => setExcerpt(event.target.value.slice(0, 250))}
-                    placeholder="Write a short summary of the post..."
-                    className="h-[72px] w-full resize-none rounded-[6px] border border-[#dfe4e8] bg-white px-[13px] py-[10px] text-[10.5px] font-semibold text-[#2d3b58] outline-none placeholder:text-[#8d97aa]"
-                  />
-                  <div className="mt-[5px] flex justify-end">
-                    <span className="text-[8.5px] font-semibold text-[#6d7890]">
-                      {excerpt.length}/250
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <FieldLabel>Featured Image</FieldLabel>
-
+                {/* Show on Home Page Checkbox */}
+                <div className="flex items-center gap-2.5 p-2.5 bg-[#fafafa] rounded-[5px] border border-[#e8e5df]">
                   <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleImageFileChange}
-                    accept="image/*"
-                    className="hidden"
+                    type="checkbox"
+                    name="featured"
+                    id="featured"
+                    checked={blogData.featured}
+                    onChange={handleInputChange}
+                    className="h-3.5 w-3.5 accent-[#075b33] rounded border-[#dfe4e8] cursor-pointer"
                   />
+                  <label
+                    htmlFor="featured"
+                    className="text-[8.5px] font-bold text-[#233D4D] uppercase tracking-wide cursor-pointer"
+                  >
+                    Show on Home Page
+                  </label>
+                </div>
 
-                  {uploadedImage ? (
-                    <div className="relative overflow-hidden rounded-[7px] border border-[#d6dde2] bg-white p-[8px]">
-                      <img
-                        src={uploadedImage}
-                        alt="Uploaded cover"
-                        className="h-[180px] w-full rounded-[5px] object-cover"
-                      />
-                      <div className="mt-[8px] flex items-center justify-between">
-                        <span className="text-[9px] font-semibold text-[#075b33]">
-                          ✓ Image Uploaded Successfully
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          className="rounded-[4px] border border-[#dfe4e8] bg-white px-[10px] py-[4px] text-[8.5px] font-semibold text-[#35445f] hover:bg-slate-50"
-                        >
-                          Change Image
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex min-h-[150px] w-full cursor-pointer flex-col items-center justify-center rounded-[7px] border border-dashed border-[#d6dde2] bg-[#fffefc] transition hover:bg-slate-50"
+                {/* Schedule for Later */}
+                <div className="rounded-[5px] border border-[#e8e5df] bg-[#fafafa] p-2.5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label
+                      htmlFor="scheduleToggle"
+                      className="flex items-center gap-1.5 text-[8.5px] font-bold text-[#233D4D] uppercase tracking-wider cursor-pointer"
                     >
-                      <ImageIcon className="h-[34px] w-[34px] text-[#176f45]" strokeWidth={1.7} />
-                      <p className="mt-[9px] text-[10.5px] font-semibold text-[#49566e]">
-                        Drag &amp; drop image here or
-                      </p>
-                      <span className="mt-[8px] inline-flex h-[32px] items-center gap-[7px] rounded-[5px] border border-[#cfe0d4] bg-white px-[12px] text-[8.8px] font-semibold text-[#14683d]">
-                        <Upload className="h-[12px] w-[12px]" />
-                        Browse Files
-                      </span>
-                      <p className="mt-[10px] text-[8.5px] font-semibold text-[#718096]">
-                        Recommended size: 1200 × 675 px (JPG, PNG, WebP)
-                      </p>
-                      <p className="mt-[3px] text-[8.5px] font-semibold text-[#718096]">
-                        Max file size: 2 MB
+                      <Calendar className="h-3.5 w-3.5 text-[#0284c7]" />
+                      Schedule for Later
+                    </label>
+                    <input
+                      type="checkbox"
+                      id="scheduleToggle"
+                      checked={isScheduled}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setIsScheduled(checked);
+                        setBlogData((prev) => ({
+                          ...prev,
+                          status: checked ? "scheduled" : "published",
+                        }));
+                      }}
+                      className="h-3.5 w-3.5 accent-[#0284c7] rounded border-[#dfe4e8] cursor-pointer"
+                    />
+                  </div>
+
+                  {isScheduled && (
+                    <div className="pt-2 border-t border-[#e8e5df] space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[7.5px] font-semibold text-[#64748b] uppercase mb-0.5">
+                            Publish Date
+                          </label>
+                          <input
+                            type="date"
+                            value={scheduledDate}
+                            onChange={(e) => setScheduledDate(e.target.value)}
+                            className="w-full px-2 py-1 text-[8.5px] font-semibold text-[#1e293b] border border-[#dfe4e8] rounded-[4px] bg-white outline-none focus:border-[#0284c7]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[7.5px] font-semibold text-[#64748b] uppercase mb-0.5">
+                            Publish Time
+                          </label>
+                          <input
+                            type="time"
+                            value={scheduledTime}
+                            onChange={(e) => setScheduledTime(e.target.value)}
+                            className="w-full px-2 py-1 text-[8.5px] font-semibold text-[#1e293b] border border-[#dfe4e8] rounded-[4px] bg-white outline-none focus:border-[#0284c7]"
+                          />
+                        </div>
+                      </div>
+                      <p className="text-[7.5px] font-medium text-[#0284c7] italic">
+                        ⏰ Post will be published automatically on {scheduledDate ? new Date(scheduledDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "chosen date"} at {scheduledTime}.
                       </p>
                     </div>
                   )}
                 </div>
 
+                {/* Estimated Read Time */}
                 <div>
-                  <FieldLabel required>Content</FieldLabel>
-                  <div className="overflow-hidden rounded-[6px] border border-[#dfe4e8] bg-white">
-                    <div className="flex min-h-[40px] flex-wrap items-center gap-[11px] border-b border-[#e7e9ec] px-[12px] text-[#2f3c56]">
-                      <button type="button" className="inline-flex items-center gap-[8px] text-[9.5px] font-semibold">
-                        Paragraph
-                        <ChevronDown className="h-[12px] w-[12px]" />
-                      </button>
-
-                      <Bold className="h-[14px] w-[14px]" />
-                      <Italic className="h-[14px] w-[14px]" />
-                      <Underline className="h-[14px] w-[14px]" />
-                      <Strikethrough className="h-[14px] w-[14px]" />
-
-                      <span className="h-[18px] w-px bg-[#e1e5e9]" />
-
-                      <Quote className="h-[14px] w-[14px]" />
-                      <List className="h-[14px] w-[14px]" />
-                      <ListOrdered className="h-[14px] w-[14px]" />
-                      <AlignLeft className="h-[14px] w-[14px]" />
-                      <AlignCenter className="h-[14px] w-[14px]" />
-                      <AlignRight className="h-[14px] w-[14px]" />
-                      <Link2 className="h-[14px] w-[14px]" />
-                      <ImageIcon className="h-[14px] w-[14px]" />
-                      <Video className="h-[14px] w-[14px]" />
-                      <ChevronDown className="h-[11px] w-[11px]" />
-                      <CircleHelp className="h-[14px] w-[14px]" />
-
-                      <span className="h-[18px] w-px bg-[#e1e5e9]" />
-
-                      <Undo2 className="h-[14px] w-[14px]" />
-                      <Redo2 className="h-[14px] w-[14px] text-slate-400" />
-                    </div>
-
-                    <textarea
-                      value={content}
-                      onChange={(event) => setContent(event.target.value)}
-                      placeholder="Write your content here..."
-                      className="h-[122px] w-full resize-none bg-white px-[14px] py-[12px] text-[10.5px] font-semibold text-[#2d3b58] outline-none placeholder:text-[#8d97aa]"
-                    />
-
-                    <div className="flex h-[28px] items-center border-t border-[#e7e9ec] px-[12px]">
-                      <span className="text-[8.5px] font-semibold text-[#66738b]">
-                        Word count: {wordCount}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Panel>
-
-            <Panel title="SEO Preview">
-              <div className="rounded-[7px] border border-[#e4e8eb] bg-white px-[18px] py-[14px]">
-                <div className="flex items-start gap-[10px]">
-                  <div className="grid h-[28px] w-[28px] shrink-0 place-items-center rounded-full bg-emerald-50 text-emerald-700">
-                    <Globe2 className="h-[15px] w-[15px]" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[9px] font-semibold text-[#35445f]">mokshasewa.org</p>
-                    <p className="mt-[2px] text-[8.5px] font-semibold text-[#5f6c82]">
-                      https://www.mokshasewa.org/{slug.trim() || "your-post-url"}
-                    </p>
-                  </div>
-                </div>
-
-                <p className="mt-[10px] text-[14px] font-semibold text-[#233b8c]">
-                  {metaTitle.trim() || title.trim() || "Your Post Title Will Appear Here"}
-                </p>
-
-                <p className="mt-[5px] text-[9px] font-semibold leading-[1.45] text-[#4f5d72]">
-                  {metaDescription.trim() ||
-                    excerpt.trim() ||
-                    "This is how your post may appear in search engine results. Make it compelling to get more clicks."}
-                </p>
-              </div>
-            </Panel>
-          </div>
-
-          <div className="space-y-[12px]">
-            <Panel title="2. Publish Settings">
-              <div className="space-y-[14px]">
-                <div>
-                  <FieldLabel required>Status</FieldLabel>
-                  <div className="relative">
-                    <span className="absolute left-[14px] top-1/2 h-[8px] w-[8px] -translate-y-1/2 rounded-full bg-amber-400" />
-                    <select
-                      value={status}
-                      onChange={(event) => setStatus(event.target.value)}
-                      className="h-[40px] w-full rounded-[6px] border border-[#dfe4e8] bg-white pl-[34px] pr-[12px] text-[10.5px] font-semibold text-[#2f3d58] outline-none"
-                    >
-                      <option>Draft</option>
-                      <option>Published</option>
-                      <option>Scheduled</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <FieldLabel required>Visibility</FieldLabel>
-                  <div className="relative">
-                    <Globe2 className="absolute left-[12px] top-1/2 h-[14px] w-[14px] -translate-y-1/2 text-[#59657a]" />
-                    <select
-                      value={visibility}
-                      onChange={(event) => setVisibility(event.target.value)}
-                      className="h-[40px] w-full rounded-[6px] border border-[#dfe4e8] bg-white pl-[36px] pr-[12px] text-[10.5px] font-semibold text-[#2f3d58] outline-none"
-                    >
-                      <option>Public</option>
-                      <option>Members Only</option>
-                      <option>Private</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="space-y-[12px]">
-                  <button
-                    type="button"
-                    onClick={() => setPublishMode("now")}
-                    className="flex w-full items-start gap-[10px] text-left"
-                  >
-                    <span
-                      className={`mt-[1px] h-[16px] w-[16px] shrink-0 rounded-full border ${publishMode === "now"
-                          ? "border-[#0b6a3b] shadow-[inset_0_0_0_4px_#0b6a3b]"
-                          : "border-[#ccd4df] bg-white"
-                        }`}
-                    />
-                    <div>
-                      <p className="text-[10.5px] font-semibold text-[#24345e]">Publish Immediately</p>
-                      <p className="mt-[3px] text-[9px] font-semibold text-[#6d7890]">
-                        Post will be published right away
-                      </p>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setPublishMode("later")}
-                    className="flex w-full items-start gap-[10px] text-left"
-                  >
-                    <span
-                      className={`mt-[1px] h-[16px] w-[16px] shrink-0 rounded-full border ${publishMode === "later"
-                          ? "border-[#0b6a3b] shadow-[inset_0_0_0_4px_#0b6a3b]"
-                          : "border-[#ccd4df] bg-white"
-                        }`}
-                    />
-                    <div>
-                      <p className="text-[10.5px] font-semibold text-[#24345e]">Schedule for Later</p>
-                      <p className="mt-[3px] text-[9px] font-semibold text-[#6d7890]">
-                        Choose a future date &amp; time
-                      </p>
-                    </div>
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 gap-[10px]">
-                  <div className="relative">
-                    <input
-                      value={publishDate}
-                      onChange={(event) => setPublishDate(event.target.value)}
-                      disabled={publishMode !== "later"}
-                      className="h-[36px] w-full rounded-[6px] border border-[#dfe4e8] bg-white px-[11px] pr-[34px] text-[9.5px] font-semibold text-[#35445f] outline-none disabled:bg-[#fafafa] disabled:text-[#77839a]"
-                    />
-                    <CalendarDays className="absolute right-[10px] top-1/2 h-[14px] w-[14px] -translate-y-1/2 text-[#59657a]" />
-                  </div>
-
-                  <div className="relative">
-                    <input
-                      value={publishTime}
-                      onChange={(event) => setPublishTime(event.target.value)}
-                      disabled={publishMode !== "later"}
-                      className="h-[36px] w-full rounded-[6px] border border-[#dfe4e8] bg-white px-[11px] pr-[34px] text-[9.5px] font-semibold text-[#35445f] outline-none disabled:bg-[#fafafa] disabled:text-[#77839a]"
-                    />
-                    <Clock3 className="absolute right-[10px] top-1/2 h-[14px] w-[14px] -translate-y-1/2 text-[#59657a]" />
-                  </div>
-                </div>
-
-                <div className="flex min-h-[38px] items-center gap-[9px] rounded-[6px] border border-[#d9e7f5] bg-[linear-gradient(90deg,#f2f8ff,#f7fbff)] px-[12px]">
-                  <Info className="h-[14px] w-[14px] shrink-0 text-[#4a93d7]" />
-                  <p className="text-[8.8px] font-semibold text-[#52627b]">
-                    <span className="text-[#32435f]">Tip:</span> Publish at the right time to reach more people.
-                  </p>
-                </div>
-              </div>
-            </Panel>
-
-            <Panel title="3. Additional Settings">
-              <div className="space-y-[12px]">
-                <div className="flex items-center justify-between gap-[14px]">
-                  <div>
-                    <p className="text-[10.5px] font-semibold text-[#24345e]">Allow Comments</p>
-                    <p className="mt-[3px] text-[9px] font-semibold text-[#6d7890]">
-                      Allow users to comment on this post
-                    </p>
-                  </div>
-                  <Toggle checked={comments} onChange={() => setComments((v) => !v)} />
-                </div>
-
-                <div className="flex items-center justify-between gap-[14px]">
-                  <div>
-                    <p className="text-[10.5px] font-semibold text-[#24345e]">Show in Homepage</p>
-                    <p className="mt-[3px] text-[9px] font-semibold text-[#6d7890]">
-                      Display this post in homepage/featured section
-                    </p>
-                  </div>
-                  <Toggle checked={homepage} onChange={() => setHomepage((v) => !v)} />
-                </div>
-
-                <div className="flex items-center justify-between gap-[14px]">
-                  <div>
-                    <p className="text-[10.5px] font-semibold text-[#24345e]">
-                      Mark as Awareness Campaign
-                    </p>
-                    <p className="mt-[3px] text-[9px] font-semibold text-[#6d7890]">
-                      Highlight this post as part of awareness initiatives
-                    </p>
-                  </div>
-                  <Toggle checked={awareness} onChange={() => setAwareness((v) => !v)} />
-                </div>
-              </div>
-            </Panel>
-
-            <Panel title="4. SEO Settings (Optional)">
-              <div className="space-y-[13px]">
-                <div>
-                  <FieldLabel>Meta Title</FieldLabel>
-                  <div className="relative">
-                    <input
-                      value={metaTitle}
-                      onChange={(event) => setMetaTitle(event.target.value.slice(0, 60))}
-                      placeholder="Enter meta title"
-                      className="h-[38px] w-full rounded-[6px] border border-[#dfe4e8] bg-white px-[12px] pr-[48px] text-[10px] font-semibold text-[#2f3d58] outline-none placeholder:text-[#8d97aa]"
-                    />
-                    <span className="absolute right-[9px] top-1/2 -translate-y-1/2 text-[8px] font-semibold text-[#6d7890]">
-                      {metaTitle.length}/60
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <FieldLabel>Meta Description</FieldLabel>
-                  <div className="relative">
-                    <textarea
-                      value={metaDescription}
-                      onChange={(event) => setMetaDescription(event.target.value.slice(0, 160))}
-                      placeholder="Enter meta description"
-                      className="h-[72px] w-full resize-none rounded-[6px] border border-[#dfe4e8] bg-white px-[12px] py-[10px] pb-[22px] text-[10px] font-semibold text-[#2f3d58] outline-none placeholder:text-[#8d97aa]"
-                    />
-                    <span className="absolute bottom-[7px] right-[9px] text-[8px] font-semibold text-[#6d7890]">
-                      {metaDescription.length}/160
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <FieldLabel>URL Slug</FieldLabel>
+                  <label className="block text-[8.5px] font-bold text-[#526078] uppercase tracking-wider mb-1">
+                    Read Time
+                  </label>
                   <input
-                    value={slug}
-                    onChange={(event) => setSlug(event.target.value)}
-                    placeholder="Enter URL slug"
-                    className="h-[38px] w-full rounded-[6px] border border-[#dfe4e8] bg-white px-[12px] text-[10px] font-semibold text-[#2f3d58] outline-none placeholder:text-[#8d97aa]"
+                    type="text"
+                    name="readTime"
+                    value={blogData.readTime}
+                    onChange={handleInputChange}
+                    placeholder="e.g. 4 min read"
+                    className="w-full px-3 py-1.5 border border-[#dfe4e8] rounded-[5px] bg-white text-[9.5px] font-semibold text-[#1e293b] outline-none focus:border-[#075b33]"
                   />
-                  <p className="mt-[5px] text-[8.5px] font-semibold text-[#728096]">
-                    E.g. dignity-in-every-final-journey
-                  </p>
                 </div>
               </div>
-            </Panel>
+            </div>
+
+            {/* 2. SEO METADATA CARD */}
+            <div
+              className="rounded-[7px] bg-white border border-[#e8e5df] p-4 text-left"
+              style={{
+                boxShadow:
+                  "rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px",
+              }}
+            >
+              <div className="flex items-center gap-2.5 mb-3.5 pb-2 border-b border-[#e8e5df]">
+                <div className="grid h-[24px] w-[24px] place-items-center rounded-[4px] bg-blue-50 text-blue-600">
+                  <Globe className="w-3.5 h-3.5" />
+                </div>
+                <h2 className="text-[10px] font-bold text-[#233D4D] uppercase tracking-wider">
+                  SEO Metadata
+                </h2>
+              </div>
+
+              <div className="space-y-3">
+                {/* Meta Title */}
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-[8.5px] font-bold text-[#526078] uppercase tracking-wider">
+                      Meta Title
+                    </label>
+                    <span className="text-[8px] font-bold text-[#0284c7]">
+                      {blogData.metaTitle.length}/65
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    name="metaTitle"
+                    value={blogData.metaTitle}
+                    onChange={handleInputChange}
+                    maxLength={65}
+                    placeholder="Enter meta title..."
+                    className="w-full px-3 py-1.5 border border-[#dfe4e8] rounded-[5px] bg-white text-[9.5px] font-semibold text-[#1e293b] outline-none focus:border-[#075b33]"
+                  />
+                </div>
+
+                {/* Meta Description */}
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-[8.5px] font-bold text-[#526078] uppercase tracking-wider">
+                      Meta Description (SEO)
+                    </label>
+                    <span
+                      className={`text-[8px] font-bold ${
+                        blogData.metaDescription.length > 155 ? "text-red-500" : "text-[#0284c7]"
+                      }`}
+                    >
+                      {blogData.metaDescription.length}/155
+                    </span>
+                  </div>
+                  <textarea
+                    name="metaDescription"
+                    value={blogData.metaDescription}
+                    onChange={handleInputChange}
+                    maxLength={155}
+                    rows={3}
+                    placeholder="Brief search snippet summary..."
+                    className="w-full resize-none px-3 py-1.5 border border-[#dfe4e8] rounded-[5px] bg-white text-[9.5px] font-medium text-[#1e293b] outline-none focus:border-[#075b33]"
+                  />
+                </div>
+
+                {/* Canonical Tag */}
+                <div>
+                  <label className="block text-[8.5px] font-bold text-[#526078] uppercase tracking-wider mb-1">
+                    Canonical Tag
+                  </label>
+                  <input
+                    type="text"
+                    name="canonicalTag"
+                    value={blogData.canonicalTag}
+                    onChange={handleInputChange}
+                    placeholder="https://yourwebsite.com/blog-post"
+                    className="w-full px-3 py-1.5 border border-[#dfe4e8] rounded-[5px] bg-white text-[9px] font-mono text-[#0284c7] outline-none focus:border-[#075b33]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 3. SOCIAL SHARING (OG) CARD */}
+            <div
+              className="rounded-[7px] bg-white border border-[#e8e5df] p-4 text-left"
+              style={{
+                boxShadow:
+                  "rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px",
+              }}
+            >
+              <div className="flex items-center gap-2.5 mb-3.5 pb-2 border-b border-[#e8e5df]">
+                <div className="grid h-[24px] w-[24px] place-items-center rounded-[4px] bg-blue-50 text-blue-600">
+                  <Upload className="w-3.5 h-3.5" />
+                </div>
+                <h2 className="text-[10px] font-bold text-[#233D4D] uppercase tracking-wider">
+                  Social Sharing (OG)
+                </h2>
+              </div>
+
+              <div className="space-y-3">
+                {/* OG Title */}
+                <div>
+                  <label className="block text-[8.5px] font-bold text-[#526078] uppercase tracking-wider mb-1">
+                    OG Title
+                  </label>
+                  <input
+                    type="text"
+                    name="ogTitle"
+                    value={blogData.ogTitle}
+                    onChange={handleInputChange}
+                    placeholder="Enter social share title..."
+                    className="w-full px-3 py-1.5 border border-[#dfe4e8] rounded-[5px] bg-white text-[9.5px] font-semibold text-[#1e293b] outline-none focus:border-[#075b33]"
+                  />
+                </div>
+
+                {/* OG Image */}
+                <div>
+                  <label className="block text-[8.5px] font-bold text-[#526078] uppercase tracking-wider mb-1">
+                    OG Image (Social Preview)
+                  </label>
+                  <div
+                    onClick={() => ogFileInputRef.current?.click()}
+                    className="relative cursor-pointer rounded-[6px] border-2 border-dashed border-[#dfe4e8] bg-[#fafafa] p-3 text-center transition hover:bg-slate-50"
+                  >
+                    <input
+                      type="file"
+                      ref={ogFileInputRef}
+                      onChange={handleOgImageChange}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    {ogImagePreview ? (
+                      <div className="relative h-20 w-full overflow-hidden rounded-[4px]">
+                        <img
+                          src={ogImagePreview}
+                          alt="OG Preview"
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="py-1 flex flex-col items-center justify-center">
+                        <Upload className="h-5 w-5 text-[#94a3b8] mb-1" />
+                        <span className="text-[8px] font-bold uppercase tracking-wider text-[#64748b]">
+                          Upload OG Image
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Additional OG Tags */}
+                <div>
+                  <label className="block text-[8.5px] font-bold text-[#526078] uppercase tracking-wider mb-1">
+                    Additional OG Tags
+                  </label>
+                  <RichTextEditor
+                    value={blogData.openGraphTags}
+                    onChange={(val) =>
+                      setBlogData((prev) => ({ ...prev, openGraphTags: val }))
+                    }
+                    placeholder='<meta property="og:type" content="article" />'
+                    minHeight="100px"
+                    isCodeEditor={true}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 4. SCHEMA MARKUP CARD */}
+            <div
+              className="rounded-[7px] bg-white border border-[#e8e5df] p-4 text-left"
+              style={{
+                boxShadow:
+                  "rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px",
+              }}
+            >
+              <div className="flex items-center gap-2.5 mb-3.5 pb-2 border-b border-[#e8e5df]">
+                <div className="grid h-[24px] w-[24px] place-items-center rounded-[4px] bg-blue-50 text-blue-600">
+                  <Code className="w-3.5 h-3.5" />
+                </div>
+                <h2 className="text-[10px] font-bold text-[#233D4D] uppercase tracking-wider">
+                  Schema Markup (JSON-LD)
+                </h2>
+              </div>
+
+              <div>
+                <RichTextEditor
+                  value={blogData.schemaMarkup}
+                  onChange={(val) =>
+                    setBlogData((prev) => ({ ...prev, schemaMarkup: val }))
+                  }
+                  placeholder='{"@context": "https://schema.org", ...}'
+                  minHeight="120px"
+                  isCodeEditor={true}
+                />
+              </div>
+            </div>
           </div>
-        </section>
 
-        <footer className="sticky bottom-0 z-20 mt-[12px] flex min-h-[58px] items-center justify-end gap-[10px] border-t border-[#edf0f2] bg-[#fffefb]/95 px-[8px] py-[8px] backdrop-blur-sm">
-          <button
-            type="button"
-            onClick={() => router.push("/blogs")}
-            className="inline-flex h-[40px] items-center gap-[8px] rounded-[6px] border border-[#dfe3e7] bg-white px-[20px] text-[10px] font-semibold text-[#273655] transition hover:bg-slate-50"
-          >
-            <Eye className="h-[14px] w-[14px]" />
-            Preview Post
-          </button>
+          {/* ================= RIGHT COLUMN: MAIN BLOG CONTENT (3/4) ================= */}
+          <div className="lg:col-span-3 space-y-4">
+            <div
+              className="rounded-[7px] bg-white border border-[#e8e5df] overflow-hidden text-left"
+              style={{
+                boxShadow:
+                  "rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px",
+              }}
+            >
+              {/* Header Bar */}
+              <div className="flex h-[42px] items-center justify-between border-b border-[#e8e5df] px-5 bg-[#fafafa]">
+                <div className="flex items-center gap-2.5">
+                  <div className="grid h-[26px] w-[26px] place-items-center rounded-[4px] bg-[#075b33] text-white shadow-xs">
+                    <FileText className="w-3.5 h-3.5" />
+                  </div>
+                  <h2 className="text-[11px] font-bold text-[#233D4D] uppercase tracking-wide">
+                    Blog Primary Content
+                  </h2>
+                </div>
 
-          <button
-            type="button"
-            onClick={() => router.push("/blogs")}
-            className="inline-flex h-[40px] items-center gap-[8px] rounded-[6px] bg-[linear-gradient(180deg,#076636_0%,#03542c_100%)] px-[20px] text-[10.5px] font-semibold text-white shadow-[0_7px_16px_rgba(5,94,49,.12)] transition hover:opacity-95"
-          >
-            <Send className="h-[14px] w-[14px]" />
-            Publish Post
-            <ChevronDown className="h-[13px] w-[13px]" />
-          </button>
-        </footer>
+                <div className="flex items-center gap-3">
+                  <span className="text-[8px] font-bold text-[#64748b] uppercase tracking-wider">
+                    Words: <strong className="text-[#075b33] font-bold">{wordCount}</strong>
+                  </span>
+                  {isLoading && (
+                    <div className="flex items-center gap-1.5 text-[8.5px] font-bold text-[#134698] animate-pulse">
+                      <div className="w-2.5 h-2.5 border-2 border-[#134698] border-t-transparent rounded-full animate-spin"></div>
+                      Processing...
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Form Content Area */}
+              <div className="p-5 space-y-4">
+                {/* Horizontal: Blog Main Title, Hero Title (H1), Permalink / Slug */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                  {/* Blog Main Title */}
+                  <div className="md:col-span-1 space-y-1">
+                    <label className="block text-[8.5px] font-bold text-[#233D4D] uppercase tracking-wider">
+                      Blog Main Title <span className="text-[#dc2626]">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="title"
+                      value={blogData.title}
+                      onChange={handleInputChange}
+                      placeholder="Enter blog title..."
+                      className="w-full px-3 py-2 border border-[#dfe4e8] rounded-[5px] text-[10.5px] font-semibold text-[#1e293b] outline-none focus:border-[#075b33] shadow-2xs"
+                      required
+                    />
+                  </div>
+
+                  {/* Hero Title (H1 for SEO) */}
+                  <div className="md:col-span-1 space-y-1">
+                    <label className="block text-[8.5px] font-bold text-[#233D4D] uppercase tracking-wider">
+                      Hero Title (H1 for SEO)
+                    </label>
+                    <input
+                      type="text"
+                      name="h1Title"
+                      value={blogData.h1Title}
+                      onChange={handleInputChange}
+                      placeholder="Enter hero title (H1 for SEO)..."
+                      className="w-full px-3 py-2 border border-[#dfe4e8] rounded-[5px] text-[10.5px] font-medium text-[#1e293b] outline-none focus:border-[#075b33] shadow-2xs"
+                    />
+                  </div>
+
+                  {/* Permalink / URL Slug */}
+                  <div className="md:col-span-1 space-y-1">
+                    <label className="block text-[8.5px] font-bold text-[#233D4D] uppercase tracking-wider">
+                      Permalink / URL Slug <span className="text-[#dc2626]">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="slug"
+                      value={blogData.slug}
+                      onChange={handleInputChange}
+                      placeholder="auto-generated-slug"
+                      className="w-full px-3 py-2 border border-[#dfe4e8] rounded-[5px] bg-[#f8fafc] text-[10px] font-mono text-[#0284c7] outline-none focus:border-[#075b33] shadow-2xs"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Blog Category */}
+                <div className="space-y-1">
+                  <label className="block text-[8.5px] font-bold text-[#233D4D] uppercase tracking-wider">
+                    Blog Category <span className="text-[#dc2626]">*</span>
+                  </label>
+                  <select
+                    name="category"
+                    value={blogData.category}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-[#dfe4e8] rounded-[5px] bg-white text-[10.5px] font-semibold text-[#1e293b] outline-none focus:border-[#075b33] shadow-2xs"
+                  >
+                    <option value="Expo News">Expo News</option>
+                    <option value="Industry Stories">Industry Stories</option>
+                    <option value="Organic Trends">Organic Trends</option>
+                    <option value="Producer Guidance">Producer Guidance</option>
+                    <option value="Ayurveda & Wellness">Ayurveda &amp; Wellness</option>
+                    <option value="Sustainable Agriculture">Sustainable Agriculture</option>
+                  </select>
+                </div>
+
+                {/* Meta Keywords (SEO) */}
+                <div className="space-y-1">
+                  <label className="block text-[8.5px] font-bold text-[#233D4D] uppercase tracking-wider">
+                    Meta Keywords (SEO)
+                  </label>
+                  <textarea
+                    name="metaKeywords"
+                    value={blogData.metaKeywords}
+                    onChange={handleInputChange}
+                    placeholder="Enter keywords separated by commas (e.g. organic farming, b2b expo, ayush exports)..."
+                    rows={2}
+                    className="w-full resize-none px-3 py-2 border border-[#dfe4e8] rounded-[5px] text-[10px] font-medium text-[#1e293b] outline-none focus:border-[#075b33] shadow-2xs"
+                  />
+                </div>
+
+                {/* Feature Image & Image Alt Text (Horizontal 2-part card) */}
+                <div className="p-3.5 rounded-[6px] border border-[#dfe4e8] bg-[#fafafa]">
+                  <div className="flex flex-col md:flex-row items-center gap-4">
+                    {/* Image Dropzone / Preview */}
+                    <div className="w-full md:w-1/3">
+                      <label className="block text-[8.5px] font-bold text-[#233D4D] uppercase tracking-wider mb-1.5">
+                        Feature Image <span className="text-[#dc2626]">*</span>
+                      </label>
+                      <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="relative aspect-video flex flex-col items-center justify-center rounded-[5px] border-2 border-dashed border-[#dfe4e8] bg-white cursor-pointer overflow-hidden transition hover:border-[#075b33]"
+                      >
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          onChange={handleImageChange}
+                          accept="image/*"
+                          className="hidden"
+                        />
+                        {imagePreview ? (
+                          <>
+                            <img
+                              src={imagePreview}
+                              alt="Feature preview"
+                              className="h-full w-full object-cover"
+                            />
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setImageFile(null);
+                                setImagePreview(null);
+                              }}
+                              className="absolute top-2 right-2 grid h-6 w-6 place-items-center rounded-full bg-red-600 text-white shadow-md hover:bg-red-700"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </>
+                        ) : (
+                          <div className="flex flex-col items-center p-2 text-center">
+                            <Upload className="h-6 w-6 text-[#94a3b8] mb-1" />
+                            <span className="text-[8.5px] font-bold text-[#075b33] uppercase tracking-wider">
+                              Upload Image
+                            </span>
+                            <span className="text-[7px] text-[#94a3b8] mt-0.5">
+                              Recommended: 1200 × 675 px (Max 2MB)
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Image Alt Text & Guide */}
+                    <div className="w-full md:w-2/3 space-y-2">
+                      <div>
+                        <label className="block text-[8.5px] font-bold text-[#233D4D] uppercase tracking-wider mb-1">
+                          Image Alt Text (SEO)
+                        </label>
+                        <input
+                          type="text"
+                          name="imageAlt"
+                          value={blogData.imageAlt}
+                          onChange={handleInputChange}
+                          placeholder="Describe the image for screen readers and SEO..."
+                          className="w-full px-3 py-2 border border-[#dfe4e8] rounded-[5px] bg-white text-[10px] font-medium text-[#1e293b] outline-none focus:border-[#075b33] shadow-2xs"
+                        />
+                      </div>
+                      <p className="text-[8px] font-medium text-[#64748b]">
+                        ● Helps visually impaired users and improves search ranking for image results.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Detailed Blog Description * (Rich Text Editor) */}
+                <div className="space-y-2 text-left">
+                  <div className="flex items-center justify-between text-left">
+                    <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-widest">
+                      Detailed Blog Description <span className="text-[#dc2626]">*</span>
+                    </label>
+                    <span className="px-2 py-0.5 bg-green-50 text-green-600 text-[9px] font-bold rounded uppercase border border-green-100">
+                      Rich Text Active
+                    </span>
+                  </div>
+
+                  <div className="rounded overflow-hidden text-left">
+                    <RichTextEditor
+                      value={blogData.content}
+                      onChange={(val) => setBlogData((prev) => ({ ...prev, content: val }))}
+                      placeholder="Start writing your blog content here..."
+                      minHeight="450px"
+                    />
+                  </div>
+                </div>
+
+                {/* Bottom Submit Action Bar */}
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#e8e5df]">
+                  <button
+                    type="button"
+                    onClick={handleSaveDraft}
+                    className="flex h-[34px] items-center justify-center gap-1.5 rounded-[6px] border border-[#fecaca] bg-[#fef2f2] px-5 text-[9.5px] font-bold text-[#dc2626] hover:bg-[#fee2e2] transition shadow-xs"
+                  >
+                    <Save className="h-3.5 w-3.5 text-[#dc2626]" />
+                    Save as Draft
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="flex h-[34px] items-center justify-center gap-2 rounded-[6px] bg-[#075b33] px-6 text-[10px] font-bold text-white shadow-[0_5px_12px_rgba(7,91,51,0.25)] transition hover:bg-[#054626] disabled:opacity-50"
+                  >
+                    {isLoading ? (
+                      <div className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <Check className="h-4 w-4" strokeWidth={2.2} />
+                    )}
+                    <span>{editId ? "Update Blog Post" : "Publish Blog Story"}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
       </div>
     </main>
   );
 }
+
+export default function AddNewPostPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-[#fffefb] text-[#23471d] font-bold text-sm">
+          Loading Blog Editor...
+        </div>
+      }
+    >
+      <AddNewPostContent />
+    </Suspense>
+  );
+}
+

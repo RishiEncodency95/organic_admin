@@ -19,12 +19,18 @@ export const authSyncMiddleware: Middleware = (storeApi) => (next) => (action) =
     const { admin, accessToken, refreshToken } = action.payload;
     setTokens({ accessToken, refreshToken });
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ admin, accessToken, refreshToken }));
+    if (typeof document !== "undefined" && accessToken) {
+      document.cookie = `ms_admin_token=${encodeURIComponent(accessToken)}; path=/; max-age=604800; SameSite=Lax`;
+    }
   }
 
   if (setTokensAction.match(action)) {
     setTokens(action.payload);
     const { admin } = (storeApi.getState() as AuthStoreState).auth;
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ admin, ...action.payload }));
+    if (typeof document !== "undefined" && action.payload.accessToken) {
+      document.cookie = `ms_admin_token=${encodeURIComponent(action.payload.accessToken)}; path=/; max-age=604800; SameSite=Lax`;
+    }
   }
 
   if (updateAdmin.match(action)) {
@@ -35,6 +41,9 @@ export const authSyncMiddleware: Middleware = (storeApi) => (next) => (action) =
   if (logout.match(action)) {
     setTokens({ accessToken: null, refreshToken: null });
     localStorage.removeItem(AUTH_STORAGE_KEY);
+    if (typeof document !== "undefined") {
+      document.cookie = "ms_admin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+    }
   }
 
   return result;

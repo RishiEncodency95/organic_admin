@@ -1,48 +1,86 @@
 import { api } from "./api";
 
-export interface ISeoOptions {
+export interface BlogPostItem {
+  _id?: string;
+  id?: number | string;
+  title: string;
+  h1Title?: string;
+  slug: string;
+  excerpt?: string;
+  content: string;
+  category: string;
+  author: string;
+  tags?: string[] | string;
+  status: "published" | "draft" | "scheduled" | "archived" | string;
+  showOnHome: boolean;
+  featured: boolean;
+  scheduledDate?: string | null;
+  readTime: string;
+  image: string;
+  imageAlt?: string;
+  views: number;
+  publishDate?: string | Date;
+
+  // SEO Fields
   metaTitle?: string;
   metaDescription?: string;
   metaKeywords?: string;
   canonicalUrl?: string;
+  canonicalTag?: string;
   ogTitle?: string;
   ogDescription?: string;
   ogImage?: string;
+  openGraphTags?: string;
   schemaMarkup?: string;
-  h1Tag?: string;
-  breadcrumbName?: string;
-  internalLinks?: { label: string; url: string }[];
-  robotsIndex?: boolean;
-  robotsFollow?: boolean;
+
+  createdAt?: string;
+  updatedAt?: string;
+  updatedBy?: string;
 }
 
-export interface BlogPost {
-  _id: string;
-  title: string;
-  slug: string;
-  excerpt?: string;
-  content: string;
-  coverImage?: string;
-  author: string;
-  tags: string[];
-  isPublished: boolean;
-  publishedAt?: string;
-  seo?: ISeoOptions;
-  createdAt: string;
-  updatedAt: string;
+export interface GetBlogsResponse {
+  posts: BlogPostItem[];
+  total: number;
+  page: number;
+  totalPages: number;
 }
 
 export const blogsApi = {
-  getAll: async () => {
-    return await api.get<BlogPost[]>("/blog/admin");
+  list: (params?: {
+    status?: string;
+    showOnHome?: boolean | string;
+    featured?: boolean | string;
+    category?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) => {
+    const query = new URLSearchParams();
+    if (params?.status) query.set("status", params.status);
+    if (params?.showOnHome !== undefined) query.set("showOnHome", String(params.showOnHome));
+    if (params?.featured !== undefined) query.set("featured", String(params.featured));
+    if (params?.category) query.set("category", params.category);
+    if (params?.search) query.set("search", params.search);
+    if (params?.page) query.set("page", String(params.page));
+    if (params?.limit) query.set("limit", String(params.limit));
+
+    const qs = query.toString();
+    return api.get<GetBlogsResponse>(`/blogs${qs ? `?${qs}` : ""}`);
   },
-  create: async (data: Partial<BlogPost>) => {
-    return await api.post<BlogPost>("/blog/admin", data);
+
+  getByIdOrSlug: (idOrSlug: string) => {
+    return api.get<BlogPostItem>(`/blogs/${idOrSlug}`);
   },
-  update: async (id: string, data: Partial<BlogPost>) => {
-    return await api.put<BlogPost>(`/blog/admin/${id}`, data);
+
+  create: (data: Partial<BlogPostItem>) => {
+    return api.post<BlogPostItem>("/blogs", data);
   },
-  delete: async (id: string) => {
-    return await api.delete<void>(`/blog/admin/${id}`);
+
+  update: (id: string, data: Partial<BlogPostItem>) => {
+    return api.put<BlogPostItem>(`/blogs/${id}`, data);
+  },
+
+  delete: (id: string) => {
+    return api.delete<{ deleted: boolean }>(`/blogs/${id}`);
   },
 };

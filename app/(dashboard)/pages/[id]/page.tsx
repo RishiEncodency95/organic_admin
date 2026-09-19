@@ -39,6 +39,7 @@ import {
   findCmsPageByRouteKey,
   getCmsPageRouteKey,
   PUBLIC_SITE_URL,
+  formatPublishDate,
   type PageType,
 } from "@/lib/cmsPages";
 import { settingsApi } from "@/lib/settingsApi";
@@ -1135,26 +1136,26 @@ export default function CmsPageDetailPage() {
                 </InfoRow>
 
                 <InfoRow label="Author">
-                  <span className="inline-flex items-center gap-[5px]">
+                  <span suppressHydrationWarning className="inline-flex items-center gap-[5px]">
                     <UserRound className="h-[11px] w-[11px]" />
 
-                    {page.author}
+                    {page.updatedBy || page.author || "Admin User"}
                   </span>
                 </InfoRow>
 
                 <InfoRow label="Published On">
-                  <span className="inline-flex items-center gap-[5px]">
+                  <span suppressHydrationWarning className="inline-flex items-center gap-[5px]">
                     <Clock3 className="h-[11px] w-[11px]" />
 
-                    {page.updated}
+                    {page.publishedAt ? formatPublishDate(page.publishedAt) : page.updated}
                   </span>
                 </InfoRow>
 
                 <InfoRow label="Last Updated">
-                  <span className="inline-flex items-center gap-[5px]">
+                  <span suppressHydrationWarning className="inline-flex items-center gap-[5px]">
                     <Clock3 className="h-[11px] w-[11px]" />
 
-                    {page.updated}
+                    {page.lastUpdated ? formatPublishDate(page.lastUpdated) : page.updated}
                   </span>
                 </InfoRow>
 

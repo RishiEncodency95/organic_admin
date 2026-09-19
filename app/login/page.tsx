@@ -301,7 +301,14 @@ export default function LoginPage() {
         return;
       }
 
-      const msg = err?.message || (err instanceof ApiRequestError ? err.message : "Invalid credentials. Please try again.");
+      const rawMsg = typeof err === "string" ? err : err?.message;
+      const isNetworkErr =
+        (err instanceof ApiRequestError && err.status === 0) ||
+        (typeof rawMsg === "string" && (rawMsg.includes("Cannot connect") || rawMsg.includes("Failed to fetch")));
+
+      const msg = isNetworkErr
+        ? "Unable to connect to backend server. Please verify the backend service is running."
+        : (rawMsg || (err instanceof ApiRequestError ? err.message : "Invalid credentials. Please try again."));
       setError(msg);
       showToast("error", msg);
     } finally {

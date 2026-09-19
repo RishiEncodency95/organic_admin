@@ -1,4 +1,49 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1";
+export const getApiBaseUrl = (): string => {
+  // If running in browser on production domain
+  if (typeof window !== "undefined") {
+    if (window.location.hostname.includes("bharatorganicexpo.com")) {
+      return "https://api.bharatorganicexpo.com/api";
+    }
+  }
+
+  // If env var is set and not accidentally pointing to localhost while on live site
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    if (
+      typeof window !== "undefined" &&
+      window.location.hostname.includes("bharatorganicexpo.com") &&
+      process.env.NEXT_PUBLIC_API_URL.includes("localhost")
+    ) {
+      return "https://api.bharatorganicexpo.com/api";
+    }
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+
+  // If running on local network / custom IP in browser
+  if (typeof window !== "undefined" && window.location.hostname !== "localhost") {
+    return `http://${window.location.hostname}:4001/api`;
+  }
+
+  return "http://localhost:4001/api";
+};
+
+export const getBackendUrl = (): string => {
+  if (typeof window !== "undefined" && window.location.hostname.includes("bharatorganicexpo.com")) {
+    return "https://api.bharatorganicexpo.com";
+  }
+  if (process.env.NEXT_PUBLIC_BACKEND_URL) {
+    if (
+      typeof window !== "undefined" &&
+      window.location.hostname.includes("bharatorganicexpo.com") &&
+      process.env.NEXT_PUBLIC_BACKEND_URL.includes("localhost")
+    ) {
+      return "https://api.bharatorganicexpo.com";
+    }
+    return process.env.NEXT_PUBLIC_BACKEND_URL;
+  }
+  return "http://localhost:4001";
+};
+
+export const API_BASE_URL = getApiBaseUrl();
 const REQUEST_TIMEOUT_MS = 10_000;
 const GET_CACHE_TTL_MS = 2_000;
 const getInFlight = new Map<string, Promise<unknown>>();
@@ -66,7 +111,7 @@ async function refreshAccessToken(): Promise<boolean> {
 
   refreshInFlight = (async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/refresh-token`, {
+      const res = await fetch(`${getApiBaseUrl()}/auth/refresh-token`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refreshToken }),
@@ -547,7 +592,7 @@ function getMockDataForPath(path: string, method: string = "GET"): unknown {
     return [];
   }
 
-  if (p.includes("/seo")) {
+  if (p.includes("/seo") && !p.includes("/seo-settings")) {
     return {
       score: 98,
       status: "good",
@@ -580,10 +625,14 @@ async function request<T>(path: string, options?: ApiRequestOptions, isRetry = f
   const { timeoutMs: _timeoutMs, ...fetchOptions } = options ?? {};
   let res: Response;
   // Paths that have real backends — errors should be thrown, not mocked
-  const isRealBackendPath = path.includes("/staff") || path.includes("/roles") || path.includes("/auth");
+  const isRealBackendPath =
+    path.includes("/staff") ||
+    path.includes("/roles") ||
+    path.includes("/auth") ||
+    path.includes("/seo-settings");
 
   try {
-    res = await fetch(`${API_BASE_URL}${path}`, {
+    res = await fetch(`${getApiBaseUrl()}${path}`, {
       ...fetchOptions,
       headers,
       signal: options?.signal ?? timeoutController.signal,
@@ -644,7 +693,7 @@ async function requestHtml(path: string): Promise<string> {
     const headers: Record<string, string> = {};
     if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
-    const res = await fetch(`${API_BASE_URL}${path}`, { headers });
+    const res = await fetch(`${getApiBaseUrl()}${path}`, { headers });
     if (!res.ok) throw new ApiRequestError(res.status, "Could not load this document.");
     return res.text();
   } catch {
@@ -657,7 +706,7 @@ async function requestBlob(path: string): Promise<Blob> {
     syncTokensFromStorage();
     const headers: Record<string, string> = {};
     if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
-    let res = await fetch(`${API_BASE_URL}${path}`, { headers });
+    let res = await fetch(`${getApiBaseUrl()}${path}`, { headers });
     if (!res.ok) throw new ApiRequestError(res.status, "Could not download this document.");
     return res.blob();
   } catch {

@@ -11,6 +11,9 @@ export interface CmsPage {
   slug: string;
   author: string;
   status: PageStatus;
+  visibility?: "Public" | "Private";
+  publishedAt?: string;
+  lastUpdated?: string;
   seoScore: number;
   rating: "Excellent" | "Good" | "Needs Work";
   updated: string;
@@ -194,6 +197,11 @@ export function findCmsPageByRouteKey(pages: CmsPage[], routeKey?: string): CmsP
 }
 
 type SettingsPageConfig = {
+  publishedAt?: string;
+  lastUpdated?: string;
+  updatedBy?: string;
+  status?: PageStatus;
+  visibility?: "Public" | "Private";
   seo?: {
     metaTitle?: string;
     metaDescription?: string;
@@ -213,6 +221,25 @@ type SettingsPageConfig = {
   };
   sections?: Array<{ enabled?: boolean }>;
 };
+
+export function formatPublishDate(dateString?: string | Date): string {
+  if (!dateString) return "Not published";
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return String(dateString);
+  return (
+    date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }) +
+    ", " +
+    date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    })
+  );
+}
 
 const pageDefinitions = [
   ["landingPage", "Home", "/", "home"],
@@ -274,24 +301,36 @@ function seoScore(config: SettingsPageConfig): number {
 }
 
 export function cmsPagesFromSettings(settings: Record<string, unknown>): CmsPage[] {
-  const updatedAt = typeof settings.updatedAt === "string" ? new Date(settings.updatedAt) : new Date();
+  const globalUpdatedAt = typeof settings.updatedAt === "string" ? new Date(settings.updatedAt) : new Date();
+  const globalCreatedAt = typeof settings.createdAt === "string" ? new Date(settings.createdAt) : globalUpdatedAt;
+
   return pageDefinitions.map(([key, title, slug, type], index) => {
     const config = (settings[key] as SettingsPageConfig | undefined) ?? {};
     const score = seoScore(config);
-    const status: PageStatus = config.sections && config.sections.length > 0
-      ? (config.sections.some((section) => section.enabled !== false) ? "Published" : "Draft")
-      : "Published";
+    const status: PageStatus = config.status
+      ? config.status
+      : (config.sections && config.sections.length > 0
+        ? (config.sections.some((section) => section.enabled !== false) ? "Published" : "Draft")
+        : "Published");
+
+    const publishedDateStr = config.publishedAt || globalCreatedAt.toISOString();
+    const updatedDateStr = config.lastUpdated || (config.publishedAt ? config.publishedAt : globalUpdatedAt.toISOString());
+    const authorName = config.updatedBy || "Admin User";
+
     return {
       id: index + 1,
       configKey: key,
       title,
       slug,
-      author: "Admin User",
+      author: authorName,
       status,
+      visibility: config.visibility || "Public",
+      publishedAt: publishedDateStr,
+      lastUpdated: updatedDateStr,
       seoScore: score,
       rating: score >= 90 ? "Excellent" : score >= 75 ? "Good" : "Needs Work",
-      updated: updatedAt.toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }),
-      updatedBy: "Admin User",
+      updated: formatPublishDate(updatedDateStr),
+      updatedBy: authorName,
       type,
       seo: config.seo,
     };
