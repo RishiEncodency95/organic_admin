@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { messages = [], prompt = "", jobDetails } = body;
+    const { messages = [], prompt = "", jobDetails, attachments = [] } = body;
 
     const apiKey = process.env.GEMINI_API_KEY;
 
@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
 You are an expert HR Specialist, Executive Talent Recruiter, and Job Description (JD/GD) Architect for "Bharat Organic Expo" (a premier organic agriculture, natural products, sustainable farming & ayush exhibition platform).
 
 Your task is to help the Admin create world-class, professional, detailed, and engaging Job Descriptions (JDs).
+If the user uploads documents, resumes, images, screenshots, or notes (DOC/PDF/Image), analyze the uploaded content thoroughly and construct a precise, complete Job Description based on the extracted information.
 
 When asked to generate or refine a Job Description, output structured, beautifully formatted Markdown with the following standard sections:
 1. 📌 **Job Overview & Position Summary** (Role title, mission, team context, key objectives)
@@ -28,12 +29,12 @@ When asked to generate or refine a Job Description, output structured, beautiful
 6. 📍 **Job Details Summary Table** (Title, Department, Location / Remote, Employment Type, Experience Level)
 7. 🚀 **How to Apply & Interview Process** (Call to action for applicants)
 
-Maintain an encouraging, executive, and highly polished professional tone. If the admin provides minimal details, intelligently complete the relevant skills and responsibilities suited for that job role in the organic/expo industry.
+Maintain an encouraging, executive, and highly polished professional tone. Intelligently complete relevant skills and responsibilities suited for that job role in the organic/expo industry.
 Always respond in clean Markdown with clear headings and bullet points.
 `;
 
     // Construct history for Gemini API
-    const formattedContents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
+    const formattedContents: Array<{ role: string; parts: Array<any> }> = [];
 
     // If chat history is passed
     if (Array.isArray(messages) && messages.length > 0) {
@@ -45,11 +46,12 @@ Always respond in clean Markdown with clear headings and bullet points.
       });
     }
 
-    // Add current user prompt or structured request if present
-    if (prompt || jobDetails) {
-      let currentInput = prompt;
-      if (jobDetails) {
-        currentInput = `Generate a comprehensive Job Description with the following inputs:
+    // Prepare current user prompt & attachments
+    const userParts: Array<any> = [];
+
+    let currentInput = prompt;
+    if (jobDetails) {
+      currentInput = `Generate a comprehensive Job Description with the following inputs:
 - **Job Title**: ${jobDetails.title || "Not specified"}
 - **Department**: ${jobDetails.department || "General"}
 - **Experience Level**: ${jobDetails.experience || "Not specified"}
@@ -57,20 +59,47 @@ Always respond in clean Markdown with clear headings and bullet points.
 - **Employment Type**: ${jobDetails.type || "Full-time"}
 - **Key Skills / Requirements**: ${jobDetails.skills || "Relevant industry skills"}
 - **Additional Instructions**: ${prompt || "Make it professional and ready for publication"}`;
-      }
+    }
 
-      formattedContents.push({
-        role: "user",
-        parts: [{ text: currentInput }],
+    if (currentInput) {
+      userParts.push({ text: currentInput });
+    }
+
+    // Process uploaded attachments (images, PDFs, DOCs, TXT)
+    if (Array.isArray(attachments) && attachments.length > 0) {
+      attachments.forEach((att: { name?: string; mimeType?: string; base64?: string; text?: string }) => {
+        const mime = att.mimeType || "application/octet-stream";
+
+        if (att.text) {
+          userParts.push({
+            text: `\n\n📄 [Uploaded Document Content: ${att.name || "File"}]\n${att.text}\n`,
+          });
+        }
+
+        if (att.base64) {
+          // Clean base64 string
+          const cleanBase64 = att.base64.replace(/^data:.*?;base64,/, "");
+
+          if (mime.startsWith("image/") || mime === "application/pdf") {
+            userParts.push({
+              inline_data: {
+                mime_type: mime,
+                data: cleanBase64,
+              },
+            });
+          }
+        }
       });
     }
 
-    if (formattedContents.length === 0) {
-      formattedContents.push({
-        role: "user",
-        parts: [{ text: "Hello! Please help me write a professional Job Description." }],
-      });
+    if (userParts.length === 0) {
+      userParts.push({ text: "Please help me write a professional Job Description." });
     }
+
+    formattedContents.push({
+      role: "user",
+      parts: userParts,
+    });
 
     const payload = {
       system_instruction: {
@@ -125,7 +154,7 @@ Always respond in clean Markdown with clear headings and bullet points.
     return NextResponse.json({
       success: true,
       text: generatedText,
-      model: "Gemini 2.5 Flash AI",
+      model: "Gemini 2.5 Multimodal AI",
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {

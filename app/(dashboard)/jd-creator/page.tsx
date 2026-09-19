@@ -26,13 +26,29 @@ import {
   PlusCircle,
   X,
   Wand2,
+  Paperclip,
+  Image as ImageIcon,
+  FileUp,
+  File,
 } from "lucide-react";
+
+interface AttachedFile {
+  id: string;
+  file: File;
+  name: string;
+  size: string;
+  mimeType: string;
+  base64?: string;
+  text?: string;
+  previewUrl?: string;
+}
 
 interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: string;
+  attachments?: Array<{ name: string; mimeType: string }>;
 }
 
 const PRESET_ROLES = [
@@ -93,7 +109,7 @@ I am your AI Recruiter & Job Description Architect powered by **Google Gemini AI
 I can help you build executive-ready, highly tailored Job Descriptions for any role in **Fullstack Engineering, Organic Farming Ops, Marketing, Sales, or Administration**.
 
 **How would you like to start?**
-* 1️⃣ Type your requirements in the chat below (e.g. *"Create a JD for a Senior React Developer with 5 years exp"*)
+* 1️⃣ Type your requirements or **Upload DOC / PDF / Image files** 📎 in the chat below
 * 2️⃣ Click **Quick Form Generator** above to fill in role details
 * 3️⃣ Select one of the preset templates from the left sidebar!`,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
@@ -104,6 +120,7 @@ I can help you build executive-ready, highly tailored Job Descriptions for any r
   const [isLoading, setIsLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showFormModal, setShowFormModal] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
 
   // Form Modal state
   const [formTitle, setFormTitle] = useState("");
@@ -116,6 +133,7 @@ I can help you build executive-ready, highly tailored Job Descriptions for any r
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -125,34 +143,110 @@ I can help you build executive-ready, highly tailored Job Descriptions for any r
     scrollToBottom();
   }, [messages, isLoading]);
 
+  // Handle file upload selection
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    for (const file of files) {
+      const sizeStr = file.size > 1024 * 1024
+        ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+        : `${Math.round(file.size / 1024)} KB`;
+
+      const newAtt: AttachedFile = {
+        id: `att-${Date.now()}-${Math.random()}`,
+        file,
+        name: file.name,
+        size: sizeStr,
+        mimeType: file.type || "application/octet-stream",
+      };
+
+      if (file.type.startsWith("image/")) {
+        const previewUrl = URL.createObjectURL(file);
+        newAtt.previewUrl = previewUrl;
+
+        // Convert image to base64
+        const base64 = await readFileAsBase64(file);
+        newAtt.base64 = base64;
+      } else {
+        // Read text content for doc/txt/pdf
+        try {
+          const text = await readFileAsText(file);
+          newAtt.text = text;
+        } catch {
+          const base64 = await readFileAsBase64(file);
+          newAtt.base64 = base64;
+        }
+      }
+
+      setAttachedFiles((prev) => [...prev, newAtt]);
+    }
+
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const readFileAsBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const readFileAsText = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (err) => reject(err);
+      reader.readAsText(file);
+    });
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachedFiles((prev) => prev.filter((a) => a.id !== id));
+  };
+
   // Handle send message
   const handleSend = async (customPrompt?: string) => {
     const textToSend = customPrompt || inputPrompt.trim();
-    if (!textToSend || isLoading) return;
+    if ((!textToSend && attachedFiles.length === 0) || isLoading) return;
+
+    const currentAttachments = [...attachedFiles];
+    const userMessageContent = textToSend || `Please generate a detailed Job Description based on the attached document(s): ${currentAttachments.map(a => a.name).join(", ")}`;
 
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       role: "user",
-      content: textToSend,
+      content: userMessageContent,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      attachments: currentAttachments.map((a) => ({ name: a.name, mimeType: a.mimeType })),
     };
 
     setMessages((prev) => [...prev, userMessage]);
     if (!customPrompt) setInputPrompt("");
+    setAttachedFiles([]);
     setIsLoading(true);
 
     try {
-      // Send chat history and current user prompt to API
       const historyPayload = messages
         .filter((m) => m.id !== "welcome-1")
         .map((m) => ({ role: m.role, content: m.content }));
+
+      const attachmentPayload = currentAttachments.map((att) => ({
+        name: att.name,
+        mimeType: att.mimeType,
+        base64: att.base64,
+        text: att.text,
+      }));
 
       const res = await fetch("/api/jd-creator", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: historyPayload,
-          prompt: textToSend,
+          prompt: userMessageContent,
+          attachments: attachmentPayload,
         }),
       });
 
@@ -333,6 +427,16 @@ I can help you build executive-ready, highly tailored Job Descriptions for any r
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-slate-50/70 text-slate-900">
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.webp"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+
       {/* =========================================================
           TOP BAR / HEADER
       ========================================================= */}
@@ -349,19 +453,27 @@ I can help you build executive-ready, highly tailored Job Descriptions for any r
               </h1>
               <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-emerald-500/10 to-teal-500/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 ring-1 ring-emerald-600/20">
                 <Zap className="h-3 w-3 text-emerald-600" />
-                Gemini 2.0 AI Powered
+                Gemini 2.5 Multimodal AI
               </span>
             </div>
             <p className="text-[11px] font-medium text-slate-500">
-              Create, refine, and export professional Job Descriptions in seconds
+              Upload DOC / PDF / Image or type requirements to generate JDs in seconds
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <button
+            onClick={() => fileInputRef.current?.click()}
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 text-[11px] font-bold text-slate-700 hover:bg-slate-100 transition active:scale-95 cursor-pointer"
+          >
+            <Paperclip className="h-3.5 w-3.5 text-emerald-600" />
+            Attach DOC / PDF / Image
+          </button>
+
+          <button
             onClick={() => setShowFormModal(true)}
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-emerald-700 px-3 text-[11px] font-bold text-white shadow-xs hover:bg-emerald-800 transition active:scale-95"
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-emerald-700 px-3 text-[11px] font-bold text-white shadow-xs hover:bg-emerald-800 transition active:scale-95 cursor-pointer"
           >
             <Wand2 className="h-3.5 w-3.5" />
             Quick Form Generator
@@ -424,10 +536,10 @@ I can help you build executive-ready, highly tailored Job Descriptions for any r
           <div className="mt-6 rounded-xl border border-emerald-200/80 bg-gradient-to-b from-emerald-50/80 to-teal-50/50 p-3.5">
             <div className="flex items-center gap-2 text-[12px] font-bold text-emerald-900">
               <Sparkles className="h-4 w-4 text-emerald-600" />
-              Pro Recruitment Tip
+              Multimodal File Support
             </div>
             <p className="mt-1.5 text-[11px] leading-relaxed text-emerald-800/80">
-              Clear responsibilities & exact salary ranges increase candidate response rates by up to <strong>68%</strong> on Bharat Organic Expo Careers portal!
+              You can upload <strong>PDFs, Word DOCs, Text files, or Images</strong> directly into the chat to auto-extract role responsibilities!
             </p>
           </div>
         </div>
@@ -471,6 +583,25 @@ I can help you build executive-ready, highly tailored Job Descriptions for any r
                     <span>{msg.role === "user" ? "You (Admin)" : "Gemini AI Architect"}</span>
                     <span>{msg.timestamp}</span>
                   </div>
+
+                  {/* USER ATTACHMENTS PREVIEW IN CHAT */}
+                  {msg.attachments && msg.attachments.length > 0 && (
+                    <div className="mb-2.5 flex flex-wrap gap-1.5">
+                      {msg.attachments.map((att, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-slate-800/90 px-2.5 py-1 text-[10.5px] font-medium text-emerald-300 ring-1 ring-emerald-500/30"
+                        >
+                          {att.mimeType.startsWith("image/") ? (
+                            <ImageIcon className="h-3.5 w-3.5 text-emerald-400" />
+                          ) : (
+                            <FileText className="h-3.5 w-3.5 text-emerald-400" />
+                          )}
+                          {att.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
 
                   {/* BODY */}
                   {msg.role === "user" ? (
@@ -534,7 +665,7 @@ I can help you build executive-ready, highly tailored Job Descriptions for any r
                       <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse [animation-delay:0.4s]" />
                     </div>
                     <span className="text-[12px] font-semibold text-emerald-800">
-                      Gemini AI is crafting your Job Description...
+                      Gemini AI is analyzing attachments & crafting your Job Description...
                     </span>
                   </div>
                 </div>
@@ -566,6 +697,40 @@ I can help you build executive-ready, highly tailored Job Descriptions for any r
 
           {/* INPUT BAR */}
           <div className="shrink-0 border-t border-slate-200 bg-white p-3 md:p-4 shadow-lg">
+            {/* ATTACHMENTS PREVIEW BAR ABOVE TEXTAREA */}
+            {attachedFiles.length > 0 && (
+              <div className="mb-2.5 flex flex-wrap gap-2 rounded-xl border border-emerald-200/80 bg-emerald-50/40 p-2">
+                {attachedFiles.map((att) => (
+                  <div
+                    key={att.id}
+                    className="relative flex items-center gap-2 rounded-lg bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-800 shadow-xs border border-slate-200"
+                  >
+                    {att.previewUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={att.previewUrl} alt="" className="h-6 w-6 rounded object-cover" />
+                    ) : att.mimeType.startsWith("image/") ? (
+                      <ImageIcon className="h-4 w-4 text-emerald-600" />
+                    ) : (
+                      <FileText className="h-4 w-4 text-blue-600" />
+                    )}
+
+                    <div className="flex flex-col">
+                      <span className="max-w-[140px] truncate text-[11px] font-bold">{att.name}</span>
+                      <span className="text-[9px] text-slate-400">{att.size}</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => removeAttachment(att.id)}
+                      className="ml-1 rounded-full p-0.5 text-slate-400 hover:bg-slate-100 hover:text-red-500"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -573,6 +738,15 @@ I can help you build executive-ready, highly tailored Job Descriptions for any r
               }}
               className="relative flex items-end gap-2 rounded-2xl border border-slate-300 bg-slate-50/80 p-2 transition-within focus-within:border-emerald-600 focus-within:bg-white focus-within:ring-2 focus-within:ring-emerald-600/20"
             >
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-slate-500 hover:bg-slate-200/60 hover:text-emerald-700 transition"
+                title="Attach DOC, PDF or Image file"
+              >
+                <Paperclip className="h-5 w-5" />
+              </button>
+
               <textarea
                 ref={textareaRef}
                 value={inputPrompt}
@@ -583,23 +757,27 @@ I can help you build executive-ready, highly tailored Job Descriptions for any r
                     handleSend();
                   }
                 }}
-                placeholder="Ask Gemini AI to write or adjust a job description... (e.g. Create a JD for Product Manager with 3 yrs exp)"
-                className="max-h-32 min-h-[44px] w-full resize-none bg-transparent px-3 py-2 text-[13px] text-slate-800 outline-none placeholder:text-slate-400"
+                placeholder={
+                  attachedFiles.length > 0
+                    ? `Attached ${attachedFiles.length} file(s). Add any specific instructions or press send...`
+                    : "Ask Gemini AI or attach DOC/PDF/Image to generate JD... (Press Enter to send)"
+                }
+                className="max-h-32 min-h-[44px] w-full resize-none bg-transparent px-2 py-2 text-[13px] text-slate-800 outline-none placeholder:text-slate-400"
                 rows={1}
               />
 
               <button
                 type="submit"
-                disabled={!inputPrompt.trim() || isLoading}
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md transition hover:brightness-110 disabled:opacity-40 disabled:hover:brightness-100"
+                disabled={(!inputPrompt.trim() && attachedFiles.length === 0) || isLoading}
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md transition hover:brightness-110 disabled:opacity-40 disabled:hover:brightness-100 cursor-pointer"
               >
                 <Send className="h-4 w-4" />
               </button>
             </form>
 
             <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400 px-1">
-              <span>Press <strong>Enter</strong> to send, <strong>Shift + Enter</strong> for line break</span>
-              <span>Gemini 2.0 Flash Engine</span>
+              <span>Supports <strong>PDF, DOC, DOCX, TXT, PNG, JPG</strong> attachments</span>
+              <span>Gemini 2.5 Multimodal Engine</span>
             </div>
           </div>
         </div>
