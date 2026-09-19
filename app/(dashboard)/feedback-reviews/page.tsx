@@ -10,19 +10,24 @@ import {
   Building2,
   Calendar,
   Check,
+  CheckCircle2,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock,
   Download,
   Eye,
+  FileText,
   Globe,
   Headphones,
+  Lightbulb,
   Mail,
   MapPin,
   MessageSquare,
   MessageSquareText,
   MoreVertical,
+  Notebook,
+  Paperclip,
   Pencil,
   Phone,
   Plus,
@@ -81,6 +86,7 @@ export interface FeedbackItem {
   name: string;
   organisation: string;
   email?: string;
+  phone?: string;
   type: FeedbackType;
   location?: string;
   rating: number;
@@ -94,6 +100,21 @@ export interface FeedbackItem {
   author?: string;
   color?: string;
   logo?: string;
+  ratingsBreakdown?: {
+    overall: number;
+    networking: number;
+    participants: number;
+    management: number;
+  };
+  improvementSuggestions?: string;
+  mediaConsent?: boolean;
+  attachments?: {
+    photo?: string;
+    photoName?: string;
+    logo?: string;
+    logoName?: string;
+  };
+  internalNotes?: string;
 }
 
 // Initial realistic dataset matching the screenshot exactly
@@ -103,12 +124,13 @@ const INITIAL_FEEDBACK: FeedbackItem[] = [
     code: "#0248",
     name: "Dr. Neha Sharma",
     organisation: "Aarogya Wellness Clinic",
-    email: "dr.neha@aarogyawellness.com",
+    email: "neha.sharma@aarogya.com",
+    phone: "+91 98765 43210",
     type: "Visitor",
-    location: "Gajraula",
+    location: "New Delhi, India",
     rating: 5,
     title: "Excellent organisation and ...",
-    comment: "Excellent organisation and very helpful delegates. The variety of organic food and herbal products exceeded our expectations. Truly a world-class expo!",
+    comment: "Excellent organisation and a truly inspiring platform for the organic industry. Great networking opportunities and very well managed event.",
     status: "Published",
     date: "18 Sep 2026",
     time: "04:12 PM",
@@ -116,6 +138,21 @@ const INITIAL_FEEDBACK: FeedbackItem[] = [
     event: "Expo 2026",
     color: "#1b5e20",
     author: "Vansh Chaudhary",
+    ratingsBreakdown: {
+      overall: 5,
+      networking: 5,
+      participants: 4,
+      management: 5,
+    },
+    improvementSuggestions: "More international buyers and longer networking sessions would be great.",
+    mediaConsent: true,
+    attachments: {
+      photo: "/feedback.png",
+      photoName: "feedback.png",
+      logo: "",
+      logoName: "aarogya-logo.png",
+    },
+    internalNotes: "Potential speaker for next edition. Good industry connections.",
   },
   {
     id: "f-0247",
@@ -123,6 +160,7 @@ const INITIAL_FEEDBACK: FeedbackItem[] = [
     name: "Ramesh Patel",
     organisation: "Organic India Pvt. Ltd.",
     email: "ramesh.patel@organicindia.com",
+    phone: "+91 98111 22334",
     type: "Exhibitor",
     location: "Faridabad",
     rating: 4,
@@ -135,6 +173,20 @@ const INITIAL_FEEDBACK: FeedbackItem[] = [
     event: "Expo 2026",
     color: "#006199",
     author: "Vansh Chaudhary",
+    ratingsBreakdown: {
+      overall: 4,
+      networking: 5,
+      participants: 4,
+      management: 4,
+    },
+    improvementSuggestions: "Stall setup entry pass generation could be digitized earlier to avoid morning rush.",
+    mediaConsent: true,
+    attachments: {
+      photo: "/feedback.png",
+      photoName: "ramesh-patel.jpg",
+      logoName: "organic-india-logo.png",
+    },
+    internalNotes: "Requested premium corner stall for next year's Mumbai edition.",
   },
   {
     id: "f-0246",
@@ -142,6 +194,7 @@ const INITIAL_FEEDBACK: FeedbackItem[] = [
     name: "Anita Mehra",
     organisation: "NatureLand Organics",
     email: "anita.mehra@natureland.in",
+    phone: "+91 98220 33445",
     type: "Exhibitor",
     location: "Agra",
     rating: 5,
@@ -154,6 +207,20 @@ const INITIAL_FEEDBACK: FeedbackItem[] = [
     event: "Expo 2026",
     color: "#4B1426",
     author: "Vansh Chaudhary",
+    ratingsBreakdown: {
+      overall: 5,
+      networking: 5,
+      participants: 5,
+      management: 4,
+    },
+    improvementSuggestions: "Provide additional power backup points for food display freezers.",
+    mediaConsent: true,
+    attachments: {
+      photo: "/feedback.png",
+      photoName: "anita-mehra.jpg",
+      logoName: "natureland-logo.png",
+    },
+    internalNotes: "Key sponsor candidate for 2027 national summit.",
   },
   {
     id: "f-0245",
@@ -161,6 +228,7 @@ const INITIAL_FEEDBACK: FeedbackItem[] = [
     name: "Vikram Singh",
     organisation: "AgriTech Solutions",
     email: "vikram@agritechsolutions.com",
+    phone: "+91 98330 44556",
     type: "Buyer",
     location: "Haridwar",
     rating: 3,
@@ -173,6 +241,15 @@ const INITIAL_FEEDBACK: FeedbackItem[] = [
     event: "Expo 2026",
     color: "#d26019",
     author: "Vansh Chaudhary",
+    ratingsBreakdown: {
+      overall: 3,
+      networking: 4,
+      participants: 3,
+      management: 3,
+    },
+    improvementSuggestions: "Dedicated buyer-seller matchmaking software app for pre-scheduled 1-on-1 meetings.",
+    mediaConsent: false,
+    internalNotes: "Buyer procurement team looking for organic grain suppliers.",
   },
   {
     id: "f-0244",
@@ -180,6 +257,7 @@ const INITIAL_FEEDBACK: FeedbackItem[] = [
     name: "Pooja Verma",
     organisation: "Independent Visitor",
     email: "pooja.verma91@gmail.com",
+    phone: "+91 98440 55667",
     type: "Visitor",
     location: "New Delhi",
     rating: 4,
@@ -192,6 +270,19 @@ const INITIAL_FEEDBACK: FeedbackItem[] = [
     event: "Expo 2026",
     color: "#7c3aed",
     author: "Vansh Chaudhary",
+    ratingsBreakdown: {
+      overall: 4,
+      networking: 4,
+      participants: 4,
+      management: 4,
+    },
+    improvementSuggestions: "More signboards directing towards live organic farming demonstrations.",
+    mediaConsent: true,
+    attachments: {
+      photo: "/feedback.png",
+      photoName: "pooja-verma.jpg",
+    },
+    internalNotes: "Subscribed to expo newsletter and certified workshops.",
   },
   {
     id: "f-0243",
@@ -199,6 +290,7 @@ const INITIAL_FEEDBACK: FeedbackItem[] = [
     name: "Sunil Khanna",
     organisation: "GreenLeaf Foods",
     email: "sunil@greenleaffoods.in",
+    phone: "+91 98550 66778",
     type: "Exhibitor",
     location: "Jaipur",
     rating: 3,
@@ -211,6 +303,15 @@ const INITIAL_FEEDBACK: FeedbackItem[] = [
     event: "Expo 2026",
     color: "#0891b2",
     author: "Vansh Chaudhary",
+    ratingsBreakdown: {
+      overall: 3,
+      networking: 3,
+      participants: 4,
+      management: 2,
+    },
+    improvementSuggestions: "Upgrade high-speed WiFi coverage in Hall 3.",
+    mediaConsent: true,
+    internalNotes: "Support ticket #402 opened with IT for network bandwidth resolution.",
   },
   {
     id: "f-0242",
@@ -218,6 +319,7 @@ const INITIAL_FEEDBACK: FeedbackItem[] = [
     name: "Dr. Rajesh Sinha",
     organisation: "Wellness Research Foundation",
     email: "dr.sinha@wrf-india.org",
+    phone: "+91 98660 77889",
     type: "Speaker",
     location: "Dehradun",
     rating: 5,
@@ -230,6 +332,19 @@ const INITIAL_FEEDBACK: FeedbackItem[] = [
     event: "Expo 2026",
     color: "#b45309",
     author: "Vansh Chaudhary",
+    ratingsBreakdown: {
+      overall: 5,
+      networking: 5,
+      participants: 5,
+      management: 5,
+    },
+    improvementSuggestions: "Add Q&A roving microphones in Main Hall B.",
+    mediaConsent: true,
+    attachments: {
+      photo: "/feedback.png",
+      photoName: "dr-rajesh-sinha.jpg",
+    },
+    internalNotes: "Confirmed keynote speaker for upcoming Ayush conclave.",
   },
   {
     id: "f-0241",
@@ -237,6 +352,7 @@ const INITIAL_FEEDBACK: FeedbackItem[] = [
     name: "Kavita Rao",
     organisation: "Organic Living Store",
     email: "kavita.rao@organicliving.com",
+    phone: "+91 98770 88990",
     type: "Visitor",
     location: "Bengaluru",
     rating: 4,
@@ -249,6 +365,15 @@ const INITIAL_FEEDBACK: FeedbackItem[] = [
     event: "Expo 2026",
     color: "#059669",
     author: "Vansh Chaudhary",
+    ratingsBreakdown: {
+      overall: 4,
+      networking: 4,
+      participants: 5,
+      management: 4,
+    },
+    improvementSuggestions: "Publish live schedule updates on mobile notifications.",
+    mediaConsent: true,
+    internalNotes: "Visited from Bengaluru; expressed interest in local hub franchising.",
   },
   {
     id: "f-0240",
@@ -256,6 +381,7 @@ const INITIAL_FEEDBACK: FeedbackItem[] = [
     name: "Mohammed Ali",
     organisation: "Global Trade Links",
     email: "m.ali@globaltradelinks.ae",
+    phone: "+971 50 123 4567",
     type: "Buyer",
     location: "Dubai, UAE",
     rating: 5,
@@ -268,6 +394,20 @@ const INITIAL_FEEDBACK: FeedbackItem[] = [
     event: "Expo 2026",
     color: "#2563eb",
     author: "Vansh Chaudhary",
+    ratingsBreakdown: {
+      overall: 5,
+      networking: 5,
+      participants: 5,
+      management: 5,
+    },
+    improvementSuggestions: "Arrange special customs clearance guidance desk for Gulf buyers.",
+    mediaConsent: true,
+    attachments: {
+      photo: "/feedback.png",
+      photoName: "mohammed-ali.jpg",
+      logoName: "global-trade-logo.png",
+    },
+    internalNotes: "International delegation head representing UAE supermarkets chain.",
   },
   {
     id: "f-0239",
@@ -275,6 +415,7 @@ const INITIAL_FEEDBACK: FeedbackItem[] = [
     name: "Sonal Gupta",
     organisation: "HerbEssence Naturals",
     email: "sonal@herbessence.com",
+    phone: "+91 98880 99001",
     type: "Exhibitor",
     location: "Mumbai",
     rating: 4,
@@ -287,6 +428,15 @@ const INITIAL_FEEDBACK: FeedbackItem[] = [
     event: "Expo 2026",
     color: "#db2777",
     author: "Vansh Chaudhary",
+    ratingsBreakdown: {
+      overall: 4,
+      networking: 4,
+      participants: 4,
+      management: 4,
+    },
+    improvementSuggestions: "Provide wider aisle spacing between Hall 1 and Hall 2.",
+    mediaConsent: true,
+    internalNotes: "Awaiting final approval for promotional banner placement.",
   },
   {
     id: "f-0238",
@@ -671,8 +821,19 @@ export default function FeedbackReviewsPage() {
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [activeItem, setActiveItem] = useState<FeedbackItem | null>(null);
+  const drawerItem = activeItem || feedbackList.find((f) => f.id === selectedId) || feedbackList[0];
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape" && isDrawerOpen) {
+        setIsDrawerOpen(false);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isDrawerOpen]);
 
   // Form state for Add/Edit
   const [formData, setFormData] = useState<Partial<FeedbackItem>>({
@@ -1099,13 +1260,14 @@ export default function FeedbackReviewsPage() {
   };
 
   // Render 5 stars helper
-  const renderStars = (rating: number) => {
+  const renderStars = (rating: number, size = 10) => {
     return (
-      <div className="flex items-center gap-[2px]">
+      <div className="flex items-center gap-[1.5px]">
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
-            className={`h-[12px] w-[12px] ${
+            style={{ width: `${size}px`, height: `${size}px` }}
+            className={`${
               star <= rating
                 ? "text-[#f59e0b] fill-[#f59e0b]"
                 : "text-[#e2e8f0] fill-[#f1f5f9]"
@@ -1550,7 +1712,7 @@ export default function FeedbackReviewsPage() {
                         S.No.
                       </th>
                       <th className="px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">
-                        Testimonials Name
+                        Name / Organisation
                       </th>
                       <th className="px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">
                         Location
@@ -1559,7 +1721,7 @@ export default function FeedbackReviewsPage() {
                         Rating
                       </th>
                       <th className="px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">
-                        Feedback / Title
+                        Feedback
                       </th>
                       <th className="px-[12px] py-[6px] whitespace-nowrap text-[8.5px] font-bold text-white uppercase tracking-wider">
                         Updated By
@@ -1588,7 +1750,11 @@ export default function FeedbackReviewsPage() {
                         return (
                           <tr
                             key={item.id}
-                            onClick={() => setSelectedId(item.id)}
+                            onClick={() => {
+                              setSelectedId(item.id);
+                              setActiveItem(item);
+                              setIsDrawerOpen(true);
+                            }}
                             className={`transition hover:bg-slate-50/80 cursor-pointer ${
                               isCurrent ? "bg-[#f4faf6]" : ""
                             }`}
@@ -1609,8 +1775,16 @@ export default function FeedbackReviewsPage() {
                               </span>
                             </td>
 
-                            <td className="px-[12px] py-[8px]">
-                              <div className="flex items-center gap-[10px] min-w-[200px]">
+                            <td
+                              className="px-[12px] py-[8px] cursor-pointer"
+                              onClick={() => {
+                                setActiveItem(item);
+                                setSelectedId(item.id);
+                                setIsDrawerOpen(true);
+                              }}
+                              title="Click to open Side Drawer"
+                            >
+                              <div className="flex items-center gap-[10px] min-w-[200px] group">
                                 <InitialsBadge
                                   name={item.name}
                                   color={item.color}
@@ -1620,7 +1794,7 @@ export default function FeedbackReviewsPage() {
                                 />
                                 <div className="min-w-0 flex-1">
                                   <p
-                                    className="text-[10.5px] font-bold truncate"
+                                    className="text-[10.5px] font-bold truncate group-hover:underline group-hover:text-[#006199] transition-colors"
                                     style={{ color: item.color || "#19274a" }}
                                   >
                                     {item.name}
@@ -1668,8 +1842,9 @@ export default function FeedbackReviewsPage() {
                                 <span className="text-[9px] font-bold text-[#dc2626] whitespace-nowrap">
                                   {item.author || "Vansh Chaudhary"}
                                 </span>
-                                <span className="text-[8px] font-medium text-[#64748b] mt-0.5 whitespace-nowrap">
-                                  {item.date}, {item.time}
+                                <span className="text-[8px] font-medium mt-0.5 whitespace-nowrap">
+                                  <span className="text-[#010736] font-semibold">{item.date}</span>,{" "}
+                                  <span className="text-[#4B1426] font-semibold">{item.time}</span>
                                 </span>
                               </div>
                             </td>
@@ -1717,12 +1892,12 @@ export default function FeedbackReviewsPage() {
                                 {/* View */}
                                 <button
                                   type="button"
-                                  title="View Details"
+                                  title="View in Side Drawer"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setSelectedId(item.id);
                                     setActiveItem(item);
-                                    setIsViewModalOpen(true);
+                                    setIsDrawerOpen(true);
                                   }}
                                   className="flex h-[25px] w-[25px] items-center justify-center rounded-[6px] bg-orange-500/10 text-orange-600 backdrop-blur-md border border-orange-400/30 shadow-[0_2px_6px_rgba(249,115,22,0.12)] transition-all hover:bg-orange-500/20 hover:border-orange-400/50 hover:shadow-[0_3px_10px_rgba(249,115,22,0.25)] hover:scale-105 active:scale-95 cursor-pointer"
                                 >
@@ -1848,68 +2023,68 @@ export default function FeedbackReviewsPage() {
                 </button>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {/* 5 Star */}
-                <div className="flex items-center gap-2 text-[8px]">
-                  <span className="flex w-[48px] items-center gap-1 font-semibold text-[#334155]">
-                    <span className="text-[#f59e0b]">★</span> 5 Star
+                <div className="flex items-center gap-1.5 text-[7px]">
+                  <span className="flex w-[42px] items-center gap-1 font-semibold text-[#334155]">
+                    <span className="text-[#f59e0b] text-[6.5px]">★</span> 5 Star
                   </span>
-                  <div className="h-[7px] flex-1 overflow-hidden rounded-full bg-[#f1f5f9]">
+                  <div className="h-[6px] flex-1 overflow-hidden rounded-full bg-[#f1f5f9]">
                     <div className="h-full rounded-full bg-[#10b981]" style={{ width: "62.9%" }} />
                   </div>
-                  <span className="w-[62px] text-right font-medium text-[#64748b]">
+                  <span className="w-[56px] text-right font-medium text-[#64748b]">
                     156 (62.9%)
                   </span>
                 </div>
 
                 {/* 4 Star */}
-                <div className="flex items-center gap-2 text-[8px]">
-                  <span className="flex w-[48px] items-center gap-1 font-semibold text-[#334155]">
-                    <span className="text-[#f59e0b]">★</span> 4 Star
+                <div className="flex items-center gap-1.5 text-[7px]">
+                  <span className="flex w-[42px] items-center gap-1 font-semibold text-[#334155]">
+                    <span className="text-[#f59e0b] text-[6.5px]">★</span> 4 Star
                   </span>
-                  <div className="h-[7px] flex-1 overflow-hidden rounded-full bg-[#f1f5f9]">
+                  <div className="h-[6px] flex-1 overflow-hidden rounded-full bg-[#f1f5f9]">
                     <div className="h-full rounded-full bg-[#93c5fd]" style={{ width: "21.8%" }} />
                   </div>
-                  <span className="w-[62px] text-right font-medium text-[#64748b]">
+                  <span className="w-[56px] text-right font-medium text-[#64748b]">
                     54 (21.8%)
                   </span>
                 </div>
 
                 {/* 3 Star */}
-                <div className="flex items-center gap-2 text-[8px]">
-                  <span className="flex w-[48px] items-center gap-1 font-semibold text-[#334155]">
-                    <span className="text-[#f59e0b]">★</span> 3 Star
+                <div className="flex items-center gap-1.5 text-[7px]">
+                  <span className="flex w-[42px] items-center gap-1 font-semibold text-[#334155]">
+                    <span className="text-[#f59e0b] text-[6.5px]">★</span> 3 Star
                   </span>
-                  <div className="h-[7px] flex-1 overflow-hidden rounded-full bg-[#f1f5f9]">
+                  <div className="h-[6px] flex-1 overflow-hidden rounded-full bg-[#f1f5f9]">
                     <div className="h-full rounded-full bg-[#fbbf24]" style={{ width: "9.7%" }} />
                   </div>
-                  <span className="w-[62px] text-right font-medium text-[#64748b]">
+                  <span className="w-[56px] text-right font-medium text-[#64748b]">
                     24 (9.7%)
                   </span>
                 </div>
 
                 {/* 2 Star */}
-                <div className="flex items-center gap-2 text-[8px]">
-                  <span className="flex w-[48px] items-center gap-1 font-semibold text-[#334155]">
-                    <span className="text-[#f59e0b]">★</span> 2 Star
+                <div className="flex items-center gap-1.5 text-[7px]">
+                  <span className="flex w-[42px] items-center gap-1 font-semibold text-[#334155]">
+                    <span className="text-[#f59e0b] text-[6.5px]">★</span> 2 Star
                   </span>
-                  <div className="h-[7px] flex-1 overflow-hidden rounded-full bg-[#f1f5f9]">
+                  <div className="h-[6px] flex-1 overflow-hidden rounded-full bg-[#f1f5f9]">
                     <div className="h-full rounded-full bg-[#fb923c]" style={{ width: "3.2%" }} />
                   </div>
-                  <span className="w-[62px] text-right font-medium text-[#64748b]">
+                  <span className="w-[56px] text-right font-medium text-[#64748b]">
                     8 (3.2%)
                   </span>
                 </div>
 
                 {/* 1 Star */}
-                <div className="flex items-center gap-2 text-[8px]">
-                  <span className="flex w-[48px] items-center gap-1 font-semibold text-[#334155]">
-                    <span className="text-[#ef4444]">★</span> 1 Star
+                <div className="flex items-center gap-1.5 text-[7px]">
+                  <span className="flex w-[42px] items-center gap-1 font-semibold text-[#334155]">
+                    <span className="text-[#ef4444] text-[6.5px]">★</span> 1 Star
                   </span>
-                  <div className="h-[7px] flex-1 overflow-hidden rounded-full bg-[#f1f5f9]">
+                  <div className="h-[6px] flex-1 overflow-hidden rounded-full bg-[#f1f5f9]">
                     <div className="h-full rounded-full bg-[#f87171]" style={{ width: "2.4%" }} />
                   </div>
-                  <span className="w-[62px] text-right font-medium text-[#64748b]">
+                  <span className="w-[56px] text-right font-medium text-[#64748b]">
                     6 (2.4%)
                   </span>
                 </div>
@@ -2049,7 +2224,7 @@ export default function FeedbackReviewsPage() {
                 <button
                   type="button"
                   onClick={handleOpenCreate}
-                  className="flex w-full items-center justify-between py-2 text-[8.5px] font-semibold text-[#334155] transition hover:text-[#075b33] cursor-pointer"
+                  className="flex w-full items-center justify-between py-2 text-[8.5px] font-semibold text-black transition hover:text-[#075b33] cursor-pointer"
                 >
                   <span className="flex items-center gap-2">
                     <Plus className="h-[12px] w-[12px] text-[#075b33]" />
@@ -2060,7 +2235,7 @@ export default function FeedbackReviewsPage() {
 
                 <Link
                   href="/testimonials"
-                  className="flex w-full items-center justify-between py-2 text-[8.5px] font-semibold text-[#334155] transition hover:text-[#075b33]"
+                  className="flex w-full items-center justify-between py-2 text-[8.5px] font-semibold text-black transition hover:text-[#075b33]"
                 >
                   <span className="flex items-center gap-2">
                     <MessageSquare className="h-[12px] w-[12px] text-[#2563eb]" />
@@ -2071,7 +2246,7 @@ export default function FeedbackReviewsPage() {
 
                 <Link
                   href="/testimonial-videos"
-                  className="flex w-full items-center justify-between py-2 text-[8.5px] font-semibold text-[#334155] transition hover:text-[#075b33]"
+                  className="flex w-full items-center justify-between py-2 text-[8.5px] font-semibold text-black transition hover:text-[#075b33]"
                 >
                   <span className="flex items-center gap-2">
                     <Video className="h-[12px] w-[12px] text-[#dc2626]" />
@@ -2082,7 +2257,7 @@ export default function FeedbackReviewsPage() {
 
                 <Link
                   href="/google-reviews"
-                  className="flex w-full items-center justify-between py-2 text-[8.5px] font-semibold text-[#334155] transition hover:text-[#075b33]"
+                  className="flex w-full items-center justify-between py-2 text-[8.5px] font-semibold text-black transition hover:text-[#075b33]"
                 >
                   <span className="flex items-center gap-2">
                     <Star className="h-[12px] w-[12px] text-[#f59e0b]" />
@@ -2097,7 +2272,7 @@ export default function FeedbackReviewsPage() {
                     setStatusFilter("Follow Up");
                     showInfo("Filtered entries requiring follow up.");
                   }}
-                  className="flex w-full items-center justify-between py-2 text-[8.5px] font-semibold text-[#334155] transition hover:text-[#075b33] cursor-pointer"
+                  className="flex w-full items-center justify-between py-2 text-[8.5px] font-semibold text-black transition hover:text-[#075b33] cursor-pointer"
                 >
                   <span className="flex items-center gap-2">
                     <Clock className="h-[12px] w-[12px] text-[#ea580c]" />
@@ -2109,7 +2284,7 @@ export default function FeedbackReviewsPage() {
                 <button
                   type="button"
                   onClick={handleExport}
-                  className="flex w-full items-center justify-between py-2 text-[8.5px] font-semibold text-[#334155] transition hover:text-[#075b33] cursor-pointer"
+                  className="flex w-full items-center justify-between py-2 text-[8.5px] font-semibold text-black transition hover:text-[#075b33] cursor-pointer"
                 >
                   <span className="flex items-center gap-2">
                     <Download className="h-[12px] w-[12px] text-[#059669]" />
@@ -2414,125 +2589,288 @@ export default function FeedbackReviewsPage() {
         </div>
       </Modal>
 
-      {/* MODAL 3: VIEW FEEDBACK DETAILS */}
-      {isViewModalOpen && activeItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-[520px] rounded-[10px] bg-white p-5 shadow-2xl animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-              <div className="flex items-center gap-2">
-                <span className="text-[12px] font-bold text-[#0f172a]">
-                  Feedback Details
-                </span>
-                <span className="rounded bg-slate-100 px-2 py-0.5 text-[8px] font-bold text-[#64748b]">
-                  {activeItem.code}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsViewModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 cursor-pointer"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+      {/* ============================================================ */}
+      {/* SIDE DRAWER: FEEDBACK DETAILS (Matching media_1789810208982) */}
+      {/* ============================================================ */}
+      {/* Backdrop overlay */}
+      <div
+        className={`fixed inset-0 z-50 bg-black/35 backdrop-blur-[1px] transition-opacity duration-300 ${
+          isDrawerOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => setIsDrawerOpen(false)}
+      />
 
-            <div className="mt-4 space-y-3">
-              {/* User meta box */}
-              <div className="flex items-start justify-between rounded-[8px] bg-slate-50 p-3">
-                <div>
-                  <h4 className="text-[12px] font-bold text-slate-900">
-                    {activeItem.name}
-                  </h4>
-                  <p className="text-[9px] font-medium text-slate-600">
-                    {activeItem.organisation}
+      {/* Side Drawer Panel */}
+      <aside
+        className={`fixed top-0 right-0 z-50 h-full w-full max-w-[400px] sm:max-w-[420px] bg-white shadow-[-12px_0px_40px_rgba(0,0,0,0.18)] border-l border-slate-200 flex flex-col transition-transform duration-300 ease-in-out ${
+          isDrawerOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        {/* Top Header Bar */}
+        <div className="flex h-[50px] items-center justify-between px-4 sm:px-5 border-b border-[#cbd5e1] shrink-0 bg-white">
+          <h2 className="text-[14px] font-bold text-[#1e293b] tracking-[-0.01em]">
+            Feedback Details
+          </h2>
+          <button
+            type="button"
+            onClick={() => setIsDrawerOpen(false)}
+            className="flex h-7 w-7 items-center justify-center rounded-md bg-red-50 text-red-500 border border-red-100 transition hover:bg-red-100 hover:text-red-600 cursor-pointer"
+            title="Close Drawer"
+          >
+            <X className="h-4 w-4 stroke-[2.5]" />
+          </button>
+        </div>
+
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto divide-y divide-slate-100 [&::-webkit-scrollbar]:w-[4px] [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full">
+          {/* 1. Meta status bar */}
+          <div className="flex items-center justify-between px-4 sm:px-5 py-2.5 bg-slate-50/80 text-[8.5px] border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-slate-800 tracking-tight">
+                {drawerItem.code}
+              </span>
+              <span
+                className={`inline-flex items-center rounded-[3px] px-1.5 py-0.5 font-semibold text-[8px] ${
+                  drawerItem.status === "Published"
+                    ? "bg-[#ecfdf5] text-[#059669] border border-[#a7f3d0]"
+                    : drawerItem.status === "Pending"
+                    ? "bg-[#fffbeb] text-[#d97706] border border-[#fde68a]"
+                    : "bg-[#fff1f2] text-[#e11d48] border border-[#fecdd3]"
+                }`}
+              >
+                {drawerItem.status}
+              </span>
+            </div>
+            <span className="font-semibold text-[8px] text-[#2563eb]">
+              {drawerItem.date}, {drawerItem.time}
+            </span>
+          </div>
+
+          {/* 2. User Info Card */}
+          <div className="px-4 sm:px-5 pt-3.5 pb-2.5 space-y-1.5">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-[#f1f5f9] text-[10px] font-bold text-[#475569] shadow-xs">
+                  {drawerItem.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .join("")
+                    .toUpperCase() || "FB"}
+                </span>
+                <div className="min-w-0">
+                  <h3 className="text-[11px] font-bold text-slate-900 leading-tight truncate">
+                    {drawerItem.name}
+                  </h3>
+                  <p className="text-[8.5px] text-slate-500 truncate leading-none mt-0.5">
+                    {drawerItem.organisation}
                   </p>
-                  {activeItem.email && (
-                    <p className="text-[8px] text-slate-500">{activeItem.email}</p>
-                  )}
-                </div>
-
-                <div className="flex flex-col items-end gap-1">
-                  <span
-                    className={`inline-flex items-center rounded-[4px] px-[8px] py-[2px] text-[8px] font-bold leading-none ${getTypeBadgeClass(
-                      activeItem.type
-                    )}`}
-                  >
-                    {activeItem.type}
-                  </span>
-                  <span
-                    className={`inline-flex items-center rounded-[4px] px-[8px] py-[2px] text-[8px] font-bold leading-none ${getStatusBadgeClass(
-                      activeItem.status
-                    )}`}
-                  >
-                    {activeItem.status}
-                  </span>
                 </div>
               </div>
 
-              {/* Rating & Date */}
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-bold text-slate-700">Rating:</span>
-                  {renderStars(activeItem.rating)}
-                  <span className="text-[9px] font-bold text-amber-600">
-                    ({activeItem.rating}.0 / 5)
-                  </span>
-                </div>
-
-                <div className="text-right text-[8px] text-slate-500">
-                  Received on {activeItem.date} at {activeItem.time}
-                </div>
-              </div>
-
-              {/* Feedback comment */}
-              <div>
-                <p className="text-[8.5px] font-bold uppercase tracking-wider text-slate-500">
-                  Feedback Summary:
-                </p>
-                <p className="mt-1 text-[10.5px] font-semibold text-slate-800">
-                  "{activeItem.title}"
-                </p>
-                <div className="mt-2 rounded-[6px] border border-slate-200 bg-white p-3 text-[9.5px] leading-relaxed text-slate-700">
-                  {activeItem.comment}
-                </div>
-              </div>
-
-              {/* Source & Event Info */}
-              <div className="grid grid-cols-2 gap-2 text-[8px] text-slate-600">
-                <div className="rounded border border-slate-200 p-2">
-                  <span className="font-bold text-slate-500">Collection Source:</span>{" "}
-                  <span className="font-semibold text-slate-800">{activeItem.source}</span>
-                </div>
-                <div className="rounded border border-slate-200 p-2">
-                  <span className="font-bold text-slate-500">Associated Event:</span>{" "}
-                  <span className="font-semibold text-slate-800">{activeItem.event || "Expo 2026"}</span>
-                </div>
-              </div>
+              <span className="shrink-0 rounded-[3px] border border-[#bfdbfe] bg-[#eff6ff] px-1.5 py-0.2 text-[7.5px] font-semibold text-[#2563eb]">
+                {drawerItem.type}
+              </span>
             </div>
 
-            <div className="mt-5 flex items-center justify-end gap-2 border-t border-slate-200 pt-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsViewModalOpen(false);
-                  handleOpenEdit(activeItem);
-                }}
-                className="flex items-center gap-1 h-[30px] rounded-[5px] border border-slate-300 px-3.5 text-[8.5px] font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-              >
-                <Pencil className="h-3 w-3 text-blue-600" />
-                Edit
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsViewModalOpen(false)}
-                className="h-[30px] rounded-[5px] bg-[#075b33] px-4 text-[8.5px] font-semibold text-white hover:bg-[#064e2b] cursor-pointer"
-              >
-                Close
-              </button>
+            {/* Contact Details with Icons */}
+            <div className="space-y-0.5 pt-0.5 text-[8px]">
+              {drawerItem.email && (
+                <div className="flex items-center gap-1.5 truncate text-[#2563eb]">
+                  <Mail className="h-2.5 w-2.5 text-[#2563eb] shrink-0" />
+                  <span className="truncate font-medium">{drawerItem.email}</span>
+                </div>
+              )}
+              {drawerItem.phone && (
+                <div className="flex items-center gap-1.5 text-[#4B1426]">
+                  <Phone className="h-2.5 w-2.5 text-[#4B1426] shrink-0" />
+                  <span className="font-medium">{drawerItem.phone}</span>
+                </div>
+              )}
+              {drawerItem.location && (
+                <div className="flex items-center gap-1.5 text-[#1D4533]">
+                  <MapPin className="h-2.5 w-2.5 text-[#1D4533] shrink-0" />
+                  <span className="font-medium">{drawerItem.location}</span>
+                </div>
+              )}
             </div>
           </div>
+
+          {/* 3. Ratings Breakdown */}
+          <div className="px-4 sm:px-5 py-2.5 space-y-1">
+            <div className="flex items-center gap-1.5">
+              <Notebook className="h-3 w-3 text-[#22396F]" />
+              <h4 className="text-[8.5px] font-bold uppercase tracking-wider text-[#22396F]">
+                Ratings
+              </h4>
+            </div>
+
+            <div className="space-y-1 text-[8px]">
+              <div className="flex items-center justify-between py-0.2 text-black font-medium">
+                <span>Overall Experience</span>
+                {renderStars(drawerItem.ratingsBreakdown?.overall ?? drawerItem.rating ?? 5, 9)}
+              </div>
+              <div className="flex items-center justify-between py-0.2 text-black font-medium">
+                <span>Business Networking</span>
+                {renderStars(drawerItem.ratingsBreakdown?.networking ?? drawerItem.rating ?? 5, 9)}
+              </div>
+              <div className="flex items-center justify-between py-0.2 text-black font-medium">
+                <span>Quality of Participants</span>
+                {renderStars(drawerItem.ratingsBreakdown?.participants ?? (drawerItem.rating > 4 ? 4 : drawerItem.rating), 9)}
+              </div>
+              <div className="flex items-center justify-between py-0.2 text-black font-medium">
+                <span>Event Management</span>
+                {renderStars(drawerItem.ratingsBreakdown?.management ?? drawerItem.rating ?? 5, 9)}
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Your Feedback */}
+          <div className="px-4 sm:px-5 py-2.5 space-y-1">
+            <div className="flex items-center gap-1.5">
+              <Quote className="h-2.5 w-2.5 text-[#22396F] fill-[#22396F]" />
+              <h4 className="text-[8.5px] font-bold uppercase tracking-wider text-[#22396F]">
+                Your Feedback
+              </h4>
+            </div>
+            <p className="rounded-[4px] bg-slate-50/80 p-2 text-[8px] leading-relaxed text-black border border-slate-200/80 italic font-normal">
+              "{drawerItem.comment}"
+            </p>
+          </div>
+
+          {/* 5. Improvement Suggestions */}
+          <div className="px-4 sm:px-5 py-2.5 space-y-1">
+            <div className="flex items-center gap-1.5">
+              <Lightbulb className="h-2.5 w-2.5 text-[#22396F]" />
+              <h4 className="text-[8.5px] font-bold uppercase tracking-wider text-[#22396F]">
+                Improvement Suggestions
+              </h4>
+            </div>
+            <p className="text-[8px] leading-relaxed text-black font-medium">
+              {drawerItem.improvementSuggestions ||
+                "More international buyers and longer networking sessions would be great."}
+            </p>
+          </div>
+
+          {/* 6. Media Consent */}
+          <div className="px-4 sm:px-5 py-2.5 space-y-1">
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-2.5 w-2.5 text-[#22396F]" />
+              <h4 className="text-[8.5px] font-bold uppercase tracking-wider text-[#22396F]">
+                Media Consent
+              </h4>
+            </div>
+            <p className="flex items-center gap-1.5 text-[8px] text-black font-medium">
+              <Check className="h-2.5 w-2.5 text-[#22396F] stroke-[2.5]" />
+              <span>Yes, you may feature my feedback.</span>
+            </p>
+          </div>
+
+          {/* 7. Attachments */}
+          <div className="px-4 sm:px-5 py-2.5 space-y-1.5">
+            <div className="flex items-center gap-1.5">
+              <Paperclip className="h-2.5 w-2.5 text-[#123F36]" />
+              <h4 className="text-[8.5px] font-bold uppercase tracking-wider text-[#123F36]">
+                Attachments
+              </h4>
+            </div>
+
+            <div className="grid grid-cols-2 gap-1.5">
+              {/* Photo */}
+              <div className="rounded-[4px] border border-slate-200 bg-white p-1 shadow-2xs hover:border-slate-300 transition">
+                <div className="relative h-8 w-full overflow-hidden rounded bg-slate-100">
+                  <img
+                    src="/feedback.png"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = "/feedback.png";
+                    }}
+                    alt="Feedback Photo"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <div className="mt-0.5 leading-none">
+                  <span className="block text-[7.5px] font-semibold text-slate-700">Photo</span>
+                  <span className="block text-[6.5px] text-slate-400 truncate">
+                    {drawerItem.attachments?.photoName || "ramesh-patel.jpg"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Logo */}
+              <div className="rounded-[4px] border border-slate-200 bg-white p-1 shadow-2xs hover:border-slate-300 transition">
+                <div className="relative flex h-8 w-full items-center justify-center rounded bg-[#f8fafc] border border-slate-100">
+                  <div className="flex flex-col items-center leading-none">
+                    <span className="text-[8px] font-bold text-[#075b33] tracking-wide">
+                      Aarogya
+                    </span>
+                    <span className="text-[5.5px] text-slate-400 font-medium">
+                      Wellness Clinic
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-0.5 leading-none">
+                  <span className="block text-[7.5px] font-semibold text-slate-700">Logo</span>
+                  <span className="block text-[6.5px] text-slate-400 truncate">
+                    {drawerItem.attachments?.logoName || "aarogya-logo.png"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 8. Internal Notes */}
+          <div className="px-3.5 py-1.5 space-y-0.5">
+            <div className="flex items-center gap-1">
+              <FileText className="h-2.5 w-2.5 text-[#16a34a]" />
+              <h4 className="text-[8.5px] font-bold uppercase tracking-wider text-slate-700">
+                Internal Notes
+              </h4>
+            </div>
+            <p className="rounded-[4px] bg-slate-50/80 p-1.5 text-[8px] leading-relaxed text-slate-600 border border-slate-100">
+              {drawerItem.internalNotes || "Potential speaker for next edition. Good industry connections."}
+            </p>
+          </div>
         </div>
-      )}
+
+        {/* Bottom Actions */}
+        <div className="flex items-center justify-between gap-1.5 border-t border-slate-200 bg-white px-3.5 py-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              setFeedbackList((prev) =>
+                prev.map((f) => (f.id === drawerItem.id ? { ...f, status: "Published" } : f))
+              );
+              showSuccess(`Feedback ${drawerItem.code} published!`);
+            }}
+            className="flex-1 h-[25px] rounded-[4px] bg-[#15803d] px-2 text-[8.5px] font-semibold text-white transition hover:bg-[#166534] active:scale-95 shadow-xs cursor-pointer whitespace-nowrap"
+          >
+            Approve & Publish
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setFeedbackList((prev) =>
+                prev.map((f) => (f.id === drawerItem.id ? { ...f, status: "Follow Up" } : f))
+              );
+              showSuccess(`Feedback ${drawerItem.code} marked for follow-up!`);
+            }}
+            className="h-[25px] rounded-[4px] border border-slate-300 bg-white px-2 text-[8.5px] font-semibold text-slate-700 transition hover:bg-slate-50 active:scale-95 shadow-xs cursor-pointer whitespace-nowrap"
+          >
+            Mark for Follow-up
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleOpenEdit(drawerItem)}
+            className="flex h-[25px] items-center gap-1 rounded-[4px] border border-slate-300 bg-white px-2 text-[8.5px] font-semibold text-slate-700 transition hover:bg-slate-50 active:scale-95 shadow-xs cursor-pointer whitespace-nowrap"
+          >
+            <span>More</span>
+            <ChevronDown className="h-3 w-3 text-slate-500" />
+          </button>
+        </div>
+      </aside>
     </main>
   );
 }
