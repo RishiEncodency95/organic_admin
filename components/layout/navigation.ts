@@ -22,6 +22,7 @@ import {
   SearchCheck,
   Settings,
   ShieldCheck,
+  Sparkles,
   Star,
   UserCog,
   Users,
@@ -64,6 +65,7 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     title: "Content Management",
     items: [
+      { label: "AI JD Creator", href: "/jd-creator", icon: Sparkles, badge: "AI" },
       { label: "Pages & CMS", href: "/pages", icon: FileText },
       { label: "Services Management", href: "/services", icon: BriefcaseBusiness },
       { label: "Blog & Insights", href: "/blogs", icon: BookOpenText },
