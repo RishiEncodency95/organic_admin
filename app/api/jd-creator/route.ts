@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: "GEMINI_API_KEY is not configured in .env environment." },
+        { error: "GEMINI_API_KEY is not configured in environment variables." },
         { status: 500 }
       );
     }
@@ -84,30 +84,36 @@ Always respond in clean Markdown with clear headings and bullet points.
       },
     };
 
-    // Try Gemini 2.0 Flash or fallback to Gemini 1.5 Flash
-    let geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-    let response = await fetch(geminiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    // Supported active models list
+    const candidateModels = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.5-pro"];
+    let response: Response | null = null;
+    let lastErrorText = "";
 
-    if (!response.ok) {
-      console.warn("Gemini 2.0 Flash endpoint failed, trying Gemini 1.5 Flash...", response.status);
-      geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-      response = await fetch(geminiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+    for (const model of candidateModels) {
+      try {
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const res = await fetch(geminiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (res.ok) {
+          response = res;
+          break;
+        } else {
+          lastErrorText = await res.text();
+          console.warn(`Model ${model} returned status ${res.status}:`, lastErrorText);
+        }
+      } catch (err: any) {
+        lastErrorText = err.message || "Network request failed";
+      }
     }
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("Gemini API Error:", errText);
+    if (!response) {
       return NextResponse.json(
-        { error: `Gemini API response error (${response.status}): ${errText}` },
-        { status: response.status }
+        { error: `Gemini API response error: ${lastErrorText}` },
+        { status: 500 }
       );
     }
 
@@ -119,7 +125,7 @@ Always respond in clean Markdown with clear headings and bullet points.
     return NextResponse.json({
       success: true,
       text: generatedText,
-      model: "Gemini AI (Google)",
+      model: "Gemini 2.5 Flash AI",
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
