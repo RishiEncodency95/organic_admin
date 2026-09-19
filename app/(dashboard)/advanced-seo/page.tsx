@@ -16,10 +16,46 @@ import {
   Info,
   AlertTriangle,
   Plus,
+  Share2,
 } from "lucide-react";
 import Swal from "sweetalert2";
 import { api } from "@/lib/api";
 import typography from "../pages/PagesTypography.module.css";
+
+const FacebookIcon = ({ size = 16, color = "#1877F2" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+  </svg>
+);
+
+const InstagramIcon = ({ size = 16, color = "#E4405F" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+  </svg>
+);
+
+const TwitterIcon = ({ size = 16, color = "#000000" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z" />
+  </svg>
+);
+
+const YoutubeIcon = ({ size = 16, color = "#FF0000" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z" />
+    <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" fill={color} />
+  </svg>
+);
+
+const LinkedinIcon = ({ size = 16, color = "#0A66C2" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+    <rect x="2" y="9" width="4" height="12" />
+    <circle cx="4" cy="4" r="2" />
+  </svg>
+);
 
 // SweetAlert2 theme matching admin portal dark style from Exhibitor List
 const Toast = Swal.mixin({
@@ -120,6 +156,15 @@ export default function AdvancedSeoPage() {
   const [allowIndex, setAllowIndex] = useState(true);
   const [allowFollow, setAllowFollow] = useState(true);
 
+  const [socialLinks, setSocialLinks] = useState({
+    facebook: "https://www.facebook.com/bharatorganicexpo",
+    instagram: "https://www.instagram.com/bharatorganicexpo",
+    twitter: "https://x.com/organicexpoin",
+    youtube: "https://www.youtube.com/@bharatorganicexpo",
+    linkedin: "https://www.linkedin.com/company/bharatorganicexpo/",
+  });
+  const [savingSocial, setSavingSocial] = useState(false);
+
   const headerRef = useRef<HTMLTextAreaElement>(null);
   const footerRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -141,6 +186,15 @@ export default function AdvancedSeoPage() {
           footerScripts: data.footerScripts || "",
         });
         setSeoFiles(data.seoFiles || []);
+        if (data.socialLinks) {
+          setSocialLinks({
+            facebook: data.socialLinks.facebook || "",
+            instagram: data.socialLinks.instagram || "",
+            twitter: data.socialLinks.twitter || "",
+            youtube: data.socialLinks.youtube || "",
+            linkedin: data.socialLinks.linkedin || "",
+          });
+        }
       }
     } catch (error) {
       console.error("Error fetching Advanced SEO settings:", error);
@@ -160,21 +214,51 @@ export default function AdvancedSeoPage() {
   const handleSaveScripts = async () => {
     try {
       setIsLoading(true);
-      const response = await api.put<any>("/seo-settings/scripts", scripts);
+      const response = await api.put<any>("/seo-settings/scripts", {
+        ...scripts,
+        socialLinks,
+      });
       const data = response?.data || response;
 
-      showSuccess("Global tracking scripts saved successfully!");
+      showSuccess("Global tracking scripts & social links saved successfully!");
 
       if (data) {
         setScripts({
           headerScripts: data.headerScripts ?? scripts.headerScripts,
           footerScripts: data.footerScripts ?? scripts.footerScripts,
         });
+        if (data.socialLinks) {
+          setSocialLinks((prev) => ({
+            ...prev,
+            ...data.socialLinks,
+          }));
+        }
       }
     } catch (error: any) {
       showError(error?.message || "Failed to update global scripts");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSaveSocialLinks = async () => {
+    try {
+      setSavingSocial(true);
+      const response = await api.put<any>("/seo-settings/social-links", socialLinks);
+      const data = response?.data || response;
+
+      showSuccess("Social media links saved successfully!");
+
+      if (data) {
+        setSocialLinks((prev) => ({
+          ...prev,
+          ...data,
+        }));
+      }
+    } catch (error: any) {
+      showError(error?.message || "Failed to update social media links");
+    } finally {
+      setSavingSocial(false);
     }
   };
 
@@ -751,6 +835,211 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                   </code>
                   ) for search crawlers and search console verification.
                 </p>
+              </div>
+            </section>
+
+            {/* =========================================================
+                SECTION 3: SOCIAL MEDIA LINKS & FLOATING SIDEBAR
+            ========================================================= */}
+            <section className="bg-white border-2 border-gray-200 p-6 shadow-lg shrink-0 rounded-none">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-5 border-b border-gray-100 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-50 rounded text-blue-600">
+                    <Share2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-semibold text-gray-900">
+                      3. Social Media Links
+                    </h2>
+                    <p className="text-[11px] text-gray-500">
+                      Syncs with floating sidebar & website footer.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleSaveSocialLinks}
+                  disabled={savingSocial}
+                  className="px-3.5 py-1.5 bg-[#134698] hover:bg-[#0f3777] text-white text-xs font-bold rounded flex items-center gap-1.5 transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  {savingSocial ? "Saving..." : "Save Links"}
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* Facebook */}
+                <div>
+                  <label className="flex items-center gap-2 text-xs font-bold text-gray-700 mb-1">
+                    <span className="w-5 h-5 rounded-full bg-[#1877F2]/10 flex items-center justify-center text-[#1877F2]">
+                      <FacebookIcon size={12} color="#1877F2" />
+                    </span>
+                    Facebook URL
+                  </label>
+                  <div className="relative flex items-center">
+                    <input
+                      type="url"
+                      value={socialLinks.facebook}
+                      onChange={(e) =>
+                        setSocialLinks({ ...socialLinks, facebook: e.target.value })
+                      }
+                      placeholder="https://www.facebook.com/yourpage"
+                      className="w-full text-xs px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 pr-9 font-mono"
+                    />
+                    {socialLinks.facebook && (
+                      <a
+                        href={socialLinks.facebook}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="absolute right-2 text-gray-400 hover:text-blue-600 p-1"
+                        title="Test link"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                {/* Instagram */}
+                <div>
+                  <label className="flex items-center gap-2 text-xs font-bold text-gray-700 mb-1">
+                    <span className="w-5 h-5 rounded-full bg-[#E4405F]/10 flex items-center justify-center text-[#E4405F]">
+                      <InstagramIcon size={12} color="#E4405F" />
+                    </span>
+                    Instagram URL
+                  </label>
+                  <div className="relative flex items-center">
+                    <input
+                      type="url"
+                      value={socialLinks.instagram}
+                      onChange={(e) =>
+                        setSocialLinks({ ...socialLinks, instagram: e.target.value })
+                      }
+                      placeholder="https://www.instagram.com/yourpage"
+                      className="w-full text-xs px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 pr-9 font-mono"
+                    />
+                    {socialLinks.instagram && (
+                      <a
+                        href={socialLinks.instagram}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="absolute right-2 text-gray-400 hover:text-pink-600 p-1"
+                        title="Test link"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                {/* Twitter / X */}
+                <div>
+                  <label className="flex items-center gap-2 text-xs font-bold text-gray-700 mb-1">
+                    <span className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-900">
+                      <TwitterIcon size={12} color="#000000" />
+                    </span>
+                    Twitter / X URL
+                  </label>
+                  <div className="relative flex items-center">
+                    <input
+                      type="url"
+                      value={socialLinks.twitter}
+                      onChange={(e) =>
+                        setSocialLinks({ ...socialLinks, twitter: e.target.value })
+                      }
+                      placeholder="https://x.com/yourpage"
+                      className="w-full text-xs px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 pr-9 font-mono"
+                    />
+                    {socialLinks.twitter && (
+                      <a
+                        href={socialLinks.twitter}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="absolute right-2 text-gray-400 hover:text-gray-900 p-1"
+                        title="Test link"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                {/* YouTube */}
+                <div>
+                  <label className="flex items-center gap-2 text-xs font-bold text-gray-700 mb-1">
+                    <span className="w-5 h-5 rounded-full bg-[#FF0000]/10 flex items-center justify-center text-[#FF0000]">
+                      <YoutubeIcon size={12} color="#FF0000" />
+                    </span>
+                    YouTube URL
+                  </label>
+                  <div className="relative flex items-center">
+                    <input
+                      type="url"
+                      value={socialLinks.youtube}
+                      onChange={(e) =>
+                        setSocialLinks({ ...socialLinks, youtube: e.target.value })
+                      }
+                      placeholder="https://www.youtube.com/@yourchannel"
+                      className="w-full text-xs px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 pr-9 font-mono"
+                    />
+                    {socialLinks.youtube && (
+                      <a
+                        href={socialLinks.youtube}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="absolute right-2 text-gray-400 hover:text-red-600 p-1"
+                        title="Test link"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                {/* LinkedIn */}
+                <div>
+                  <label className="flex items-center gap-2 text-xs font-bold text-gray-700 mb-1">
+                    <span className="w-5 h-5 rounded-full bg-[#0A66C2]/10 flex items-center justify-center text-[#0A66C2]">
+                      <LinkedinIcon size={12} color="#0A66C2" />
+                    </span>
+                    LinkedIn URL
+                  </label>
+                  <div className="relative flex items-center">
+                    <input
+                      type="url"
+                      value={socialLinks.linkedin}
+                      onChange={(e) =>
+                        setSocialLinks({ ...socialLinks, linkedin: e.target.value })
+                      }
+                      placeholder="https://www.linkedin.com/company/yourpage"
+                      className="w-full text-xs px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 pr-9 font-mono"
+                    />
+                    {socialLinks.linkedin && (
+                      <a
+                        href={socialLinks.linkedin}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="absolute right-2 text-gray-400 hover:text-blue-700 p-1"
+                        title="Test link"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-5 pt-4 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={handleSaveSocialLinks}
+                  disabled={savingSocial}
+                  className="w-full py-2 bg-[#134698] hover:bg-[#0f3777] text-white text-xs font-bold rounded flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  {savingSocial ? "Saving Changes..." : "Save Social Media Links"}
+                </button>
               </div>
             </section>
           </div>
