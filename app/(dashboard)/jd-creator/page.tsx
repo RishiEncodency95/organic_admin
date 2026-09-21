@@ -551,17 +551,15 @@ I can help you build executive-ready, highly tailored Job Descriptions for any r
             {messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex items-start gap-3 max-w-4xl ${
-                  msg.role === "user" ? "ml-auto flex-row-reverse" : "mr-auto"
-                }`}
+                className={`flex items-start gap-3 max-w-4xl ${msg.role === "user" ? "ml-auto flex-row-reverse" : "mr-auto"
+                  }`}
               >
                 {/* AVATAR */}
                 <div
-                  className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl font-bold shadow-xs ${
-                    msg.role === "user"
+                  className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl font-bold shadow-xs ${msg.role === "user"
                       ? "bg-slate-900 text-white"
                       : "bg-gradient-to-tr from-emerald-600 to-teal-600 text-white"
-                  }`}
+                    }`}
                 >
                   {msg.role === "user" ? (
                     <User className="h-4 w-4" />
@@ -572,11 +570,10 @@ I can help you build executive-ready, highly tailored Job Descriptions for any r
 
                 {/* BUBBLE CONTENT */}
                 <div
-                  className={`group relative flex flex-col rounded-2xl p-4 md:p-5 shadow-xs transition-all ${
-                    msg.role === "user"
+                  className={`group relative flex flex-col rounded-2xl p-4 md:p-5 shadow-xs transition-all ${msg.role === "user"
                       ? "bg-slate-900 text-white rounded-tr-none max-w-xl"
                       : "bg-white text-slate-800 border border-slate-200/80 rounded-tl-none max-w-3xl"
-                  }`}
+                    }`}
                 >
                   {/* USER ROLE HEADER */}
                   <div className="mb-2 flex items-center justify-between border-b border-slate-200/40 pb-1.5 text-[10px] font-semibold text-slate-400">
