@@ -19,13 +19,14 @@ import {
   FilePenLine,
   FormInput,
   Headphones,
-  MoreHorizontal,
   MousePointerClick,
+  Pencil,
   Plus,
   Search,
   Send,
   Settings2,
   Sprout,
+  Trash2,
   Users,
   XCircle,
   type LucideIcon,
@@ -624,20 +625,35 @@ export default function JobPostingsPage() {
                         </td>
                         <td className="px-[8px] py-[8px] text-[8.5px] font-medium text-[#334155]">{job.closingDate || "—"}</td>
                         <td className="px-[8px] py-[8px]">
-                          <div className="flex items-center justify-end gap-[8px]">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {/* View (Orange Glassmorphism) */}
                             <button
                               type="button"
+                              title="View Job"
                               onClick={() => notImplemented(`View "${job.title}"`)}
-                              className="text-[8.5px] font-bold text-[#2563eb] hover:underline"
+                              className="flex h-[25px] w-[25px] items-center justify-center rounded-[6px] bg-orange-500/10 text-orange-600 backdrop-blur-md border border-orange-400/30 shadow-[0_2px_6px_rgba(249,115,22,0.12)] transition-all hover:bg-orange-500/20 hover:border-orange-400/50 hover:shadow-[0_3px_10px_rgba(249,115,22,0.25)] hover:scale-105 active:scale-95"
                             >
-                              View
+                              <Eye className="h-[12px] w-[12px] text-orange-600" />
                             </button>
+
+                            {/* Edit (Blue Glassmorphism) */}
                             <button
                               type="button"
-                              onClick={() => notImplemented("More actions")}
-                              className="flex h-[20px] w-[20px] items-center justify-center rounded-[4px] text-[#64748b] hover:bg-slate-100"
+                              title="Edit Job"
+                              onClick={() => notImplemented(`Edit "${job.title}"`)}
+                              className="flex h-[25px] w-[25px] items-center justify-center rounded-[6px] bg-blue-500/10 text-blue-600 backdrop-blur-md border border-blue-400/30 shadow-[0_2px_6px_rgba(37,99,235,0.12)] transition-all hover:bg-blue-500/20 hover:border-blue-400/50 hover:shadow-[0_3px_10px_rgba(37,99,235,0.25)] hover:scale-105 active:scale-95"
                             >
-                              <MoreHorizontal className="h-[13px] w-[13px]" />
+                              <Pencil className="h-[12px] w-[12px] text-blue-600" />
+                            </button>
+
+                            {/* Delete (Red Glassmorphism) */}
+                            <button
+                              type="button"
+                              title="Delete Job"
+                              onClick={() => notImplemented(`Delete "${job.title}"`)}
+                              className="flex h-[25px] w-[25px] items-center justify-center rounded-[6px] bg-red-500/10 text-red-600 backdrop-blur-md border border-red-400/30 shadow-[0_2px_6px_rgba(220,38,38,0.12)] transition-all hover:bg-red-500/20 hover:border-red-400/50 hover:shadow-[0_3px_10px_rgba(220,38,38,0.25)] hover:scale-105 active:scale-95"
+                            >
+                              <Trash2 className="h-[12px] w-[12px] text-red-600" />
                             </button>
                           </div>
                         </td>
