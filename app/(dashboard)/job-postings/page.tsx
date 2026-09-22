@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  ArrowRight,
   Ban,
   Briefcase,
   CheckCircle2,
@@ -25,7 +26,6 @@ import {
   Send,
   Settings2,
   Sprout,
-  Tag,
   Users,
   XCircle,
   type LucideIcon,
@@ -115,45 +115,128 @@ function notImplemented(action: string) {
 }
 
 /* =========================================================
-   STAT CARD
+   STAT CARDS (matching the Media Library / Testimonials / Feedback
+   & Reviews pages' metric-card style)
 ========================================================= */
 
-const TONE_STYLES = {
-  slate: { iconBg: "bg-slate-100", iconText: "text-slate-600" },
-  green: { iconBg: "bg-[#e8f5e9]", iconText: "text-[#23714a]" },
-  amber: { iconBg: "bg-[#fff3e0]", iconText: "text-[#b45309]" },
-  red: { iconBg: "bg-[#fee2e2]", iconText: "text-[#dc2626]" },
-  blue: { iconBg: "bg-[#e3f2fd]", iconText: "text-[#1565c0]" },
-  indigo: { iconBg: "bg-[#e0e7ff]", iconText: "text-[#4338ca]" },
-  violet: { iconBg: "bg-[#ede9fe]", iconText: "text-[#6d28d9]" },
+const toneClass = {
+  slate: "bg-slate-50 text-slate-700 ring-slate-200",
+  emerald: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+  violet: "bg-violet-50 text-violet-700 ring-violet-200",
+  amber: "bg-amber-50 text-amber-700 ring-amber-200",
+  blue: "bg-sky-50 text-sky-700 ring-sky-200",
+  rose: "bg-rose-50 text-rose-700 ring-rose-200",
+  teal: "bg-teal-50 text-teal-700 ring-teal-200",
 } as const;
 
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  delta,
-  tone,
-}: {
-  icon: LucideIcon;
-  label: string;
+interface StatCardItem {
+  title: string;
   value: string | number;
-  delta?: string;
-  tone: keyof typeof TONE_STYLES;
-}) {
-  const t = TONE_STYLES[tone];
-  return (
-    <div className="flex min-w-0 items-center gap-[9px] border border-[#e8e5df] bg-white px-[10px] py-[9px] shadow-2xs">
-      <span className={`grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full ${t.iconBg} ${t.iconText}`}>
-        <Icon className="h-[14px] w-[14px]" />
-      </span>
-      <div className="min-w-0">
-        <p className="truncate text-[7.5px] font-bold uppercase tracking-wide text-[#8b929c]">{label}</p>
-        <p className="truncate text-[15px] font-bold leading-tight text-[#18233b]">{value}</p>
-        {delta && <p className="mt-0.5 truncate text-[7.5px] font-bold text-emerald-600">↑ {delta}</p>}
-      </div>
-    </div>
-  );
+  suffix?: string;
+  icon: LucideIcon;
+  tone: keyof typeof toneClass;
+  gradient: string;
+  borderColor: string;
+  numColor: string;
+  trend?: string;
+  footer: string;
+  onClick: () => void;
+}
+
+function AnimatedCounter({ value, duration = 1200 }: { value: string | number; duration?: number }) {
+  const [displayValue, setDisplayValue] = useState<string>("0");
+  const spanRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const strVal = String(value);
+    const numericMatch = strVal.match(/^([^0-9]*)([0-9.,]+)([^0-9]*)$/);
+
+    if (!numericMatch) {
+      setDisplayValue(strVal);
+      return;
+    }
+
+    const prefix = numericMatch[1];
+    const rawNumberStr = numericMatch[2].replace(/,/g, "");
+    const targetNum = parseFloat(rawNumberStr);
+    const suffix = numericMatch[3];
+
+    if (isNaN(targetNum)) {
+      setDisplayValue(strVal);
+      return;
+    }
+
+    if (targetNum === 0) {
+      setDisplayValue(`${prefix}0${suffix}`);
+      return;
+    }
+
+    const hasComma = numericMatch[2].includes(",");
+    const decimalPlaces = (rawNumberStr.split(".")[1] || "").length;
+
+    let animationFrameId: number | null = null;
+
+    const startCounting = () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      let startTime: number | null = null;
+
+      const step = (timestamp: number) => {
+        if (!startTime) startTime = timestamp;
+        const progress = Math.min((timestamp - startTime) / duration, 1);
+        const easeProgress = 1 - Math.pow(1 - progress, 3);
+        const currentNum = targetNum * easeProgress;
+        let formattedNum = currentNum.toFixed(decimalPlaces);
+
+        if (hasComma) {
+          const parts = formattedNum.split(".");
+          parts[0] = parseInt(parts[0], 10).toLocaleString();
+          formattedNum = parts.join(".");
+        }
+
+        setDisplayValue(`${prefix}${formattedNum}${suffix}`);
+
+        if (progress < 1) {
+          animationFrameId = requestAnimationFrame(step);
+        }
+      };
+
+      animationFrameId = requestAnimationFrame(step);
+    };
+
+    if (typeof IntersectionObserver !== "undefined") {
+      const el = spanRef.current;
+      if (!el) {
+        startCounting();
+        return;
+      }
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              startCounting();
+            } else {
+              setDisplayValue(`${prefix}0${suffix}`);
+            }
+          });
+        },
+        { threshold: 0.15 }
+      );
+
+      observer.observe(el);
+
+      return () => {
+        observer.disconnect();
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      };
+    } else {
+      startCounting();
+      return () => {
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      };
+    }
+  }, [value, duration]);
+
+  return <span ref={spanRef}>{displayValue}</span>;
 }
 
 /* =========================================================
@@ -208,13 +291,99 @@ export default function JobPostingsPage() {
     setPage(1);
   };
 
+  const statCards: StatCardItem[] = useMemo(
+    () => [
+      {
+        title: "TOTAL JOBS",
+        value: JOBS.length,
+        icon: Briefcase,
+        tone: "slate",
+        gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #e2e8f0 100%)",
+        borderColor: "#e2e8f0",
+        numColor: "#334155",
+        footer: "View all jobs",
+        onClick: () => changeTab("all"),
+      },
+      {
+        title: "ACTIVE JOBS",
+        value: counts.active,
+        icon: CheckCircle2,
+        tone: "emerald",
+        gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #bbf7d0 100%)",
+        borderColor: "#bbf7d0",
+        numColor: "#15803d",
+        footer: "View active jobs",
+        onClick: () => changeTab("active"),
+      },
+      {
+        title: "DRAFT JOBS",
+        value: counts.draft,
+        icon: FileClock,
+        tone: "amber",
+        gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #fed7aa 100%)",
+        borderColor: "#fed7aa",
+        numColor: "#c2410c",
+        footer: "View drafts",
+        onClick: () => changeTab("draft"),
+      },
+      {
+        title: "CLOSED JOBS",
+        value: counts.closed,
+        icon: XCircle,
+        tone: "rose",
+        gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #fecdd3 100%)",
+        borderColor: "#fecdd3",
+        numColor: "#be123c",
+        footer: "View closed jobs",
+        onClick: () => changeTab("closed"),
+      },
+      {
+        title: "TOTAL PAGE VIEWS",
+        value: "18,420",
+        icon: Eye,
+        tone: "blue",
+        gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #bae6fd 100%)",
+        borderColor: "#bae6fd",
+        numColor: "#0284c7",
+        trend: "↑ 32% vs last month",
+        footer: "View page analytics",
+        onClick: () => notImplemented("Page view analytics"),
+      },
+      {
+        title: "TOTAL APPLY CLICKS",
+        value: "2,860",
+        icon: MousePointerClick,
+        tone: "violet",
+        gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #ddd6fe 100%)",
+        borderColor: "#ddd6fe",
+        numColor: "#6d28d9",
+        trend: "↑ 28% vs last month",
+        footer: "View click analytics",
+        onClick: () => notImplemented("Apply click analytics"),
+      },
+      {
+        title: "TOTAL APPLICATIONS",
+        value: "1,124",
+        icon: ClipboardList,
+        tone: "teal",
+        gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #99f6e4 100%)",
+        borderColor: "#99f6e4",
+        numColor: "#0f766e",
+        trend: "↑ 24% vs last month",
+        footer: "View applications",
+        onClick: () => notImplemented("Applications list"),
+      },
+    ],
+    [counts]
+  );
+
   return (
     <div className={`${typography.pages} min-h-[calc(100vh-100px)] w-full bg-white text-[#18233b]`}>
       <div className="flex min-h-full flex-col px-[18px] pb-[16px] pt-[14px]">
         {/* =================================================
             HEADER
         ================================================= */}
-        <div className="mb-[14px] flex flex-wrap items-start justify-between gap-[10px]">
+        <div className="mb-[14px] flex flex-wrap items-start justify-between gap-[10px] border-b-[2px] border-[#293681] pb-[10px]">
           <div>
             <h1 className="text-[19px] font-bold leading-[1.15] tracking-[-0.018em] text-[#23471d]">
               Job Postings
@@ -225,29 +394,7 @@ export default function JobPostingsPage() {
           </div>
 
           <div className="flex items-center gap-[10px]">
-            {/* 1. VIEW ON WEBSITE */}
-            <a
-              href="http://localhost:3002/careers"
-              target="_blank"
-              rel="noreferrer"
-              className="flex h-[30px] items-center justify-center gap-[5px] rounded-[6px] border border-[#fed7aa] bg-[#fff7ed] px-[14px] text-[8.5px] font-semibold text-[#ea580c] transition hover:bg-[#ffedd5] shadow-sm active:scale-95"
-            >
-              <ExternalLink className="h-[12px] w-[12px] text-[#ea580c]" strokeWidth={1.7} />
-              View on Website
-            </a>
-
-            {/* 2. MANAGE DEPARTMENTS & LOCATIONS */}
-            <button
-              type="button"
-              onClick={() => notImplemented("Manage Departments & Locations")}
-              className="flex h-[30px] items-center justify-center gap-[5px] rounded-[6px] bg-[#006199] px-[14px] text-[8.5px] font-semibold text-white shadow-sm transition hover:bg-[#005180] active:scale-95"
-              style={{ backgroundColor: "#006199", color: "#ffffff" }}
-            >
-              <Tag className="h-[12px] w-[12px] text-white" strokeWidth={1.7} />
-              Manage Departments
-            </button>
-
-            {/* 3. ADD NEW JOB */}
+            {/* ADD NEW JOB */}
             <button
               type="button"
               onClick={() => notImplemented("Add New Job")}
@@ -262,14 +409,76 @@ export default function JobPostingsPage() {
         {/* =================================================
             STATS ROW
         ================================================= */}
-        <div className="mb-[12px] grid grid-cols-2 gap-[8px] sm:grid-cols-4 xl:grid-cols-7">
-          <StatCard icon={Briefcase} label="Total Jobs" value={JOBS.length} tone="slate" />
-          <StatCard icon={CheckCircle2} label="Active Jobs" value={counts.active} tone="green" />
-          <StatCard icon={FileClock} label="Draft Jobs" value={counts.draft} tone="amber" />
-          <StatCard icon={XCircle} label="Closed Jobs" value={counts.closed} tone="red" />
-          <StatCard icon={Eye} label="Total Page Views" value="18,420" delta="32% vs last month" tone="blue" />
-          <StatCard icon={MousePointerClick} label="Total Apply Clicks" value="2,860" delta="28% vs last month" tone="indigo" />
-          <StatCard icon={ClipboardList} label="Total Applications" value="1,124" delta="24% vs last month" tone="violet" />
+        <div className="mb-[12px] grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-7">
+          {statCards.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div
+                key={item.title}
+                className="relative flex h-[98px] flex-col overflow-hidden rounded-[11px] border border-[#e5e7e6] bg-white p-2 !pb-5.5 transition-all hover:translate-y-[-1px]"
+                style={{
+                  background: item.gradient,
+                  borderColor: item.borderColor || undefined,
+                  boxShadow:
+                    "rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px",
+                }}
+              >
+                <div className="flex items-start gap-1.5">
+                  <div
+                    className={`grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full ring-1 bg-white/80 shadow-xs ${
+                      toneClass[item.tone]
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className="truncate text-[8.5px] !font-semibold tracking-[0.01em] text-slate-900"
+                      style={{ fontWeight: 600, color: "#0f172a" }}
+                    >
+                      {item.title}
+                    </p>
+
+                    <div className="mt-1.5 flex items-end justify-between">
+                      <div className="flex items-end gap-1">
+                        <span
+                          className="text-[21px] !font-semibold leading-none tracking-[-0.04em]"
+                          style={{ color: item.numColor, fontWeight: 600 }}
+                        >
+                          <AnimatedCounter value={item.value} />
+                        </span>
+
+                        {item.suffix && (
+                          <span className="mb-0.5 text-[9.5px] font-bold text-[#64748b]">
+                            {item.suffix}
+                          </span>
+                        )}
+                      </div>
+
+                      {item.trend && (
+                        <span
+                          className={`mb-0.5 text-[7.5px] font-bold flex items-center gap-0.5 ${
+                            item.trend.startsWith("↓") ? "text-[#dc2626]" : "text-[#16a34a]"
+                          }`}
+                        >
+                          {item.trend.split(" ")[0]} {item.trend.split(" ")[1]}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  onClick={item.onClick}
+                  className="absolute bottom-1 left-2 right-2 flex cursor-pointer items-center justify-center gap-1 text-[8px] font-semibold text-[#293957] transition hover:text-blue-600"
+                >
+                  {item.footer}
+                  <ArrowRight className="h-3 w-3" />
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* =================================================
