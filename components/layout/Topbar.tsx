@@ -170,6 +170,22 @@ function pagesSubRouteLabel(pathname: string): string | null {
   return null;
 }
 
+const CAREERS_SECTION_ROUTES = [
+  "/career-dashboard",
+  "/job-postings",
+  "/applications-ai-response",
+  "/career-settings",
+];
+
+/** Mirrors pagesSubRouteLabel's role, but for the whole "Careers & Applications" nav
+ * section — its heading reads "Careers & Applications > Job Postings" etc. */
+function careersSectionLabel(pathname: string): string | null {
+  const isCareersRoute = CAREERS_SECTION_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  );
+  return isCareersRoute ? "Careers & Applications" : null;
+}
+
 /** One renewal clock inside the status cluster. Kept deliberately quiet: the countdown is the
  * content, the icon and the small label only say which clock you are looking at. */
 function ServiceClock({
@@ -570,6 +586,19 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
                 <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" />
                 <span className="truncate font-bold" style={{ color: "#23471d" }}>
                   {pagesSubRouteLabel(pathname)}
+                </span>
+              </h1>
+            ) : careersSectionLabel(pathname) ? (
+              <h1 className="flex min-w-0 items-center gap-1.5 text-[15px] font-semibold tracking-tight">
+                <span
+                  className="truncate"
+                  style={{ color: "#4B1426" }}
+                >
+                  {careersSectionLabel(pathname)}
+                </span>
+                <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" />
+                <span className="truncate font-bold" style={{ color: "#23471d" }}>
+                  {currentPageTitle(pathname)}
                 </span>
               </h1>
             ) : (
