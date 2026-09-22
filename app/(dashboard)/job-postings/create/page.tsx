@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 
 
+import Image from "next/image";
+
 function GreenToggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
     <button
@@ -117,6 +119,7 @@ function RichEditorBlock({
 }
 
 export default function CreateJobPage() {
+  const [activeTab, setActiveTab] = useState<"info" | "preview">("info");
   const [toggles, setToggles] = useState({
     acceptOnline: true,
     aiScreening: true,
@@ -176,42 +179,69 @@ export default function CreateJobPage() {
     <div className="flex h-[calc(100vh-60px)] w-full flex-col bg-[#f8fafc] text-[#0f172a] overflow-hidden font-sans">
       {/* PAGE HEADER */}
       <div className="flex shrink-0 items-center justify-between border-b border-[#e2e8f0] bg-white px-5 py-2 shadow-2xs">
-        <div>
-          <h1 className="text-[18px] font-bold text-[#0f172a] tracking-tight">Add New Job</h1>
-          <p className="text-[10.5px] font-medium text-[#64748b]">Complete all details to create and publish the job on your careers page.</p>
-        </div>
-        <div className="text-right">
-          <div className="text-[11px] font-bold italic text-[#15803d]">Together for a Healthier</div>
-          <div className="flex items-center justify-end gap-1 text-[11px] font-bold italic text-[#15803d]">
-            Greener Tomorrow
-            <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 008 20c4 0 6-2 8-4s2.5-3.5 2.5-5a2.5 2.5 0 00-2.5-2.5c-.17 0-.34.02-.5.05V8z" /></svg>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/job-postings"
+            className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#cbd5e1] bg-white text-[#334155] hover:bg-slate-100 transition-colors shadow-2xs"
+            title="Back to Job Postings"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+          <div>
+            <h1 className="text-[18px] font-bold text-[#0f172a] tracking-tight">Add New Job</h1>
+            <p className="text-[10.5px] font-medium text-[#64748b]">Complete all details to create and publish the job on your careers page.</p>
           </div>
+        </div>
+        <div className="flex items-center justify-end">
+          <Image
+            src="/assets/greener-tomorrow-text.png"
+            alt="Together for a Healthier Greener Tomorrow"
+            width={180}
+            height={40}
+            className="h-9 w-auto object-contain"
+          />
         </div>
       </div>
 
       {/* STEP TABS HEADER */}
       <div className="flex shrink-0 gap-3 border-b border-[#e2e8f0] bg-[#f1f5f9] px-5 py-1.5">
-        {/* Tab 1 Active */}
-        <div className="flex items-center gap-2 rounded-[6px] border border-[#2563eb] bg-[#2563eb] px-3 py-1.5 text-white shadow-2xs">
-          <div className="grid h-5 w-5 place-items-center rounded-[4px] bg-white/20">
-            <FileText className="h-3 w-3 text-white" />
+        {/* Tab 1 Active / Inactive */}
+        <button
+          type="button"
+          onClick={() => setActiveTab("info")}
+          className={`flex items-center gap-2 rounded-[6px] border px-3 py-1.5 transition-all text-left ${
+            activeTab === "info"
+              ? "border-[#2563eb] bg-[#2563eb] text-white shadow-2xs"
+              : "border-[#cbd5e1] bg-white text-[#475569] hover:bg-slate-50"
+          }`}
+        >
+          <div className={`grid h-5 w-5 place-items-center rounded-[4px] ${activeTab === "info" ? "bg-white/20 text-white" : "bg-[#eff6ff] text-[#2563eb]"}`}>
+            <FileText className="h-3 w-3" />
           </div>
           <div>
-            <div className="text-[11px] font-bold leading-tight">Job Information</div>
-            <div className="text-[9px] font-medium text-blue-100">Job details, description, requirements, questions</div>
+            <div className={`text-[11px] font-bold leading-tight ${activeTab === "info" ? "text-white" : "text-[#1e293b]"}`}>Job Information</div>
+            <div className={`text-[9px] font-medium ${activeTab === "info" ? "text-blue-100" : "text-[#64748b]"}`}>Job details, description, requirements, questions</div>
           </div>
-        </div>
+        </button>
 
-        {/* Tab 2 Inactive */}
-        <div className="flex items-center gap-2 rounded-[6px] border border-[#cbd5e1] bg-white px-3 py-1.5 text-[#475569] hover:bg-slate-50">
-          <div className="grid h-5 w-5 place-items-center rounded-[4px] bg-[#eff6ff] text-[#2563eb]">
+        {/* Tab 2 Active / Inactive */}
+        <button
+          type="button"
+          onClick={() => setActiveTab("preview")}
+          className={`flex items-center gap-2 rounded-[6px] border px-3 py-1.5 transition-all text-left ${
+            activeTab === "preview"
+              ? "border-[#2563eb] bg-[#2563eb] text-white shadow-2xs"
+              : "border-[#cbd5e1] bg-white text-[#475569] hover:bg-slate-50"
+          }`}
+        >
+          <div className={`grid h-5 w-5 place-items-center rounded-[4px] ${activeTab === "preview" ? "bg-white/20 text-white" : "bg-[#eff6ff] text-[#2563eb]"}`}>
             <Eye className="h-3 w-3" />
           </div>
           <div>
-            <div className="text-[11px] font-bold leading-tight text-[#1e293b]">Preview & Publish</div>
-            <div className="text-[9px] font-medium text-[#64748b]">Review and publish on website</div>
+            <div className={`text-[11px] font-bold leading-tight ${activeTab === "preview" ? "text-white" : "text-[#1e293b]"}`}>Preview & Publish</div>
+            <div className={`text-[9px] font-medium ${activeTab === "preview" ? "text-blue-100" : "text-[#64748b]"}`}>Review and publish on website</div>
           </div>
-        </div>
+        </button>
       </div>
 
       {/* MAIN BODY (TWO COLUMNS LAYOUT) */}
