@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   Ban,
@@ -244,6 +245,7 @@ function AnimatedCounter({ value, duration = 1200 }: { value: string | number; d
 ========================================================= */
 
 export default function JobPostingsPage() {
+  const router = useRouter();
   const [jobs, setJobs] = useState<JobPosting[]>(INITIAL_JOBS);
   const [tab, setTab] = useState<"all" | "active" | "draft" | "closed">("all");
   const [search, setSearch] = useState("");
@@ -409,7 +411,7 @@ export default function JobPostingsPage() {
             {/* ADD NEW JOB */}
             <button
               type="button"
-              onClick={() => notImplemented("Add New Job")}
+              onClick={() => router.push("/job-postings/new")}
               className="flex h-[30px] items-center justify-center gap-[5px] rounded-[6px] bg-[#4B1426] px-[14px] text-[8.5px] font-semibold text-white shadow-[0_5px_12px_rgba(75,20,38,0.25)] transition hover:bg-[#3a0f1d] active:scale-95"
             >
               <Plus className="h-[12px] w-[12px]" strokeWidth={1.7} />
@@ -772,7 +774,7 @@ export default function JobPostingsPage() {
                   <button
                     key={label}
                     type="button"
-                    onClick={() => notImplemented(label)}
+                    onClick={() => (label === "Add New Job" ? router.push("/job-postings/new") : notImplemented(label))}
                     className="flex items-center gap-[8px] rounded-[4px] px-[6px] py-[7px] text-left text-[9.5px] font-semibold text-[#334155] transition hover:bg-slate-50"
                   >
                     <Icon className="h-[13px] w-[13px] text-[#218DAE]" />
