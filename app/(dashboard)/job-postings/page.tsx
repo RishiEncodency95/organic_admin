@@ -586,17 +586,17 @@ export default function JobPostingsPage() {
                     <th className="w-[26px] px-[8px] py-[5px]">
                       <input type="checkbox" className="h-[10px] w-[10px] cursor-pointer" />
                     </th>
-                    <th className="w-[28px] px-[6px] py-[5px] text-[7px] font-bold text-white uppercase tracking-wider">#</th>
-                    <th className="w-[200px] px-[6px] py-[5px] text-[7px] font-bold text-white uppercase tracking-wider">Job Title</th>
-                    <th className="w-[90px] px-[6px] py-[5px] text-[7px] font-bold text-white uppercase tracking-wider">Department</th>
-                    <th className="w-[80px] px-[6px] py-[5px] text-[7px] font-bold text-white uppercase tracking-wider">Location</th>
-                    <th className="w-[70px] px-[6px] py-[5px] text-[7px] font-bold text-white uppercase tracking-wider">Type</th>
-                    <th className="w-[56px] px-[6px] py-[5px] text-[7px] font-bold text-white uppercase tracking-wider">Openings</th>
-                    <th className="w-[56px] px-[6px] py-[5px] text-[7px] font-bold text-white uppercase tracking-wider">Views</th>
-                    <th className="w-[70px] px-[6px] py-[5px] text-[7px] font-bold text-white uppercase tracking-wider">Applications</th>
-                    <th className="w-[80px] px-[6px] py-[5px] text-[7px] font-bold text-white uppercase tracking-wider">Status</th>
-                    <th className="w-[76px] px-[6px] py-[5px] text-[7px] font-bold text-white uppercase tracking-wider">Closing Date</th>
-                    <th className="w-[100px] px-[6px] py-[5px] text-right text-[7px] font-bold text-white uppercase tracking-wider">Actions</th>
+                    <th className="w-[26px] overflow-hidden truncate px-[6px] py-[5px] text-[7px] font-bold text-white uppercase">#</th>
+                    <th className="w-[180px] overflow-hidden truncate px-[6px] py-[5px] text-[7px] font-bold text-white uppercase">Job Title</th>
+                    <th className="w-[88px] overflow-hidden truncate px-[6px] py-[5px] text-[7px] font-bold text-white uppercase">Dept.</th>
+                    <th className="w-[80px] overflow-hidden truncate px-[6px] py-[5px] text-[7px] font-bold text-white uppercase">Location</th>
+                    <th className="w-[68px] overflow-hidden truncate px-[6px] py-[5px] text-[7px] font-bold text-white uppercase">Type</th>
+                    <th className="w-[62px] overflow-hidden truncate px-[6px] py-[5px] text-[7px] font-bold text-white uppercase">Open.</th>
+                    <th className="w-[56px] overflow-hidden truncate px-[6px] py-[5px] text-[7px] font-bold text-white uppercase">Views</th>
+                    <th className="w-[76px] overflow-hidden truncate px-[6px] py-[5px] text-[7px] font-bold text-white uppercase">Apps</th>
+                    <th className="w-[96px] overflow-hidden truncate px-[6px] py-[5px] text-[7px] font-bold text-white uppercase">Status</th>
+                    <th className="w-[84px] overflow-hidden truncate px-[6px] py-[5px] text-[7px] font-bold text-white uppercase">Closing</th>
+                    <th className="w-[104px] overflow-hidden truncate px-[6px] py-[5px] text-right text-[7px] font-bold text-white uppercase">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#f0f0ec]">
