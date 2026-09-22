@@ -121,9 +121,11 @@ function notImplemented(action: string) {
    SMALL UI PRIMITIVES
 ========================================================= */
 
+const FIELD_SHADOW = "shadow-[0_1px_3px_0_rgba(0,0,0,0.02),0_0_0_1px_rgba(27,31,35,0.15)]";
+
 function Label({ children, required }: { children: ReactNode; required?: boolean }) {
   return (
-    <label className="mb-[5px] block text-[12px] font-semibold text-[#1e293b]">
+    <label className="mb-[5px] block text-[11px] font-semibold uppercase tracking-wide text-[#18233b]">
       {children}
       {required && <span className="ml-0.5 text-red-500">*</span>}
     </label>
@@ -147,7 +149,7 @@ function TextField({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="h-[38px] w-full rounded-[7px] border border-[#dbe0e6] bg-white px-[12px] text-[12.5px] text-[#1e293b] outline-none transition placeholder:text-[#94a3b8] focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/15"
+      className={`h-[36px] w-full bg-white px-[12px] text-sm text-[#18233b] outline-none transition placeholder:text-[#9aa0aa] hover:border-[#FF9D50] focus:border-[#FF9D50] focus:outline-none focus:ring-2 focus:ring-[#FF9D50]/20 ${FIELD_SHADOW}`}
     />
   );
 }
@@ -165,7 +167,7 @@ function SelectFieldBox({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="h-[38px] w-full cursor-pointer rounded-[7px] border border-[#dbe0e6] bg-white px-[12px] text-[12.5px] text-[#1e293b] outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/15"
+      className={`h-[36px] w-full cursor-pointer bg-white px-[12px] text-sm text-[#18233b] outline-none transition hover:border-[#FF9D50] focus:border-[#FF9D50] focus:outline-none focus:ring-2 focus:ring-[#FF9D50]/20 ${FIELD_SHADOW}`}
     >
       {options.map((opt) => (
         <option key={opt} value={opt}>{opt}</option>
@@ -293,7 +295,7 @@ function TagInput({
           }}
           onBlur={commit}
           placeholder="Type and press Enter..."
-          className="h-[28px] w-[160px] rounded-[5px] border border-[#dbe0e6] px-[8px] text-[11px] outline-none focus:border-[#2563eb]"
+          className={`h-[28px] w-[160px] bg-white px-[8px] text-[11px] outline-none focus:border-[#FF9D50] ${FIELD_SHADOW}`}
         />
       ) : (
         <button
@@ -329,7 +331,7 @@ function RichTextField({
   };
 
   return (
-    <div className="overflow-hidden rounded-[7px] border border-[#dbe0e6]">
+    <div className={`overflow-hidden bg-white ${FIELD_SHADOW}`}>
       <EditorToolbar targetRef={ref} onCommand={exec} />
       <div
         ref={ref}
@@ -360,7 +362,7 @@ function SectionCard({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-[10px] border border-[#e5e7eb] bg-white p-[18px] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+    <section className={`bg-white p-[18px] ${FIELD_SHADOW}`}>
       <div className="mb-[16px] flex items-center gap-[10px] border-b border-[#f1f5f9] pb-[12px]">
         <span className="grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full bg-[#2563eb] text-[12px] font-bold text-white">
           {number}
@@ -390,7 +392,7 @@ function SidebarPanel({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-[10px] border border-[#e5e7eb] bg-white p-[16px] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+    <section className={`bg-white p-[16px] ${FIELD_SHADOW}`}>
       <div className="mb-[10px] flex items-start gap-[9px]">
         <span className="grid h-[28px] w-[28px] shrink-0 place-items-center rounded-[7px] bg-[#eff6ff] text-[#2563eb]">
           <Icon className="h-[14px] w-[14px]" />
@@ -474,13 +476,13 @@ export default function AddNewJobPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-100px)] w-full bg-[#f8fafc] px-[18px] pb-[80px] pt-[14px] text-[#18233b]">
+    <div className="min-h-[calc(100vh-100px)] w-full bg-white px-[18px] pb-[80px] pt-[14px] text-[#18233b]">
       {/* HEADER */}
-      <div className="mb-[16px]">
-        <h1 className="text-[20px] font-bold leading-[1.15] tracking-[-0.018em] text-[#0f172a]">
+      <div className="mb-[16px] border-b-[2px] border-[#293681] pb-[10px]">
+        <h1 className="text-[19px] font-bold leading-[1.15] tracking-[-0.018em] text-[#23471d]">
           Add New Job
         </h1>
-        <p className="mt-0.5 text-[11px] font-medium text-[#6c7587]">
+        <p className="mt-0.5 text-[9px] font-medium text-[#6c7587]">
           Complete all details to create and publish the job on your careers page.
         </p>
       </div>
@@ -521,7 +523,7 @@ export default function AddNewJobPage() {
       </div>
 
       {tab === "preview" ? (
-        <section className="rounded-[10px] border border-[#e5e7eb] bg-white p-[24px] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+        <section className={`bg-white p-[24px] ${FIELD_SHADOW}`}>
           <p className="mb-[6px] text-[10.5px] font-bold uppercase tracking-wide text-[#2563eb]">
             {form.department || "Department"} · {form.location || "Location"}
           </p>
@@ -693,7 +695,7 @@ export default function AddNewJobPage() {
                   onChange={(e) => updateField("specificExperience", e.target.value.slice(0, 300))}
                   placeholder="e.g. Direct exhibition / trade show sales experience preferred"
                   rows={3}
-                  className="w-full resize-none rounded-[7px] border border-[#dbe0e6] bg-white px-[12px] py-[8px] text-[12.5px] text-[#1e293b] outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/15"
+                  className={`w-full resize-none bg-white px-[12px] py-[8px] text-sm text-[#18233b] outline-none hover:border-[#FF9D50] focus:border-[#FF9D50] focus:outline-none focus:ring-2 focus:ring-[#FF9D50]/20 ${FIELD_SHADOW}`}
                 />
                 <p className="mt-1 text-right text-[10px] font-semibold text-[#94a3b8]">{form.specificExperience.length}/300</p>
               </div>
@@ -771,7 +773,12 @@ export default function AddNewJobPage() {
         <button
           type="button"
           onClick={() => router.push("/job-postings")}
-          className="rounded-[7px] border border-[#fecaca] bg-[#fff1f2] px-[16px] py-[9px] text-[12px] font-bold text-[#dc2626] hover:bg-[#ffe4e6]"
+          className="inline-flex h-[32px] items-center gap-1.5 px-[14px] text-[12px] font-semibold text-red-600 transition-all hover:bg-red-100 active:scale-95"
+          style={{
+            background: "#fff1f2",
+            borderRadius: "4px",
+            boxShadow: "rgba(0,0,0,0.02) 0px 1px 3px 0px, rgba(220,38,38,0.15) 0px 0px 0px 1px",
+          }}
         >
           Cancel
         </button>
@@ -780,21 +787,36 @@ export default function AddNewJobPage() {
           <button
             type="button"
             onClick={handleSaveDraft}
-            className="rounded-[7px] border border-[#dbe0e6] bg-white px-[16px] py-[9px] text-[12px] font-bold text-[#334155] hover:bg-slate-50"
+            className="inline-flex h-[32px] items-center gap-1.5 px-[14px] text-[12px] font-semibold text-[#334155] transition-all hover:bg-slate-100 active:scale-95"
+            style={{
+              background: "#fff",
+              borderRadius: "4px",
+              boxShadow: "rgba(0,0,0,0.02) 0px 1px 3px 0px, rgba(27,31,35,0.15) 0px 0px 0px 1px",
+            }}
           >
             Save as Draft
           </button>
           <button
             type="button"
             onClick={() => setTab("preview")}
-            className="rounded-[7px] border border-[#bfdbfe] bg-[#eff6ff] px-[16px] py-[9px] text-[12px] font-bold text-[#1d4ed8] hover:bg-[#dbeafe]"
+            className="inline-flex h-[32px] items-center gap-1.5 px-[14px] text-[12px] font-semibold text-[#1d4ed8] transition-all hover:bg-[#dbeafe] active:scale-95"
+            style={{
+              background: "#eff6ff",
+              borderRadius: "4px",
+              boxShadow: "rgba(0,0,0,0.02) 0px 1px 3px 0px, rgba(37,99,235,0.2) 0px 0px 0px 1px",
+            }}
           >
             Preview Job
           </button>
           <button
             type="button"
             onClick={handlePublish}
-            className="rounded-[7px] bg-[#16a34a] px-[18px] py-[9px] text-[12px] font-bold text-white shadow-[0_4px_10px_rgba(22,163,74,0.25)] hover:bg-[#15803d]"
+            className="inline-flex h-[32px] items-center gap-1.5 px-[16px] text-[12px] font-semibold text-white transition-all hover:opacity-90 active:scale-95"
+            style={{
+              background: "#16a34a",
+              borderRadius: "4px",
+              boxShadow: "rgba(0,0,0,0.02) 0px 1px 3px 0px, rgba(22,163,74,0.2) 0px 0px 0px 1px",
+            }}
           >
             Publish Job
           </button>
