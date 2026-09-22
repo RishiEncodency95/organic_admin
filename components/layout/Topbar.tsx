@@ -186,13 +186,6 @@ function careersSectionLabel(pathname: string): string | null {
   return isCareersRoute ? "Careers & Applications" : null;
 }
 
-/** A third breadcrumb segment for routes nested one level below a Careers &
- * Applications module page, e.g. "Careers & Applications > Job Postings > Add New Job". */
-function careersSubRouteLabel(pathname: string): string | null {
-  if (pathname === "/job-postings/new") return "Add New Job";
-  return null;
-}
-
 /** One renewal clock inside the status cluster. Kept deliberately quiet: the countdown is the
  * content, the icon and the small label only say which clock you are looking at. */
 function ServiceClock({
@@ -604,20 +597,9 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
                   {careersSectionLabel(pathname)}
                 </span>
                 <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" />
-                <span
-                  className={`truncate ${careersSubRouteLabel(pathname) ? "" : "font-bold"}`}
-                  style={{ color: careersSubRouteLabel(pathname) ? "#4B1426" : "#23471d" }}
-                >
+                <span className="truncate font-bold" style={{ color: "#23471d" }}>
                   {currentPageTitle(pathname)}
                 </span>
-                {careersSubRouteLabel(pathname) && (
-                  <>
-                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" />
-                    <span className="truncate font-bold" style={{ color: "#23471d" }}>
-                      {careersSubRouteLabel(pathname)}
-                    </span>
-                  </>
-                )}
               </h1>
             ) : (
               <h1
