@@ -383,18 +383,20 @@ function Card({
   children,
   className = "",
   noPadding = false,
+  titleClassName = "text-[#263148]",
 }: {
   title?: string;
   right?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
   noPadding?: boolean;
+  titleClassName?: string;
 }) {
   return (
     <div className={`border border-[#e8e5df] bg-white ${className}`}>
       {title && (
         <div className="flex items-center justify-between border-b border-[#f0f0ec] px-[12px] py-[9px]">
-          <h2 className="text-[11px] font-bold text-[#263148]">{title}</h2>
+          <h2 className={`text-[11px] font-bold ${titleClassName}`}>{title}</h2>
           {right}
         </div>
       )}
@@ -543,14 +545,14 @@ export default function CareerDashboardPage() {
                 <div className="flex flex-col gap-[7px]">
                   {FUNNEL_STAGES.map((stage) => (
                     <div key={stage.label} className="grid grid-cols-[104px_1fr_46px] items-center gap-[8px]">
-                      <span className="truncate text-[8px] font-semibold text-[#334155]">{stage.label}</span>
+                      <span className="truncate text-[10px] font-semibold text-[#334155]">{stage.label}</span>
                       <div className="h-[14px] w-full overflow-hidden rounded-[3px] bg-[#f4f4f1]">
                         <div
                           className="h-full rounded-[3px]"
                           style={{ width: `${stage.barWidth}%`, backgroundColor: stage.color }}
                         />
                       </div>
-                      <span className="text-right text-[8px] font-bold text-[#263148]">
+                      <span className="text-right text-[10px] font-bold text-[#263148]">
                         {stage.value} <span className="font-medium text-[#8a92a0]">({stage.pct})</span>
                       </span>
                     </div>
@@ -573,15 +575,15 @@ export default function CareerDashboardPage() {
                     </button>
                   }
                 >
-                  <div className="mb-[8px] flex items-center gap-[12px] text-[7.5px] font-semibold text-[#334155]">
-                    <span className="flex items-center gap-1">
-                      <span className="h-[6px] w-[6px] rounded-full bg-[#16a34a]" /> Page Views
+                  <div className="mb-[8px] flex items-center gap-[12px] text-[7.5px] font-bold text-black">
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-[9px] w-[9px] rounded-full bg-[#16a34a]" /> Page Views
                     </span>
-                    <span className="flex items-center gap-1">
-                      <span className="h-[6px] w-[6px] rounded-full bg-[#2563eb]" /> Apply Clicks
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-[9px] w-[9px] rounded-full bg-[#2563eb]" /> Apply Clicks
                     </span>
-                    <span className="flex items-center gap-1">
-                      <span className="h-[6px] w-[6px] rounded-full bg-[#f59e0b]" /> CV Uploads
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-[9px] w-[9px] rounded-full bg-[#f59e0b]" /> CV Uploads
                     </span>
                   </div>
                   <ResponsiveContainer width="100%" height={168}>
@@ -591,9 +593,9 @@ export default function CareerDashboardPage() {
                         dataKey="month"
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fill: "#8a92a0", fontSize: 9, fontWeight: 600 }}
+                        tick={{ fill: "#000000", fontSize: 9, fontWeight: 700 }}
                       />
-                      <YAxis tickLine={false} axisLine={false} tick={{ fill: "#8a92a0", fontSize: 9, fontWeight: 600 }} width={44} />
+                      <YAxis tickLine={false} axisLine={false} tick={{ fill: "#000000", fontSize: 9, fontWeight: 700 }} width={44} />
                       <Tooltip content={<PerformanceTooltip />} cursor={{ stroke: "#e5e6e2" }} />
                       <Line type="monotone" dataKey="pageViews" name="Page Views" stroke="#16a34a" strokeWidth={2} dot={{ r: 3, fill: "#16a34a" }} />
                       <Line type="monotone" dataKey="applyClicks" name="Apply Clicks" stroke="#2563eb" strokeWidth={2} dot={{ r: 3, fill: "#2563eb" }} />
@@ -655,6 +657,7 @@ export default function CareerDashboardPage() {
             ============================================= */}
             <Card
               title="Latest Applications"
+              titleClassName="text-[#dc2626]"
               right={
                 <Link
                   href="/applications-ai-response"
@@ -756,7 +759,7 @@ export default function CareerDashboardPage() {
             </div>
 
             {/* QUICK ACTIONS */}
-            <div className="border border-[#e7e7e3] bg-white p-[12px]">
+            <div className="border border-[#e7e7e3] bg-[#f6f9fe] p-[12px]">
               <h2 className="mb-[8px] text-[11px] font-bold text-[#263148]">Quick Actions</h2>
               <div className="flex flex-col gap-[2px]">
                 {QUICK_ACTIONS.map(({ label, icon: Icon, href }) => {
