@@ -627,7 +627,7 @@ export default function JobPostingsPage() {
                         <td className="px-[6px] py-[6px] truncate text-[7px] font-medium text-[#334155]">{job.location}</td>
                         <td className="px-[6px] py-[6px] truncate text-[7px] font-medium text-[#334155]">{job.type}</td>
                         <td className="px-[6px] py-[6px] text-[7px] font-medium text-[#334155]">{job.openings}</td>
-                        <td className="px-[6px] py-[6px] text-[7px] font-medium text-[#334155]">{job.views.toLocaleString()}</td>
+                        <td className="px-[6px] py-[6px] text-[7px] font-bold text-[#2563eb]">{job.views.toLocaleString()}</td>
                         <td className="px-[6px] py-[6px] text-[7px] font-medium text-[#334155]">{job.applications}</td>
                         <td className="px-[6px] py-[6px]">
                           <select
