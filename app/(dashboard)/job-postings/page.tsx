@@ -9,7 +9,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Circle,
   ClipboardList,
   Copy,
   ExternalLink,
@@ -56,7 +55,7 @@ interface JobPosting {
   closingDate: string;
 }
 
-const JOBS: JobPosting[] = [
+const INITIAL_JOBS: JobPosting[] = [
   { id: 1, title: "Sales Manager – Domestic Exhibition Sales & Sponsorships", department: "Sales", location: "Delhi NCR", type: "Full Time", openings: 2, views: 1824, applications: 138, status: "Active", closingDate: "30 Nov 2026" },
   { id: 2, title: "Marketing Executive", department: "Marketing", location: "Delhi NCR", type: "Full Time", openings: 3, views: 1256, applications: 96, status: "Active", closingDate: "15 Oct 2026" },
   { id: 3, title: "Graphic Designer", department: "Design", location: "Delhi NCR", type: "Full Time", openings: 1, views: 980, applications: 74, status: "Active", closingDate: "10 Oct 2026" },
@@ -245,41 +244,53 @@ function AnimatedCounter({ value, duration = 1200 }: { value: string | number; d
 ========================================================= */
 
 export default function JobPostingsPage() {
+  const [jobs, setJobs] = useState<JobPosting[]>(INITIAL_JOBS);
   const [tab, setTab] = useState<"all" | "active" | "draft" | "closed">("all");
   const [search, setSearch] = useState("");
   const [department, setDepartment] = useState("All Departments");
   const [location, setLocation] = useState("All Locations");
   const [page, setPage] = useState(1);
 
+  const handleStatusChange = (id: number, nextStatus: JobStatus) => {
+    setJobs((previous) =>
+      previous.map((job) =>
+        job.id === id
+          ? { ...job, status: nextStatus, closingDate: nextStatus === "Draft" ? "" : job.closingDate }
+          : job
+      )
+    );
+    notImplemented(`Status updated to "${nextStatus}"`);
+  };
+
   const counts = useMemo(
     () => ({
-      all: JOBS.length,
-      active: JOBS.filter((j) => j.status === "Active").length,
-      draft: JOBS.filter((j) => j.status === "Draft").length,
-      closed: JOBS.filter((j) => j.status === "Closed").length,
+      all: jobs.length,
+      active: jobs.filter((j) => j.status === "Active").length,
+      draft: jobs.filter((j) => j.status === "Draft").length,
+      closed: jobs.filter((j) => j.status === "Closed").length,
     }),
-    []
+    [jobs]
   );
 
   const departments = useMemo(
-    () => ["All Departments", ...Array.from(new Set(JOBS.map((j) => j.department))).sort()],
-    []
+    () => ["All Departments", ...Array.from(new Set(jobs.map((j) => j.department))).sort()],
+    [jobs]
   );
   const locations = useMemo(
-    () => ["All Locations", ...Array.from(new Set(JOBS.map((j) => j.location))).sort()],
-    []
+    () => ["All Locations", ...Array.from(new Set(jobs.map((j) => j.location))).sort()],
+    [jobs]
   );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return JOBS.filter((job) => {
+    return jobs.filter((job) => {
       if (tab !== "all" && job.status.toLowerCase() !== tab) return false;
       if (department !== "All Departments" && job.department !== department) return false;
       if (location !== "All Locations" && job.location !== location) return false;
       if (q && !job.title.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [tab, department, location, search]);
+  }, [jobs, tab, department, location, search]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -296,7 +307,7 @@ export default function JobPostingsPage() {
     () => [
       {
         title: "TOTAL JOBS",
-        value: JOBS.length,
+        value: counts.all,
         icon: Briefcase,
         tone: "slate",
         gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #e2e8f0 100%)",
@@ -569,23 +580,23 @@ export default function JobPostingsPage() {
 
             {/* TABLE */}
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[900px] border-collapse text-left">
+              <table className="w-full min-w-[980px] border-collapse text-left table-fixed">
                 <thead>
-                  <tr className="h-[32px] border-b border-[#e8e5df] bg-[#233D4D]">
-                    <th className="w-[30px] px-[10px] py-[6px]">
-                      <input type="checkbox" className="h-[11px] w-[11px] cursor-pointer" />
+                  <tr className="h-[28px] border-b border-[#e8e5df] bg-[#233D4D]">
+                    <th className="w-[26px] px-[8px] py-[5px]">
+                      <input type="checkbox" className="h-[10px] w-[10px] cursor-pointer" />
                     </th>
-                    <th className="px-[8px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">#</th>
-                    <th className="px-[8px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">Job Title</th>
-                    <th className="px-[8px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">Department</th>
-                    <th className="px-[8px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">Location</th>
-                    <th className="px-[8px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">Type</th>
-                    <th className="px-[8px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">Openings</th>
-                    <th className="px-[8px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">Views</th>
-                    <th className="px-[8px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">Applications</th>
-                    <th className="px-[8px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">Status</th>
-                    <th className="px-[8px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">Closing Date</th>
-                    <th className="px-[8px] py-[6px] text-right text-[8.5px] font-bold text-white uppercase tracking-wider">Actions</th>
+                    <th className="w-[28px] px-[6px] py-[5px] text-[7px] font-bold text-white uppercase tracking-wider">#</th>
+                    <th className="w-[200px] px-[6px] py-[5px] text-[7px] font-bold text-white uppercase tracking-wider">Job Title</th>
+                    <th className="w-[90px] px-[6px] py-[5px] text-[7px] font-bold text-white uppercase tracking-wider">Department</th>
+                    <th className="w-[80px] px-[6px] py-[5px] text-[7px] font-bold text-white uppercase tracking-wider">Location</th>
+                    <th className="w-[70px] px-[6px] py-[5px] text-[7px] font-bold text-white uppercase tracking-wider">Type</th>
+                    <th className="w-[56px] px-[6px] py-[5px] text-[7px] font-bold text-white uppercase tracking-wider">Openings</th>
+                    <th className="w-[56px] px-[6px] py-[5px] text-[7px] font-bold text-white uppercase tracking-wider">Views</th>
+                    <th className="w-[70px] px-[6px] py-[5px] text-[7px] font-bold text-white uppercase tracking-wider">Applications</th>
+                    <th className="w-[80px] px-[6px] py-[5px] text-[7px] font-bold text-white uppercase tracking-wider">Status</th>
+                    <th className="w-[76px] px-[6px] py-[5px] text-[7px] font-bold text-white uppercase tracking-wider">Closing Date</th>
+                    <th className="w-[100px] px-[6px] py-[5px] text-right text-[7px] font-bold text-white uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#f0f0ec]">
@@ -598,34 +609,44 @@ export default function JobPostingsPage() {
                   ) : (
                     paginatedJobs.map((job) => (
                       <tr key={job.id} className="transition hover:bg-slate-50/80">
-                        <td className="px-[10px] py-[8px]">
-                          <input type="checkbox" className="h-[11px] w-[11px] cursor-pointer" />
+                        <td className="px-[8px] py-[6px]">
+                          <input type="checkbox" className="h-[10px] w-[10px] cursor-pointer" />
                         </td>
-                        <td className="px-[8px] py-[8px] text-[8.5px] font-semibold text-[#6c7587]">{job.id}</td>
-                        <td className="max-w-[220px] px-[8px] py-[8px]">
+                        <td className="px-[6px] py-[6px] text-[7px] font-semibold text-[#6c7587]">{job.id}</td>
+                        <td className="px-[6px] py-[6px]">
                           <button
                             type="button"
+                            title={job.title}
                             onClick={() => notImplemented(`Preview "${job.title}"`)}
-                            className="text-left text-[8.5px] font-bold text-[#4B1426] hover:underline"
+                            className="block w-full truncate text-left text-[7px] font-bold text-[#4B1426] hover:underline"
                           >
                             {job.title}
                           </button>
                         </td>
-                        <td className="px-[8px] py-[8px] text-[8.5px] font-medium text-[#334155]">{job.department}</td>
-                        <td className="px-[8px] py-[8px] text-[8.5px] font-medium text-[#334155]">{job.location}</td>
-                        <td className="px-[8px] py-[8px] text-[8.5px] font-medium text-[#334155]">{job.type}</td>
-                        <td className="px-[8px] py-[8px] text-[8.5px] font-medium text-[#334155]">{job.openings}</td>
-                        <td className="px-[8px] py-[8px] text-[8.5px] font-medium text-[#334155]">{job.views.toLocaleString()}</td>
-                        <td className="px-[8px] py-[8px] text-[8.5px] font-medium text-[#334155]">{job.applications}</td>
-                        <td className="px-[8px] py-[8px]">
-                          <span className={`inline-flex items-center gap-1 rounded-[4px] px-[7px] py-[2px] text-[7.5px] font-bold ${STATUS_STYLES[job.status]}`}>
-                            <Circle className="h-[5px] w-[5px] fill-current" />
-                            {job.status}
-                          </span>
+                        <td className="px-[6px] py-[6px] truncate text-[7px] font-medium text-[#334155]">{job.department}</td>
+                        <td className="px-[6px] py-[6px] truncate text-[7px] font-medium text-[#334155]">{job.location}</td>
+                        <td className="px-[6px] py-[6px] truncate text-[7px] font-medium text-[#334155]">{job.type}</td>
+                        <td className="px-[6px] py-[6px] text-[7px] font-medium text-[#334155]">{job.openings}</td>
+                        <td className="px-[6px] py-[6px] text-[7px] font-medium text-[#334155]">{job.views.toLocaleString()}</td>
+                        <td className="px-[6px] py-[6px] text-[7px] font-medium text-[#334155]">{job.applications}</td>
+                        <td className="px-[6px] py-[6px]">
+                          <select
+                            value={job.status}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => handleStatusChange(job.id, e.target.value as JobStatus)}
+                            className={`h-[22px] w-full cursor-pointer appearance-none rounded-[4px] px-[6px] pr-[16px] text-[7px] font-bold outline-none bg-no-repeat bg-[right_5px_center] shadow-xs transition ${STATUS_STYLES[job.status]}`}
+                            style={{
+                              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                            }}
+                          >
+                            <option value="Active" className="bg-white font-bold text-[#23714a]">Active</option>
+                            <option value="Draft" className="bg-white font-bold text-[#b45309]">Draft</option>
+                            <option value="Closed" className="bg-white font-bold text-[#dc2626]">Closed</option>
+                          </select>
                         </td>
-                        <td className="px-[8px] py-[8px] text-[8.5px] font-medium text-[#334155]">{job.closingDate || "—"}</td>
-                        <td className="px-[8px] py-[8px]">
-                          <div className="flex items-center justify-end gap-1.5">
+                        <td className="px-[6px] py-[6px] truncate text-[7px] font-medium text-[#334155]">{job.closingDate || "—"}</td>
+                        <td className="px-[6px] py-[6px]">
+                          <div className="flex items-center justify-end gap-1">
                             {/* View (Orange Glassmorphism) */}
                             <button
                               type="button"
