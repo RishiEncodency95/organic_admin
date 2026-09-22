@@ -415,7 +415,7 @@ export default function JobPostingsPage() {
             return (
               <div
                 key={item.title}
-                className="relative flex h-[98px] flex-col overflow-hidden rounded-[11px] border border-[#e5e7e6] bg-white p-2 !pb-5.5 transition-all hover:translate-y-[-1px]"
+                className="relative flex h-[82px] flex-col overflow-hidden rounded-[10px] border border-[#e5e7e6] bg-white p-1.5 !pb-4.5 transition-all hover:translate-y-[-1px]"
                 style={{
                   background: item.gradient,
                   borderColor: item.borderColor || undefined,
@@ -425,32 +425,32 @@ export default function JobPostingsPage() {
               >
                 <div className="flex items-start gap-1.5">
                   <div
-                    className={`grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full ring-1 bg-white/80 shadow-xs ${
+                    className={`grid h-[24px] w-[24px] shrink-0 place-items-center rounded-full ring-1 bg-white/80 shadow-xs ${
                       toneClass[item.tone]
                     }`}
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-3 w-3" />
                   </div>
 
                   <div className="min-w-0 flex-1">
                     <p
-                      className="truncate text-[8.5px] !font-semibold tracking-[0.01em] text-slate-900"
+                      className="truncate text-[7px] !font-semibold tracking-[0.01em] text-slate-900"
                       style={{ fontWeight: 600, color: "#0f172a" }}
                     >
                       {item.title}
                     </p>
 
-                    <div className="mt-1.5 flex items-end justify-between">
+                    <div className="mt-1 flex items-end justify-between">
                       <div className="flex items-end gap-1">
                         <span
-                          className="text-[21px] !font-semibold leading-none tracking-[-0.04em]"
+                          className="text-[16px] !font-semibold leading-none tracking-[-0.04em]"
                           style={{ color: item.numColor, fontWeight: 600 }}
                         >
                           <AnimatedCounter value={item.value} />
                         </span>
 
                         {item.suffix && (
-                          <span className="mb-0.5 text-[9.5px] font-bold text-[#64748b]">
+                          <span className="mb-0.5 text-[8px] font-bold text-[#64748b]">
                             {item.suffix}
                           </span>
                         )}
@@ -458,7 +458,7 @@ export default function JobPostingsPage() {
 
                       {item.trend && (
                         <span
-                          className={`mb-0.5 text-[7.5px] font-bold flex items-center gap-0.5 ${
+                          className={`mb-0.5 text-[6.5px] font-bold flex items-center gap-0.5 ${
                             item.trend.startsWith("↓") ? "text-[#dc2626]" : "text-[#16a34a]"
                           }`}
                         >
@@ -471,10 +471,10 @@ export default function JobPostingsPage() {
 
                 <div
                   onClick={item.onClick}
-                  className="absolute bottom-1 left-2 right-2 flex cursor-pointer items-center justify-center gap-1 text-[8px] font-semibold text-[#293957] transition hover:text-blue-600"
+                  className="absolute bottom-1 left-1.5 right-1.5 flex cursor-pointer items-center justify-center gap-1 text-[7px] font-semibold text-[#293957] transition hover:text-blue-600"
                 >
                   {item.footer}
-                  <ArrowRight className="h-3 w-3" />
+                  <ArrowRight className="h-2.5 w-2.5" />
                 </div>
               </div>
             );
