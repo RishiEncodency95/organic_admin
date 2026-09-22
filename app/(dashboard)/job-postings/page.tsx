@@ -25,6 +25,7 @@ import {
   Send,
   Settings2,
   Sprout,
+  Tag,
   Users,
   XCircle,
   type LucideIcon,
@@ -165,7 +166,6 @@ export default function JobPostingsPage() {
   const [department, setDepartment] = useState("All Departments");
   const [location, setLocation] = useState("All Locations");
   const [page, setPage] = useState(1);
-  const [addMenuOpen, setAddMenuOpen] = useState(false);
 
   const counts = useMemo(
     () => ({
@@ -224,51 +224,38 @@ export default function JobPostingsPage() {
             </p>
           </div>
 
-          <div className="relative">
+          <div className="flex items-center gap-[10px]">
+            {/* 1. VIEW ON WEBSITE */}
+            <a
+              href="http://localhost:3002/careers"
+              target="_blank"
+              rel="noreferrer"
+              className="flex h-[30px] items-center justify-center gap-[5px] rounded-[6px] border border-[#fed7aa] bg-[#fff7ed] px-[14px] text-[8.5px] font-semibold text-[#ea580c] transition hover:bg-[#ffedd5] shadow-sm active:scale-95"
+            >
+              <ExternalLink className="h-[12px] w-[12px] text-[#ea580c]" strokeWidth={1.7} />
+              View on Website
+            </a>
+
+            {/* 2. MANAGE DEPARTMENTS & LOCATIONS */}
             <button
               type="button"
-              onClick={() => setAddMenuOpen((v) => !v)}
-              className="flex h-[32px] items-center gap-[7px] rounded-[5px] bg-[#218DAE] pl-[14px] pr-[10px] text-[9.5px] font-semibold text-white shadow-sm hover:bg-[#1c7996]"
+              onClick={() => notImplemented("Manage Departments & Locations")}
+              className="flex h-[30px] items-center justify-center gap-[5px] rounded-[6px] bg-[#006199] px-[14px] text-[8.5px] font-semibold text-white shadow-sm transition hover:bg-[#005180] active:scale-95"
+              style={{ backgroundColor: "#006199", color: "#ffffff" }}
             >
-              <Plus className="h-[13px] w-[13px]" />
-              Add New Job
-              <ChevronDown className={`h-[12px] w-[12px] transition-transform ${addMenuOpen ? "rotate-180" : ""}`} />
+              <Tag className="h-[12px] w-[12px] text-white" strokeWidth={1.7} />
+              Manage Departments
             </button>
 
-            {addMenuOpen && (
-              <>
-                <button
-                  type="button"
-                  aria-label="Close menu"
-                  className="fixed inset-0 z-10 cursor-default"
-                  onClick={() => setAddMenuOpen(false)}
-                />
-                <div className="absolute right-0 top-[38px] z-20 w-[180px] overflow-hidden rounded-[6px] border border-[#e2e8f0] bg-white shadow-xl">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAddMenuOpen(false);
-                      notImplemented("Add New Job");
-                    }}
-                    className="flex w-full items-center gap-2 px-[12px] py-[8px] text-left text-[9.5px] font-semibold text-[#18233b] hover:bg-slate-50"
-                  >
-                    <Plus className="h-[12px] w-[12px]" />
-                    New Job Posting
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAddMenuOpen(false);
-                      notImplemented("Import Jobs");
-                    }}
-                    className="flex w-full items-center gap-2 px-[12px] py-[8px] text-left text-[9.5px] font-semibold text-[#18233b] hover:bg-slate-50"
-                  >
-                    <ClipboardList className="h-[12px] w-[12px]" />
-                    Import from CSV
-                  </button>
-                </div>
-              </>
-            )}
+            {/* 3. ADD NEW JOB */}
+            <button
+              type="button"
+              onClick={() => notImplemented("Add New Job")}
+              className="flex h-[30px] items-center justify-center gap-[5px] rounded-[6px] bg-[#4B1426] px-[14px] text-[8.5px] font-semibold text-white shadow-[0_5px_12px_rgba(75,20,38,0.25)] transition hover:bg-[#3a0f1d] active:scale-95"
+            >
+              <Plus className="h-[12px] w-[12px]" strokeWidth={1.7} />
+              Add New Job
+            </button>
           </div>
         </div>
 
