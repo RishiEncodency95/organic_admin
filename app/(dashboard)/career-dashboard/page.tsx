@@ -768,7 +768,7 @@ export default function CareerDashboardPage() {
                       <Link
                         key={label}
                         href={href}
-                        className="flex items-center gap-[8px] rounded-[4px] px-[6px] py-[7px] text-left text-[9.5px] font-semibold text-[#334155] transition hover:bg-slate-50"
+                        className="flex items-center gap-[8px] rounded-[4px] px-[6px] py-[7px] text-left text-[9.5px] font-semibold text-black transition hover:bg-slate-50"
                       >
                         <Icon className="h-[13px] w-[13px] text-[#218DAE]" />
                         {label}
@@ -781,7 +781,7 @@ export default function CareerDashboardPage() {
                       key={label}
                       type="button"
                       onClick={() => notImplemented(label)}
-                      className="flex items-center gap-[8px] rounded-[4px] px-[6px] py-[7px] text-left text-[9.5px] font-semibold text-[#334155] transition hover:bg-slate-50"
+                      className="flex items-center gap-[8px] rounded-[4px] px-[6px] py-[7px] text-left text-[9.5px] font-semibold text-black transition hover:bg-slate-50"
                     >
                       <Icon className="h-[13px] w-[13px] text-[#218DAE]" />
                       {label}

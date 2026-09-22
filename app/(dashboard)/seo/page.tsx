@@ -238,7 +238,7 @@ export default function SeoDashboardPage() {
           </div>
           <h1 className="text-xl font-bold tracking-tight text-text-primary">Site health command center</h1>
           <p className="mt-1 text-[11px] text-text-secondary">
-            {overview?.site.url}
+            {overview?.site?.url}
             {overview?.crawl?.completedAt ? ` · last audit ${formatDateTime(overview.crawl.completedAt)}` : ""}
             {overview?.runningCrawl ? " · an audit is running now" : ""}
           </p>
