@@ -13,7 +13,7 @@ import {
   Settings,
 } from "lucide-react";
 
-/* Custom Toggle component matching exact green pill style in reference image */
+
 function GreenToggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
     <button
@@ -222,10 +222,10 @@ export default function CreateJobPage() {
           {/* SECTION 1: BASIC INFORMATION */}
           <div className="rounded-[8px] border border-[#cbd5e1] bg-white p-3 shadow-2xs">
             <div className="mb-2.5 flex items-center gap-2">
-              <span className="grid h-5 w-5 place-items-center rounded-full bg-[#2563eb] text-[10px] font-bold text-white">1</span>
-              <div>
+              <span className="grid h-5 w-5 place-items-center rounded-[4px] bg-[#2563eb] text-[10px] font-bold text-white">1</span>
+              <div className="flex items-center gap-1.5">
                 <h2 className="text-[12px] font-bold text-[#0f172a]">Basic Information</h2>
-                <p className="text-[10px] font-medium text-[#64748b]">Enter the key details for this job position.</p>
+                <span className="text-[10px] font-medium text-[#64748b]">• Enter the key details for this job position.</span>
               </div>
             </div>
 
@@ -335,10 +335,10 @@ export default function CreateJobPage() {
           {/* SECTION 2: COMPENSATION */}
           <div className="rounded-[8px] border border-[#cbd5e1] bg-white p-3 shadow-2xs">
             <div className="mb-2 flex items-center gap-2">
-              <span className="grid h-5 w-5 place-items-center rounded-full bg-[#2563eb] text-[10px] font-bold text-white">2</span>
-              <div>
+              <span className="grid h-5 w-5 place-items-center rounded-[4px] bg-[#2563eb] text-[10px] font-bold text-white">2</span>
+              <div className="flex items-center gap-1.5">
                 <h2 className="text-[12px] font-bold text-[#0f172a]">Compensation</h2>
-                <p className="text-[10px] font-medium text-[#64748b]">Enter salary details and incentives.</p>
+                <span className="text-[10px] font-medium text-[#64748b]">• Enter salary details and incentives.</span>
               </div>
             </div>
 
@@ -385,10 +385,10 @@ export default function CreateJobPage() {
           {/* SECTION 3: JOB DESCRIPTION */}
           <div className="rounded-[8px] border border-[#cbd5e1] bg-white p-3 shadow-2xs">
             <div className="mb-2 flex items-center gap-2">
-              <span className="grid h-5 w-5 place-items-center rounded-full bg-[#2563eb] text-[10px] font-bold text-white">3</span>
-              <div>
+              <span className="grid h-5 w-5 place-items-center rounded-[4px] bg-[#2563eb] text-[10px] font-bold text-white">3</span>
+              <div className="flex items-center gap-1.5">
                 <h2 className="text-[12px] font-bold text-[#0f172a]">Job Description</h2>
-                <p className="text-[10px] font-medium text-[#64748b]">Provide a clear and detailed description of the role.</p>
+                <span className="text-[10px] font-medium text-[#64748b]">• Provide a clear and detailed description of the role.</span>
               </div>
             </div>
 
@@ -422,10 +422,10 @@ export default function CreateJobPage() {
           {/* SECTION 4: CANDIDATE REQUIREMENTS */}
           <div className="rounded-[8px] border border-[#cbd5e1] bg-white p-3 shadow-2xs">
             <div className="mb-2 flex items-center gap-2">
-              <span className="grid h-5 w-5 place-items-center rounded-full bg-[#2563eb] text-[10px] font-bold text-white">4</span>
-              <div>
+              <span className="grid h-5 w-5 place-items-center rounded-[4px] bg-[#2563eb] text-[10px] font-bold text-white">4</span>
+              <div className="flex items-center gap-1.5">
                 <h2 className="text-[12px] font-bold text-[#0f172a]">Candidate Requirements</h2>
-                <p className="text-[10px] font-medium text-[#64748b]">Define the skills, experience and industry preference for AI matching.</p>
+                <span className="text-[10px] font-medium text-[#64748b]">• Define the skills, experience and industry preference for AI matching.</span>
               </div>
             </div>
 
@@ -486,10 +486,10 @@ export default function CreateJobPage() {
           {/* CARD 1: APPLICATION & AI SCREENING */}
           <div className="rounded-[8px] border border-[#cbd5e1] bg-white p-3 shadow-2xs">
             <div className="mb-2 flex items-center gap-2">
-              <div className="grid h-5 w-5 place-items-center rounded-[4px] bg-[#2563eb] text-white">
+              <div className="grid h-5 w-5 shrink-0 place-items-center rounded-[4px] bg-[#2563eb] text-white">
                 <FileText className="h-3 w-3" />
               </div>
-              <div>
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <h3 className="text-[11.5px] font-bold text-[#0f172a]">Application & AI Screening</h3>
                 <p className="text-[9px] font-medium text-[#64748b]">Set application form and screening rules.</p>
               </div>
