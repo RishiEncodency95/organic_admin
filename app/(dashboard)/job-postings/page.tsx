@@ -72,8 +72,8 @@ const INITIAL_JOBS: JobPosting[] = [
 
 const STATUS_STYLES: Record<JobStatus, string> = {
   Active: "bg-[#e8f5e9] text-[#23714a] border border-[#a5d6a7]",
-  Draft: "bg-[#fff3e0] text-[#b45309] border border-[#ffcc80]",
-  Closed: "bg-[#fee2e2] text-[#dc2626] border border-[#fca5a5]",
+  Draft: "bg-[#fff8e1] text-[#b78103] border border-[#ffe082]",
+  Closed: "bg-[#ffebee] text-[#c62828] border border-[#ef9a9a]",
 };
 
 const TABS: { key: "all" | "active" | "draft" | "closed"; label: string }[] = [
@@ -640,8 +640,8 @@ export default function JobPostingsPage() {
                             }}
                           >
                             <option value="Active" className="bg-white font-bold text-[#23714a]">Active</option>
-                            <option value="Draft" className="bg-white font-bold text-[#b45309]">Draft</option>
-                            <option value="Closed" className="bg-white font-bold text-[#dc2626]">Closed</option>
+                            <option value="Draft" className="bg-white font-bold text-[#b78103]">Draft</option>
+                            <option value="Closed" className="bg-white font-bold text-[#c62828]">Closed</option>
                           </select>
                         </td>
                         <td className="px-[6px] py-[6px] truncate text-[7px] font-medium text-[#334155]">{job.closingDate || "—"}</td>
