@@ -196,9 +196,9 @@ export default function CreateJobPage() {
           <Image
             src="/assets/greener-tomorrow-text.png"
             alt="Together for a Healthier Greener Tomorrow"
-            width={240}
-            height={52}
-            className="h-12 w-auto object-contain"
+            width={320}
+            height={65}
+            className="h-16 w-auto object-contain"
           />
         </div>
       </div>
