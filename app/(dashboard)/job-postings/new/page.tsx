@@ -206,7 +206,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       type="button"
       onClick={() => onChange(!checked)}
       className={`relative h-[22px] w-[40px] shrink-0 rounded-full transition-colors duration-200 ${
-        checked ? "bg-[#1d4ed8]" : "bg-[#cbd5e1]"
+        checked ? "bg-[#16a34a]" : "bg-[#dc2626]"
       }`}
     >
       <span
