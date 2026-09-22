@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import Swal from "sweetalert2";
 import typography from "../pages/PagesTypography.module.css";
-
+import Link from "next/link"
 /* =========================================================
    TYPES & MOCK DATA
    No careers/jobs backend exists yet - this page is the UI
@@ -407,14 +407,13 @@ export default function JobPostingsPage() {
 
           <div className="flex items-center gap-[10px]">
             {/* ADD NEW JOB */}
-            <button
-              type="button"
-              onClick={() => notImplemented("Add New Job")}
+            <Link
+              href="/job-postings/create"
               className="flex h-[30px] items-center justify-center gap-[5px] rounded-[6px] bg-[#4B1426] px-[14px] text-[8.5px] font-semibold text-white shadow-[0_5px_12px_rgba(75,20,38,0.25)] transition hover:bg-[#3a0f1d] active:scale-95"
             >
               <Plus className="h-[12px] w-[12px]" strokeWidth={1.7} />
               Add New Job
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -437,9 +436,8 @@ export default function JobPostingsPage() {
               >
                 <div className="flex items-start gap-1.5">
                   <div
-                    className={`grid h-[24px] w-[24px] shrink-0 place-items-center rounded-full ring-1 bg-white/80 shadow-xs ${
-                      toneClass[item.tone]
-                    }`}
+                    className={`grid h-[24px] w-[24px] shrink-0 place-items-center rounded-full ring-1 bg-white/80 shadow-xs ${toneClass[item.tone]
+                      }`}
                   >
                     <Icon className="h-3 w-3" />
                   </div>
@@ -470,9 +468,8 @@ export default function JobPostingsPage() {
 
                       {item.trend && (
                         <span
-                          className={`mb-0.5 text-[6.5px] font-bold flex items-center gap-0.5 ${
-                            item.trend.startsWith("↓") ? "text-[#dc2626]" : "text-[#16a34a]"
-                          }`}
+                          className={`mb-0.5 text-[6.5px] font-bold flex items-center gap-0.5 ${item.trend.startsWith("↓") ? "text-[#dc2626]" : "text-[#16a34a]"
+                            }`}
                         >
                           {item.trend.split(" ")[0]} {item.trend.split(" ")[1]}
                         </span>
@@ -508,9 +505,8 @@ export default function JobPostingsPage() {
                   key={t.key}
                   type="button"
                   onClick={() => changeTab(t.key)}
-                  className={`relative pb-[9px] text-[10px] font-bold transition-colors ${
-                    tab === t.key ? "text-[#166b40]" : "text-[#6c7587] hover:text-[#18233b]"
-                  }`}
+                  className={`relative pb-[9px] text-[10px] font-bold transition-colors ${tab === t.key ? "text-[#166b40]" : "text-[#6c7587] hover:text-[#18233b]"
+                    }`}
                 >
                   {t.label} ({counts[t.key]})
                   {tab === t.key && (
@@ -707,11 +703,10 @@ export default function JobPostingsPage() {
                         key={pageNum}
                         type="button"
                         onClick={() => setPage(pageNum)}
-                        className={`flex h-[22px] min-w-[22px] items-center justify-center rounded-[4px] border px-1.5 text-[8px] font-bold transition ${
-                          safePage === pageNum
+                        className={`flex h-[22px] min-w-[22px] items-center justify-center rounded-[4px] border px-1.5 text-[8px] font-bold transition ${safePage === pageNum
                             ? "border-[#233D4D] bg-[#233D4D] text-white shadow-xs"
                             : "border-[#d8dce2] bg-white text-[#334155] hover:bg-slate-50"
-                        }`}
+                          }`}
                       >
                         {pageNum}
                       </button>
@@ -768,17 +763,31 @@ export default function JobPostingsPage() {
             <div className="border border-[#e7e7e3] bg-white p-[12px]">
               <h2 className="mb-[8px] text-[11px] font-bold text-[#263148]">Quick Actions</h2>
               <div className="flex flex-col gap-[2px]">
-                {QUICK_ACTIONS.map(({ label, icon: Icon }) => (
-                  <button
-                    key={label}
-                    type="button"
-                    onClick={() => notImplemented(label)}
-                    className="flex items-center gap-[8px] rounded-[4px] px-[6px] py-[7px] text-left text-[9.5px] font-semibold text-[#334155] transition hover:bg-slate-50"
-                  >
-                    <Icon className="h-[13px] w-[13px] text-[#218DAE]" />
-                    {label}
-                  </button>
-                ))}
+                {QUICK_ACTIONS.map(({ label, icon: Icon }) => {
+                  if (label === "Add New Job") {
+                    return (
+                      <Link
+                        key={label}
+                        href="/job-postings/create"
+                        className="flex items-center gap-[8px] rounded-[4px] px-[6px] py-[7px] text-left text-[9.5px] font-semibold text-[#334155] transition hover:bg-slate-50"
+                      >
+                        <Icon className="h-[13px] w-[13px] text-[#218DAE]" />
+                        {label}
+                      </Link>
+                    );
+                  }
+                  return (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => notImplemented(label)}
+                      className="flex items-center gap-[8px] rounded-[4px] px-[6px] py-[7px] text-left text-[9.5px] font-semibold text-[#334155] transition hover:bg-slate-50"
+                    >
+                      <Icon className="h-[13px] w-[13px] text-[#218DAE]" />
+                      {label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
