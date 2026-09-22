@@ -13,7 +13,9 @@ import {
   Settings,
 } from "lucide-react";
 
-/* Custom Toggle component matching exact green pill style in reference image */
+
+import Image from "next/image";
+
 function GreenToggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
     <button
@@ -117,6 +119,7 @@ function RichEditorBlock({
 }
 
 export default function CreateJobPage() {
+  const [activeTab, setActiveTab] = useState<"info" | "preview">("info");
   const [toggles, setToggles] = useState({
     acceptOnline: true,
     aiScreening: true,
@@ -176,42 +179,69 @@ export default function CreateJobPage() {
     <div className="flex h-[calc(100vh-60px)] w-full flex-col bg-[#f8fafc] text-[#0f172a] overflow-hidden font-sans">
       {/* PAGE HEADER */}
       <div className="flex shrink-0 items-center justify-between border-b border-[#e2e8f0] bg-white px-5 py-2 shadow-2xs">
-        <div>
-          <h1 className="text-[18px] font-bold text-[#0f172a] tracking-tight">Add New Job</h1>
-          <p className="text-[10.5px] font-medium text-[#64748b]">Complete all details to create and publish the job on your careers page.</p>
-        </div>
-        <div className="text-right">
-          <div className="text-[11px] font-bold italic text-[#15803d]">Together for a Healthier</div>
-          <div className="flex items-center justify-end gap-1 text-[11px] font-bold italic text-[#15803d]">
-            Greener Tomorrow
-            <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 008 20c4 0 6-2 8-4s2.5-3.5 2.5-5a2.5 2.5 0 00-2.5-2.5c-.17 0-.34.02-.5.05V8z" /></svg>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/job-postings"
+            className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#cbd5e1] bg-white text-[#334155] hover:bg-slate-100 transition-colors shadow-2xs"
+            title="Back to Job Postings"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+          <div>
+            <h1 className="text-[18px] font-bold text-[#0f172a] tracking-tight">Add New Job</h1>
+            <p className="text-[10.5px] font-medium text-[#64748b]">Complete all details to create and publish the job on your careers page.</p>
           </div>
+        </div>
+        <div className="flex items-center justify-end">
+          <Image
+            src="/assets/greener-tomorrow-text.png"
+            alt="Together for a Healthier Greener Tomorrow"
+            width={320}
+            height={65}
+            className="h-16 w-auto object-contain"
+          />
         </div>
       </div>
 
       {/* STEP TABS HEADER */}
       <div className="flex shrink-0 gap-3 border-b border-[#e2e8f0] bg-[#f1f5f9] px-5 py-1.5">
-        {/* Tab 1 Active */}
-        <div className="flex items-center gap-2 rounded-[6px] border border-[#2563eb] bg-[#2563eb] px-3 py-1.5 text-white shadow-2xs">
-          <div className="grid h-5 w-5 place-items-center rounded-[4px] bg-white/20">
-            <FileText className="h-3 w-3 text-white" />
+        {/* Tab 1 Active / Inactive */}
+        <button
+          type="button"
+          onClick={() => setActiveTab("info")}
+          className={`flex items-center gap-2 rounded-[6px] border px-3 py-1.5 transition-all text-left ${
+            activeTab === "info"
+              ? "border-[#2563eb] bg-[#2563eb] text-white shadow-2xs"
+              : "border-[#cbd5e1] bg-white text-[#475569] hover:bg-slate-50"
+          }`}
+        >
+          <div className={`grid h-5 w-5 place-items-center rounded-[4px] ${activeTab === "info" ? "bg-white/20 text-white" : "bg-[#eff6ff] text-[#2563eb]"}`}>
+            <FileText className="h-3 w-3" />
           </div>
           <div>
-            <div className="text-[11px] font-bold leading-tight">Job Information</div>
-            <div className="text-[9px] font-medium text-blue-100">Job details, description, requirements, questions</div>
+            <div className={`text-[11px] font-bold leading-tight ${activeTab === "info" ? "text-white" : "text-[#1e293b]"}`}>Job Information</div>
+            <div className={`text-[9px] font-medium ${activeTab === "info" ? "text-blue-100" : "text-[#64748b]"}`}>Job details, description, requirements, questions</div>
           </div>
-        </div>
+        </button>
 
-        {/* Tab 2 Inactive */}
-        <div className="flex items-center gap-2 rounded-[6px] border border-[#cbd5e1] bg-white px-3 py-1.5 text-[#475569] hover:bg-slate-50">
-          <div className="grid h-5 w-5 place-items-center rounded-[4px] bg-[#eff6ff] text-[#2563eb]">
+        {/* Tab 2 Active / Inactive */}
+        <button
+          type="button"
+          onClick={() => setActiveTab("preview")}
+          className={`flex items-center gap-2 rounded-[6px] border px-3 py-1.5 transition-all text-left ${
+            activeTab === "preview"
+              ? "border-[#2563eb] bg-[#2563eb] text-white shadow-2xs"
+              : "border-[#cbd5e1] bg-white text-[#475569] hover:bg-slate-50"
+          }`}
+        >
+          <div className={`grid h-5 w-5 place-items-center rounded-[4px] ${activeTab === "preview" ? "bg-white/20 text-white" : "bg-[#eff6ff] text-[#2563eb]"}`}>
             <Eye className="h-3 w-3" />
           </div>
           <div>
-            <div className="text-[11px] font-bold leading-tight text-[#1e293b]">Preview & Publish</div>
-            <div className="text-[9px] font-medium text-[#64748b]">Review and publish on website</div>
+            <div className={`text-[11px] font-bold leading-tight ${activeTab === "preview" ? "text-white" : "text-[#1e293b]"}`}>Preview & Publish</div>
+            <div className={`text-[9px] font-medium ${activeTab === "preview" ? "text-blue-100" : "text-[#64748b]"}`}>Review and publish on website</div>
           </div>
-        </div>
+        </button>
       </div>
 
       {/* MAIN BODY (TWO COLUMNS LAYOUT) */}
@@ -222,10 +252,10 @@ export default function CreateJobPage() {
           {/* SECTION 1: BASIC INFORMATION */}
           <div className="rounded-[8px] border border-[#cbd5e1] bg-white p-3 shadow-2xs">
             <div className="mb-2.5 flex items-center gap-2">
-              <span className="grid h-5 w-5 place-items-center rounded-full bg-[#2563eb] text-[10px] font-bold text-white">1</span>
-              <div>
+              <span className="grid h-5 w-5 place-items-center rounded-[4px] bg-[#2563eb] text-[10px] font-bold text-white">1</span>
+              <div className="flex items-center gap-1.5">
                 <h2 className="text-[12px] font-bold text-[#0f172a]">Basic Information</h2>
-                <p className="text-[10px] font-medium text-[#64748b]">Enter the key details for this job position.</p>
+                <span className="text-[10px] font-medium text-[#64748b]">• Enter the key details for this job position.</span>
               </div>
             </div>
 
@@ -252,51 +282,49 @@ export default function CreateJobPage() {
 
               <div>
                 <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Department <span className="text-red-500">*</span></label>
-                <input type="text" defaultValue="Domestic Exhibition Sales" className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2.5 text-[10.5px] font-semibold text-[#1e293b] outline-none focus:border-[#2563eb]" />
+                <input type="text" defaultValue="Sales & Business Development" className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2.5 text-[10.5px] font-semibold text-[#1e293b] outline-none focus:border-[#2563eb]" />
               </div>
 
               <div>
-                <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Reporting To <span className="text-red-500">*</span></label>
-                <input type="text" defaultValue="Business Head – Exhibitions" className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2.5 text-[10.5px] font-semibold text-[#1e293b] outline-none focus:border-[#2563eb]" />
+                <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Job Code / Reference ID</label>
+                <input type="text" defaultValue="BOE-SLS-2026-004" className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2.5 text-[10.5px] font-semibold text-[#1e293b] outline-none focus:border-[#2563eb]" />
               </div>
 
-              <div className="grid grid-cols-4 gap-2 col-span-2">
-                <div>
-                  <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Job Code</label>
-                  <input type="text" defaultValue="BOE-SALES-001" className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-[10.5px] font-semibold text-[#1e293b] outline-none" />
-                </div>
-                <div>
-                  <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">No. of Positions <span className="text-red-500">*</span></label>
-                  <input type="number" defaultValue={2} className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-[10.5px] font-semibold text-[#1e293b] outline-none" />
-                </div>
-                <div>
-                  <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Employment Type <span className="text-red-500">*</span></label>
-                  <div className="relative">
-                    <select defaultValue="Full Time" className="h-[30px] w-full appearance-none rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-[10.5px] font-semibold text-[#1e293b] outline-none">
-                      <option>Full Time</option>
-                      <option>Part Time</option>
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-2 top-2 h-3.5 w-3.5 text-slate-400" />
-                  </div>
-                </div>
-                <div>
-                  <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Work Mode <span className="text-red-500">*</span></label>
-                  <div className="relative">
-                    <select defaultValue="On-site" className="h-[30px] w-full appearance-none rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-[10.5px] font-semibold text-[#1e293b] outline-none">
-                      <option>On-site</option>
-                      <option>Remote</option>
-                      <option>Hybrid</option>
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-2 top-2 h-3.5 w-3.5 text-slate-400" />
-                  </div>
+              <div>
+                <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Employment Type <span className="text-red-500">*</span></label>
+                <div className="relative">
+                  <select defaultValue="Full Time" className="h-[30px] w-full appearance-none rounded-[5px] border border-[#cbd5e1] bg-white px-2.5 text-[10.5px] font-semibold text-[#1e293b] outline-none focus:border-[#2563eb]">
+                    <option>Full Time</option>
+                    <option>Part Time</option>
+                    <option>Contract</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
                 </div>
               </div>
 
-              <div className="grid grid-cols-4 gap-2 col-span-2">
+              <div>
+                <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Workplace Type <span className="text-red-500">*</span></label>
+                <div className="relative">
+                  <select defaultValue="On-site (Office)" className="h-[30px] w-full appearance-none rounded-[5px] border border-[#cbd5e1] bg-white px-2.5 text-[10.5px] font-semibold text-[#1e293b] outline-none focus:border-[#2563eb]">
+                    <option>On-site (Office)</option>
+                    <option>Remote</option>
+                    <option>Hybrid</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                </div>
+              </div>
+
+              <div className="col-span-2 grid grid-cols-4 gap-3">
                 <div>
-                  <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Location <span className="text-red-500">*</span></label>
+                  <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Total Openings <span className="text-red-500">*</span></label>
+                  <input type="number" defaultValue={2} className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-[10.5px] font-semibold text-[#1e293b]" />
+                </div>
+
+                <div>
+                  <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Job Location <span className="text-red-500">*</span></label>
                   <div className="relative">
-                    <select defaultValue="Delhi NCR" className="h-[30px] w-full appearance-none rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-[10.5px] font-semibold text-[#1e293b] outline-none">
+                    <select defaultValue="Ghaziabad / Delhi NCR" className="h-[30px] w-full appearance-none rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-[10.5px] font-semibold text-[#1e293b] outline-none">
+                      <option>Ghaziabad / Delhi NCR</option>
                       <option>Delhi NCR</option>
                       <option>Mumbai</option>
                     </select>
@@ -323,11 +351,6 @@ export default function CreateJobPage() {
                     <ChevronDown className="pointer-events-none absolute right-2 top-2 h-3.5 w-3.5 text-slate-400" />
                   </div>
                 </div>
-
-                <div>
-                  <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Preferred Education</label>
-                  <input type="text" defaultValue="MBA/PGDM – Sales & Marketing" className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-[10.5px] font-semibold text-[#1e293b] outline-none" />
-                </div>
               </div>
             </div>
           </div>
@@ -335,10 +358,10 @@ export default function CreateJobPage() {
           {/* SECTION 2: COMPENSATION */}
           <div className="rounded-[8px] border border-[#cbd5e1] bg-white p-3 shadow-2xs">
             <div className="mb-2 flex items-center gap-2">
-              <span className="grid h-5 w-5 place-items-center rounded-full bg-[#2563eb] text-[10px] font-bold text-white">2</span>
-              <div>
+              <span className="grid h-5 w-5 place-items-center rounded-[4px] bg-[#2563eb] text-[10px] font-bold text-white">2</span>
+              <div className="flex items-center gap-1.5">
                 <h2 className="text-[12px] font-bold text-[#0f172a]">Compensation</h2>
-                <p className="text-[10px] font-medium text-[#64748b]">Enter salary details and incentives.</p>
+                <span className="text-[10px] font-medium text-[#64748b]">• Enter salary details and incentives.</span>
               </div>
             </div>
 
@@ -385,10 +408,10 @@ export default function CreateJobPage() {
           {/* SECTION 3: JOB DESCRIPTION */}
           <div className="rounded-[8px] border border-[#cbd5e1] bg-white p-3 shadow-2xs">
             <div className="mb-2 flex items-center gap-2">
-              <span className="grid h-5 w-5 place-items-center rounded-full bg-[#2563eb] text-[10px] font-bold text-white">3</span>
-              <div>
+              <span className="grid h-5 w-5 place-items-center rounded-[4px] bg-[#2563eb] text-[10px] font-bold text-white">3</span>
+              <div className="flex items-center gap-1.5">
                 <h2 className="text-[12px] font-bold text-[#0f172a]">Job Description</h2>
-                <p className="text-[10px] font-medium text-[#64748b]">Provide a clear and detailed description of the role.</p>
+                <span className="text-[10px] font-medium text-[#64748b]">• Provide a clear and detailed description of the role.</span>
               </div>
             </div>
 
@@ -422,18 +445,18 @@ export default function CreateJobPage() {
           {/* SECTION 4: CANDIDATE REQUIREMENTS */}
           <div className="rounded-[8px] border border-[#cbd5e1] bg-white p-3 shadow-2xs">
             <div className="mb-2 flex items-center gap-2">
-              <span className="grid h-5 w-5 place-items-center rounded-full bg-[#2563eb] text-[10px] font-bold text-white">4</span>
-              <div>
+              <span className="grid h-5 w-5 place-items-center rounded-[4px] bg-[#2563eb] text-[10px] font-bold text-white">4</span>
+              <div className="flex items-center gap-1.5">
                 <h2 className="text-[12px] font-bold text-[#0f172a]">Candidate Requirements</h2>
-                <p className="text-[10px] font-medium text-[#64748b]">Define the skills, experience and industry preference for AI matching.</p>
+                <span className="text-[10px] font-medium text-[#64748b]">• Define the skills, experience and industry preference for AI matching.</span>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               {/* Left Box: Required & Preferred Skills */}
               <div className="flex flex-col gap-2.5">
                 <div>
-                  <label className="mb-1 block text-[10.5px] font-bold text-[#1e293b]">Required Skills <span className="text-red-500">*</span></label>
+                  <label className="mb-1 block text-[10.5px] font-bold text-[#1e293b]">Required Key Skills <span className="text-red-500">*</span></label>
                   <div className="flex flex-wrap items-center gap-1 rounded-[5px] border border-[#cbd5e1] bg-white p-1.5 min-h-[36px]">
                     {reqSkills.map((sk, idx) => (
                       <SkillPill key={sk} label={sk} onRemove={() => setReqSkills(reqSkills.filter((_, i) => i !== idx))} />
@@ -443,7 +466,7 @@ export default function CreateJobPage() {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-[10.5px] font-bold text-[#1e293b]">Preferred Skills</label>
+                  <label className="mb-1 block text-[10.5px] font-bold text-[#1e293b]">Preferred Skills (Optional)</label>
                   <div className="flex flex-wrap items-center gap-1 rounded-[5px] border border-[#cbd5e1] bg-white p-1.5 min-h-[36px]">
                     {prefSkills.map((sk, idx) => (
                       <SkillPill key={sk} label={sk} onRemove={() => setPrefSkills(prefSkills.filter((_, i) => i !== idx))} />
@@ -485,13 +508,13 @@ export default function CreateJobPage() {
 
           {/* CARD 1: APPLICATION & AI SCREENING */}
           <div className="rounded-[8px] border border-[#cbd5e1] bg-white p-3 shadow-2xs">
-            <div className="mb-2 flex items-center gap-2">
-              <div className="grid h-5 w-5 place-items-center rounded-[4px] bg-[#2563eb] text-white">
+            <div className="mb-2 flex items-start gap-2">
+              <div className="grid h-5 w-5 shrink-0 place-items-center rounded-[4px] bg-[#2563eb] text-white mt-0.5">
                 <FileText className="h-3 w-3" />
               </div>
-              <div>
-                <h3 className="text-[11.5px] font-bold text-[#0f172a]">Application & AI Screening</h3>
-                <p className="text-[9px] font-medium text-[#64748b]">Set application form and screening rules.</p>
+              <div className="flex flex-col justify-center">
+                <h3 className="text-[11.5px] font-bold leading-snug text-[#0f172a]">Application & AI Screening</h3>
+                <p className="text-[9px] font-medium leading-tight text-[#64748b]">Set application form and screening rules.</p>
               </div>
             </div>
 
