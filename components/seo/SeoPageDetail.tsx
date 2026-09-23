@@ -6,6 +6,7 @@ import {
   ExternalLink,
   Image as ImageIcon,
   Link2,
+  RefreshCw,
   Sparkles,
   X,
 } from "lucide-react";
@@ -79,7 +80,12 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
     try {
       const response = await seoAuditApi.page(pageId);
       setDetail(response);
-      setAiState(response.recommendation ? { status: "ok", message: null, recommendation: response.recommendation } : null);
+      if (response.recommendation) {
+        setAiState({ status: "ok", message: null, recommendation: response.recommendation });
+      } else {
+        const aiResp = await seoAuditApi.generatePageRecommendation(pageId, false);
+        setAiState(aiResp);
+      }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not load this page");
     } finally {
@@ -146,7 +152,7 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
                 href={page.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-2 inline-flex max-w-full items-center gap-1.5 truncate text-[11px] font-medium text-[#a06422] hover:text-[#7f4e18]"
+                className="mt-2 inline-flex max-w-full items-center gap-1.5 truncate text-[11px] font-medium text-[#16a34a] hover:text-[#15803d]"
               >
                 {page.url}
                 <ExternalLink className="h-3 w-3" />
@@ -166,8 +172,8 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
               onClick={() => setSection(item)}
               className={`whitespace-nowrap rounded-lg px-3 py-2 text-[11px] font-semibold transition-all ${
                 section === item
-                  ? "bg-[#293681] text-white shadow-[0_4px_10px_rgba(41,54,129,0.18)]"
-                  : "bg-[#f5f6f8] text-[#616b7e] hover:bg-[#eceef4] hover:text-[#293681]"
+                  ? "bg-[#23471d] text-white shadow-[0_4px_10px_rgba(35,71,29,0.18)]"
+                  : "bg-[#f5f6f8] text-[#616b7e] hover:bg-[#eceef4] hover:text-[#23471d]"
               }`}
             >
               {item}
@@ -227,11 +233,11 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
                     title="Score breakdown"
                     note="Each open issue subtracts a fixed penalty by severity. Categories with no data are not scored."
                   >
-                    {page.scoreBreakdown.length === 0 ? (
+                    {(page.scoreBreakdown ?? []).length === 0 ? (
                       <p className="text-[12px] text-text-secondary">No penalties — this page has no open issues.</p>
                     ) : (
                       <div className="flex flex-wrap gap-2">
-                        {page.scoreBreakdown.map((entry) => (
+                        {(page.scoreBreakdown ?? []).map((entry: { category: string; score: number | null }) => (
                           <div
                             key={entry.category}
                             className="flex items-center gap-2 rounded-lg border border-surface-border px-2.5 py-1.5"
@@ -249,9 +255,9 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
               {section === "Search" && (
                 <SectionCard
                   title="Google Search Console"
-                  note={detail.search.metric}
+                  note={detail?.search?.metric}
                 >
-                  {!detail.search.available || !detail.search.totals ? (
+                  {!detail?.search?.available || !detail?.search?.totals ? (
                     <p className="text-[12px] text-text-secondary">No Search Console data yet.</p>
                   ) : (
                     <>
@@ -275,7 +281,7 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
                       <p className="mb-1.5 text-[11px] text-text-muted">
                         {detail.search.rangeStart} to {detail.search.rangeEnd}
                       </p>
-                      {detail.search.topQueries.length === 0 ? (
+                      {(detail.search.topQueries ?? []).length === 0 ? (
                         <p className="text-[12px] text-text-secondary">No queries recorded for this URL.</p>
                       ) : (
                         <table className="w-full text-[12px]">
@@ -288,7 +294,7 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
                             </tr>
                           </thead>
                           <tbody>
-                            {detail.search.topQueries.map((query) => (
+                            {detail.search.topQueries.map((query: { query: string; clicks: number; impressions: number; position: number }) => (
                               <tr key={query.query} className="border-b border-surface-border/50">
                                 <td className="py-1 pr-2 text-text-primary">{query.query}</td>
                                 <td className="py-1 text-right tabular-nums">{query.clicks}</td>
@@ -349,7 +355,7 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
 
               {section === "Keywords" && (
                 <SectionCard title="Keyword usage" note="Counts are measured in crawled page content. Search Console queries and configured targets are never generated by AI.">
-                  {!page.keywordAnalysis.available ? (
+                  {!page?.keywordAnalysis?.available ? (
                     <div className="rounded-lg border border-[#e1e5ec] bg-[#f8fafc] px-3 py-2.5 text-[12px] leading-5 text-text-secondary">
                       <p className="font-semibold text-text-primary">Page audited — no target keyword data available.</p>
                       <p>This section needs a configured keyword for this URL or a matching Search Console query. Technical, content, link and metadata checks still ran normally.</p>
@@ -360,7 +366,7 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
                         <thead><tr className="border-b border-surface-border text-text-secondary">
                           <th className="py-2 text-left">Keyword</th><th>Source</th><th>Title</th><th>Meta</th><th>H1</th><th>H2/H3</th><th>Opening</th><th className="text-right">Mentions</th><th className="text-right">Density</th>
                         </tr></thead>
-                        <tbody>{page.keywordAnalysis.targets.map((target) => (
+                        <tbody>{page.keywordAnalysis.targets.map((target: any) => (
                           <tr key={`${target.source}-${target.keyword}`} className="border-b border-surface-border/60 last:border-0">
                             <td className="py-2 font-medium text-text-primary">{target.keyword}</td>
                             <td className="px-2 text-center capitalize">{target.source.replaceAll("_", " ")}</td>
@@ -377,7 +383,7 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
 
               {section === "Social SEO" && (
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <SectionCard title="Open Graph" note={`Status: ${page.socialStatus.openGraph.replaceAll("_", " ")}`}>
+                  <SectionCard title="Open Graph" note={`Status: ${(page?.socialStatus?.openGraph ?? "valid").replaceAll("_", " ")}`}>
                     <Row label="og:title" value={page.ogTitle ?? "Not available"} />
                     <Row label="og:description" value={page.ogDescription ?? "Not available"} />
                     <Row label="og:image" value={page.ogImage ?? "Not available"} mono />
@@ -419,7 +425,7 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
                   note="Hierarchy is checked for missing/multiple H1, skipped levels, empty and duplicated headings."
                 >
                   <div className="mb-2 flex flex-wrap gap-2">
-                    {Object.entries(page.headingCounts).map(([tag, count]) => {
+                    {Object.entries(page?.headingCounts ?? {}).map(([tag, count]) => {
                       const level = Number(tag.replace(/\D/g, ""));
                       const isSelected = selectedHeadingLevel === level;
                       return (
@@ -433,29 +439,29 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
                         }}
                         className={`rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors ${
                           isSelected
-                            ? "border-[#b77a1f] bg-[#fff2d6] text-[#8a570d] shadow-sm"
-                            : "border-transparent bg-surface-sunken text-text-secondary hover:border-[#e4c68f] hover:bg-[#fff8ea]"
+                            ? "border-[#16a34a] bg-[#dcfce7] text-[#166534] shadow-sm"
+                            : "border-transparent bg-surface-sunken text-text-secondary hover:border-[#bbf7d0] hover:bg-[#f0fdf4]"
                         }`}
                       >
                         {tag.toUpperCase()}: {count}
                       </button>
                     )})}
-                    <StatusChip value={page.h1Status} />
+                    <StatusChip value={page?.h1Status} />
                   </div>
 
-                  {page.headingIssues.length > 0 && (
-                    <ul className="mb-2 list-inside list-disc text-[12px] text-status-pending-text">
-                      {page.headingIssues.map((issue, index) => (
-                        <li key={`${issue}-${index}`}>{issue}</li>
-                      ))}
-                    </ul>
-                  )}
+                    {(page?.headingIssues ?? []).length > 0 && (
+                      <ul className="mb-2 list-inside list-disc text-[12px] text-status-pending-text">
+                        {(page?.headingIssues ?? []).map((issue: string, index: number) => (
+                          <li key={`${issue}-${index}`}>{issue}</li>
+                        ))}
+                      </ul>
+                    )}
 
                   <div className="max-h-[320px] overflow-y-auto rounded border border-surface-border">
-                    {page.headingSequence.length === 0 ? (
+                    {(page?.headingSequence ?? []).length === 0 ? (
                       <p className="p-2 text-[12px] text-text-secondary">No headings found.</p>
                     ) : (
-                      page.headingSequence.map((heading, index) => {
+                      (page?.headingSequence ?? []).map((heading: { level: number; text: string }, index: number) => {
                         const isExactSelection = selectedHeadingIndex === index;
                         const isLevelSelection = selectedHeadingIndex === null && selectedHeadingLevel === heading.level;
                         const isHighlighted = isExactSelection || isLevelSelection;
@@ -478,12 +484,12 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
                           }}
                           className={`flex cursor-pointer gap-2 border-b px-2 py-1.5 text-[12px] outline-none transition-colors last:border-0 ${
                             isHighlighted
-                              ? "border-[#efd8a9] bg-[#fff4dc] shadow-[inset_3px_0_0_#b77a1f]"
+                              ? "border-[#bbf7d0] bg-[#f0fdf4] shadow-[inset_3px_0_0_#16a34a]"
                               : "border-surface-border/50 hover:bg-[#f7f9fc] focus-visible:bg-[#f7f9fc]"
                           }`}
                           style={{ paddingLeft: `${8 + (heading.level - 1) * 14}px` }}
                         >
-                          <span className={`shrink-0 rounded px-1 font-mono text-[10px] font-semibold ${isHighlighted ? "bg-[#b77a1f] text-white" : "text-text-muted"}`}>H{heading.level}</span>
+                          <span className={`shrink-0 rounded px-1 font-mono text-[10px] font-semibold ${isHighlighted ? "bg-[#16a34a] text-white" : "text-text-muted"}`}>H{heading.level}</span>
                           <span className={heading.text ? "text-text-primary" : "italic text-status-danger-text"}>
                             {heading.text || "(empty heading)"}
                           </span>
@@ -498,22 +504,22 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
                 <>
                   <div className="grid gap-3 lg:grid-cols-[minmax(260px,0.7fr)_minmax(0,1.3fr)]">
                     <SectionCard title="Summary">
-                      <Row label="Internal links" value={page.internalLinkCount} />
-                      <Row label="External links" value={page.externalLinkCount} />
-                      <Row label="Nofollow" value={page.nofollowLinkCount} />
-                      <Row label="Broken outgoing" value={detail.links.brokenOutgoing} />
-                      <Row label="Redirecting outgoing" value={detail.links.redirectingOutgoing} />
-                      <Row label="Mixed content" value={page.mixedContentLinkCount} />
+                      <Row label="Internal links" value={page?.internalLinkCount} />
+                      <Row label="External links" value={page?.externalLinkCount} />
+                      <Row label="Nofollow" value={page?.nofollowLinkCount} />
+                      <Row label="Broken outgoing" value={detail?.links?.brokenOutgoing} />
+                      <Row label="Redirecting outgoing" value={detail?.links?.redirectingOutgoing} />
+                      <Row label="Mixed content" value={page?.mixedContentLinkCount} />
                     </SectionCard>
 
-                    <SectionCard title={`Incoming internal links (${detail.links.incoming.length})`}>
+                    <SectionCard title={`Incoming internal links (${(detail?.links?.incoming ?? []).length})`}>
                       <div className="max-h-[220px] overflow-y-auto">
-                        {detail.links.incoming.length === 0 ? (
+                        {(detail?.links?.incoming ?? []).length === 0 ? (
                           <p className="text-[12px] text-status-danger-text">
                             Orphan page — nothing on the site links here.
                           </p>
                         ) : (
-                          detail.links.incoming.map((link, index) => (
+                          (detail?.links?.incoming ?? []).map((link: { source: string; anchorText: string }, index: number) => (
                             <div key={`${link.source}-${index}`} className="border-b border-surface-border/50 py-1 text-[11px] last:border-0">
                               <span className="block truncate font-mono text-text-primary">{link.source}</span>
                               {link.anchorText && (
@@ -528,16 +534,16 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
 
                   <SectionCard title="Outgoing link explorer">
                     {(() => {
-                      const outgoing = detail.links.outgoing ?? [];
+                      const outgoing = detail?.links?.outgoing ?? [];
                       const counts: Record<LinkFilter, number> = {
                         all: outgoing.length,
-                        internal: outgoing.filter((link) => link.isInternal).length,
-                        external: outgoing.filter((link) => !link.isInternal).length,
-                        nofollow: outgoing.filter((link) => link.isNofollow).length,
-                        broken: outgoing.filter((link) => link.isBroken).length,
-                        redirecting: outgoing.filter((link) => link.redirectHops > 0).length,
-                        mixed: outgoing.filter((link) =>
-                          page.url.startsWith("https://") && link.normalizedTarget.startsWith("http://")
+                        internal: outgoing.filter((link: any) => link.isInternal).length,
+                        external: outgoing.filter((link: any) => !link.isInternal).length,
+                        nofollow: outgoing.filter((link: any) => link.isNofollow).length,
+                        broken: outgoing.filter((link: any) => link.isBroken).length,
+                        redirecting: outgoing.filter((link: any) => link.redirectHops > 0).length,
+                        mixed: outgoing.filter((link: any) =>
+                          (page?.url ?? "").startsWith("https://") && (link.normalizedTarget ?? "").startsWith("http://")
                         ).length,
                       };
                       const labels: Record<LinkFilter, string> = {
@@ -549,13 +555,13 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
                         redirecting: "Redirecting",
                         mixed: "Mixed content",
                       };
-                      const visibleLinks = outgoing.filter((link) => {
+                      const visibleLinks = outgoing.filter((link: any) => {
                         if (linkFilter === "internal") return link.isInternal;
                         if (linkFilter === "external") return !link.isInternal;
                         if (linkFilter === "nofollow") return link.isNofollow;
                         if (linkFilter === "broken") return link.isBroken;
                         if (linkFilter === "redirecting") return link.redirectHops > 0;
-                        if (linkFilter === "mixed") return page.url.startsWith("https://") && link.normalizedTarget.startsWith("http://");
+                        if (linkFilter === "mixed") return (page?.url ?? "").startsWith("https://") && (link.normalizedTarget ?? "").startsWith("http://");
                         return true;
                       });
                       return <>
@@ -567,7 +573,7 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
                           onClick={() => setLinkFilter(filter)}
                           className={`rounded-md border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
                             linkFilter === filter
-                              ? "border-[#b77a1f] bg-[#fff2d6] text-[#8a570d]"
+                              ? "border-[#16a34a] bg-[#dcfce7] text-[#166534]"
                               : "border-[#e1e5ec] bg-white text-[#667085] hover:bg-[#f7f9fc]"
                           }`}
                         >
@@ -590,7 +596,7 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
                           </tr>
                         </thead>
                         <tbody>
-                          {visibleLinks.map((link, index) => (
+                          {visibleLinks.map((link: any, index: number) => (
                             <tr key={`${link.normalizedTarget}-${index}`} className="border-b border-surface-border/40">
                               <td className="max-w-[320px] truncate py-1 pr-2 font-mono" title={link.target}>
                                 {link.target}
@@ -612,10 +618,10 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
                     </>})()}
                   </SectionCard>
 
-                  {detail.redirectChain && (
+                  {detail?.redirectChain && (
                     <SectionCard title="Redirect chain">
                       <div className="flex flex-col gap-1 text-[11px]">
-                        {detail.redirectChain.hops.map((hop, index) => (
+                        {(detail?.redirectChain?.hops ?? []).map((hop: { url: string; status: number | null }, index: number) => (
                           <div key={`${hop.url}-${index}`} className="flex items-center gap-2">
                             <Link2 className="h-3 w-3 text-text-muted" />
                             <span className="truncate font-mono">{hop.url}</span>
@@ -623,9 +629,9 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
                           </div>
                         ))}
                       </div>
-                      {detail.redirectChain.issues.length > 0 && (
+                      {(detail?.redirectChain?.issues ?? []).length > 0 && (
                         <p className="mt-2 text-[11px] text-status-pending-text">
-                          {detail.redirectChain.issues.join("; ")}
+                          {(detail?.redirectChain?.issues ?? []).join("; ")}
                         </p>
                       )}
                     </SectionCard>
@@ -634,24 +640,24 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
               )}
 
               {section === "Images" && (
-                <SectionCard title={`Images (${page.imageCount})`}>
+                <SectionCard title={`Images (${page?.imageCount ?? 0})`}>
                   <div className="mb-2 flex flex-wrap gap-2 text-[11px]">
-                    <span className="rounded bg-surface-sunken px-2 py-0.5">Total: {page.imageCount}</span>
+                    <span className="rounded bg-surface-sunken px-2 py-0.5">Total: {page?.imageCount ?? 0}</span>
                     <span
-                      className={`rounded px-2 py-0.5 ${page.imagesMissingAlt > 0 ? "bg-status-danger-bg text-status-danger-text" : "bg-surface-sunken"}`}
+                      className={`rounded px-2 py-0.5 ${(page?.imagesMissingAlt ?? 0) > 0 ? "bg-status-danger-bg text-status-danger-text" : "bg-surface-sunken"}`}
                     >
-                      Missing alt: {page.imagesMissingAlt}
+                      Missing alt: {page?.imagesMissingAlt ?? 0}
                     </span>
-                    <span className="rounded bg-surface-sunken px-2 py-0.5">Decorative: {page.imagesEmptyAlt}</span>
-                    <span className="rounded bg-surface-sunken px-2 py-0.5">Lazy: {page.imagesLazyLoaded}</span>
+                    <span className="rounded bg-surface-sunken px-2 py-0.5">Decorative: {page?.imagesEmptyAlt ?? 0}</span>
+                    <span className="rounded bg-surface-sunken px-2 py-0.5">Lazy: {page?.imagesLazyLoaded ?? 0}</span>
                     <span
-                      className={`rounded px-2 py-0.5 ${page.imagesWithoutDimensions > 0 ? "bg-status-pending-bg text-status-pending-text" : "bg-surface-sunken"}`}
+                      className={`rounded px-2 py-0.5 ${(page?.imagesWithoutDimensions ?? 0) > 0 ? "bg-status-pending-bg text-status-pending-text" : "bg-surface-sunken"}`}
                     >
-                      No dimensions: {page.imagesWithoutDimensions}
+                      No dimensions: {page?.imagesWithoutDimensions ?? 0}
                     </span>
                   </div>
                   <div className="max-h-[360px] overflow-y-auto">
-                    {page.images.map((image, index) => (
+                    {(page?.images ?? []).map((image: any, index: number) => (
                       <div
                         key={`${image.src}-${index}`}
                         className="flex items-start gap-2 border-b border-surface-border/50 py-1.5 text-[11px] last:border-0"
@@ -679,23 +685,23 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
 
               {section === "Schema" && (
                 <SectionCard title="Structured data">
-                  {page.schemas.length === 0 ? (
+                  {(page?.schemas ?? []).length === 0 ? (
                     <p className="text-[12px] text-text-secondary">No JSON-LD structured data found on this page.</p>
                   ) : (
-                    page.schemas.map((block, index) => (
+                    (page?.schemas ?? []).map((block: any, index: number) => (
                       <div key={index} className="mb-2 rounded border border-surface-border p-2 last:mb-0">
                         <div className="mb-1 flex items-center gap-2">
                           <span className="text-[12px] font-medium text-text-primary">
-                            {block.types.join(", ") || "Unknown type"}
+                            {(block.types ?? []).join(", ") || "Unknown type"}
                           </span>
                           <StatusChip value={block.valid ? "valid" : "invalid"} />
                         </div>
-                        {block.errors.map((issue) => (
+                        {(block.errors ?? []).map((issue: string) => (
                           <p key={issue} className="text-[11px] text-status-danger-text">
                             {issue}
                           </p>
                         ))}
-                        {block.warnings.map((issue) => (
+                        {(block.warnings ?? []).map((issue: string) => (
                           <p key={issue} className="text-[11px] text-text-muted">
                             {issue}
                           </p>
@@ -703,10 +709,10 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
                       </div>
                     ))
                   )}
-                  {page.breadcrumbIssues.length > 0 && (
+                  {(page?.breadcrumbIssues ?? []).length > 0 && (
                     <div className="mt-2">
                       <span className="text-[12px] font-medium text-text-primary">Breadcrumb problems</span>
-                      {page.breadcrumbIssues.map((issue) => (
+                      {(page?.breadcrumbIssues ?? []).map((issue: string) => (
                         <p key={issue} className="text-[11px] text-status-danger-text">
                           {issue}
                         </p>
@@ -718,7 +724,7 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
 
               {section === "Performance" && (
                 <>
-                  {detail.performance.audits.length === 0 ? (
+                  {(detail?.performance?.audits ?? []).length === 0 ? (
                     <SectionCard title="Performance">
                       <p className="text-[12px] text-text-secondary">
                         No PageSpeed Insights audit has been run for this URL. Audits run for a configurable set of
@@ -726,7 +732,7 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
                       </p>
                     </SectionCard>
                   ) : (
-                    detail.performance.audits.map((audit) => (
+                    (detail?.performance?.audits ?? []).map((audit: any) => (
                       <SectionCard key={audit.id} title={`Lighthouse — ${audit.strategy}`}>
                         {audit.status === "error" ? (
                           <p className="text-[12px] text-status-danger-text">{audit.error}</p>
@@ -791,7 +797,7 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
                             {audit.opportunities.length > 0 && (
                               <div className="mt-3">
                                 <h5 className="mb-1 text-[12px] font-semibold text-text-primary">Opportunities</h5>
-                                {audit.opportunities.map((opportunity) => (
+                                {audit.opportunities.map((opportunity: any) => (
                                   <div key={opportunity.id} className="flex justify-between border-b border-surface-border/50 py-1 text-[11px] last:border-0">
                                     <span className="text-text-primary">{opportunity.title}</span>
                                     <span className="tabular-nums text-text-muted">{formatMs(opportunity.savingsMs)}</span>
@@ -804,7 +810,7 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
                               <h5 className="mb-1 text-[12px] font-semibold text-text-primary">Render Blocking Resources</h5>
                               {(audit.renderBlockingResources ?? []).length === 0 ? (
                                 <p className="text-[11px] text-text-secondary">No render-blocking resources reported by PageSpeed.</p>
-                              ) : (audit.renderBlockingResources ?? []).map((resource, index) => (
+                              ) : (audit.renderBlockingResources ?? []).map((resource: any, index: number) => (
                                 <div key={`${resource.url}-${index}`} className="grid grid-cols-[minmax(0,1fr)_80px_90px] gap-2 border-b border-surface-border/50 py-1.5 text-[11px] last:border-0">
                                   <span className="truncate font-mono" title={resource.url ?? "Not available"}>{resource.url ?? "Not available"}</span>
                                   <span className="capitalize text-text-secondary">{resource.type}</span>
@@ -828,13 +834,13 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
               {section === "Browser health" && (
                 <div className="flex flex-col gap-3">
                   {!page.renderedWithJs && (
-                    <div className="rounded-xl border border-[#ead8b7] bg-[#fff9ed] px-4 py-3 text-[11px] leading-5 text-[#79551a]">
+                    <div className="rounded-xl border border-[#bbf7d0] bg-[#f0fdf4] px-4 py-3 text-[11px] leading-5 text-[#166534]">
                       Browser telemetry was not measured for this page. Turn on <strong>JS rendering</strong> on the SEO dashboard and run a new audit to capture it.
                     </div>
                   )}
                   {(["jsExceptions", "consoleErrors", "consoleWarnings", "failedRequests"] as const).map((key) => (
-                    <SectionCard key={key} title={`${key.replace(/([A-Z])/g, " $1")}${page.renderedWithJs ? ` (${page.browserHealth[key]?.length ?? 0})` : " — not measured"}`} note={page.renderedWithJs ? "Captured during the JavaScript-rendered crawl." : "A zero count is not shown because this page did not receive a browser-rendered audit."}>
-                      {(page.browserHealth[key]?.length ?? 0) === 0 ? <p className="text-[11px] text-text-secondary">{page.renderedWithJs ? "No problems measured." : "Not available"}</p> : page.browserHealth[key].map((problem, index) => (
+                    <SectionCard key={key} title={`${key.replace(/([A-Z])/g, " $1")}${page?.renderedWithJs ? ` (${page?.browserHealth?.[key]?.length ?? 0})` : " — not measured"}`} note={page?.renderedWithJs ? "Captured during the JavaScript-rendered crawl." : "A zero count is not shown because this page did not receive a browser-rendered audit."}>
+                      {(page?.browserHealth?.[key]?.length ?? 0) === 0 ? <p className="text-[11px] text-text-secondary">{page?.renderedWithJs ? "No problems measured." : "Not available"}</p> : (page?.browserHealth?.[key] ?? []).map((problem: any, index: number) => (
                         <div key={`${problem.type}-${problem.message}-${index}`} className="border-b border-surface-border/60 py-2 text-[11px] last:border-0">
                           <p className="font-medium text-text-primary">{problem.message}</p>
                           {problem.resourceUrl && <p className="mt-0.5 truncate font-mono text-text-muted" title={problem.resourceUrl}>{problem.resourceUrl}</p>}
@@ -848,20 +854,20 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
 
               {section === "Infrastructure" && (
                 <SectionCard title="CDN & cache detection" note="This is evidence-based infrastructure detection; absence of indicators is not treated as a severe SEO issue.">
-                  <Row label="Status" value={page.cdn.status.replaceAll("_", " ")} />
-                  <Row label="Provider" value={page.cdn.provider ?? "Not available"} />
-                  <Row label="Cache-Control" value={page.cdn.cacheControl ?? "Not available"} mono />
-                  <Row label="Server" value={page.cdn.server ?? "Not available"} />
-                  <Row label="Evidence" value={page.cdn.evidence.length ? page.cdn.evidence.join(" · ") : "No CDN indicators found"} />
+                  <Row label="Status" value={(page?.cdn?.status ?? "detected").replaceAll("_", " ")} />
+                  <Row label="Provider" value={page?.cdn?.provider ?? "Not available"} />
+                  <Row label="Cache-Control" value={page?.cdn?.cacheControl ?? "Not available"} mono />
+                  <Row label="Server" value={page?.cdn?.server ?? "Not available"} />
+                  <Row label="Evidence" value={(page?.cdn?.evidence ?? []).length ? page.cdn.evidence.join(" · ") : "No CDN indicators found"} />
                 </SectionCard>
               )}
 
               {section === "Issues" && (
-                <SectionCard title={`Detected issues (${detail.issues.length})`} note="Every issue below was detected by the rules engine from crawled facts.">
-                  {detail.issues.length === 0 ? (
+                <SectionCard title={`Detected issues (${(detail?.issues ?? []).length})`} note="Every issue below was detected by the rules engine from crawled facts.">
+                  {(detail?.issues ?? []).length === 0 ? (
                     <p className="text-[12px] text-text-secondary">No open issues on this page.</p>
                   ) : (
-                    detail.issues.map((issue) => (
+                    (detail?.issues ?? []).map((issue: any) => (
                       <div key={issue.id} className="border-b border-surface-border/60 py-2 last:border-0">
                         <div className="mb-1 flex flex-wrap items-center gap-2">
                           <SeverityBadge severity={issue.severity} />
@@ -882,63 +888,97 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
 
               {section === "AI fixes" && (
                 <SectionCard
-                  title="AI recommendations"
-                  note="Gemini receives only the measured facts above. It explains and drafts fixes — it never supplies metrics."
+                  title="AI Recommendations & Fixes"
+                  note="Gemini AI receives analyzed facts to draft automated titles, descriptions, and structural code fixes."
                 >
-                  <div className="mb-3 flex gap-2">
-                    <Button size="sm" onClick={() => void generateAi(false)} loading={aiLoading}>
-                      <Sparkles className="h-3.5 w-3.5" />
-                      Generate
-                    </Button>
-                    {aiState?.recommendation && (
-                      <Button variant="secondary" size="sm" onClick={() => void generateAi(true)} loading={aiLoading}>
-                        Regenerate
-                      </Button>
+                  <div className="mb-4 flex items-center gap-3">
+                    <button
+                      type="button"
+                      disabled={aiLoading}
+                      onClick={() => void generateAi(true)}
+                      className="inline-flex items-center gap-2 rounded-lg bg-[#23471d] px-4 py-2 text-[12px] font-bold text-white shadow-md transition-all hover:bg-[#16a34a] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {aiLoading ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 animate-spin text-white" />
+                          <span>Generating AI Fixes with Gemini...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4 text-emerald-300" />
+                          <span>{aiState?.recommendation ? "Regenerate AI Fixes" : "Generate AI Fixes"}</span>
+                        </>
+                      )}
+                    </button>
+                    {aiLoading && (
+                      <span className="animate-pulse text-[11px] font-semibold text-[#16a34a]">
+                        Analyzing page structure & prompt...
+                      </span>
                     )}
                   </div>
 
                   {aiState?.message && (
-                    <p className="mb-2 rounded border border-surface-border bg-surface-sunken px-2.5 py-2 text-[12px] text-text-secondary">
+                    <div className="mb-3 rounded-lg border border-[#fef3c7] bg-[#fffbeb] p-3 text-[12px] text-[#92400e]">
                       {aiState.message}
-                    </p>
+                    </div>
+                  )}
+
+                  {!aiLoading && !aiState?.recommendation && (
+                    <div className="rounded-xl border border-dashed border-[#cbd5e1] bg-[#f8fafc] p-6 text-center">
+                      <Sparkles className="mx-auto mb-2 h-8 w-8 text-[#16a34a]" />
+                      <h5 className="text-[13px] font-bold text-[#1e293b]">No AI Fixes Generated Yet</h5>
+                      <p className="mt-1 text-[11px] text-[#64748b]">
+                        Click the green <strong>Generate AI Fixes</strong> button above to get smart recommendations powered by Gemini 2.5 Flash.
+                      </p>
+                    </div>
                   )}
 
                   {aiState?.recommendation?.summary && (
-                    <p className="mb-3 text-[12px] text-text-primary">{aiState.recommendation.summary}</p>
+                    <div className="mb-4 rounded-xl border border-[#bbf7d0] bg-[#f0fdf4] p-3.5 text-[12px] leading-relaxed text-[#166534] shadow-xs">
+                      <p className="font-bold text-[#23471d]">🤖 Gemini AI Strategy Summary:</p>
+                      <p className="mt-1 font-medium">{aiState.recommendation.summary}</p>
+                    </div>
                   )}
 
-                  {aiState?.recommendation?.items.map((item, index) => (
-                    <div key={index} className="mb-2 rounded border border-surface-border p-2.5 last:mb-0">
-                      <div className="mb-1 flex flex-wrap items-center gap-2">
-                        <span className="text-[12px] font-semibold text-text-primary">{item.title}</span>
-                        <span className="rounded bg-surface-sunken px-1.5 py-0.5 text-[10px] uppercase text-text-secondary">
-                          {item.priority}
-                        </span>
-                        {item.ruleId && (
-                          <span className="rounded bg-surface-sunken px-1.5 py-0.5 font-mono text-[10px] text-text-muted">
-                            {item.ruleId}
+                  {(aiState?.recommendation?.items ?? []).map((item: any, index: number) => (
+                    <div key={index} className="mb-3 rounded-xl border border-[#e2e8f0] bg-white p-4 shadow-sm transition-all hover:border-[#16a34a]">
+                      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 border-b border-[#f1f5f9] pb-2">
+                        <span className="text-[13px] font-bold text-[#0f172a]">{item.title}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase ${
+                            item.priority === "high" ? "bg-[#fee2e2] text-[#991b1b]" : "bg-[#fef3c7] text-[#92400e]"
+                          }`}>
+                            {item.priority} Priority
                           </span>
-                        )}
+                          {item.ruleId && (
+                            <span className="rounded bg-[#f1f5f9] px-2 py-0.5 font-mono text-[10px] text-[#475569]">
+                              {item.ruleId}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <p className="mb-1 text-[11px] text-text-secondary">{item.whyItMatters}</p>
-                      <p className="mb-1 text-[11px] text-text-primary">{item.recommendedFix}</p>
+                      <p className="mb-2 text-[11.5px] leading-normal text-[#475569]"><strong className="text-[#334155]">Why it matters:</strong> {item.whyItMatters}</p>
+                      <p className="mb-2 text-[11.5px] leading-normal text-[#1e293b]"><strong className="text-[#166534]">Recommended Fix:</strong> {item.recommendedFix}</p>
+                      
                       {item.implementation && (
-                        <pre className="mb-1 overflow-x-auto whitespace-pre-wrap rounded bg-surface-sunken p-2 text-[10px] text-text-secondary">
-                          {item.implementation}
-                        </pre>
+                        <div className="my-2 overflow-hidden rounded-lg border border-[#cbd5e1] bg-[#0f172a]">
+                          <div className="bg-[#1e293b] px-3 py-1 text-[10px] font-bold text-slate-300">Suggested Code Implementation</div>
+                          <pre className="overflow-x-auto p-3 text-[11px] font-mono text-[#38bdf8]">
+                            {item.implementation}
+                          </pre>
+                        </div>
                       )}
-                      {item.suggestedTitle && <Row label="Suggested title" value={item.suggestedTitle} />}
-                      {item.suggestedDescription && (
-                        <Row label="Suggested description" value={item.suggestedDescription} />
+
+                      {item.suggestedTitle && <Row label="Suggested Title" value={<span className="font-semibold text-[#166534]">{item.suggestedTitle}</span>} />}
+                      {item.suggestedDescription && <Row label="Suggested Description" value={<span className="text-[#334155]">{item.suggestedDescription}</span>} />}
+                      {(item.headingSuggestions ?? []).length > 0 && (
+                        <Row label="Heading Ideas" value={item.headingSuggestions.join(" · ")} />
                       )}
-                      {item.headingSuggestions.length > 0 && (
-                        <Row label="Headings" value={item.headingSuggestions.join(" · ")} />
-                      )}
-                      {item.internalLinkSuggestions.length > 0 && (
+                      {(item.internalLinkSuggestions ?? []).length > 0 && (
                         <Row
-                          label="Internal links"
+                          label="Internal Links"
                           value={item.internalLinkSuggestions
-                            .map((link) => `${link.anchorText} → ${link.fromOrTo}`)
+                            .map((link: any) => `${link.anchorText} → ${link.fromOrTo}`)
                             .join(" · ")}
                         />
                       )}
@@ -946,16 +986,17 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
                   ))}
 
                   {aiState?.recommendation && (
-                    <p className="mt-2 text-[10px] text-text-muted">
-                      {aiState.recommendation.model} · generated {formatDateTime(aiState.recommendation.generatedAt)}
-                    </p>
+                    <div className="mt-3 flex items-center justify-between text-[10.5px] text-[#94a3b8]">
+                      <span>Model: {aiState.recommendation.model || "gemini-2.5-flash"}</span>
+                      <span>Generated: {formatDateTime(aiState.recommendation.generatedAt)}</span>
+                    </div>
                   )}
                 </SectionCard>
               )}
 
               {section === "History" && (
                 <SectionCard title="Audit history" note="One row per completed audit that included this URL.">
-                  {detail.history.length === 0 ? (
+                  {(detail?.history ?? []).length === 0 ? (
                     <p className="text-[12px] text-text-secondary">No historical snapshots yet.</p>
                   ) : (
                     <table className="w-full text-[11px]">
@@ -970,12 +1011,12 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
                         </tr>
                       </thead>
                       <tbody>
-                        {detail.history.map((entry) => (
+                        {(detail?.history ?? []).map((entry: any) => (
                           <tr key={entry.capturedAt} className="border-b border-surface-border/50">
                             <td className="py-1">{formatDateTime(entry.capturedAt)}</td>
                             <td className="py-1 text-right tabular-nums">{entry.score ?? "—"}</td>
-                            <td className="py-1 text-right tabular-nums">{entry.issueCounts.total}</td>
-                            <td className="py-1 text-right tabular-nums">{entry.wordCount}</td>
+                            <td className="py-1 text-right tabular-nums">{entry.issueCounts?.total ?? 0}</td>
+                            <td className="py-1 text-right tabular-nums">{entry.wordCount ?? 0}</td>
                             <td className="py-1 text-right tabular-nums">{entry.clicks ?? "—"}</td>
                             <td className="py-1 text-right tabular-nums">
                               {entry.position ? entry.position.toFixed(1) : "—"}

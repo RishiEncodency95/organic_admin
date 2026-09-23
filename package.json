@@ -1,11 +1,11 @@
 {
-  "name": "moksha-admin",
+  "name": "bharat-organic-admin",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack -p 3001",
+    "dev": "next dev --webpack",
     "build": "next build",
-    "start": "next start -p 3001",
+    "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {

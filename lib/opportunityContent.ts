@@ -14,7 +14,7 @@ export const defaultSponsorshipSections: OpportunitySectionContent[] = [
     title: "SPONSORSHIP OPPORTUNITIES",
     subtitle: "Partner. Promote. Make an Impact.",
     description: "Align your brand with India's Premier Organic Expo and connect with the right audience, build credibility and drive real impact.",
-    image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
+    image: "https://bharatorganicexpo.com/assets/images/og-banner.png",
     items: [
       { title: "8,000+", label: "BUSINESS VISITORS", icon: "Users" },
       { title: "200+", label: "EXHIBITORS", icon: "Store" },
@@ -254,7 +254,7 @@ export const defaultPartnershipPageSections: OpportunitySectionContent[] = [
     subtitle: "Partner with Bharat Organic Expo 2027 and be a part of India's leading platform for organic business, innovation, wellness and sustainability.",
     date: "19 – 21 February 2027",
     location: "Bharat Mandapam, New Delhi",
-    image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
+    image: "https://bharatorganicexpo.com/assets/images/og-banner.png",
     items: [
       { title: "8,000+", label: "VISITORS / DELEGATES", icon: "Users" },
       { title: "200+", label: "EXHIBITORS", icon: "Store" },
@@ -391,7 +391,7 @@ export const defaultSubPartnershipSections: OpportunitySectionContent[] = [
     description: "Access direct networking, exclusive brand positioning, and year-round lead generation.",
     date: "19 - 21 February 2027",
     location: "Bharat Mandapam, New Delhi",
-    image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
+    image: "https://bharatorganicexpo.com/assets/images/og-banner.png",
   },
   {
     key: "sub-partnership-benefits",

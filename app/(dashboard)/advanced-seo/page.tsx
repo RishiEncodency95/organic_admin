@@ -431,7 +431,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               type="button"
               onClick={handleSaveScripts}
               disabled={isLoading}
-              className="flex h-[30px] items-center justify-center gap-[5px] rounded-[6px] bg-[#4B1426] px-[14px] text-[8.5px] font-semibold text-white shadow-[0_5px_12px_rgba(75,20,38,0.25)] transition hover:bg-[#3a0f1d] disabled:opacity-60 cursor-pointer"
+              className="flex h-[30px] items-center justify-center gap-[5px] rounded-[6px] bg-[#16a34a] px-[14px] text-[8.5px] font-semibold text-white shadow-xs transition hover:bg-[#15803d] disabled:opacity-60 cursor-pointer"
             >
               {isLoading ? (
                 <div className="h-[12px] w-[12px] border-2 border-white border-t-transparent rounded-full animate-spin" />
