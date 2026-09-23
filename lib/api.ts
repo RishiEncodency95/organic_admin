@@ -730,7 +730,8 @@ async function request<T>(path: string, options?: ApiRequestOptions, isRetry = f
     path.includes("/staff") ||
     path.includes("/roles") ||
     path.includes("/auth") ||
-    path.includes("/seo-settings");
+    path.includes("/seo-settings") ||
+    path.includes("/careers");
 
   try {
     res = await fetch(`${getApiBaseUrl()}${path}`, {
