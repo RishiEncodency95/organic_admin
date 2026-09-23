@@ -1,4 +1,4 @@
-import { api } from "./api";
+import { api, getApiBaseUrl, getAccessToken, ApiRequestError } from "./api";
 
 export type BackendJobStatus = "DRAFT" | "OPEN" | "CLOSED";
 export type AdminJobStatus = "Draft" | "Active" | "Closed";
@@ -72,10 +72,46 @@ export interface JobPosting {
   updatedAt: string;
 }
 
+/** Downloads the job's formatted Word description document (generated server-side).
+ * Uses a raw fetch — rather than the shared `api` JSON client — because the response
+ * body is a binary file, not a {success,message,data} envelope, and a failure here
+ * should surface the real server error rather than silently falling back to anything. */
+async function downloadJobDocx(id: string, fallbackFilename: string): Promise<void> {
+  const token = getAccessToken();
+  const res = await fetch(`${getApiBaseUrl()}/careers/admin/jobs/${id}/export`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+
+  if (!res.ok) {
+    let message = `Failed to generate document (status ${res.status})`;
+    try {
+      const body = await res.json();
+      if (body?.message) message = body.message;
+    } catch {
+      // Response body wasn't JSON — keep the default message.
+    }
+    throw new ApiRequestError(res.status, message);
+  }
+
+  const disposition = res.headers.get("Content-Disposition") || "";
+  const filename = disposition.match(/filename="([^"]+)"/)?.[1] || fallbackFilename;
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 export const jobsApi = {
   list: () => api.get<JobPosting[]>("/careers/admin/jobs"),
   getById: (id: string) => api.get<JobPosting>(`/careers/admin/jobs/${id}`),
   create: (data: Partial<JobPosting>) => api.post<JobPosting>("/careers/admin/jobs", data),
   update: (id: string, data: Partial<JobPosting>) => api.patch<JobPosting>(`/careers/admin/jobs/${id}`, data),
   remove: (id: string) => api.delete<{ message: string }>(`/careers/admin/jobs/${id}`),
+  downloadDocx: (id: string, jobTitle: string) => downloadJobDocx(id, `${jobTitle || "job-description"}.docx`),
 };

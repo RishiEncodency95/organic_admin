@@ -90,6 +90,11 @@ function syncTokensFromStorage(): void {
   }
 }
 
+export function getAccessToken(): string | null {
+  syncTokensFromStorage();
+  return accessToken;
+}
+
 export function setTokens(tokens: { accessToken: string | null; refreshToken: string | null }): void {
   accessToken = tokens.accessToken;
   refreshToken = tokens.refreshToken;

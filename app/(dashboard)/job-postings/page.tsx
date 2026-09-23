@@ -319,6 +319,15 @@ export default function JobPostingsPage() {
     }
   };
 
+  const handleDownloadDocx = async (job: JobPosting) => {
+    try {
+      await jobsApi.downloadDocx(job.id, job.title);
+      Toast.fire({ icon: "success", iconColor: "#34d399", title: "Job description downloaded" });
+    } catch (err) {
+      Toast.fire({ icon: "error", iconColor: "#f87171", title: err instanceof Error ? err.message : "Failed to generate document" });
+    }
+  };
+
   const counts = useMemo(
     () => ({
       all: jobs.length,
@@ -701,8 +710,8 @@ export default function JobPostingsPage() {
                             {/* View (Orange Glassmorphism) */}
                             <button
                               type="button"
-                              title="View Job"
-                              onClick={() => notImplemented(`View "${job.title}"`)}
+                              title="Download Job Description (.docx)"
+                              onClick={() => handleDownloadDocx(job)}
                               className="flex h-[25px] w-[25px] items-center justify-center rounded-[6px] bg-orange-500/10 text-orange-600 backdrop-blur-md border border-orange-400/30 shadow-[0_2px_6px_rgba(249,115,22,0.12)] transition-all hover:bg-orange-500/20 hover:border-orange-400/50 hover:shadow-[0_3px_10px_rgba(249,115,22,0.25)] hover:scale-105 active:scale-95"
                             >
                               <Eye className="h-[12px] w-[12px] text-orange-600" />
