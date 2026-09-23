@@ -205,7 +205,8 @@ const COLUMNS: ColumnDefinition[] = [
   {
     key: "lcp",
     label: "LCP",
-    defaultVisible: false,
+    defaultVisible: true,
+    sortKey: "lcp",
     align: "right",
     render: (page) => (
       <span className="tabular-nums" title={page.performance.isFieldData ? "Field data (CrUX)" : "Lab data (Lighthouse)"}>
@@ -216,7 +217,8 @@ const COLUMNS: ColumnDefinition[] = [
   {
     key: "cls",
     label: "CLS",
-    defaultVisible: false,
+    defaultVisible: true,
+    sortKey: "cls",
     align: "right",
     render: (page) => (
       <span className="tabular-nums">{page.performance.cls == null ? "—" : page.performance.cls.toFixed(3)}</span>
@@ -290,7 +292,7 @@ const CATEGORY_OPTIONS = [
 ];
 
 const selectClass =
-  "h-8 rounded-lg border border-surface-border bg-surface-card px-2.5 text-[11px] font-medium text-text-secondary outline-none transition focus:border-accent/50 focus:ring-2 focus:ring-accent/10";
+  "h-[30px] rounded-[6px] border border-[#e5e7eb] bg-white px-2.5 text-[10.5px] font-semibold text-[#374151] outline-none transition hover:border-[#16a34a] focus:border-[#23471d] shadow-xs";
 
 interface Props {
   onSelectPage: (pageId: string) => void;
@@ -318,9 +320,9 @@ export default function SeoPagesTable({ onSelectPage, onAuditStarted, selectedPa
     setError(null);
     try {
       const response = await seoAuditApi.pages(filters);
-      setRows(response.pages);
-      setMessage(response.message);
-      if (response.meta) setMeta(response.meta);
+      setRows(response?.pages ?? []);
+      setMessage(response?.message ?? null);
+      if (response?.meta) setMeta(response.meta);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not load SEO pages");
       setRows([]);
@@ -335,7 +337,7 @@ export default function SeoPagesTable({ onSelectPage, onAuditStarted, selectedPa
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setFilters((current) => ({ ...current, search: searchInput || undefined, page: 1 }));
+      setFilters((current: SeoPageFilters) => ({ ...current, search: searchInput || undefined, page: 1 }));
     }, 350);
     return () => clearTimeout(timer);
   }, [searchInput]);
@@ -346,11 +348,11 @@ export default function SeoPagesTable({ onSelectPage, onAuditStarted, selectedPa
   );
 
   const updateFilter = (patch: Partial<SeoPageFilters>) => {
-    setFilters((current) => ({ ...current, ...patch, page: patch.page ?? 1 }));
+    setFilters((current: SeoPageFilters) => ({ ...current, ...patch, page: patch.page ?? 1 }));
   };
 
   const toggleSort = (sortKey: string) => {
-    setFilters((current) => ({
+    setFilters((current: SeoPageFilters) => ({
       ...current,
       sortBy: sortKey,
       sortDir: current.sortBy === sortKey && current.sortDir === "desc" ? "asc" : "desc",
@@ -381,22 +383,22 @@ export default function SeoPagesTable({ onSelectPage, onAuditStarted, selectedPa
 
   return (
     <div className="flex flex-col gap-2.5">
-      <div className="flex flex-wrap items-end justify-between gap-2 border-b border-surface-border px-1 pb-2.5">
+      <div className="flex flex-wrap items-end justify-between gap-2 border-b border-[#e5e7eb] px-1 pb-2.5">
         <div>
-          <h2 className="text-[14px] font-bold text-text-primary">Page inventory</h2>
-          <p className="mt-0.5 text-[10px] text-text-muted">Click any row to open its complete audit evidence and history.</p>
+          <h2 className="text-[14px] font-bold text-[#23471d]">Page Inventory</h2>
+          <p className="mt-0.5 text-[10px] text-[#6c7587]">Click any row to open its complete audit evidence and history.</p>
         </div>
-        <div className="rounded-full bg-accent-soft px-2.5 py-1 text-[10px] font-semibold text-accent">{meta.total} URLs</div>
+        <div className="rounded-full bg-[#dcfce7] px-2.5 py-0.5 text-[10px] font-bold text-[#166534] border border-[#bbf7d0]">{meta.total} URLs</div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-surface-border bg-surface-sunken p-2">
+      <div className="flex flex-wrap items-center gap-1.5 rounded-[8px] border border-[#e5e7eb] bg-[#f9fafb] p-2">
         <div className="relative min-w-[240px] flex-[1.5]">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#9ca3af]" />
           <input
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="Search URL or title"
-            className="h-8 w-full rounded-lg border border-surface-border bg-surface-card pl-8 pr-3 text-[11px] font-medium text-text-primary shadow-sm outline-none transition placeholder:text-text-muted focus:border-accent/50 focus:ring-2 focus:ring-accent/10"
+            placeholder="Search URL or title..."
+            className="h-[30px] w-full rounded-[6px] border border-[#e5e7eb] bg-white pl-8 pr-3 text-[10.5px] font-semibold text-[#111827] shadow-xs outline-none transition placeholder:text-[#9ca3af] focus:border-[#16a34a]"
           />
         </div>
 
@@ -522,32 +524,37 @@ export default function SeoPagesTable({ onSelectPage, onAuditStarted, selectedPa
           Refresh
         </Button>
 
-        <Button size="sm" onClick={() => void startAudit()} loading={auditRunning}>
+        <button
+          type="button"
+          onClick={() => void startAudit()}
+          disabled={auditRunning}
+          className="inline-flex h-[30px] items-center gap-1.5 rounded-[6px] bg-[#16a34a] px-3.5 text-[11px] font-semibold text-white shadow-xs transition hover:bg-[#15803d] disabled:opacity-50 cursor-pointer"
+        >
           <Play className="h-3.5 w-3.5" />
-          Run audit
-        </Button>
+          {auditRunning ? "Auditing..." : "Run audit"}
+        </button>
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 rounded-lg border border-status-danger-text/30 bg-status-danger-bg px-3 py-2 text-[12px] text-status-danger-text">
+        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[11px] font-medium text-red-700">
           <AlertTriangle className="h-3.5 w-3.5" />
           {error}
         </div>
       )}
 
-      <div className="min-h-[360px] max-h-[calc(100vh-345px)] overflow-auto rounded-xl border border-surface-border bg-surface-card shadow-sm">
+      <div className="min-h-[360px] max-h-[calc(100vh-345px)] overflow-auto rounded-[8px] border border-[#e5e7eb] bg-white shadow-xs">
         <table className="w-full min-w-[980px] border-collapse text-[11px]">
           <thead>
-            <tr className="sticky top-0 z-20 border-b border-surface-border bg-surface-sunken">
-              <th className="sticky left-0 z-30 bg-surface-sunken px-3 py-2 text-left text-[10px] font-bold uppercase tracking-[0.06em] text-text-secondary">
-                <button type="button" onClick={() => toggleSort("url")} className="hover:text-text-primary">
+            <tr className="sticky top-0 z-20 border-b border-[#23471d] bg-[#23471d] text-white">
+              <th className="sticky left-0 z-30 bg-[#23471d] px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.06em] text-white">
+                <button type="button" onClick={() => toggleSort("url")} className="hover:text-emerald-200">
                   Page
                 </button>
               </th>
               {activeColumns.map((column) => (
                 <th
                   key={column.key}
-                  className={`whitespace-nowrap px-2.5 py-2 text-[10px] font-bold uppercase tracking-[0.055em] text-text-secondary ${
+                  className={`whitespace-nowrap px-2.5 py-2.5 text-[10px] font-bold uppercase tracking-[0.055em] text-white ${
                     column.align === "right" ? "text-right" : "text-left"
                   }`}
                 >
@@ -555,7 +562,7 @@ export default function SeoPagesTable({ onSelectPage, onAuditStarted, selectedPa
                     <button
                       type="button"
                       onClick={() => toggleSort(column.sortKey!)}
-                      className={`hover:text-text-primary ${filters.sortBy === column.sortKey ? "text-text-primary underline" : ""}`}
+                      className={`hover:text-emerald-200 ${filters.sortBy === column.sortKey ? "text-emerald-300 underline font-extrabold" : ""}`}
                     >
                       {column.label}
                       {filters.sortBy === column.sortKey ? (filters.sortDir === "asc" ? " ↑" : " ↓") : ""}
@@ -568,7 +575,7 @@ export default function SeoPagesTable({ onSelectPage, onAuditStarted, selectedPa
             </tr>
           </thead>
           <tbody>
-            {loading && rows.length === 0 && (
+            {loading && (rows ?? []).length === 0 && (
               <tr>
                 <td colSpan={activeColumns.length + 1} className="px-3 py-10 text-center">
                   <Spinner />
@@ -576,7 +583,7 @@ export default function SeoPagesTable({ onSelectPage, onAuditStarted, selectedPa
               </tr>
             )}
 
-            {!loading && rows.length === 0 && (
+            {!loading && (rows ?? []).length === 0 && (
               <tr>
                 <td colSpan={activeColumns.length + 1} className="px-3 py-10 text-center text-text-secondary">
                   {message ?? "No pages match these filters."}
@@ -592,7 +599,7 @@ export default function SeoPagesTable({ onSelectPage, onAuditStarted, selectedPa
               </tr>
             )}
 
-            {rows.map((row) => (
+            {(rows ?? []).map((row) => (
               <tr
                 key={row.id}
                 onClick={() => onSelectPage(row.id)}

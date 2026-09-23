@@ -592,7 +592,108 @@ function getMockDataForPath(path: string, method: string = "GET"): unknown {
     return [];
   }
 
-  if (p.includes("/seo") && !p.includes("/seo-settings")) {
+  if (p.includes("/seo/pages")) {
+    return {
+      pages: [
+        {
+          id: "home",
+          url: "https://bharatorganicexpo.com",
+          path: "/",
+          title: "Bharat Organic Expo 2027",
+          titleLength: 24,
+          titleStatus: "ok",
+          metaDescription: "Premier International Exhibition & Conference for Organic Products.",
+          metaDescriptionLength: 68,
+          descriptionStatus: "ok",
+          httpStatus: 200,
+          indexable: true,
+          indexabilityReason: null,
+          canonical: "https://bharatorganicexpo.com",
+          canonicalStatus: "self",
+          score: 94,
+          issueCounts: { critical: 0, warning: 1, notice: 1, total: 2 },
+          issueCategories: ["On-page", "Content"],
+          h1: ["Bharat Organic Expo 2027"],
+          h1Status: "ok",
+          hierarchyStatus: "ok",
+          headingCounts: { h1: 1, h2: 4, h3: 6 },
+          wordCount: 850,
+          inLinks: 12,
+          outLinks: 15,
+          brokenLinks: 0,
+          depth: 1,
+          isOrphan: false,
+          inSitemap: true,
+          schemaTypes: ["Organization", "WebSite", "BreadcrumbList"],
+          schemaStatus: "valid_with_breadcrumb",
+          imageCount: 8,
+          imagesMissingAlt: 0,
+          responseTimeMs: 240,
+          keywordStatus: "ok",
+          openGraphStatus: "valid",
+          twitterStatus: "valid",
+          consoleErrorCount: 0,
+          failedRequestCount: 0,
+          renderBlockingCount: 0,
+          cdnStatus: "detected",
+          performance: { score: 92, lcpMs: 1450, cls: 0.02, isFieldData: true, fetchedAt: new Date().toISOString() },
+          search: { clicks: 120, impressions: 3400, ctr: 3.5, position: 4.2, updatedAt: new Date().toISOString() },
+          analytics: { views: 450, users: 380, engagementRate: 68.5 },
+          lastCrawledAt: new Date().toISOString()
+        },
+        {
+          id: "why-visit",
+          url: "https://bharatorganicexpo.com/why-visit",
+          path: "/why-visit",
+          title: "Why Visit - Bharat Organic Expo 2027",
+          titleLength: 35,
+          titleStatus: "ok",
+          metaDescription: "Explore thousands of certified organic products.",
+          metaDescriptionLength: 48,
+          descriptionStatus: "ok",
+          httpStatus: 200,
+          indexable: true,
+          indexabilityReason: null,
+          canonical: "https://bharatorganicexpo.com/why-visit",
+          canonicalStatus: "self",
+          score: 92,
+          issueCounts: { critical: 0, warning: 1, notice: 0, total: 1 },
+          issueCategories: ["Content"],
+          h1: ["Why Visit Bharat Organic Expo"],
+          h1Status: "ok",
+          hierarchyStatus: "ok",
+          headingCounts: { h1: 1, h2: 3, h3: 2 },
+          wordCount: 620,
+          inLinks: 8,
+          outLinks: 10,
+          brokenLinks: 0,
+          depth: 1,
+          isOrphan: false,
+          inSitemap: true,
+          schemaTypes: ["Organization", "BreadcrumbList"],
+          schemaStatus: "valid_with_breadcrumb",
+          imageCount: 5,
+          imagesMissingAlt: 0,
+          responseTimeMs: 190,
+          keywordStatus: "ok",
+          openGraphStatus: "valid",
+          twitterStatus: "valid",
+          consoleErrorCount: 0,
+          failedRequestCount: 0,
+          renderBlockingCount: 0,
+          cdnStatus: "detected",
+          performance: { score: 90, lcpMs: 1550, cls: 0.01, isFieldData: true, fetchedAt: new Date().toISOString() },
+          search: { clicks: 45, impressions: 1200, ctr: 3.75, position: 4.2, updatedAt: new Date().toISOString() },
+          analytics: { views: 220, users: 190, engagementRate: 62.0 },
+          lastCrawledAt: new Date().toISOString()
+        }
+      ],
+      message: null,
+      meta: { page: 1, limit: 25, total: 2, totalPages: 1 }
+    };
+  }
+
+  if (p.includes("/seo") && !p.includes("/seo-settings") && !p.includes("/seo/pages") && !p.includes("/seo/overview") && !p.includes("/seo/broken-links") && !p.includes("/seo/score")) {
     return {
       score: 98,
       status: "good",
@@ -616,7 +717,7 @@ async function request<T>(path: string, options?: ApiRequestOptions, isRetry = f
   };
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
   if (typeof window !== "undefined" && (path.startsWith("/system-services/admin") || path === "/system-services/access/status")) {
-    const grant = window.sessionStorage.getItem("moksha_system_services_grant");
+    const grant = window.sessionStorage.getItem("bharat_organic_system_services_grant");
     if (grant) headers["X-System-Services-Grant"] = grant;
   }
 

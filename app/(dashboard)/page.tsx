@@ -1287,13 +1287,15 @@ export default function DashboardPage() {
             id: item.id || item.name,
             name: item.name.split(" ")[0],
             action: actionText,
-            date: new Date(item.createdAt).toLocaleDateString("en-IN", {
-              weekday: "long",
-              month: "short",
-              day: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
+            date: isNaN(new Date(item.createdAt).getTime())
+              ? item.createdAt
+              : new Date(item.createdAt).toLocaleDateString("en-IN", {
+                  weekday: "short",
+                  month: "short",
+                  day: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
           };
         }
       )
