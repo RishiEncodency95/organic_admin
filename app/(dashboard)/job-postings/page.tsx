@@ -18,7 +18,6 @@ import {
   FilePenLine,
   FormInput,
   Headphones,
-  MousePointerClick,
   Pencil,
   Plus,
   Search,
@@ -33,17 +32,18 @@ import {
 import Swal from "sweetalert2";
 import typography from "../pages/PagesTypography.module.css";
 import Link from "next/link"
+import { jobsApi, toAdminStatus, toBackendStatus, type AdminJobStatus, type JobPosting as BackendJobPosting } from "@/lib/careersApi";
 /* =========================================================
-   TYPES & MOCK DATA
-   No careers/jobs backend exists yet - this page is the UI
-   shell wired to static data shaped like the real thing, so
-   swapping in a jobsApi later only touches the data source.
+   TYPES
+   Backed by the real careers API (lib/careersApi.ts). The
+   table row shape below adapts the backend job document to
+   what this page's UI already expects.
 ========================================================= */
 
-type JobStatus = "Active" | "Draft" | "Closed";
+type JobStatus = AdminJobStatus;
 
 interface JobPosting {
-  id: number;
+  id: string;
   title: string;
   department: string;
   location: string;
@@ -55,20 +55,27 @@ interface JobPosting {
   closingDate: string;
 }
 
-const INITIAL_JOBS: JobPosting[] = [
-  { id: 1, title: "Sales Manager – Domestic Exhibition Sales & Sponsorships", department: "Sales", location: "Delhi NCR", type: "Full Time", openings: 2, views: 1824, applications: 138, status: "Active", closingDate: "30 Nov 2026" },
-  { id: 2, title: "Marketing Executive", department: "Marketing", location: "Delhi NCR", type: "Full Time", openings: 3, views: 1256, applications: 96, status: "Active", closingDate: "15 Oct 2026" },
-  { id: 3, title: "Graphic Designer", department: "Design", location: "Delhi NCR", type: "Full Time", openings: 1, views: 980, applications: 74, status: "Active", closingDate: "10 Oct 2026" },
-  { id: 4, title: "Content Writer", department: "Marketing", location: "Remote", type: "Part Time", openings: 2, views: 856, applications: 68, status: "Draft", closingDate: "" },
-  { id: 5, title: "Event Coordinator", department: "Operations", location: "Delhi NCR", type: "Full Time", openings: 2, views: 1120, applications: 92, status: "Active", closingDate: "20 Oct 2026" },
-  { id: 6, title: "Business Development Manager", department: "Sales", location: "Mumbai", type: "Full Time", openings: 2, views: 620, applications: 46, status: "Draft", closingDate: "" },
-  { id: 7, title: "Social Media Executive", department: "Marketing", location: "Delhi NCR", type: "Full Time", openings: 1, views: 540, applications: 38, status: "Active", closingDate: "18 Oct 2026" },
-  { id: 8, title: "HR Executive", department: "HR", location: "Delhi NCR", type: "Full Time", openings: 1, views: 410, applications: 26, status: "Closed", closingDate: "05 Sep 2026" },
-  { id: 9, title: "Accounts Executive", department: "Finance", location: "Delhi NCR", type: "Full Time", openings: 1, views: 380, applications: 22, status: "Closed", closingDate: "31 Aug 2026" },
-  { id: 10, title: "Video Editor", department: "Design", location: "Remote", type: "Freelance", openings: 2, views: 460, applications: 34, status: "Active", closingDate: "28 Oct 2026" },
-  { id: 11, title: "Finance Manager", department: "Finance", location: "Delhi NCR", type: "Full Time", openings: 1, views: 295, applications: 18, status: "Closed", closingDate: "12 Aug 2026" },
-  { id: 12, title: "Office Assistant", department: "Operations", location: "Delhi NCR", type: "Full Time", openings: 1, views: 210, applications: 12, status: "Closed", closingDate: "02 Aug 2026" },
-];
+function formatClosingDate(value?: string): string {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function toRow(job: BackendJobPosting): JobPosting {
+  return {
+    id: job._id,
+    title: job.title,
+    department: job.department,
+    location: job.location,
+    type: job.employmentType,
+    openings: job.totalOpenings ?? 1,
+    views: job.views ?? 0,
+    applications: job.applicationsCount ?? 0,
+    status: toAdminStatus(job.status),
+    closingDate: formatClosingDate(job.applicationClosingDate),
+  };
+}
 
 const STATUS_STYLES: Record<JobStatus, string> = {
   Active: "bg-[#e8f5e9] text-[#23714a] border border-[#a5d6a7]",
@@ -244,22 +251,72 @@ function AnimatedCounter({ value, duration = 1200 }: { value: string | number; d
 ========================================================= */
 
 export default function JobPostingsPage() {
-  const [jobs, setJobs] = useState<JobPosting[]>(INITIAL_JOBS);
+  const [jobs, setJobs] = useState<JobPosting[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [tab, setTab] = useState<"all" | "active" | "draft" | "closed">("all");
   const [search, setSearch] = useState("");
   const [department, setDepartment] = useState("All Departments");
   const [location, setLocation] = useState("All Locations");
   const [page, setPage] = useState(1);
 
-  const handleStatusChange = (id: number, nextStatus: JobStatus) => {
-    setJobs((previous) =>
-      previous.map((job) =>
+  const loadJobs = async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const data = await jobsApi.list();
+      setJobs(data.map(toRow));
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to load job postings.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadJobs();
+  }, []);
+
+  const handleStatusChange = async (id: string, nextStatus: JobStatus) => {
+    const previousJobs = jobs;
+    setJobs((prev) =>
+      prev.map((job) =>
         job.id === id
           ? { ...job, status: nextStatus, closingDate: nextStatus === "Draft" ? "" : job.closingDate }
           : job
       )
     );
-    notImplemented(`Status updated to "${nextStatus}"`);
+    try {
+      await jobsApi.update(id, { status: toBackendStatus(nextStatus) });
+      Toast.fire({ icon: "success", iconColor: "#34d399", title: `Status updated to "${nextStatus}"` });
+    } catch (err) {
+      setJobs(previousJobs);
+      Toast.fire({ icon: "error", iconColor: "#f87171", title: err instanceof Error ? err.message : "Failed to update status" });
+    }
+  };
+
+  const handleDelete = async (job: JobPosting) => {
+    const confirmed = await Swal.fire({
+      title: `Delete "${job.title}"?`,
+      text: "This cannot be undone.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Delete",
+      confirmButtonColor: "#dc2626",
+      background: "#1e2433",
+      color: "#e2e8f0",
+    });
+    if (!confirmed.isConfirmed) return;
+
+    const previousJobs = jobs;
+    setJobs((prev) => prev.filter((j) => j.id !== job.id));
+    try {
+      await jobsApi.remove(job.id);
+      Toast.fire({ icon: "success", iconColor: "#34d399", title: "Job deleted" });
+    } catch (err) {
+      setJobs(previousJobs);
+      Toast.fire({ icon: "error", iconColor: "#f87171", title: err instanceof Error ? err.message : "Failed to delete job" });
+    }
   };
 
   const counts = useMemo(
@@ -351,42 +408,28 @@ export default function JobPostingsPage() {
       },
       {
         title: "TOTAL PAGE VIEWS",
-        value: "18,420",
+        value: jobs.reduce((sum, j) => sum + j.views, 0).toLocaleString(),
         icon: Eye,
         tone: "blue",
         gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #bae6fd 100%)",
         borderColor: "#bae6fd",
         numColor: "#0284c7",
-        trend: "↑ 32% vs last month",
         footer: "View page analytics",
         onClick: () => notImplemented("Page view analytics"),
       },
       {
-        title: "TOTAL APPLY CLICKS",
-        value: "2,860",
-        icon: MousePointerClick,
-        tone: "violet",
-        gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #ddd6fe 100%)",
-        borderColor: "#ddd6fe",
-        numColor: "#6d28d9",
-        trend: "↑ 28% vs last month",
-        footer: "View click analytics",
-        onClick: () => notImplemented("Apply click analytics"),
-      },
-      {
         title: "TOTAL APPLICATIONS",
-        value: "1,124",
+        value: jobs.reduce((sum, j) => sum + j.applications, 0).toLocaleString(),
         icon: ClipboardList,
         tone: "teal",
         gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #99f6e4 100%)",
         borderColor: "#99f6e4",
         numColor: "#0f766e",
-        trend: "↑ 24% vs last month",
         footer: "View applications",
         onClick: () => notImplemented("Applications list"),
       },
     ],
-    [counts]
+    [counts, jobs]
   );
 
   return (
@@ -420,7 +463,7 @@ export default function JobPostingsPage() {
         {/* =================================================
             STATS ROW
         ================================================= */}
-        <div className="mb-[12px] grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-7">
+        <div className="mb-[12px] grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
           {statCards.map((item) => {
             const Icon = item.icon;
             return (
@@ -596,19 +639,31 @@ export default function JobPostingsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#f0f0ec]">
-                  {paginatedJobs.length === 0 ? (
+                  {loading ? (
+                    <tr>
+                      <td colSpan={12} className="py-12 text-center text-[10px] text-[#6c7587]">
+                        Loading job postings…
+                      </td>
+                    </tr>
+                  ) : loadError ? (
+                    <tr>
+                      <td colSpan={12} className="py-12 text-center text-[10px] font-semibold text-red-600">
+                        {loadError}
+                      </td>
+                    </tr>
+                  ) : paginatedJobs.length === 0 ? (
                     <tr>
                       <td colSpan={12} className="py-12 text-center text-[10px] text-[#6c7587]">
                         No jobs match your filters.
                       </td>
                     </tr>
                   ) : (
-                    paginatedJobs.map((job) => (
+                    paginatedJobs.map((job, rowIndex) => (
                       <tr key={job.id} className="transition hover:bg-slate-50/80">
                         <td className="px-[8px] py-[6px]">
                           <input type="checkbox" className="h-[10px] w-[10px] cursor-pointer" />
                         </td>
-                        <td className="px-[6px] py-[6px] text-[7px] font-semibold text-[#6c7587]">{job.id}</td>
+                        <td className="px-[6px] py-[6px] text-[7px] font-semibold text-[#6c7587]">{startIndex + rowIndex + 1}</td>
                         <td className="px-[6px] py-[6px]">
                           <button
                             type="button"
@@ -654,20 +709,19 @@ export default function JobPostingsPage() {
                             </button>
 
                             {/* Edit (Blue Glassmorphism) */}
-                            <button
-                              type="button"
+                            <Link
+                              href={`/job-postings/create?id=${job.id}`}
                               title="Edit Job"
-                              onClick={() => notImplemented(`Edit "${job.title}"`)}
                               className="flex h-[25px] w-[25px] items-center justify-center rounded-[6px] bg-blue-500/10 text-blue-600 backdrop-blur-md border border-blue-400/30 shadow-[0_2px_6px_rgba(37,99,235,0.12)] transition-all hover:bg-blue-500/20 hover:border-blue-400/50 hover:shadow-[0_3px_10px_rgba(37,99,235,0.25)] hover:scale-105 active:scale-95"
                             >
                               <Pencil className="h-[12px] w-[12px] text-blue-600" />
-                            </button>
+                            </Link>
 
                             {/* Delete (Red Glassmorphism) */}
                             <button
                               type="button"
                               title="Delete Job"
-                              onClick={() => notImplemented(`Delete "${job.title}"`)}
+                              onClick={() => handleDelete(job)}
                               className="flex h-[25px] w-[25px] items-center justify-center rounded-[6px] bg-red-500/10 text-red-600 backdrop-blur-md border border-red-400/30 shadow-[0_2px_6px_rgba(220,38,38,0.12)] transition-all hover:bg-red-500/20 hover:border-red-400/50 hover:shadow-[0_3px_10px_rgba(220,38,38,0.25)] hover:scale-105 active:scale-95"
                             >
                               <Trash2 className="h-[12px] w-[12px] text-red-600" />

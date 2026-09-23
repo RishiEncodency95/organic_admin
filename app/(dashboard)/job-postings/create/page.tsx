@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { Suspense, useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import Swal from "sweetalert2";
 import {
   ArrowLeft,
   ChevronDown,
@@ -15,6 +17,106 @@ import {
 
 
 import Image from "next/image";
+import { jobsApi, type BackendJobStatus, type JobPosting } from "@/lib/careersApi";
+
+const Toast = Swal.mixin({
+  toast: true,
+  position: "top-end",
+  showConfirmButton: false,
+  timer: 2400,
+  timerProgressBar: true,
+  background: "#1e2433",
+  color: "#e2e8f0",
+});
+
+/** Styled replacement for window.prompt(). Returns the trimmed value, or null if cancelled/empty. */
+/** Splits a comma-separated paste ("React, Next.js, Node.js") into individual tags, so
+ * pasting a whole list doesn't create one giant run-on pill that overflows the layout.
+ * Each tag is also capped so a single stray very-long entry can't do the same thing. */
+function parseTags(input: string): string[] {
+  return input
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((s) => (s.length > 40 ? s.slice(0, 40).trim() : s));
+}
+
+async function askForText(title: string, placeholder = ""): Promise<string | null> {
+  const { value } = await Swal.fire({
+    title,
+    input: "text",
+    inputPlaceholder: placeholder,
+    showCancelButton: true,
+    confirmButtonText: "Add",
+    confirmButtonColor: "#2563eb",
+    background: "#1e2433",
+    color: "#e2e8f0",
+    width: 420,
+    padding: "1.4rem",
+    inputAttributes: { autocapitalize: "off" },
+    customClass: {
+      title: "!text-[15px] !mb-2",
+      input: "!h-[36px] !text-[12.5px] !mt-1",
+      confirmButton: "!text-[12px] !px-4 !py-2",
+      cancelButton: "!text-[12px] !px-4 !py-2",
+      actions: "!mt-3.5 !gap-2",
+    },
+  });
+  const trimmed = typeof value === "string" ? value.trim() : "";
+  return trimmed || null;
+}
+
+/** Converts the rich-text editor's HTML (usually a <ul><li>) into a plain string
+ * array — the shape the public careers site's Job model expects for bullet fields. */
+function htmlToLines(html: string): string[] {
+  if (typeof window === "undefined") return [];
+  const container = document.createElement("div");
+  container.innerHTML = html;
+
+  const items = Array.from(container.querySelectorAll("li"))
+    .map((li) => li.textContent?.trim() || "")
+    .filter(Boolean);
+  if (items.length > 0) return items;
+
+  // Plain-text paragraphs: contentEditable puts each visual line in its own
+  // <div>/<p>, but textContent joins siblings with no separator at all — so
+  // without this, "line 1" + "line 2" reads back as "line 1line 2". Insert an
+  // explicit newline at every block/line boundary before reading it out.
+  container.querySelectorAll("br").forEach((br) => br.replaceWith("\n"));
+  container.querySelectorAll("div, p").forEach((el) => el.append("\n"));
+
+  const text = container.textContent || "";
+  return text
+    .split(/\n+/)
+    .map((line) => line.replace(/^[•\-*]\s*/, "").trim())
+    .filter(Boolean);
+}
+
+/** Converts the "The Opportunity" editor's HTML into a single plain-text paragraph —
+ * the public careers site renders job.description as plain text (no dangerouslySetInnerHTML),
+ * so any markup would show up as literal tags on the site. */
+function htmlToPlainText(html: string): string {
+  if (typeof window === "undefined") return html;
+  const container = document.createElement("div");
+  container.innerHTML = html;
+  container.querySelectorAll("br").forEach((br) => br.replaceWith("\n"));
+  container.querySelectorAll("div, p, li").forEach((el) => el.append("\n"));
+  return (container.textContent || "").replace(/\n{2,}/g, "\n").trim();
+}
+
+/** Reverse of htmlToLines, for loading an existing job's responsibilities back into the editor. */
+function linesToHtml(lines?: string[]): string {
+  if (!lines || lines.length === 0) return "<ul><li></li></ul>";
+  return `<ul>${lines.map((line) => `<li>${line}</li>`).join("")}</ul>`;
+}
+
+/** Formats an ISO date string into the "DD Mon YYYY" text the date inputs use. */
+function formatDateInput(value?: string): string {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+}
 
 function GreenToggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
@@ -59,30 +161,93 @@ function AddPillButton({ label = "+ Add Skill", onClick }: { label?: string; onC
   );
 }
 
+function countWords(text: string): number {
+  const trimmed = text.trim();
+  return trimmed ? trimmed.split(/\s+/).length : 0;
+}
+
+/** The careers page card only ever shows the first bullet/line of Key Responsibilities
+ * (see frontend CareersClientContent.tsx: description = responsibilities[0]) — so the
+ * word cap has to track just that first line, not the whole multi-bullet content. */
+function getFirstLineText(container: HTMLElement): string {
+  const firstLi = container.querySelector("li");
+  if (firstLi) return firstLi.textContent || "";
+  const firstBlock = container.querySelector("div, p");
+  if (firstBlock) return firstBlock.textContent || "";
+  return (container.textContent || "").split("\n")[0];
+}
+
 /* Rich Editor matching 3 columns in Section 3 */
 function RichEditorBlock({
   label,
   required = false,
   defaultValue = "",
-  charCount = "0/2000"
+  maxChars = 2000,
+  maxWords,
+  wordLabel = "Words",
+  wordScope = "full",
+  hint,
+  onChange,
 }: {
   label: string;
   required?: boolean;
   defaultValue?: string;
-  charCount?: string;
+  maxChars?: number;
+  /** When set, shows a live word counter (e.g. first bullet shown on the public site) instead of/alongside the char count. */
+  maxWords?: number;
+  /** Label shown before the word counter, e.g. "First bullet" or "Words". Defaults to "Words". */
+  wordLabel?: string;
+  /** "firstLine" caps just the first bullet/line (e.g. Key Responsibilities, whose first
+   * line alone is shown on the public site); "full" (default) counts the whole content. */
+  wordScope?: "full" | "firstLine";
+  hint?: string;
+  onChange?: (html: string) => void;
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
+  const getInitialContainer = () => {
+    const el = document.createElement("div");
+    el.innerHTML = defaultValue;
+    return el;
+  };
+  const wordText = (source: HTMLElement) => (wordScope === "firstLine" ? getFirstLineText(source) : source.textContent || "");
+  const [charLength, setCharLength] = useState(() => {
+    if (typeof window === "undefined") return 0;
+    return (getInitialContainer().textContent || "").length;
+  });
+  const [wordLength, setWordLength] = useState(() => {
+    if (typeof window === "undefined") return 0;
+    return countWords(wordText(getInitialContainer()));
+  });
+
+  const syncCount = () => {
+    const el = editorRef.current;
+    if (!el) return;
+    setCharLength((el.textContent || "").length);
+    setWordLength(countWords(wordText(el)));
+  };
 
   const exec = (cmd: string, arg: string = "") => {
     document.execCommand(cmd, false, arg);
     editorRef.current?.focus();
+    onChange?.(editorRef.current?.innerHTML || "");
+    syncCount();
   };
+
+  // Applies the initial content exactly once, on mount. This must NOT re-run when
+  // `defaultValue` changes later (e.g. because it's wired to live state for edit-mode
+  // loading) — re-assigning innerHTML while the user is typing wipes the cursor
+  // position back to the start on every keystroke.
+  useEffect(() => {
+    if (editorRef.current) editorRef.current.innerHTML = defaultValue;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="flex flex-col min-w-0">
       <label className="mb-1 text-[11px] font-bold text-[#1e293b]">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
+      {hint && <p className="-mt-0.5 mb-1 text-[9px] font-medium text-[#94a3b8]">{hint}</p>}
       <div className="flex flex-col rounded-[6px] border border-[#cbd5e1] bg-white overflow-hidden shadow-2xs">
         {/* Editor Toolbar */}
         <div className="flex items-center gap-1 border-b border-[#e2e8f0] bg-[#f8fafc] px-2 py-1 text-[#475569]">
@@ -100,7 +265,7 @@ function RichEditorBlock({
             <svg className="h-3 w-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 3h12M2 7h8M2 11h10" /></svg>
           </button>
           <div className="h-3 w-px bg-slate-300 mx-0.5" />
-          <button type="button" onClick={() => exec("createLink", prompt("Enter URL") || "")} className="px-1 py-0.5 text-[10px] hover:bg-slate-200 rounded">
+          <button type="button" onClick={async () => exec("createLink", (await askForText("Enter URL", "https://")) || "")} className="px-1 py-0.5 text-[10px] hover:bg-slate-200 rounded">
             <svg className="h-3 w-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6.5 9.5a3.5 3.5 0 005 0l2-2a3.5 3.5 0 00-5-5l-1 1M9.5 6.5a3.5 3.5 0 00-5 0l-2 2a3.5 3.5 0 005 5l1-1" /></svg>
           </button>
         </div>
@@ -109,16 +274,48 @@ function RichEditorBlock({
           ref={editorRef}
           contentEditable
           suppressContentEditableWarning
+          onInput={() => {
+            onChange?.(editorRef.current?.innerHTML || "");
+            syncCount();
+          }}
+          onBlur={() => onChange?.(editorRef.current?.innerHTML || "")}
+          onPaste={(e) => {
+            e.preventDefault();
+            const text = e.clipboardData.getData("text/plain");
+            document.execCommand("insertText", false, text);
+            onChange?.(editorRef.current?.innerHTML || "");
+            syncCount();
+          }}
           className="h-[120px] overflow-y-auto p-2 text-[10.5px] leading-relaxed text-[#334155] outline-none"
-          dangerouslySetInnerHTML={{ __html: defaultValue }}
         />
       </div>
-      <div className="mt-0.5 text-right text-[9.5px] font-medium text-[#94a3b8]">{charCount}</div>
+      <div className="mt-0.5 flex items-center justify-end gap-2 text-[9.5px] font-medium text-[#94a3b8]">
+        {maxWords != null && (
+          <span className={wordLength > maxWords ? "font-bold text-red-600" : "font-semibold text-[#334155]"}>
+            {wordLabel}: {wordLength}/{maxWords} words
+          </span>
+        )}
+        <span className={charLength > maxChars ? "font-bold text-red-600" : ""}>{charLength}/{maxChars} chars</span>
+      </div>
     </div>
   );
 }
 
 export default function CreateJobPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-[calc(100vh-60px)] w-full items-center justify-center bg-[#f8fafc]">
+          <p className="text-[12px] font-semibold text-[#64748b]">Loading…</p>
+        </div>
+      }
+    >
+      <CreateJobForm />
+    </Suspense>
+  );
+}
+
+function CreateJobForm() {
   const [activeTab, setActiveTab] = useState<"info" | "preview">("info");
   const [toggles, setToggles] = useState({
     acceptOnline: true,
@@ -138,42 +335,232 @@ export default function CreateJobPage() {
     setToggles((prev) => ({ ...prev, [key]: !prev[key] }));
 
   // Required Skills List
-  const [reqSkills, setReqSkills] = useState([
-    "B2B Sales",
-    "Exhibition Sales",
-    "Sponsorship Sales",
-    "Lead Generation",
-    "Client Meetings",
-    "Negotiation",
-    "Deal Closure",
-    "CRM",
-  ]);
+  const [reqSkills, setReqSkills] = useState<string[]>([]);
 
   // Preferred Skills List
-  const [prefSkills, setPrefSkills] = useState([
-    "Key Account Management",
-    "Revenue Generation",
-    "Market Research",
-    "Industry Networking",
-    "Presentation Skills",
-    "Relationship Management",
-  ]);
+  const [prefSkills, setPrefSkills] = useState<string[]>([]);
 
   // Industry Segments List
-  const [segments, setSegments] = useState([
-    "Organic Food & Beverages",
-    "Nutraceuticals",
-    "Ayurveda",
-    "Herbal Products",
-    "Wellness",
-    "Organic Farming",
-    "Seeds",
-    "Natural Beauty & Personal Care",
-    "AgriTech",
-    "GreenTech",
-    "Certification & Testing",
-    "Export/Import",
-  ]);
+  const [segments, setSegments] = useState<string[]>([]);
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("id");
+  const [submitting, setSubmitting] = useState(false);
+  const [loadingJob, setLoadingJob] = useState(Boolean(editId));
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const [fields, setFields] = useState({
+    title: "",
+    designation: "",
+    company: "",
+    projectEvent: "",
+    department: "",
+    jobCode: "",
+    employmentType: "Full Time",
+    workplaceType: "On-site (Office)",
+    totalOpenings: "1",
+    location: "Ghaziabad / Delhi NCR",
+    experienceMin: "",
+    experienceMax: "",
+    educationRequirements: "Graduate",
+    ctcMin: "",
+    ctcMax: "",
+    salaryType: "CTC (Cost to Company)",
+    incentiveType: "Performance Based",
+    specificExperience: "",
+    minPassingScore: "40",
+    partialMatchMin: "50",
+    partialMatchMax: "69",
+    applicationOpenDate: "",
+    applicationClosingDate: "",
+    tags: "",
+  });
+
+  const updateField =
+    (key: keyof typeof fields) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+      setFields((prev) => ({ ...prev, [key]: e.target.value }));
+    };
+
+  const DESCRIPTION_DEFAULT = "";
+  const RESP_DEFAULT = "";
+  const WHO_DEFAULT = "";
+
+  const [descriptionHtml, setDescriptionHtml] = useState(DESCRIPTION_DEFAULT);
+  const [respHtml, setRespHtml] = useState(RESP_DEFAULT);
+  const [whoCanApplyHtml, setWhoCanApplyHtml] = useState(WHO_DEFAULT);
+
+  useEffect(() => {
+    if (!editId) return;
+    let active = true;
+
+    (async () => {
+      try {
+        const job: JobPosting = await jobsApi.getById(editId);
+        if (!active) return;
+
+        setFields({
+          title: job.title || "",
+          designation: job.designation || "",
+          company: job.company || "",
+          projectEvent: job.projectEvent || "",
+          department: job.department || "",
+          jobCode: job.jobCode || "",
+          employmentType: job.employmentType || "Full Time",
+          workplaceType: job.workplaceType || "On-site (Office)",
+          totalOpenings: String(job.totalOpenings ?? 1),
+          location: job.location || "",
+          experienceMin: String(job.experienceMin ?? 0),
+          experienceMax: String(job.experienceMax ?? 0),
+          educationRequirements: job.educationRequirements || "Graduate",
+          ctcMin: job.ctcMin != null ? job.ctcMin.toLocaleString("en-IN") : "",
+          ctcMax: job.ctcMax != null ? job.ctcMax.toLocaleString("en-IN") : "",
+          salaryType: job.salaryType || "CTC (Cost to Company)",
+          incentiveType: job.incentiveType || "Performance Based",
+          specificExperience: job.specificExperience || "",
+          minPassingScore: String(job.eligibilityThreshold ?? 40),
+          partialMatchMin: String(job.partialMatchMin ?? 50),
+          partialMatchMax: String(job.partialMatchMax ?? 69),
+          applicationOpenDate: formatDateInput(job.applicationOpenDate),
+          applicationClosingDate: formatDateInput(job.applicationClosingDate),
+          tags: (job.tags || []).join(", "),
+        });
+
+        setToggles({
+          acceptOnline: job.acceptOnlineApplications ?? true,
+          aiScreening: job.aiCvScreening ?? true,
+          cvUpload: job.cvUploadMandatory ?? true,
+          photoMandatory: job.candidatePhotoMandatory ?? true,
+          fresher: job.allowFresherCandidates ?? false,
+          currentlyNotEmployed: job.allowCurrentlyNotEmployed ?? false,
+          cvReplacement: job.allowCvReplacement ?? true,
+          showScore: job.showMatchScoreToCandidate ?? true,
+          showBreakdown: job.showMatchBreakdown ?? true,
+          performanceIncentive: job.performanceIncentiveApplicable ?? false,
+          featuredJob: job.featuredJob ?? false,
+        });
+
+        setReqSkills(job.skills || []);
+        setPrefSkills(job.preferredSkills || []);
+        setSegments(job.targetIndustrySegments || []);
+
+        setDescriptionHtml(job.description || DESCRIPTION_DEFAULT);
+        setRespHtml(linesToHtml(job.responsibilities));
+        setWhoCanApplyHtml(linesToHtml(job.requirements));
+      } catch (err) {
+        if (active) setLoadError(err instanceof Error ? err.message : "Failed to load this job posting.");
+      } finally {
+        if (active) setLoadingJob(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId]);
+
+  const handleSubmit = async (status: BackendJobStatus) => {
+    if (!fields.title.trim() || !fields.department.trim() || !fields.location.trim()) {
+      Toast.fire({ icon: "warning", iconColor: "#fbbf24", title: "Job title, department and location are required." });
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const parseMoney = (v: string) => {
+        const n = parseFloat(v.replace(/,/g, ""));
+        return Number.isFinite(n) ? n : undefined;
+      };
+      const parseDate = (v: string) => {
+        const d = new Date(v);
+        return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+      };
+
+      const payload = {
+        title: fields.title,
+        designation: fields.designation,
+        company: fields.company,
+        projectEvent: fields.projectEvent,
+        department: fields.department,
+        jobCode: fields.jobCode,
+        employmentType: fields.employmentType,
+        workplaceType: fields.workplaceType,
+        totalOpenings: Number(fields.totalOpenings) || 1,
+        location: fields.location,
+        experienceMin: Number(fields.experienceMin) || 0,
+        experienceMax: Number(fields.experienceMax) || 0,
+        educationRequirements: fields.educationRequirements,
+
+        ctcMin: parseMoney(fields.ctcMin),
+        ctcMax: parseMoney(fields.ctcMax),
+        salaryType: fields.salaryType,
+        performanceIncentiveApplicable: toggles.performanceIncentive,
+        incentiveType: toggles.performanceIncentive ? fields.incentiveType : undefined,
+
+        description: htmlToPlainText(descriptionHtml),
+        skills: reqSkills,
+        preferredSkills: prefSkills,
+        targetIndustrySegments: segments,
+        specificExperience: fields.specificExperience,
+        responsibilities: htmlToLines(respHtml),
+        requirements: htmlToLines(whoCanApplyHtml),
+
+        acceptOnlineApplications: toggles.acceptOnline,
+        aiCvScreening: toggles.aiScreening,
+        cvUploadMandatory: toggles.cvUpload,
+        candidatePhotoMandatory: toggles.photoMandatory,
+        allowFresherCandidates: toggles.fresher,
+        allowCurrentlyNotEmployed: toggles.currentlyNotEmployed,
+        allowCvReplacement: toggles.cvReplacement,
+        eligibilityThreshold: Number(fields.minPassingScore) || 40,
+        partialMatchMin: Number(fields.partialMatchMin) || undefined,
+        partialMatchMax: Number(fields.partialMatchMax) || undefined,
+        showMatchScoreToCandidate: toggles.showScore,
+        showMatchBreakdown: toggles.showBreakdown,
+
+        featuredJob: toggles.featuredJob,
+        applicationOpenDate: parseDate(fields.applicationOpenDate),
+        applicationClosingDate: parseDate(fields.applicationClosingDate),
+        tags: fields.tags.split(",").map((t) => t.trim()).filter(Boolean),
+
+        status,
+      };
+
+      if (editId) {
+        await jobsApi.update(editId, payload);
+        Toast.fire({ icon: "success", iconColor: "#34d399", title: status === "DRAFT" ? "Saved as draft" : "Job updated" });
+      } else {
+        await jobsApi.create(payload);
+        Toast.fire({ icon: "success", iconColor: "#34d399", title: status === "DRAFT" ? "Saved as draft" : "Job published" });
+      }
+      router.push("/job-postings");
+    } catch (err) {
+      Toast.fire({ icon: "error", iconColor: "#f87171", title: err instanceof Error ? err.message : "Failed to save job" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loadingJob) {
+    return (
+      <div className="flex h-[calc(100vh-60px)] w-full items-center justify-center bg-[#f8fafc]">
+        <p className="text-[12px] font-semibold text-[#64748b]">Loading job posting…</p>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex h-[calc(100vh-60px)] w-full flex-col items-center justify-center gap-3 bg-[#f8fafc]">
+        <p className="text-[12px] font-semibold text-red-600">{loadError}</p>
+        <Link href="/job-postings" className="text-[11px] font-bold text-[#2563eb] hover:underline">
+          Back to Job Postings
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-[calc(100vh-60px)] w-full flex-col bg-[#f8fafc] text-[#0f172a] overflow-hidden font-sans">
@@ -188,8 +575,10 @@ export default function CreateJobPage() {
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div>
-            <h1 className="text-[18px] font-bold text-[#0f172a] tracking-tight">Add New Job</h1>
-            <p className="text-[10.5px] font-medium text-[#64748b]">Complete all details to create and publish the job on your careers page.</p>
+            <h1 className="text-[18px] font-bold text-[#0f172a] tracking-tight">{editId ? "Edit Job" : "Add New Job"}</h1>
+            <p className="text-[10.5px] font-medium text-[#64748b]">
+              {editId ? "Update the details for this job posting." : "Complete all details to create and publish the job on your careers page."}
+            </p>
           </div>
         </div>
         <div className="flex items-center justify-end">
@@ -262,38 +651,38 @@ export default function CreateJobPage() {
             <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
               <div>
                 <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Job Title <span className="text-red-500">*</span></label>
-                <input type="text" defaultValue="Sales Manager – Domestic Exhibition Sales & Sponsorships" className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2.5 text-[10.5px] font-semibold text-[#1e293b] outline-none focus:border-[#2563eb]" />
+                <input type="text" value={fields.title} onChange={updateField("title")} className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2.5 text-[10.5px] font-semibold text-[#1e293b] outline-none focus:border-[#2563eb]" />
               </div>
 
               <div>
                 <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Designation <span className="text-red-500">*</span></label>
-                <input type="text" defaultValue="Sales Manager – Domestic Exhibition Sales & Sponsorships" className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2.5 text-[10.5px] font-semibold text-[#1e293b] outline-none focus:border-[#2563eb]" />
+                <input type="text" value={fields.designation} onChange={updateField("designation")} className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2.5 text-[10.5px] font-semibold text-[#1e293b] outline-none focus:border-[#2563eb]" />
               </div>
 
               <div>
                 <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Company <span className="text-red-500">*</span></label>
-                <input type="text" defaultValue="Namo Gange Wellness Pvt. Ltd." className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2.5 text-[10.5px] font-semibold text-[#1e293b] outline-none focus:border-[#2563eb]" />
+                <input type="text" value={fields.company} onChange={updateField("company")} className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2.5 text-[10.5px] font-semibold text-[#1e293b] outline-none focus:border-[#2563eb]" />
               </div>
 
               <div>
                 <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Project / Event <span className="text-red-500">*</span></label>
-                <input type="text" defaultValue="Bharat Organic Expo" className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2.5 text-[10.5px] font-semibold text-[#1e293b] outline-none focus:border-[#2563eb]" />
+                <input type="text" value={fields.projectEvent} onChange={updateField("projectEvent")} className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2.5 text-[10.5px] font-semibold text-[#1e293b] outline-none focus:border-[#2563eb]" />
               </div>
 
               <div>
                 <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Department <span className="text-red-500">*</span></label>
-                <input type="text" defaultValue="Sales & Business Development" className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2.5 text-[10.5px] font-semibold text-[#1e293b] outline-none focus:border-[#2563eb]" />
+                <input type="text" value={fields.department} onChange={updateField("department")} className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2.5 text-[10.5px] font-semibold text-[#1e293b] outline-none focus:border-[#2563eb]" />
               </div>
 
               <div>
                 <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Job Code / Reference ID</label>
-                <input type="text" defaultValue="BOE-SLS-2026-004" className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2.5 text-[10.5px] font-semibold text-[#1e293b] outline-none focus:border-[#2563eb]" />
+                <input type="text" value={fields.jobCode} onChange={updateField("jobCode")} className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2.5 text-[10.5px] font-semibold text-[#1e293b] outline-none focus:border-[#2563eb]" />
               </div>
 
               <div>
                 <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Employment Type <span className="text-red-500">*</span></label>
                 <div className="relative">
-                  <select defaultValue="Full Time" className="h-[30px] w-full appearance-none rounded-[5px] border border-[#cbd5e1] bg-white px-2.5 text-[10.5px] font-semibold text-[#1e293b] outline-none focus:border-[#2563eb]">
+                  <select value={fields.employmentType} onChange={updateField("employmentType")} className="h-[30px] w-full appearance-none rounded-[5px] border border-[#cbd5e1] bg-white px-2.5 text-[10.5px] font-semibold text-[#1e293b] outline-none focus:border-[#2563eb]">
                     <option>Full Time</option>
                     <option>Part Time</option>
                     <option>Contract</option>
@@ -305,7 +694,7 @@ export default function CreateJobPage() {
               <div>
                 <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Workplace Type <span className="text-red-500">*</span></label>
                 <div className="relative">
-                  <select defaultValue="On-site (Office)" className="h-[30px] w-full appearance-none rounded-[5px] border border-[#cbd5e1] bg-white px-2.5 text-[10.5px] font-semibold text-[#1e293b] outline-none focus:border-[#2563eb]">
+                  <select value={fields.workplaceType} onChange={updateField("workplaceType")} className="h-[30px] w-full appearance-none rounded-[5px] border border-[#cbd5e1] bg-white px-2.5 text-[10.5px] font-semibold text-[#1e293b] outline-none focus:border-[#2563eb]">
                     <option>On-site (Office)</option>
                     <option>Remote</option>
                     <option>Hybrid</option>
@@ -317,13 +706,13 @@ export default function CreateJobPage() {
               <div className="col-span-2 grid grid-cols-4 gap-3">
                 <div>
                   <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Total Openings <span className="text-red-500">*</span></label>
-                  <input type="number" defaultValue={2} className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-[10.5px] font-semibold text-[#1e293b]" />
+                  <input type="number" value={fields.totalOpenings} onChange={updateField("totalOpenings")} className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-[10.5px] font-semibold text-[#1e293b]" />
                 </div>
 
                 <div>
                   <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Job Location <span className="text-red-500">*</span></label>
                   <div className="relative">
-                    <select defaultValue="Ghaziabad / Delhi NCR" className="h-[30px] w-full appearance-none rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-[10.5px] font-semibold text-[#1e293b] outline-none">
+                    <select value={fields.location} onChange={updateField("location")} className="h-[30px] w-full appearance-none rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-[10.5px] font-semibold text-[#1e293b] outline-none">
                       <option>Ghaziabad / Delhi NCR</option>
                       <option>Delhi NCR</option>
                       <option>Mumbai</option>
@@ -335,16 +724,16 @@ export default function CreateJobPage() {
                 <div>
                   <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Experience (Years) <span className="text-red-500">*</span></label>
                   <div className="flex items-center gap-1">
-                    <input type="number" defaultValue={3} className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-1.5 text-center text-[10.5px] font-semibold" />
+                    <input type="number" value={fields.experienceMin} onChange={updateField("experienceMin")} className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-1.5 text-center text-[10.5px] font-semibold" />
                     <span className="text-[10px] font-medium text-slate-500">to</span>
-                    <input type="number" defaultValue={6} className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-1.5 text-center text-[10.5px] font-semibold" />
+                    <input type="number" value={fields.experienceMax} onChange={updateField("experienceMax")} className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-1.5 text-center text-[10.5px] font-semibold" />
                   </div>
                 </div>
 
                 <div>
                   <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Education <span className="text-red-500">*</span></label>
                   <div className="relative">
-                    <select defaultValue="Graduate" className="h-[30px] w-full appearance-none rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-[10.5px] font-semibold text-[#1e293b] outline-none">
+                    <select value={fields.educationRequirements} onChange={updateField("educationRequirements")} className="h-[30px] w-full appearance-none rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-[10.5px] font-semibold text-[#1e293b] outline-none">
                       <option>Graduate</option>
                       <option>Post Graduate</option>
                     </select>
@@ -369,16 +758,16 @@ export default function CreateJobPage() {
               <div>
                 <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Monthly CTC (INR) <span className="text-red-500">*</span></label>
                 <div className="flex items-center gap-1">
-                  <input type="text" defaultValue="40,000" className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-center text-[10.5px] font-semibold" />
+                  <input type="text" value={fields.ctcMin} onChange={updateField("ctcMin")} className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-center text-[10.5px] font-semibold" />
                   <span className="text-[10px] font-medium text-slate-500">to</span>
-                  <input type="text" defaultValue="50,000" className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-center text-[10.5px] font-semibold" />
+                  <input type="text" value={fields.ctcMax} onChange={updateField("ctcMax")} className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-center text-[10.5px] font-semibold" />
                 </div>
               </div>
 
               <div>
                 <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Salary Type <span className="text-red-500">*</span></label>
                 <div className="relative">
-                  <select defaultValue="CTC (Cost to Company)" className="h-[30px] w-full appearance-none rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-[10.5px] font-semibold text-[#1e293b] outline-none">
+                  <select value={fields.salaryType} onChange={updateField("salaryType")} className="h-[30px] w-full appearance-none rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-[10.5px] font-semibold text-[#1e293b] outline-none">
                     <option>CTC (Cost to Company)</option>
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-2 top-2 h-3.5 w-3.5 text-slate-400" />
@@ -396,7 +785,7 @@ export default function CreateJobPage() {
               <div>
                 <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Incentive Type (Optional)</label>
                 <div className="relative">
-                  <select defaultValue="Performance Based" className="h-[30px] w-full appearance-none rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-[10.5px] font-semibold text-[#1e293b] outline-none">
+                  <select value={fields.incentiveType} onChange={updateField("incentiveType")} className="h-[30px] w-full appearance-none rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-[10.5px] font-semibold text-[#1e293b] outline-none">
                     <option>Performance Based</option>
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-2 top-2 h-3.5 w-3.5 text-slate-400" />
@@ -405,7 +794,9 @@ export default function CreateJobPage() {
             </div>
           </div>
 
-          {/* SECTION 3: JOB DESCRIPTION */}
+          {/* SECTION 3: JOB DESCRIPTION — mirrors the three sections shown on the
+              careers page job detail view: The Opportunity, Key Responsibilities,
+              Who Can Apply (see frontend/app/components/careers/uploade_cv/page.tsx). */}
           <div className="rounded-[8px] border border-[#cbd5e1] bg-white p-3 shadow-2xs">
             <div className="mb-2 flex items-center gap-2">
               <span className="grid h-5 w-5 place-items-center rounded-[4px] bg-[#2563eb] text-[10px] font-bold text-white">3</span>
@@ -417,28 +808,28 @@ export default function CreateJobPage() {
 
             <div className="grid grid-cols-3 gap-3">
               <RichEditorBlock
-                label="About Project / Company"
+                label="The Opportunity"
                 required
-                defaultValue={`<ul><li>Bharat Organic Expo is a B2B exhibition platform connecting manufacturers, brands, suppliers, buyers, government bodies, industry associations and professionals across the organic and allied industries.</li></ul><p><br>The exhibition covers:<br>• Organic Food & Nutrition<br>• AYUSH, Herbal & Wellness<br>• Organic Agriculture<br>• Natural Living & Personal Care<br>• GreenTech & Sustainability</p>`}
-                charCount="0/2000"
+                defaultValue={descriptionHtml}
+                onChange={setDescriptionHtml}
+                maxWords={25}
               />
 
               <RichEditorBlock
-                label="Role Objective"
+                label="Key Responsibilities"
                 required
-                defaultValue={`<p>The Sales Manager – Domestic Exhibition Sales & Sponsorships will be responsible for generating business from the Indian market through exhibition stall/space sales, exhibitor acquisition and sponsorship sales for Bharat Organic Expo.<br><br>The candidate will manage the complete sales cycle from lead generation and client meetings to proposal, negotiation, booking and payment realization.</p>`}
-                charCount="0/2000"
+                defaultValue={respHtml}
+                onChange={setRespHtml}
+                maxChars={300}
               />
 
-              <div>
-                <RichEditorBlock
-                  label="Key Responsibilities"
-                  required
-                  defaultValue={`<ul><li>Generate revenue through domestic exhibition stall/space sales and sponsorship sales.</li><li>Identify and acquire prospective exhibitors from across India.</li><li>Develop business across target segments.</li><li>Generate qualified leads through databases, calling, email, LinkedIn, references.</li><li>Present participation opportunities to prospective exhibitors.</li></ul>`}
-                  charCount="0/2000"
-                />
-                <button type="button" className="mt-0.5 text-[10.5px] font-bold text-[#2563eb] hover:underline">+ Add More Points</button>
-              </div>
+              <RichEditorBlock
+                label="Who Can Apply"
+                required
+                defaultValue={whoCanApplyHtml}
+                onChange={setWhoCanApplyHtml}
+                maxChars={200}
+              />
             </div>
           </div>
 
@@ -461,7 +852,12 @@ export default function CreateJobPage() {
                     {reqSkills.map((sk, idx) => (
                       <SkillPill key={sk} label={sk} onRemove={() => setReqSkills(reqSkills.filter((_, i) => i !== idx))} />
                     ))}
-                    <AddPillButton onClick={() => { const s = prompt("Add skill:"); if (s) setReqSkills([...reqSkills, s]); }} />
+                    <AddPillButton onClick={async () => {
+                      const s = await askForText("Add required skill(s)", "e.g. B2B Sales, Negotiation, CRM");
+                      if (!s) return;
+                      const tags = parseTags(s).filter((t) => !reqSkills.includes(t));
+                      if (tags.length) setReqSkills([...reqSkills, ...tags]);
+                    }} />
                   </div>
                 </div>
 
@@ -471,7 +867,12 @@ export default function CreateJobPage() {
                     {prefSkills.map((sk, idx) => (
                       <SkillPill key={sk} label={sk} onRemove={() => setPrefSkills(prefSkills.filter((_, i) => i !== idx))} />
                     ))}
-                    <AddPillButton onClick={() => { const s = prompt("Add skill:"); if (s) setPrefSkills([...prefSkills, s]); }} />
+                    <AddPillButton onClick={async () => {
+                      const s = await askForText("Add preferred skill(s)", "e.g. Key Account Management, Market Research");
+                      if (!s) return;
+                      const tags = parseTags(s).filter((t) => !prefSkills.includes(t));
+                      if (tags.length) setPrefSkills([...prefSkills, ...tags]);
+                    }} />
                   </div>
                 </div>
               </div>
@@ -484,7 +885,12 @@ export default function CreateJobPage() {
                     {segments.map((sg, idx) => (
                       <SkillPill key={sg} label={sg} onRemove={() => setSegments(segments.filter((_, i) => i !== idx))} />
                     ))}
-                    <AddPillButton label="+ Add Segment" onClick={() => { const s = prompt("Add segment:"); if (s) setSegments([...segments, s]); }} />
+                    <AddPillButton label="+ Add Segment" onClick={async () => {
+                      const s = await askForText("Add industry segment(s)", "e.g. Organic Food & Beverages, Ayurveda");
+                      if (!s) return;
+                      const tags = parseTags(s).filter((t) => !segments.includes(t));
+                      if (tags.length) setSegments([...segments, ...tags]);
+                    }} />
                   </div>
                 </div>
 
@@ -492,10 +898,12 @@ export default function CreateJobPage() {
                   <label className="mb-1 block text-[10.5px] font-bold text-[#1e293b]">Specific Experience (Optional)</label>
                   <input
                     type="text"
+                    value={fields.specificExperience}
+                    onChange={updateField("specificExperience")}
                     placeholder="e.g. Direct exhibition / trade show sales experience preferred"
                     className="h-[32px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2.5 text-[10.5px] font-medium text-[#334155] outline-none"
                   />
-                  <div className="mt-0.5 text-right text-[9.5px] font-medium text-[#94a3b8]">0/300</div>
+                  <div className="mt-0.5 text-right text-[9.5px] font-medium text-[#94a3b8]">{fields.specificExperience.length}/300</div>
                 </div>
               </div>
             </div>
@@ -574,15 +982,15 @@ export default function CreateJobPage() {
             <div className="space-y-2">
               <div>
                 <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Minimum Passing Score (%) <span className="text-red-500">*</span></label>
-                <input type="number" defaultValue={50} className="h-[28px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-[10.5px] font-bold text-[#1e293b]" />
+                <input type="number" value={fields.minPassingScore} onChange={updateField("minPassingScore")} className="h-[28px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-[10.5px] font-bold text-[#1e293b]" />
               </div>
 
               <div>
                 <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Partial Match Range (%) <span className="text-red-500">*</span></label>
                 <div className="flex items-center gap-1.5">
-                  <input type="number" defaultValue={50} className="h-[28px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-center text-[10.5px] font-bold" />
+                  <input type="number" value={fields.partialMatchMin} onChange={updateField("partialMatchMin")} className="h-[28px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-center text-[10.5px] font-bold" />
                   <span className="text-[10px] font-medium text-slate-500">to</span>
-                  <input type="number" defaultValue={69} className="h-[28px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-center text-[10.5px] font-bold" />
+                  <input type="number" value={fields.partialMatchMax} onChange={updateField("partialMatchMax")} className="h-[28px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-center text-[10.5px] font-bold" />
                 </div>
               </div>
 
@@ -639,7 +1047,7 @@ export default function CreateJobPage() {
               <div>
                 <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Application Open Date <span className="text-red-500">*</span></label>
                 <div className="relative">
-                  <input type="text" defaultValue="17 Sep 2026" className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2 pr-7 text-[10.5px] font-semibold text-[#1e293b]" />
+                  <input type="text" value={fields.applicationOpenDate} onChange={updateField("applicationOpenDate")} className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2 pr-7 text-[10.5px] font-semibold text-[#1e293b]" />
                   <Calendar className="pointer-events-none absolute right-2 top-2 h-3.5 w-3.5 text-slate-400" />
                 </div>
               </div>
@@ -647,14 +1055,14 @@ export default function CreateJobPage() {
               <div>
                 <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Application Closing Date <span className="text-red-500">*</span></label>
                 <div className="relative">
-                  <input type="text" defaultValue="17 Oct 2026" className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2 pr-7 text-[10.5px] font-semibold text-[#1e293b]" />
+                  <input type="text" value={fields.applicationClosingDate} onChange={updateField("applicationClosingDate")} className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2 pr-7 text-[10.5px] font-semibold text-[#1e293b]" />
                   <Calendar className="pointer-events-none absolute right-2 top-2 h-3.5 w-3.5 text-slate-400" />
                 </div>
               </div>
 
               <div>
                 <label className="mb-0.5 block text-[10.5px] font-bold text-[#1e293b]">Tags (Optional)</label>
-                <input type="text" placeholder="e.g. Sales, Exhibition, Delhi NCR" className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-[10.5px] font-medium text-[#334155] outline-none" />
+                <input type="text" value={fields.tags} onChange={updateField("tags")} placeholder="e.g. Sales, Exhibition, Delhi NCR" className="h-[30px] w-full rounded-[5px] border border-[#cbd5e1] bg-white px-2 text-[10.5px] font-medium text-[#334155] outline-none" />
                 <p className="mt-0.5 text-[9px] font-medium text-[#94a3b8]">Add keywords to improve search on career page.</p>
               </div>
             </div>
@@ -674,16 +1082,30 @@ export default function CreateJobPage() {
         </Link>
 
         <div className="flex items-center gap-2">
-          <button type="button" className="h-[32px] rounded-[5px] border border-[#cbd5e1] bg-white px-3.5 text-[11px] font-bold text-[#334155] hover:bg-slate-50 transition-colors">
+          <button
+            type="button"
+            disabled={submitting}
+            onClick={() => handleSubmit("DRAFT")}
+            className="h-[32px] rounded-[5px] border border-[#cbd5e1] bg-white px-3.5 text-[11px] font-bold text-[#334155] hover:bg-slate-50 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+          >
             Save as Draft
           </button>
 
-          <button type="button" className="h-[32px] rounded-[5px] border border-[#cbd5e1] bg-white px-3.5 text-[11px] font-bold text-[#334155] hover:bg-slate-50 transition-colors">
+          <button
+            type="button"
+            onClick={() => Toast.fire({ icon: "info", iconColor: "#38bdf8", title: "Preview — coming soon" })}
+            className="h-[32px] rounded-[5px] border border-[#cbd5e1] bg-white px-3.5 text-[11px] font-bold text-[#334155] hover:bg-slate-50 transition-colors"
+          >
             Preview Job
           </button>
 
-          <button type="button" className="flex h-[32px] items-center gap-1.5 rounded-[5px] bg-[#059669] px-4 text-[11px] font-bold text-white hover:bg-[#047857] transition-colors shadow-2xs">
-            Publish Job
+          <button
+            type="button"
+            disabled={submitting}
+            onClick={() => handleSubmit("OPEN")}
+            className="flex h-[32px] items-center gap-1.5 rounded-[5px] bg-[#059669] px-4 text-[11px] font-bold text-white hover:bg-[#047857] transition-colors shadow-2xs disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {submitting ? "Saving…" : editId ? "Update Job" : "Publish Job"}
             <ArrowRight className="h-3.5 w-3.5" />
           </button>
         </div>
