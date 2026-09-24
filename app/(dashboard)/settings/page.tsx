@@ -6,6 +6,7 @@ import { Input, Textarea } from "@/components/ui/Input";
 import { settingsApi } from "@/lib/settingsApi";
 import { Settings } from "@/lib/types";
 import { ApiRequestError } from "@/lib/api";
+import Swal from "sweetalert2";
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -29,8 +30,17 @@ export default function SettingsPage() {
       const updated = await settingsApi.update(settings);
       setSettings(updated);
       setMessage({ type: "success", text: "Settings saved." });
+      Swal.fire({
+        title: "Settings Saved",
+        text: `Max image upload size is now ${updated.maxImageUploadSizeKB ?? 500} KB.`,
+        icon: "success",
+        confirmButtonColor: "#218DAE",
+        timer: 2500,
+      });
     } catch (err) {
-      setMessage({ type: "error", text: err instanceof ApiRequestError ? err.message : "Could not save settings." });
+      const text = err instanceof ApiRequestError ? err.message : "Could not save settings.";
+      setMessage({ type: "error", text });
+      Swal.fire({ title: "Save Failed", text, icon: "error", confirmButtonColor: "#218DAE" });
     } finally {
       setSaving(false);
     }
@@ -94,6 +104,27 @@ export default function SettingsPage() {
               <div className="col-span-4">
                 <Input label="Address" value={settings.address ?? ""} onChange={(e) => setSettings({ ...settings, address: e.target.value })} />
               </div>
+            </div>
+          </Card>
+
+          {/* Media & Uploads */}
+          <Card>
+            <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide text-[#2563eb]">Media & Uploads</h2>
+            <p className="mb-3 text-[11px] text-[#4B1426]">
+              Applies to every image uploaded across the admin (Media Library, footer, job postings, etc.) — an upload
+              larger than this is rejected with an error instead of being silently accepted.
+            </p>
+            <div className="grid grid-cols-4 gap-3">
+              <Input
+                label="Max Image Upload Size (KB)"
+                type="number"
+                min={1}
+                value={settings.maxImageUploadSizeKB ?? 500}
+                onChange={(e) =>
+                  setSettings({ ...settings, maxImageUploadSizeKB: e.target.value === "" ? undefined : Number(e.target.value) })
+                }
+                hint="Default is 500 KB. Increase or decrease as needed."
+              />
             </div>
           </Card>
 

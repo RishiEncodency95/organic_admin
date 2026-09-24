@@ -367,6 +367,7 @@ export interface Settings {
   whatsappNumber?: string;
   supportEmail?: string;
   address?: string;
+  maxImageUploadSizeKB?: number;
   organisation?: {
     legalName?: string;
     panNumber?: string;

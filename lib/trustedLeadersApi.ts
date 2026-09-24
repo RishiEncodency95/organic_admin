@@ -1,3 +1,5 @@
+import { getBackendUrl } from "./api";
+
 export interface PartnerLogoItem {
   id: string;
   name: string;
@@ -20,7 +22,9 @@ export interface PartnersAndBrandsData {
   emergingBrandsLogos: PartnerLogoItem[];
 }
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4001";
+// Resolved at runtime from the actual page domain — not a build-time env var, which can
+// end up baked in as "localhost" if the production build wasn't given its own .env.
+const BACKEND_URL = getBackendUrl();
 
 export const CATEGORY_KEYS: Record<string, keyof Omit<PartnersAndBrandsData, "_id">> = {
   "TRUSTED BY INDUSTRY LEADERS": "industryLeadersLogos",

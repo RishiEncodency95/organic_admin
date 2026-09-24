@@ -53,19 +53,11 @@ export const settingsApi = {
     }
     const updated = { ...current, ...payload };
 
-    try {
-      const res: any = await api.put("/settings?website=Organicexpo", updated);
-      const saved = res?.data || res || updated;
-      if (typeof window !== "undefined") {
-        localStorage.setItem(SETTINGS_KEY, JSON.stringify(saved));
-      }
-      return saved;
-    } catch (e) {
-      console.warn("Failed to sync settings to backend API, falling back to local storage:", e);
-      if (typeof window !== "undefined") {
-        localStorage.setItem(SETTINGS_KEY, JSON.stringify(updated));
-      }
-      return updated;
+    const res: any = await api.put("/settings?website=Organicexpo", updated);
+    const saved = { ...updated, ...(res?.data || res || {}) };
+    if (typeof window !== "undefined") {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(saved));
     }
+    return saved;
   },
 };

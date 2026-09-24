@@ -1,4 +1,5 @@
 "use client";
+import { getImageSizeError, showUploadError } from "@/lib/uploadLimit";
 
 import { useMemo, useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -6,6 +7,7 @@ import Modal from "@/components/ui/Modal";
 import { Input, Label } from "@/components/ui/Input";
 import typography from "../pages/PagesTypography.module.css";
 import { useAppSelector } from "@/store/hooks";
+import { getBackendUrl } from "@/lib/api";
 import {
   ArrowRight,
   Calendar,
@@ -119,7 +121,10 @@ const INITIAL_YEARS: string[] = [
 
 const INITIAL_MEDIA: MediaItem[] = [];
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4001";
+// Resolves to the correct production API host at runtime (based on the domain the page
+// is actually loaded from) rather than trusting a build-time env var that may have been
+// baked in from a local .env file — see lib/api.ts's getBackendUrl for the full rationale.
+const BACKEND_URL = getBackendUrl();
 
 const formatTimestamp = () => {
   const d = new Date();
@@ -480,6 +485,8 @@ export default function MediaLibraryPage() {
 
   // Upload helper directly to Cloudinary CDN (or backend local upload)
   const uploadToCloudinary = async (file: File): Promise<string> => {
+    const sizeError = await getImageSizeError(file);
+    if (sizeError) throw new Error(sizeError);
     try {
       setIsUploading(true);
       const targetFolder = `bharat-organic/gallery/${formYear || "2026"}/${(formCategory || "general").toLowerCase().replace(/\s+/g, "-")}`;
@@ -492,31 +499,40 @@ export default function MediaLibraryPage() {
         method: "POST",
         body: formData,
       }).catch(() => null);
+      let reachedServer = Boolean(res);
 
-      // Secondary fallback: Direct to BACKEND_URL
-      if (!res || !res.ok) {
+      // Secondary fallback: Direct to BACKEND_URL (only worth retrying if the first attempt
+      // never reached a server at all — a real rejection from the server, like the image
+      // being over the configured size limit, would fail identically here too).
+      if (!res) {
         res = await fetch(`${BACKEND_URL}/api/uploads?folder=${encodeURIComponent(targetFolder)}`, {
           method: "POST",
           body: formData,
         }).catch(() => null);
+        reachedServer = Boolean(res);
       }
 
       if (res && res.ok) {
         const json = await res.json().catch(() => null);
-        if (json) {
-          const finalUrl = json.data?.url || json.url || json.data?.secure_url || json.secure_url;
-          if (finalUrl) {
-            return finalUrl;
-          }
+        const finalUrl = json?.data?.url || json?.url || json?.data?.secure_url || json?.secure_url;
+        if (finalUrl) {
+          return finalUrl;
         }
       }
-    } catch (err) {
-      console.error("Cloudinary upload error:", err);
+
+      // The server responded but rejected the upload (e.g. over the configured max image
+      // size) — surface the real reason instead of silently degrading to a base64 embed.
+      if (reachedServer && res) {
+        const errorBody = await res.json().catch(() => null);
+        throw new Error(errorBody?.message || `Upload failed (status ${res.status}).`);
+      }
     } finally {
       setIsUploading(false);
     }
 
-    // Convert file to Base64 Data URL so it saves and displays reliably even if upload network request failed
+    // The server was genuinely unreachable (not a rejection) — fall back to embedding the
+    // file directly so the admin doesn't lose their work over a transient network blip.
+    console.warn("Could not reach the upload server; embedding image as a data URL instead.");
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -883,7 +899,14 @@ export default function MediaLibraryPage() {
     if (file && selected) {
       const sizeStr = `${(file.size / 1024).toFixed(1)} KB`;
       const ts = formatTimestamp();
-      const newUrl = await uploadToCloudinary(file);
+      let newUrl: string;
+      try {
+        newUrl = await uploadToCloudinary(file);
+      } catch (err) {
+        showUploadError(err);
+        e.target.value = "";
+        return;
+      }
       if (selected._id) {
         await fetch(`${BACKEND_URL}/api/website/gallery/items/${selected._id}`, {
           method: "PUT",
@@ -1780,9 +1803,14 @@ export default function MediaLibraryPage() {
                         if (file) {
                           if (!formTitle) setFormTitle(file.name.replace(/\.[^/.]+$/, ""));
                           setFormFileSize(`${(file.size / 1024).toFixed(1)} KB`);
-                          const cloudUrl = await uploadToCloudinary(file);
-                          setFormImageUrl(cloudUrl);
-                          showSuccess("Uploaded directly to Cloudinary!");
+                          try {
+                            const cloudUrl = await uploadToCloudinary(file);
+                            setFormImageUrl(cloudUrl);
+                            showSuccess("Image uploaded!");
+                          } catch (err) {
+                            showUploadError(err);
+                            e.target.value = "";
+                          }
                         }
                       }}
                     />

@@ -1,8 +1,10 @@
 "use client";
+import { getImageSizeError, showUploadError } from "@/lib/uploadLimit";
 
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { getBackendUrl } from "@/lib/api";
 import typography from "../pages/PagesTypography.module.css";
 import {
   Video,
@@ -40,7 +42,9 @@ import Modal from "@/components/ui/Modal";
 import Swal from "sweetalert2";
 import { useAppSelector } from "@/store/hooks";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4001";
+// Resolved at runtime from the actual page domain — not a build-time env var, which can
+// end up baked in as "localhost" if the production build wasn't given its own .env.
+const BACKEND_URL = getBackendUrl();
 
 const Toast = Swal.mixin({
   toast: true,
@@ -421,15 +425,18 @@ export default function TestimonialVideosManagementPage() {
   const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      showError("Thumbnail image must be less than 10MB");
+    const sizeError = await getImageSizeError(file);
+    if (sizeError) {
+      showUploadError(sizeError);
+      e.target.value = "";
       return;
     }
 
+    let res: Response | null = null;
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch(`${BACKEND_URL}/api/uploads`, {
+      res = await fetch(`${BACKEND_URL}/api/uploads`, {
         method: "POST",
         body: formData,
       });
@@ -443,7 +450,17 @@ export default function TestimonialVideosManagementPage() {
           return;
         }
       }
-    } catch {}
+    } catch {
+      res = null;
+    }
+
+    // The server responded but rejected the upload (e.g. over the configured max image
+    // size) — surface the real reason instead of silently falling back to a local blob.
+    if (res) {
+      const errorBody = await res.json().catch(() => null);
+      showUploadError(errorBody?.message || `Upload failed (status ${res.status}).`);
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = () => {

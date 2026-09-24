@@ -357,7 +357,12 @@ export default function CmsEditPage() {
         updateField("ogImage", url);
       }
     } catch (err) {
-      console.error("Failed to upload OG image", err);
+      Swal.fire({
+        title: "Upload Failed",
+        text: err instanceof Error ? err.message : "Could not upload the image.",
+        icon: "error",
+        confirmButtonColor: "#218DAE",
+      });
     } finally {
       setOgUploading(false);
     }
@@ -637,6 +642,13 @@ export default function CmsEditPage() {
         icon: "success",
         confirmButtonColor: "#218DAE",
         timer: 2000,
+      });
+    } catch (err) {
+      Swal.fire({
+        title: "Save Failed",
+        text: err instanceof Error ? err.message : "Could not save this page.",
+        icon: "error",
+        confirmButtonColor: "#218DAE",
       });
     } finally {
       setSaving(false);

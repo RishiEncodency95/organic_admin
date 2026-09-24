@@ -1,8 +1,10 @@
 "use client";
+import { getImageSizeError, showUploadError } from "@/lib/uploadLimit";
 
 import { useMemo, useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import Modal from "@/components/ui/Modal";
+import { getBackendUrl } from "@/lib/api";
 import { Input, Label } from "@/components/ui/Input";
 import typography from "../pages/PagesTypography.module.css";
 import { useAppSelector } from "@/store/hooks";
@@ -89,7 +91,9 @@ export interface AdvisoryMemberItem {
   websiteUrl?: string;
 }
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4001";
+// Resolved at runtime from the actual page domain — not a build-time env var, which can
+// end up baked in as "localhost" if the production build wasn't given its own .env.
+const BACKEND_URL = getBackendUrl();
 
 const formatTimestamp = () => {
   const d = new Date();
@@ -701,6 +705,8 @@ export default function AdvisoryBoardMembersPage() {
 
   // Upload image helper
   const uploadImageFile = async (file: File): Promise<string> => {
+    const sizeError = await getImageSizeError(file);
+    if (sizeError) throw new Error(sizeError);
     try {
       setIsUploading(true);
       const formData = new FormData();
@@ -711,34 +717,40 @@ export default function AdvisoryBoardMembersPage() {
         method: "POST",
         body: formData,
       }).catch(() => null);
+      let reachedServer = Boolean(res);
 
-      if (!res || !res.ok) {
+      if (!res) {
         res = await fetch(`/api/uploads?folder=bharat-organic/advisory`, {
           method: "POST",
           body: formData,
         }).catch(() => null);
+        reachedServer = Boolean(res);
       }
 
       if (res && res.ok) {
         const json = await res.json().catch(() => null);
-        if (json) {
-          let finalUrl = json.data?.url || json.url || json.data?.secure_url || json.secure_url;
-          if (finalUrl) {
-            if (finalUrl.startsWith("http://res.cloudinary.com")) {
-              finalUrl = finalUrl.replace("http://res.cloudinary.com", "https://res.cloudinary.com");
-            }
-            if (finalUrl.startsWith("http")) return finalUrl;
-            return `${BACKEND_URL.replace(/\/$/, "")}${finalUrl.startsWith("/") ? "" : "/"}${finalUrl}`;
+        let finalUrl = json?.data?.url || json?.url || json?.data?.secure_url || json?.secure_url;
+        if (finalUrl) {
+          if (finalUrl.startsWith("http://res.cloudinary.com")) {
+            finalUrl = finalUrl.replace("http://res.cloudinary.com", "https://res.cloudinary.com");
           }
+          if (finalUrl.startsWith("http")) return finalUrl;
+          return `${BACKEND_URL.replace(/\/$/, "")}${finalUrl.startsWith("/") ? "" : "/"}${finalUrl}`;
         }
       }
-    } catch (err) {
-      console.error("Image upload error:", err);
+
+      // The server responded but rejected the upload (e.g. over the configured max image
+      // size) — surface the real reason instead of silently degrading to a base64 embed.
+      if (reachedServer && res) {
+        const errorBody = await res.json().catch(() => null);
+        throw new Error(errorBody?.message || `Upload failed (status ${res.status}).`);
+      }
     } finally {
       setIsUploading(false);
     }
 
-    // Fallback Base64 Data URL
+    // The server was genuinely unreachable (not a rejection) — fall back to embedding.
+    console.warn("Could not reach the upload server; embedding image as a data URL instead.");
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -756,7 +768,14 @@ export default function AdvisoryBoardMembersPage() {
       const sizeStr = `${(file.size / 1024).toFixed(1)} KB`;
       const timeNow = formatTimestamp();
 
-      const uploadedUrl = await uploadImageFile(file);
+      let uploadedUrl: string;
+      try {
+        uploadedUrl = await uploadImageFile(file);
+      } catch (err) {
+        showUploadError(err);
+        e.target.value = "";
+        return;
+      }
 
       if (isReplace && selected) {
         const updated = members.map((m) =>

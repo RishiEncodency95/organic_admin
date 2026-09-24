@@ -57,37 +57,29 @@ export function syncGallerySectionsFromLiveApi(setSectionsDraft: SetSectionsDraf
 export async function saveGallerySections(sectionsDraft: SectionsDraft): Promise<void> {
   const heroSec = sectionsDraft.find((s) => s.key === "gallery-hero" || s.name === "HeroSection");
   if (heroSec) {
-    try {
-      await api.put("/website/gallery/hero", {
-        enabled: heroSec.enabled !== false,
-        title: heroSec.title,
-        subtitle: heroSec.subtitle,
-        shortDescription: heroSec.description || heroSec.shortDescription,
-        description: heroSec.description || heroSec.shortDescription,
-        rightImage: heroSec.image || heroSec.rightImage,
-        image: heroSec.image || heroSec.rightImage,
-      });
-    } catch (err) {
-      console.error("Failed to sync gallery hero to backend:", err);
-    }
+    await api.put("/website/gallery/hero", {
+      enabled: heroSec.enabled !== false,
+      title: heroSec.title,
+      subtitle: heroSec.subtitle,
+      shortDescription: heroSec.description || heroSec.shortDescription,
+      description: heroSec.description || heroSec.shortDescription,
+      rightImage: heroSec.image || heroSec.rightImage,
+      image: heroSec.image || heroSec.rightImage,
+    });
   }
 
   const countersSec = sectionsDraft.find((s) => s.key === "gallery-counters" || s.name === "Counters");
   if (countersSec) {
-    try {
-      await api.put("/website/gallery/counters", {
-        enabled: countersSec.enabled !== false,
-        title: countersSec.title || "EXPO IMPACT IN NUMBERS",
-        items: Array.isArray(countersSec.items)
-          ? countersSec.items.map((it: any) => ({
-              val: it.val || "",
-              label: it.label || "",
-              image: it.image || "",
-            }))
-          : [],
-      });
-    } catch (err) {
-      console.error("Failed to sync gallery counters to backend:", err);
-    }
+    await api.put("/website/gallery/counters", {
+      enabled: countersSec.enabled !== false,
+      title: countersSec.title || "EXPO IMPACT IN NUMBERS",
+      items: Array.isArray(countersSec.items)
+        ? countersSec.items.map((it: any) => ({
+            val: it.val || "",
+            label: it.label || "",
+            image: it.image || "",
+          }))
+        : [],
+    });
   }
 }

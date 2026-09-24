@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Plus, Copy, Check, Pencil, Camera, Loader2, PowerOff, Power, Trash2, ExternalLink, User, ChevronLeft, ChevronRight } from "lucide-react";
 import Swal from "sweetalert2";
+import { showUploadError } from "@/lib/uploadLimit";
 import typography from "../pages/PagesTypography.module.css";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
@@ -173,10 +174,10 @@ export default function StaffPage() {
       const result = await uploadApi.file(file);
       setForm((f) => ({ ...f, avatarUrl: result.url }));
       showSuccess("Avatar image uploaded!");
-    } catch {
-      const msg = "Could not upload that image. Try a different file.";
+    } catch (err) {
+      const msg = err instanceof Error && err.message ? err.message : "Could not upload that image. Try a different file.";
       setError(msg);
-      showError(msg);
+      showUploadError(msg);
     } finally {
       setUploadingAvatar(false);
     }

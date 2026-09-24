@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import typography from "../../pages/PagesTypography.module.css";
 import Swal from "sweetalert2";
+import { getImageSizeError } from "@/lib/uploadLimit";
 import { uploadApi } from "@/lib/uploadApi";
 import { blogsApi } from "@/lib/blogsApi";
 import RichTextEditor from "@/components/RichTextEditor";
@@ -148,6 +149,12 @@ function AddNewPostContent() {
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      const sizeError = await getImageSizeError(file);
+      if (sizeError) {
+        e.target.value = "";
+        Swal.fire({ title: "Upload Failed", text: sizeError, icon: "error", confirmButtonColor: "#218DAE" });
+        return;
+      }
       setImageFile(file);
       setImagePreview(URL.createObjectURL(file));
       if (!blogData.imageAlt && blogData.title) {
@@ -171,6 +178,12 @@ function AddNewPostContent() {
   const handleOgImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      const sizeError = await getImageSizeError(file);
+      if (sizeError) {
+        e.target.value = "";
+        Swal.fire({ title: "Upload Failed", text: sizeError, icon: "error", confirmButtonColor: "#218DAE" });
+        return;
+      }
       setOgImageFile(file);
       setOgImagePreview(URL.createObjectURL(file));
       try {
