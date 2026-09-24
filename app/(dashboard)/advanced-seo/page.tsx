@@ -165,6 +165,12 @@ export default function AdvancedSeoPage() {
   });
   const [savingSocial, setSavingSocial] = useState(false);
 
+  const [trackingKeys, setTrackingKeys] = useState({
+    ga4MeasurementId: "G-PP5N4MZBL9",
+    gtmContainerId: "GTM-TG73QDSZ",
+    googleSearchConsoleVerification: "LSfGa6XOQVOXKM-Z4Xq_8JK-j6DRfoxnR-QFCnzsXQU",
+  });
+
   const headerRef = useRef<HTMLTextAreaElement>(null);
   const footerRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -186,6 +192,13 @@ export default function AdvancedSeoPage() {
           footerScripts: data.footerScripts || "",
         });
         setSeoFiles(data.seoFiles || []);
+        setTrackingKeys({
+          ga4MeasurementId: data.ga4MeasurementId || "G-PP5N4MZBL9",
+          gtmContainerId: data.gtmContainerId || "GTM-TG73QDSZ",
+          googleSearchConsoleVerification:
+            data.googleSearchConsoleVerification ||
+            "LSfGa6XOQVOXKM-Z4Xq_8JK-j6DRfoxnR-QFCnzsXQU",
+        });
         if (data.socialLinks) {
           setSocialLinks({
             facebook: data.socialLinks.facebook || "",
@@ -216,17 +229,26 @@ export default function AdvancedSeoPage() {
       setIsLoading(true);
       const response = await api.put<any>("/seo-settings/scripts", {
         ...scripts,
+        ...trackingKeys,
         socialLinks,
       });
       const data = response?.data || response;
 
-      showSuccess("Global tracking scripts & social links saved successfully!");
+      showSuccess("Global tracking scripts, keys & social links saved successfully!");
 
       if (data) {
         setScripts({
           headerScripts: data.headerScripts ?? scripts.headerScripts,
           footerScripts: data.footerScripts ?? scripts.footerScripts,
         });
+        if (data.ga4MeasurementId || data.gtmContainerId || data.googleSearchConsoleVerification) {
+          setTrackingKeys({
+            ga4MeasurementId: data.ga4MeasurementId || trackingKeys.ga4MeasurementId,
+            gtmContainerId: data.gtmContainerId || trackingKeys.gtmContainerId,
+            googleSearchConsoleVerification:
+              data.googleSearchConsoleVerification || trackingKeys.googleSearchConsoleVerification,
+          });
+        }
         if (data.socialLinks) {
           setSocialLinks((prev) => ({
             ...prev,
@@ -497,6 +519,67 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
               {/* Form Grid */}
               <div className="grid grid-cols-1 gap-4">
+                {/* Dynamic Tracking & Verification Keys */}
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded space-y-3">
+                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    Dynamic Analytics & Verification Keys
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                        Google Analytics GA4 ID
+                      </label>
+                      <input
+                        type="text"
+                        value={trackingKeys.ga4MeasurementId}
+                        onChange={(e) =>
+                          setTrackingKeys((prev) => ({
+                            ...prev,
+                            ga4MeasurementId: e.target.value,
+                          }))
+                        }
+                        placeholder="G-XXXXXXXXXX"
+                        className="w-full px-3 py-1.5 text-xs border border-gray-300 rounded font-mono focus:ring-1 focus:ring-blue-500 bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                        Google Tag Manager (GTM) ID
+                      </label>
+                      <input
+                        type="text"
+                        value={trackingKeys.gtmContainerId}
+                        onChange={(e) =>
+                          setTrackingKeys((prev) => ({
+                            ...prev,
+                            gtmContainerId: e.target.value,
+                          }))
+                        }
+                        placeholder="GTM-XXXXXXX"
+                        className="w-full px-3 py-1.5 text-xs border border-gray-300 rounded font-mono focus:ring-1 focus:ring-blue-500 bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                        Google Search Console Code
+                      </label>
+                      <input
+                        type="text"
+                        value={trackingKeys.googleSearchConsoleVerification}
+                        onChange={(e) =>
+                          setTrackingKeys((prev) => ({
+                            ...prev,
+                            googleSearchConsoleVerification: e.target.value,
+                          }))
+                        }
+                        placeholder="LSfGa6XOQVOX..."
+                        className="w-full px-3 py-1.5 text-xs border border-gray-300 rounded font-mono focus:ring-1 focus:ring-blue-500 bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 {/* Target Scope Selection */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
