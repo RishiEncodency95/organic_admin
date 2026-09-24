@@ -10,7 +10,7 @@ export const defaultBlogSections: LandingSectionContent[] = [
     titleSecondary: "NEWS",
     subtitle: "Insights. Innovation. Impact.",
     description: "Stay updated with the latest trends, expert perspectives, innovations and success stories shaping India's organic food, agriculture and sustainable products industry.",
-    image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
+    image: "",
     imageAlt: "Bharat Organic Expo Blog Banner",
   },
   {
@@ -27,7 +27,7 @@ export const defaultBlogSections: LandingSectionContent[] = [
         description: "Discover the brands, farmers, buyers and innovators bringing India's organic ecosystem together at Bharat Organic Expo 2026.",
         date: "May 8, 2026",
         readTime: "5 min read",
-        image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg"
+        image: ""
       },
       {
         tag: "Industry Insight",
@@ -35,7 +35,7 @@ export const defaultBlogSections: LandingSectionContent[] = [
         description: "Explore the market trends, consumer demand and business opportunities shaping India's organic food and natural products sector.",
         date: "May 6, 2026",
         readTime: "6 min read",
-        image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg"
+        image: ""
       },
       {
         tag: "Sustainable Future",
@@ -43,7 +43,7 @@ export const defaultBlogSections: LandingSectionContent[] = [
         description: "Discover regenerative agriculture, natural farming and sustainable practices helping create a healthier agricultural ecosystem.",
         date: "April 30, 2026",
         readTime: "4 min read",
-        image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg"
+        image: ""
       }
     ],
   },
@@ -55,11 +55,11 @@ export const defaultBlogSections: LandingSectionContent[] = [
     title: "Voices of Experts",
     buttonLabel: "View all experts",
     items: [
-      { name: "Dr. Ramesh Patel", role: "Organic Farming Expert", quote: "Organic agriculture is not just a choice, it's the need of the hour for a sustainable future.", image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg" },
-      { name: "Ms. Anita Verma", role: "CEO, Organic India", quote: "Consumer awareness and trust are the strongest pillars of the organic movement.", image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg" },
-      { name: "Mr. Suresh Kumar", role: "Founder, 24 Mantra Organic", quote: "From our farms to your table, organic is our promise for a healthier India.", image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg" },
-      { name: "Dr. Neha Sharma", role: "Sustainability Expert", quote: "Sustainable living begins with conscious choices we make every day.", image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg" },
-      { name: "Mr. Arjun Singh", role: "Agri Entrepreneur", quote: "Innovation and collaboration are driving India's organic future forward.", image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg" },
+      { name: "Dr. Ramesh Patel", role: "Organic Farming Expert", quote: "Organic agriculture is not just a choice, it's the need of the hour for a sustainable future.", image: "" },
+      { name: "Ms. Anita Verma", role: "CEO, Organic India", quote: "Consumer awareness and trust are the strongest pillars of the organic movement.", image: "" },
+      { name: "Mr. Suresh Kumar", role: "Founder, 24 Mantra Organic", quote: "From our farms to your table, organic is our promise for a healthier India.", image: "" },
+      { name: "Dr. Neha Sharma", role: "Sustainability Expert", quote: "Sustainable living begins with conscious choices we make every day.", image: "" },
+      { name: "Mr. Arjun Singh", role: "Agri Entrepreneur", quote: "Innovation and collaboration are driving India's organic future forward.", image: "" },
     ],
   },
   {
@@ -93,7 +93,7 @@ export const defaultBlogSections: LandingSectionContent[] = [
         description: "A glimpse into grand launches, leading brands, knowledge sessions and business networking at India's biggest organic expo.",
         date: "May 7, 2026",
         readTime: "3 min read",
-        image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg"
+        image: ""
       },
       {
         tag: "Business Update",
@@ -101,7 +101,7 @@ export const defaultBlogSections: LandingSectionContent[] = [
         description: "How exhibitors, buyers and partners are creating new markets and long-term growth opportunities.",
         date: "May 5, 2026",
         readTime: "4 min read",
-        image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg"
+        image: ""
       }
     ],
   },
@@ -113,9 +113,9 @@ export const defaultBlogSections: LandingSectionContent[] = [
     title: "Video Insights",
     buttonLabel: "View all",
     items: [
-      { title: "The Future of Organic Farming in India", duration: "6:24", image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg" },
-      { title: "Inside Bharat Organic Expo", duration: "4:18", image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg" },
-      { title: "Organic Brands & Sustainable Innovation", duration: "5:10", image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg" },
+      { title: "The Future of Organic Farming in India", duration: "6:24", image: "" },
+      { title: "Inside Bharat Organic Expo", duration: "4:18", image: "" },
+      { title: "Organic Brands & Sustainable Innovation", duration: "5:10", image: "" },
     ],
   },
   {

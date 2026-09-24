@@ -19,7 +19,7 @@ import {
   Share2,
 } from "lucide-react";
 import Swal from "sweetalert2";
-import { api } from "@/lib/api";
+import { api, getBackendUrl } from "@/lib/api";
 import typography from "../pages/PagesTypography.module.css";
 
 const FacebookIcon = ({ size = 16, color = "#1877F2" }: { size?: number; color?: string }) => (
@@ -175,7 +175,7 @@ export default function AdvancedSeoPage() {
   const footerRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4001";
+  const backendUrl = getBackendUrl();
 
   useEffect(() => {
     fetchData();

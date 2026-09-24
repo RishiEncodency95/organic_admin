@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { ChevronRight, Plus, Trash2 } from "lucide-react";
 import { FieldLabel, ImageUploadField, SelectField, TextInput, Textarea, Toggle, VideoUploadField } from "../fields";
+import RichTextEditor from "@/components/RichTextEditor";
 import { IMAGE_KEY_PATTERN, LONG_TEXT_KEY_PATTERN, VIDEO_KEY_PATTERN, humanizeKey } from "./sectionFieldHelpers";
 
 /* =========================================================
@@ -532,6 +533,13 @@ export function SectionItemsEditor({
                           </div>
                         ) : typeof value === "boolean" ? (
                           <Toggle checked={value} onChange={(next) => onChangeItem(index, key, next)} />
+                        ) : isLong && sectionId === "contact-hero" && key === "description" ? (
+                          <RichTextEditor
+                            value={String(value)}
+                            onChange={(next) => onChangeItem(index, key, next)}
+                            minHeight="90px"
+                            placeholder="Short description..."
+                          />
                         ) : isLong ? (
                           <Textarea
                             value={String(value)}

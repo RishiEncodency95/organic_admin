@@ -1,10 +1,12 @@
 "use client";
+import { getImageSizeError, showUploadError } from "@/lib/uploadLimit";
 
 import { useMemo, useRef, useState, useEffect } from "react";
 import Modal from "@/components/ui/Modal";
 import { Input, Label } from "@/components/ui/Input";
 import typography from "../pages/PagesTypography.module.css";
 import { useAppSelector } from "@/store/hooks";
+import { getBackendUrl } from "@/lib/api";
 import {
   ArrowRight,
   Building2,
@@ -544,45 +546,53 @@ export default function TrustedLeadersPage() {
 
   // Upload file helper
   const uploadImageFile = async (file: File): Promise<string> => {
+    const sizeError = await getImageSizeError(file);
+    if (sizeError) throw new Error(sizeError);
     try {
       setIsUploading(true);
       const formData = new FormData();
       formData.append("file", file);
       formData.append("folder", "bharat-organic/partners");
 
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4001";
+      const backendUrl = getBackendUrl();
       let res = await fetch(`${backendUrl}/api/uploads?folder=bharat-organic/partners`, {
         method: "POST",
         body: formData,
       }).catch(() => null);
+      let reachedServer = Boolean(res);
 
-      if (!res || !res.ok) {
+      if (!res) {
         res = await fetch(`/api/uploads?folder=bharat-organic/partners`, {
           method: "POST",
           body: formData,
         }).catch(() => null);
+        reachedServer = Boolean(res);
       }
 
       if (res && res.ok) {
         const json = await res.json().catch(() => null);
-        if (json) {
-          let finalUrl = json.data?.url || json.url || json.data?.secure_url || json.secure_url;
-          if (finalUrl) {
-            if (finalUrl.startsWith("http://res.cloudinary.com")) {
-              finalUrl = finalUrl.replace("http://res.cloudinary.com", "https://res.cloudinary.com");
-            }
-            if (finalUrl.startsWith("http")) return finalUrl;
-            return `${backendUrl.replace(/\/$/, "")}${finalUrl.startsWith("/") ? "" : "/"}${finalUrl}`;
+        let finalUrl = json?.data?.url || json?.url || json?.data?.secure_url || json?.secure_url;
+        if (finalUrl) {
+          if (finalUrl.startsWith("http://res.cloudinary.com")) {
+            finalUrl = finalUrl.replace("http://res.cloudinary.com", "https://res.cloudinary.com");
           }
+          if (finalUrl.startsWith("http")) return finalUrl;
+          return `${backendUrl.replace(/\/$/, "")}${finalUrl.startsWith("/") ? "" : "/"}${finalUrl}`;
         }
       }
-    } catch (err) {
-      console.error("Upload error:", err);
+
+      // The server responded but rejected the upload (e.g. over the configured max image
+      // size) — surface the real reason instead of silently degrading to a base64 embed.
+      if (reachedServer && res) {
+        const errorBody = await res.json().catch(() => null);
+        throw new Error(errorBody?.message || `Upload failed (status ${res.status}).`);
+      }
     } finally {
       setIsUploading(false);
     }
 
-    // Convert to Base64 data URL
+    // The server was genuinely unreachable (not a rejection) — fall back to embedding.
+    console.warn("Could not reach the upload server; embedding image as a data URL instead.");
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result as string);
@@ -597,7 +607,15 @@ export default function TrustedLeadersPage() {
       const activeAdmin = loggedInAdminName;
       const sizeStr = `${(file.size / 1024).toFixed(1)} KB`;
       const timeNow = formatTimestamp();
-      const uploadedUrl = await uploadImageFile(file);
+
+      let uploadedUrl: string;
+      try {
+        uploadedUrl = await uploadImageFile(file);
+      } catch (err) {
+        showUploadError(err);
+        e.target.value = "";
+        return;
+      }
 
       if (isReplace && selected) {
         const targetKey = CATEGORY_KEYS[selected.category];

@@ -61,6 +61,7 @@ export function humanizeKey(key: string) {
   if (key === "bgImage") return "Hero Background Banner Image (Upload / URL)";
   if (key === "image") return "Right Image (Upload / URL)";
   if (key === "iconImage") return "Top Image / Icon (Upload / URL)";
+  if (key === "mapEmbedUrl") return "Map Embed URL (Google Maps 'Embed a map' link)";
   if (key === "main") return "Highlight Title";
   if (key === "sub") return "Highlight Subtitle";
   return key

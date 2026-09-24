@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppSelector } from "@/store/hooks";
+import { getBackendUrl } from "@/lib/api";
 import Modal from "@/components/ui/Modal";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import typography from "../pages/PagesTypography.module.css";
@@ -36,7 +37,9 @@ import {
 } from "lucide-react";
 import Swal from "sweetalert2";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4001";
+// Resolved at runtime from the actual page domain — not a build-time env var, which can
+// end up baked in as "localhost" if the production build wasn't given its own .env.
+const BACKEND_URL = getBackendUrl();
 
 // SweetAlert2 theme matching admin portal dark style with zero shadow
 const Toast = Swal.mixin({

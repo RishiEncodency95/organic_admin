@@ -302,7 +302,7 @@ export function syncAwardsSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft
                 secondaryButtonHref: data.secondaryButtonHref || sec.secondaryButtonHref || "/awards",
                 date: data.date || sec.date || "19 - 21 February 2027",
                 location: data.location || sec.location || "Hall 12, Bharat Mandapam, PRAGATI MAIDAN, NEW DELHI, INDIA",
-                image: data.image || data.bgImage || sec.image || "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
+                image: data.image || data.bgImage || sec.image || "",
               };
               delete (updatedSec as any).eyebrow;
               return updatedSec;
@@ -492,7 +492,7 @@ export async function saveAwardsSections(sectionsDraft: SectionsDraft): Promise<
         secondaryButtonHref: nomHeroSec.secondaryButtonHref || "/awards",
         date: nomHeroSec.date || "19 - 21 February 2027",
         location: nomHeroSec.location || "Hall 12, Bharat Mandapam, PRAGATI MAIDAN, NEW DELHI, INDIA",
-        image: nomHeroSec.image || "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
+        image: nomHeroSec.image || "",
       });
     } catch (err) {
       console.error("Failed to sync awards nomination hero to backend:", err);

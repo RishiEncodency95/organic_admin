@@ -5,5 +5,8 @@ export { syncWhyExhibitSectionsFromLiveApi, saveWhyExhibitSections } from "./why
 export { syncWhyVisitSectionsFromLiveApi, saveWhyVisitSections } from "./whyVisit";
 export { syncAwardsSectionsFromLiveApi, saveAwardsSections } from "./awards";
 export { syncGallerySectionsFromLiveApi, saveGallerySections } from "./gallery";
+export { syncAboutSectionsFromLiveApi, saveAboutSections } from "./about";
+export { syncAdvisorySectionsFromLiveApi, saveAdvisorySections } from "./advisory";
+export { syncSponsorshipSectionsFromLiveApi, saveSponsorshipSections } from "./sponsorship";
 export { syncPageSeoFromLiveApi, savePageCore } from "./pageSeo";
 export type { SectionsDraft, SetSectionsDraft } from "./types";

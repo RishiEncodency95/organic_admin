@@ -78,7 +78,9 @@ export const defaultContactSections: ContactSectionContent[] = [
     eyebrow: "FIND US & SUBSCRIBE",
     title: "Find Us Here & Stay Updated!",
     subtitle: "Subscribe to our newsletter and never miss an update.",
-    description: "Pragati Maidan, New Delhi - 110001, India",
+    description: "12/29, Site II Industrial Area, Loni Rd, Mohan Nagar, Ghaziabad, Uttar Pradesh 201007, India",
+    mapEmbedUrl:
+      "https://maps.google.com/maps?q=12/29,%20Site%20II%20Industrial%20Area,%20Loni%20Rd,%20Mohan%20Nagar,%20Ghaziabad,%20Uttar%20Pradesh%20201007,%20India&t=&z=15&ie=UTF8&iwloc=&output=embed",
     buttonLabel: "Get Directions",
     secondaryButtonLabel: "Subscribe",
   },

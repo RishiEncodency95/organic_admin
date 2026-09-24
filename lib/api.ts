@@ -730,13 +730,16 @@ async function request<T>(path: string, options?: ApiRequestOptions, isRetry = f
   const timeoutId = setTimeout(() => timeoutController.abort(), options?.timeoutMs ?? REQUEST_TIMEOUT_MS);
   const { timeoutMs: _timeoutMs, ...fetchOptions } = options ?? {};
   let res: Response;
-  // Paths that have real backends — errors should be thrown, not mocked
+  const isWrite = (options?.method ?? "GET").toUpperCase() !== "GET";
+  // Paths that have real backends — errors should be thrown, not mocked.
+  // Writes to settings/uploads/website content must never report a fake success.
   const isRealBackendPath =
     path.includes("/staff") ||
     path.includes("/roles") ||
     path.includes("/auth") ||
     path.includes("/seo-settings") ||
-    path.includes("/careers");
+    path.includes("/careers") ||
+    (isWrite && (path.startsWith("/settings") || path.startsWith("/uploads") || path.startsWith("/website")));
 
   try {
     res = await fetch(`${getApiBaseUrl()}${path}`, {

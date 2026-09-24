@@ -42,6 +42,12 @@ import {
   saveAwardsSections,
   syncGallerySectionsFromLiveApi,
   saveGallerySections,
+  syncAboutSectionsFromLiveApi,
+  saveAboutSections,
+  syncAdvisorySectionsFromLiveApi,
+  saveAdvisorySections,
+  syncSponsorshipSectionsFromLiveApi,
+  saveSponsorshipSections,
   syncPageSeoFromLiveApi,
   savePageCore,
 } from "@/components/pages-cms/page-strategies";
@@ -357,7 +363,12 @@ export default function CmsEditPage() {
         updateField("ogImage", url);
       }
     } catch (err) {
-      console.error("Failed to upload OG image", err);
+      Swal.fire({
+        title: "Upload Failed",
+        text: err instanceof Error ? err.message : "Could not upload the image.",
+        icon: "error",
+        confirmButtonColor: "#218DAE",
+      });
     } finally {
       setOgUploading(false);
     }
@@ -442,6 +453,18 @@ export default function CmsEditPage() {
 
     if (page.configKey === "galleryPage" || page.slug?.includes("gallery") || page.slug?.includes("glimpses")) {
       syncGallerySectionsFromLiveApi(setSectionsDraft);
+    }
+
+    if (page.configKey === "aboutPage" || page.slug === "/about") {
+      syncAboutSectionsFromLiveApi(setSectionsDraft);
+    }
+
+    if (page.configKey === "advisoryPage" || page.slug?.includes("advisory_board_member")) {
+      syncAdvisorySectionsFromLiveApi(setSectionsDraft);
+    }
+
+    if (page.configKey === "sponsorshipPage" || page.slug === "/sponsorship") {
+      syncSponsorshipSectionsFromLiveApi(setSectionsDraft);
     }
 
     syncPageSeoFromLiveApi(page, setForm, canonicalEditorRef);
@@ -616,6 +639,18 @@ export default function CmsEditPage() {
         await saveGallerySections(sectionsDraft);
       }
 
+      if (savingKey === "aboutPage" || page.slug === "/about") {
+        await saveAboutSections(sectionsDraft);
+      }
+
+      if (savingKey === "advisoryPage" || page.slug?.includes("advisory_board_member")) {
+        await saveAdvisorySections(sectionsDraft);
+      }
+
+      if (savingKey === "sponsorshipPage" || page.slug === "/sponsorship") {
+        await saveSponsorshipSections(sectionsDraft);
+      }
+
       const updated = await savePageCore({
         savingKey,
         sectionsDraft,
@@ -637,6 +672,13 @@ export default function CmsEditPage() {
         icon: "success",
         confirmButtonColor: "#218DAE",
         timer: 2000,
+      });
+    } catch (err) {
+      Swal.fire({
+        title: "Save Failed",
+        text: err instanceof Error ? err.message : "Could not save this page.",
+        icon: "error",
+        confirmButtonColor: "#218DAE",
       });
     } finally {
       setSaving(false);

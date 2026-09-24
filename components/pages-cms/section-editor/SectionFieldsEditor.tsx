@@ -307,6 +307,24 @@ export function SectionFieldsEditor({
       ) {
         return false;
       }
+      if (
+        (section.key === "about-hero" || section.name === "AboutHero") &&
+        key === "secondaryImage"
+      ) {
+        return false;
+      }
+      if (
+        (section.key === "home-about" || section.name === "HomeAbout (Who We Are)") &&
+        key === "secondaryImage"
+      ) {
+        return false;
+      }
+      if (
+        (section.key === "advisory-hero" || section.name === "AdvisoryHero") &&
+        key === "secondaryImage"
+      ) {
+        return false;
+      }
       return typeof value === "string" || typeof value === "boolean";
     },
   );
@@ -318,9 +336,9 @@ export function SectionFieldsEditor({
   return (
     <div className="grid grid-cols-2 gap-x-[16px] gap-y-[10px]">
       {entries.map(([key, value]) => {
-        const isLong = LONG_TEXT_KEY_PATTERN.test(key);
+        const isLong = LONG_TEXT_KEY_PATTERN.test(key) || key === "mapEmbedUrl";
         const isImage = IMAGE_KEY_PATTERN.test(key) && !/alt/i.test(key);
-        const isVideo = VIDEO_KEY_PATTERN.test(key);
+        const isVideo = VIDEO_KEY_PATTERN.test(key) && key !== "mapEmbedUrl";
         const isPdf =
           (section.key === "why-participate" && key === "secondaryButtonHref") ||
           /brochure|pdf/i.test(key) ||
@@ -331,13 +349,23 @@ export function SectionFieldsEditor({
           /date|time/i.test(key) &&
           typeof value === "string";
         const fieldLimit = isLong ? 450 : 140;
+        const label =
+          (section.key === "about-hero" || section.name === "AboutHero") && key === "image"
+            ? "Background Image (Upload)"
+            : (section.key === "home-about" || section.name === "HomeAbout (Who We Are)") && key === "image"
+              ? "Left Image (Upload)"
+              : (section.key === "advisory-hero" || section.name === "AdvisoryHero") && key === "image"
+                ? "Background Image (Upload)"
+                : (section.key === "sponsorship-hero" || section.name === "Sponsorship Hero & Key Stats") && key === "image"
+                  ? "Background Image (Upload)"
+                  : humanizeKey(key);
 
         return (
           <div
             key={key}
             className={isLong || isImage || isVideo || isPdf || typeof value === "boolean" || /^keyPoint/i.test(key) || /alt/i.test(key) ? "col-span-2" : ""}
           >
-            <FieldLabel>{humanizeKey(key)}</FieldLabel>
+            <FieldLabel>{label}</FieldLabel>
 
             {typeof value === "boolean" ? (
               <Toggle checked={value} onChange={(next: boolean) => onFieldChange(key, next)} />
@@ -371,12 +399,19 @@ export function SectionFieldsEditor({
                 <span className="text-[10px] text-[#64748b]">Select date and time for live countdown timer</span>
               </div>
             ) : isLong ? (
-              <Textarea
-                value={String(value)}
-                onChange={(next: string) => onFieldChange(key, next)}
-                rows={3}
-                noLimit={section.key === "why-visit-matters"}
-              />
+              <>
+                <Textarea
+                  value={String(value)}
+                  onChange={(next: string) => onFieldChange(key, next)}
+                  rows={key === "mapEmbedUrl" ? 2 : 3}
+                  noLimit={section.key === "why-visit-matters" || key === "mapEmbedUrl"}
+                />
+                {key === "mapEmbedUrl" && (
+                  <p className="mt-1 text-[9px] text-[#64748b]">
+                    Google Maps → Share → Embed a map → paste the full &lt;iframe&gt; code or just the src link here.
+                  </p>
+                )}
+              </>
             ) : (
               <TextInput
                 value={String(value)}

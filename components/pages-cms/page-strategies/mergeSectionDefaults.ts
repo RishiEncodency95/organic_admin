@@ -192,7 +192,7 @@ export function mergeSectionWithSavedData(
     if (!merged.titleMain) merged.titleMain = "Beyond An";
     if (!merged.titleHighlight) merged.titleHighlight = "Exhibition";
     if (!merged.description) merged.description = "Join India's most powerful ecosystem for the organic industry. From high-impact B2B matchmaking and leadership summits to global networking, we provide everything you need to scale your business.";
-    if (!merged.image) merged.image = "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg";
+    if (!merged.image) merged.image = "";
     if (!merged.imageAlt) merged.imageAlt = "Conferences & Seminars";
     if (Array.isArray(merged.items)) {
       merged.items = merged.items.map((it: any) => ({
@@ -214,7 +214,7 @@ export function mergeSectionWithSavedData(
     if (!merged.titlePrefix) merged.titlePrefix = "WHY";
     if (!merged.titleHighlight) merged.titleHighlight = "ATTEND?";
     if (!merged.description) merged.description = "Explore innovations, build connections and gain insights that drive better health and stronger businesses.";
-    if (!merged.image) merged.image = "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg";
+    if (!merged.image) merged.image = "";
     if (!merged.imageAlt) merged.imageAlt = "Why Attend Expo";
     if (!merged.buttonLabel) merged.buttonLabel = "REGISTER AS VISITOR!";
     if (!merged.buttonHref) merged.buttonHref = "/registration/visitor-registration";

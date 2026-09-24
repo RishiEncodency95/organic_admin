@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { ExternalLink, ImageIcon, RotateCcw, Trash2, Upload } from "lucide-react";
+import Swal from "sweetalert2";
 import { uploadApi } from "@/lib/uploadApi";
+import { ApiRequestError } from "@/lib/api";
 import { TextInput } from "./TextInput";
 
 export function ImageUploadField({
@@ -23,13 +25,18 @@ export function ImageUploadField({
     try {
       const res: any = await uploadApi.file(file, "bharat-organic/content");
       const uploadedUrl = res?.url || res?.data?.url;
-      if (uploadedUrl) {
-        onChange(uploadedUrl);
-      }
+      if (!uploadedUrl) throw new Error("Server did not return an image URL.");
+      onChange(uploadedUrl);
     } catch (err) {
-      console.error("Failed to upload image", err);
+      Swal.fire({
+        title: "Upload Failed",
+        text: err instanceof ApiRequestError || err instanceof Error ? err.message : "Could not upload the image.",
+        icon: "error",
+        confirmButtonColor: "#218DAE",
+      });
     } finally {
       setUploading(false);
+      e.target.value = "";
     }
   };
 
