@@ -12,7 +12,7 @@ export const defaultParticipateAsExhibitorSections: LandingSectionContent[] = [
     description: "The Buyer–Seller Meet at Bharat Organic Expo 2027 brings together serious buyers and quality suppliers from across the organic, natural and sustainable industry ecosystem to create meaningful business opportunities.",
     date: "19–21 February 2027",
     location: "Hall 12, Bharat Mandapam, New Delhi",
-    image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
+    image: "",
     imageAlt: "Bharat Organic Expo Buyer-Seller Meet 2027",
     buttonLabel: "REGISTER AS A BUYER",
     buttonHref: "/registration/buyer-registration",
@@ -62,7 +62,7 @@ export const defaultParticipateAsExhibitorSections: LandingSectionContent[] = [
     secondaryDescription: "Exhibitors at Bharat Organic Expo 2027 can use the Buyer–Seller Meet platform to connect with highly relevant business buyers and explore sourcing, distribution, procurement and strategic partnership opportunities.",
     buttonLabel: "PARTICIPATE AS AN EXHIBITOR",
     buttonHref: "/registration/book-a-stand",
-    image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
+    image: "",
     items: [
       { title: "Meet decision-makers from across the industry" },
       { title: "Explore new sourcing and business opportunities" },

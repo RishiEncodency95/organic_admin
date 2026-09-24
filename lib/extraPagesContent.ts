@@ -1130,7 +1130,7 @@ export const defaultAmbulanceSections: ExtraSectionContent[] = [
     enabled: true,
     title: "Your Donation Brings Peace",
     description: "Your kind contribution helps us provide ambulance, hearse and last-journey support to families who cannot afford it. Together, we can bring comfort, dignity and peace in their most difficult moments.",
-    image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
+    image: "",
     buttonLabel: "Donate for Ambulance Service",
     buttonHref: "/donation",
     secondaryButtonLabel: "Support Our Sewa",

@@ -10,7 +10,7 @@ export const defaultWhyVisitSections: LandingSectionContent[] = [
     titleSecondary: "Connect Directly.",
     titleHighlight: "Grow Your Business.",
     description: "Discover new products, meet manufacturers and suppliers, explore sourcing opportunities and build valuable business connections across India's growing organic, natural and sustainable ecosystem.",
-    image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
+    image: "",
     imageAlt: "Why Visit Bharat Organic Expo 2027",
     buttonLabel: "REGISTER AS A BUYER",
     buttonHref: "/registration/buyer-registration",

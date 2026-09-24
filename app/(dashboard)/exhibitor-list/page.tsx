@@ -625,7 +625,7 @@ export default function ExhibitorListPage() {
     return exhibitors.find((item) => item.id === selectedId) || exhibitors[0];
   }, [exhibitors, selectedId]);
 
-  const defaultCloudinaryLogo = "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg";
+  const defaultCloudinaryLogo = "";
 
   // Open modal for Create
   const handleOpenCreate = () => {

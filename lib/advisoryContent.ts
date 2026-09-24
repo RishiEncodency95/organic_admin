@@ -10,7 +10,7 @@ export const defaultAdvisorySections: LandingSectionContent[] = [
     titleSecondary: "BOARD MEMBERS",
     subtitle: "GUIDING. INSPIRING. TRANSFORMING.",
     description: "Our Advisory Board comprises distinguished leaders, industry experts, and visionaries who bring strategic guidance, deep expertise and a shared commitment to drive Bharat Organic Expo towards a sustainable, innovative and impactful future.",
-    image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
+    image: "",
     imageAlt: "Bharat Organic Expo 2027 Advisory Board Members",
     items: [
       { title: "LEADING VISIONARIES", subtitle: "From diverse industries", icon: "Users" },
@@ -29,7 +29,7 @@ export const defaultAdvisorySections: LandingSectionContent[] = [
     description: "At Bharat Organic Expo 2027, we believe in the power of collaboration, innovation, and sustainability.",
     secondaryDescription: "This platform brings together visionaries, experts, and changemakers to create a lasting impact on health and organic wellness.",
     quote: "A global platform for innovation and collaboration in the organic, health & wellness industry. We aim to empower communities, promote sustainable practices, and drive transformative growth by connecting visionaries and eco-conscious enterprises worldwide.",
-    image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
+    image: "",
     imageAlt: "Mr. Vijay Sharma - Chairman",
     authorName: "Mr. Vijay Sharma",
     authorDesignation: "Chairman, Bharat Organic Expo 2027",
@@ -46,63 +46,63 @@ export const defaultAdvisorySections: LandingSectionContent[] = [
         label: "PRESIDENT",
         description: "International President of Our Ayurveda Mission, National Vice-President Arogya Bharti.",
         location: "India",
-        image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg"
+        image: ""
       },
       {
         title: "Professor (Vd.) Pradeep Kumar Prajapati",
         label: "DIRECTOR",
         description: "All India Institute of Ayurveda (AIIA)",
         location: "India",
-        image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg"
+        image: ""
       },
       {
         title: "Dr. Naresh Kumar Chhavania",
         label: "PRESIDENT",
         description: "IMA AYUS",
         location: "India",
-        image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg"
+        image: ""
       },
       {
         title: "Dr. Kamlesh Kumar Dwivedi",
         label: "MEMBER OF THE BOARD OF AYURVEDA",
         description: "National Commission for Indian System of Medicine (NCISM), Ministry of Ayush",
         location: "India",
-        image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg"
+        image: ""
       },
       {
         title: "Prof. (Dr.) Atul Babu Varshney",
         label: "MEMBER OF THE BOARD OF AYURVEDA",
         description: "National Commission for Indian System of Medicine (NCISM), Ministry of Ayush",
         location: "India",
-        image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg"
+        image: ""
       },
       {
         title: "Dr. Sandeep Marwah",
         label: "FOUNDER OF NOIDA FILM CITY",
         description: "Marwah Studios",
         location: "India",
-        image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg"
+        image: ""
       },
       {
         title: "ACHARYA SHRI JAGDISHJI MAHARAJ",
         label: "FOUNDER OF NAMO GANGE TRUST",
         description: "",
         location: "India",
-        image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg"
+        image: ""
       },
       {
         title: "Dr. D.N. Sharma",
         label: "VICE PRESIDENT",
         description: "International Naturopathy Organisation (INO)",
         location: "India",
-        image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg"
+        image: ""
       },
       {
         title: "Dr. Rohit Bhandari",
         label: "FOUNDER & DIRECTOR",
         description: "The Homeo Healers Homeopathy Worldwide",
         location: "India",
-        image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg"
+        image: ""
       }
     ],
   },
@@ -161,7 +161,7 @@ export const defaultNominateAdvisorySections: LandingSectionContent[] = [
     titleSecondary: "ADVISORY BOARD MEMBER",
     subtitle: "Help shape the future of Bharat Organic Expo 2027.",
     description: "Do you know a visionary leader, industry pioneer, or subject matter expert who can guide the organic & natural ecosystem? Submit your nomination below.",
-    image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
+    image: "",
     buttonLabel: "VIEW ADVISORY BOARD",
     buttonHref: "/about/advisory_board_member",
   },

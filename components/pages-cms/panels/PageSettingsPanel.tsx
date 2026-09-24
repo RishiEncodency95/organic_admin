@@ -116,20 +116,21 @@ export function PageSettingsPanel({
                 bg-[#faf8f3]
               "
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-
-              <img
-                src={
-                  FEATURED_IMAGE
-                }
-                alt="Featured"
-                className="
-                  h-full
-                  w-full
-                  object-contain
-                  object-center
-                "
-              />
+              {FEATURED_IMAGE ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={FEATURED_IMAGE}
+                  alt="Featured"
+                  className="
+                    h-full
+                    w-full
+                    object-contain
+                    object-center
+                  "
+                />
+              ) : (
+                <span className="text-[8.5px] font-medium text-[#b3b8c2]">No image</span>
+              )}
             </div>
 
             <div className="min-w-0">

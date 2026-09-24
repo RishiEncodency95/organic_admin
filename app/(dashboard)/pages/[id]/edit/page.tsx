@@ -42,6 +42,12 @@ import {
   saveAwardsSections,
   syncGallerySectionsFromLiveApi,
   saveGallerySections,
+  syncAboutSectionsFromLiveApi,
+  saveAboutSections,
+  syncAdvisorySectionsFromLiveApi,
+  saveAdvisorySections,
+  syncSponsorshipSectionsFromLiveApi,
+  saveSponsorshipSections,
   syncPageSeoFromLiveApi,
   savePageCore,
 } from "@/components/pages-cms/page-strategies";
@@ -449,6 +455,18 @@ export default function CmsEditPage() {
       syncGallerySectionsFromLiveApi(setSectionsDraft);
     }
 
+    if (page.configKey === "aboutPage" || page.slug === "/about") {
+      syncAboutSectionsFromLiveApi(setSectionsDraft);
+    }
+
+    if (page.configKey === "advisoryPage" || page.slug?.includes("advisory_board_member")) {
+      syncAdvisorySectionsFromLiveApi(setSectionsDraft);
+    }
+
+    if (page.configKey === "sponsorshipPage" || page.slug === "/sponsorship") {
+      syncSponsorshipSectionsFromLiveApi(setSectionsDraft);
+    }
+
     syncPageSeoFromLiveApi(page, setForm, canonicalEditorRef);
   }, [settings, page]);
 
@@ -619,6 +637,18 @@ export default function CmsEditPage() {
 
       if (savingKey === "galleryPage" || page.slug?.includes("gallery") || page.slug?.includes("glimpses")) {
         await saveGallerySections(sectionsDraft);
+      }
+
+      if (savingKey === "aboutPage" || page.slug === "/about") {
+        await saveAboutSections(sectionsDraft);
+      }
+
+      if (savingKey === "advisoryPage" || page.slug?.includes("advisory_board_member")) {
+        await saveAdvisorySections(sectionsDraft);
+      }
+
+      if (savingKey === "sponsorshipPage" || page.slug === "/sponsorship") {
+        await saveSponsorshipSections(sectionsDraft);
       }
 
       const updated = await savePageCore({

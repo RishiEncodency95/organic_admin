@@ -12,7 +12,7 @@ export const defaultExhibitionCategoriesSections: LandingSectionContent[] = [
     description: "Discover innovative products, sustainable solutions, certified organic produce, and cutting-edge technologies across key sector categories.",
     date: "19–21 February 2027",
     location: "Hall 12, Bharat Mandapam, New Delhi",
-    image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
+    image: "",
     buttonLabel: "BOOK YOUR STALL",
     buttonHref: "/registration/book-a-stand",
     secondaryButtonLabel: "REGISTER AS VISITOR",

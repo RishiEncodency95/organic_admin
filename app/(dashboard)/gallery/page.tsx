@@ -680,6 +680,126 @@ export default function MediaLibraryPage() {
     );
   };
 
+  const handleSelectAllFiltered = () => {
+    setSelectedIds(filteredRows.map((x) => x.id));
+  };
+
+  const handleClearSelection = () => {
+    setSelectedIds([]);
+  };
+
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  /** Deletes the given items from the backend and local state. No confirmation — callers must confirm first. */
+  const deleteItemsBulk = async (targets: MediaItem[]) => {
+    setBulkDeleting(true);
+    let succeeded = 0;
+    let failed = 0;
+    const CHUNK_SIZE = 20;
+    for (let i = 0; i < targets.length; i += CHUNK_SIZE) {
+      const chunk = targets.slice(i, i + CHUNK_SIZE);
+      const results = await Promise.allSettled(
+        chunk.map((item) =>
+          item._id
+            ? fetch(`${BACKEND_URL}/api/website/gallery/items/${item._id}`, { method: "DELETE" })
+            : Promise.resolve(null)
+        )
+      );
+      results.forEach((r) => {
+        if (r.status === "fulfilled") succeeded++;
+        else failed++;
+      });
+    }
+
+    const deletedIds = new Set(targets.map((x) => x.id));
+    const updated = mediaItems.filter((x) => !deletedIds.has(x.id));
+    setMediaItems(updated);
+    saveMediaToLocal(updated);
+    setSelectedIds([]);
+    if (selectedId !== null && deletedIds.has(selectedId)) {
+      setSelectedId(updated[0]?.id ?? null);
+    }
+    setBulkDeleting(false);
+
+    if (failed === 0) {
+      showSuccess(`${succeeded} photo${succeeded === 1 ? "" : "s"} deleted from Media Library.`);
+    } else {
+      Swal.fire({
+        title: "Some deletes failed",
+        text: `${succeeded} deleted successfully, ${failed} failed. Try again for the remaining items.`,
+        icon: "warning",
+        confirmButtonColor: "#218DAE",
+        background: "#1e2433",
+        color: "#f8fafc",
+      });
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    const targets = mediaItems.filter((x) => selectedIds.includes(x.id));
+
+    const confirm = await Swal.fire({
+      title: `Delete ${targets.length} photo${targets.length === 1 ? "" : "s"}?`,
+      text: "These photo assets will be permanently removed from the Media Library and from the live website.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: `Yes, Delete ${targets.length}`,
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#64748b",
+      background: "#1e2433",
+      color: "#f8fafc",
+      customClass: {
+        popup: "swal-toast-popup",
+      },
+    });
+    if (!confirm.isConfirmed) return;
+    await deleteItemsBulk(targets);
+  };
+
+  /** Deletes every photo currently matching the search box / dropdown filters, in one click — no need to tick checkboxes first. */
+  const handleBulkDeleteFiltered = async () => {
+    const targets = filteredRows;
+    const noFilterActive =
+      searchQuery.trim() === "" &&
+      selectedCategory === "All Activities" &&
+      selectedYear === "All Years" &&
+      statusFilter === "All Status";
+
+    if (targets.length === 0) {
+      Swal.fire({
+        title: "Nothing to delete",
+        text: "No photos match the current search/filter.",
+        icon: "info",
+        confirmButtonColor: "#218DAE",
+        background: "#1e2433",
+        color: "#f8fafc",
+      });
+      return;
+    }
+
+    const confirm = await Swal.fire({
+      title: `Delete ${targets.length} photo${targets.length === 1 ? "" : "s"}?`,
+      html: noFilterActive
+        ? `<p style="color:#fca5a5;font-weight:700;">No search/filter is active — this will delete <u>ALL ${targets.length}</u> photos in the Media Library.</p>`
+        : `<p>These ${targets.length} photos match your current search/filter and will be permanently removed from the Media Library and the live website.</p>`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: `Yes, Delete ${targets.length}`,
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#64748b",
+      background: "#1e2433",
+      color: "#f8fafc",
+      customClass: {
+        popup: "swal-toast-popup",
+      },
+    });
+    if (!confirm.isConfirmed) return;
+    await deleteItemsBulk(targets);
+  };
+
   // Status Change
   const handleStatusChange = async (id: number, newStatus: MediaStatus) => {
     const target = mediaItems.find((x) => x.id === id);
@@ -988,6 +1108,18 @@ export default function MediaLibraryPage() {
               <Plus className="h-[12px] w-[12px]" strokeWidth={1.7} />
               Upload New Media
             </button>
+
+            {/* 4. BULK DELETE (deletes everything matching the current search/filter) */}
+            <button
+              type="button"
+              onClick={handleBulkDeleteFiltered}
+              disabled={bulkDeleting}
+              className="flex h-[30px] items-center justify-center gap-[5px] rounded-[6px] bg-[#dc2626] px-[14px] text-[8.5px] font-semibold text-white shadow-[0_5px_12px_rgba(220,38,38,0.3)] transition hover:bg-[#b91c1c] active:scale-95 disabled:opacity-60"
+              title="Deletes every photo matching the current search/filter"
+            >
+              <Trash2 className="h-[12px] w-[12px]" strokeWidth={1.7} />
+              {bulkDeleting ? "Deleting..." : `Bulk Delete${searchQuery || selectedCategory !== "All Activities" || selectedYear !== "All Years" || statusFilter !== "All Status" ? ` (${filteredRows.length})` : ""}`}
+            </button>
           </div>
         </div>
 
@@ -1162,6 +1294,39 @@ export default function MediaLibraryPage() {
                 Clear
               </button>
             </div>
+
+            {selectedIds.length > 0 && (
+              <div className="mt-[10px] flex flex-wrap items-center gap-[10px] rounded-[6px] border border-[#fecaca] bg-[#fef2f2] px-[12px] py-[8px]">
+                <span className="text-[10.5px] font-bold text-[#991b1b]">
+                  {selectedIds.length} of {filteredRows.length} selected
+                </span>
+                {selectedIds.length < filteredRows.length && (
+                  <button
+                    type="button"
+                    onClick={handleSelectAllFiltered}
+                    className="text-[10px] font-semibold text-[#218DAE] hover:underline"
+                  >
+                    Select all {filteredRows.length} matching this filter
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleClearSelection}
+                  className="text-[10px] font-semibold text-[#64748b] hover:underline"
+                >
+                  Clear selection
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBulkDelete}
+                  disabled={bulkDeleting}
+                  className="ml-auto inline-flex h-[32px] items-center justify-center gap-[6px] rounded-[6px] bg-[#dc2626] px-[14px] text-[10.5px] font-bold text-white shrink-0 hover:bg-[#b91c1c] disabled:opacity-60"
+                >
+                  <Trash2 className="h-[13px] w-[13px]" />
+                  {bulkDeleting ? "Deleting..." : `Delete Selected (${selectedIds.length})`}
+                </button>
+              </div>
+            )}
 
             {/* MEDIA DATA: TABLE VIEW */}
             {viewMode === "table" ? (

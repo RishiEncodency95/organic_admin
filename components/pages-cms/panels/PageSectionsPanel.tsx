@@ -172,7 +172,7 @@ export function PageSectionsPanel({
                               const blank = {
                                 title: "NEW HERO SLIDE",
                                 description: "Enter slide description...",
-                                image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788165233/moksha-sewa/assets/km.jpg",
+                                image: "",
                                 alt: "Hero Banner Slide",
                                 buttonLabel: "Book Your Stall",
                                 buttonHref: "/registration/book-a-stand",
