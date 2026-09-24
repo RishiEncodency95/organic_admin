@@ -208,6 +208,9 @@ export default function LoginPage() {
             refreshToken: result.refreshToken,
           }),
         );
+        if (typeof document !== "undefined") {
+          document.cookie = `ms_admin_token=${encodeURIComponent(result.accessToken)}; path=/; max-age=604800; SameSite=Lax`;
+        }
 
         if (result.twoFactorSetupRequired) {
           const setup = await authApi.setupTwoFactor();
@@ -263,6 +266,9 @@ export default function LoginPage() {
               refreshToken: data.refreshToken,
             }),
           );
+          if (typeof document !== "undefined") {
+            document.cookie = `ms_admin_token=${encodeURIComponent(data.accessToken)}; path=/; max-age=604800; SameSite=Lax`;
+          }
           showToast("success", "2FA Verified! Logging in...");
           router.push("/");
           return;

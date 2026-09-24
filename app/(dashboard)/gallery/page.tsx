@@ -370,7 +370,8 @@ export default function MediaLibraryPage() {
           if (Array.isArray(itemsJson.data)) {
             const clean = itemsJson.data.filter((item: any) => !item.image?.includes("images.unsplash.com"));
             const mapped: MediaItem[] = clean.map((item: any, idx: number) => ({
-              id: item.order || idx + 1,
+              // Must be unique per row: selection, delete and React keys all rely on it, and `order` repeats.
+              id: idx + 1,
               _id: item._id,
               title: item.title,
               year: item.year,
@@ -693,25 +694,30 @@ export default function MediaLibraryPage() {
   /** Deletes the given items from the backend and local state. No confirmation — callers must confirm first. */
   const deleteItemsBulk = async (targets: MediaItem[]) => {
     setBulkDeleting(true);
-    let succeeded = 0;
+    // One request per chunk of ids — per-item DELETE calls hit the backend's 100 req/min rate limit.
+    const CHUNK_SIZE = 500;
+    const deletedIds = new Set<number>();
     let failed = 0;
-    const CHUNK_SIZE = 20;
-    for (let i = 0; i < targets.length; i += CHUNK_SIZE) {
-      const chunk = targets.slice(i, i + CHUNK_SIZE);
-      const results = await Promise.allSettled(
-        chunk.map((item) =>
-          item._id
-            ? fetch(`${BACKEND_URL}/api/website/gallery/items/${item._id}`, { method: "DELETE" })
-            : Promise.resolve(null)
-        )
-      );
-      results.forEach((r) => {
-        if (r.status === "fulfilled") succeeded++;
-        else failed++;
-      });
-    }
 
-    const deletedIds = new Set(targets.map((x) => x.id));
+    targets.filter((item) => !item._id).forEach((item) => deletedIds.add(item.id));
+    const serverTargets = targets.filter((item) => item._id);
+
+    for (let i = 0; i < serverTargets.length; i += CHUNK_SIZE) {
+      const chunk = serverTargets.slice(i, i + CHUNK_SIZE);
+      const res = await fetch(`${BACKEND_URL}/api/website/gallery/items/bulk-delete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: chunk.map((item) => item._id) }),
+      }).catch(() => null);
+
+      if (res && res.ok) {
+        chunk.forEach((item) => deletedIds.add(item.id));
+      } else {
+        failed += chunk.length;
+      }
+    }
+    const succeeded = deletedIds.size;
+
     const updated = mediaItems.filter((x) => !deletedIds.has(x.id));
     setMediaItems(updated);
     saveMediaToLocal(updated);
@@ -910,7 +916,7 @@ export default function MediaLibraryPage() {
         const json = await res.json();
         const serverItem = json.data;
         newItem = {
-          id: serverItem.order || mediaItems.length + 1,
+          id: mediaItems.length > 0 ? Math.max(...mediaItems.map((x) => x.id)) + 1 : 1,
           _id: serverItem._id,
           title: serverItem.title || finalTitle,
           year: serverItem.year || formYear,

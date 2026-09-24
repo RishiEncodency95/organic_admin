@@ -118,7 +118,7 @@ strong, b, .font-bold, .font-semibold, .font-medium {
 /* Moksha Sewa login */
 .login-page{--teal:#00575b;--gold:#efa600;position:relative;display:grid;grid-template-columns:52% 48%;height:100svh;padding-bottom:64px;overflow:hidden;color:#102036;background:#f8edda}
 .login-page,.login-page *{box-sizing:border-box}
-.login-bg{position:fixed!important;inset:0;background:url('/assets/login/loginnew.png') center/cover no-repeat;z-index:0;transform:none!important;transition:none!important}
+.login-bg{position:fixed!important;inset:0;background:url('/assets/login/loginnew.webp') center/cover no-repeat;z-index:0;transform:none!important;transition:none!important}
 
 /* Prevent SweetAlert2 from zooming or shifting background */
 html.swal2-shown, body.swal2-shown, html.swal2-height-auto, body.swal2-height-auto {
