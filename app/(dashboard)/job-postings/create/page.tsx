@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useState, useRef, useEffect } from "react";
+import React, { Suspense, useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import Swal from "sweetalert2";
@@ -13,6 +13,8 @@ import {
   Calendar,
   ArrowRight,
   Settings,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 
 
@@ -177,18 +179,15 @@ function getFirstLineText(container: HTMLElement): string {
   return (container.textContent || "").split("\n")[0];
 }
 
+export interface RichEditorHandle {
+  /** Imperatively replaces the editor's content — used by "Generate with AI" to fill/refill
+   * the field without remounting it (remounting on every regenerate would lose focus/cursor
+   * state and fight the mount-once defaultValue effect below). */
+  setHTML: (html: string) => void;
+}
+
 /* Rich Editor matching 3 columns in Section 3 */
-function RichEditorBlock({
-  label,
-  required = false,
-  defaultValue = "",
-  maxChars = 2000,
-  maxWords,
-  wordLabel = "Words",
-  wordScope = "full",
-  hint,
-  onChange,
-}: {
+const RichEditorBlock = forwardRef<RichEditorHandle, {
   label: string;
   required?: boolean;
   defaultValue?: string;
@@ -202,7 +201,17 @@ function RichEditorBlock({
   wordScope?: "full" | "firstLine";
   hint?: string;
   onChange?: (html: string) => void;
-}) {
+}>(function RichEditorBlock({
+  label,
+  required = false,
+  defaultValue = "",
+  maxChars = 2000,
+  maxWords,
+  wordLabel = "Words",
+  wordScope = "full",
+  hint,
+  onChange,
+}, ref) {
   const editorRef = useRef<HTMLDivElement>(null);
   const getInitialContainer = () => {
     const el = document.createElement("div");
@@ -241,6 +250,15 @@ function RichEditorBlock({
     if (editorRef.current) editorRef.current.innerHTML = defaultValue;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useImperativeHandle(ref, () => ({
+    setHTML: (html: string) => {
+      if (!editorRef.current) return;
+      editorRef.current.innerHTML = html;
+      onChange?.(html);
+      syncCount();
+    },
+  }));
 
   return (
     <div className="flex flex-col min-w-0">
@@ -286,7 +304,7 @@ function RichEditorBlock({
             onChange?.(editorRef.current?.innerHTML || "");
             syncCount();
           }}
-          className="h-[120px] overflow-y-auto p-2 text-[10.5px] leading-relaxed text-[#334155] outline-none"
+          className="h-[120px] overflow-y-auto p-2 text-[10.5px] leading-relaxed text-[#334155] outline-none [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:mb-0.5"
         />
       </div>
       <div className="mt-0.5 flex items-center justify-end gap-2 text-[9.5px] font-medium text-[#94a3b8]">
@@ -299,7 +317,7 @@ function RichEditorBlock({
       </div>
     </div>
   );
-}
+});
 
 export default function CreateJobPage() {
   return (
@@ -342,6 +360,15 @@ function CreateJobForm() {
 
   // Industry Segments List
   const [segments, setSegments] = useState<string[]>([]);
+
+  // AI-generated role context for the exported .docx (Reporting To, KRA/KPI tables,
+  // reference industries, screening questions) — not shown as editable form fields,
+  // just carried through from "Generate with AI" to the saved job.
+  const [reportingTo, setReportingTo] = useState("");
+  const [kras, setKras] = useState<{ label: string; result: string }[]>([]);
+  const [kpis, setKpis] = useState<{ label: string; measurement: string }[]>([]);
+  const [referenceIndustries, setReferenceIndustries] = useState<string[]>([]);
+  const [screeningQuestions, setScreeningQuestions] = useState<string[]>([]);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -389,6 +416,10 @@ function CreateJobForm() {
 
   const [descriptionHtml, setDescriptionHtml] = useState(DESCRIPTION_DEFAULT);
   const [respHtml, setRespHtml] = useState(RESP_DEFAULT);
+  const opportunityEditorRef = useRef<RichEditorHandle>(null);
+  const respEditorRef = useRef<RichEditorHandle>(null);
+  const whoEditorRef = useRef<RichEditorHandle>(null);
+  const [generatingAI, setGeneratingAI] = useState(false);
   const [whoCanApplyHtml, setWhoCanApplyHtml] = useState(WHO_DEFAULT);
 
   useEffect(() => {
@@ -445,6 +476,12 @@ function CreateJobForm() {
         setPrefSkills(job.preferredSkills || []);
         setSegments(job.targetIndustrySegments || []);
 
+        setReportingTo(job.reportingTo || "");
+        setKras(job.kras || []);
+        setKpis(job.kpis || []);
+        setReferenceIndustries(job.referenceIndustries || []);
+        setScreeningQuestions(job.screeningQuestions || []);
+
         setDescriptionHtml(job.description || DESCRIPTION_DEFAULT);
         setRespHtml(linesToHtml(job.responsibilities));
         setWhoCanApplyHtml(linesToHtml(job.requirements));
@@ -460,6 +497,63 @@ function CreateJobForm() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editId]);
+
+  const handleGenerateWithAI = async () => {
+    if (!fields.title.trim() || !fields.department.trim() || !fields.location.trim()) {
+      Toast.fire({ icon: "warning", iconColor: "#fbbf24", title: "Fill in Job Title, Department and Location first." });
+      return;
+    }
+
+    setGeneratingAI(true);
+    try {
+      const parseMoney = (v: string) => {
+        const n = parseFloat(v.replace(/,/g, ""));
+        return Number.isFinite(n) ? n : undefined;
+      };
+
+      const generated = await jobsApi.generateDescription({
+        title: fields.title,
+        designation: fields.designation,
+        company: fields.company,
+        projectEvent: fields.projectEvent,
+        department: fields.department,
+        jobCode: fields.jobCode,
+        employmentType: fields.employmentType,
+        workplaceType: fields.workplaceType,
+        totalOpenings: Number(fields.totalOpenings) || 1,
+        location: fields.location,
+        experienceMin: Number(fields.experienceMin) || 0,
+        experienceMax: Number(fields.experienceMax) || 0,
+        educationRequirements: fields.educationRequirements,
+        ctcMin: parseMoney(fields.ctcMin),
+        ctcMax: parseMoney(fields.ctcMax),
+        salaryType: fields.salaryType,
+        performanceIncentiveApplicable: toggles.performanceIncentive,
+        incentiveType: toggles.performanceIncentive ? fields.incentiveType : undefined,
+      });
+
+      opportunityEditorRef.current?.setHTML(`<div>${generated.opportunity}</div>`);
+      respEditorRef.current?.setHTML(linesToHtml(generated.keyResponsibilities));
+      whoEditorRef.current?.setHTML(linesToHtml(generated.whoCanApply));
+
+      setReqSkills(generated.requiredSkills);
+      setPrefSkills(generated.preferredSkills);
+      setSegments(generated.targetIndustrySegments);
+      setFields((prev) => ({ ...prev, specificExperience: generated.specificExperience }));
+
+      setReportingTo(generated.reportingTo);
+      setKras(generated.kras);
+      setKpis(generated.kpis);
+      setReferenceIndustries(generated.referenceIndustries);
+      setScreeningQuestions(generated.screeningQuestions);
+
+      Toast.fire({ icon: "success", iconColor: "#34d399", title: "Job description generated with AI!" });
+    } catch (err) {
+      Toast.fire({ icon: "error", iconColor: "#f87171", title: err instanceof Error ? err.message : "Failed to generate job description" });
+    } finally {
+      setGeneratingAI(false);
+    }
+  };
 
   const handleSubmit = async (status: BackendJobStatus) => {
     if (!fields.title.trim() || !fields.department.trim() || !fields.location.trim()) {
@@ -506,6 +600,12 @@ function CreateJobForm() {
         specificExperience: fields.specificExperience,
         responsibilities: htmlToLines(respHtml),
         requirements: htmlToLines(whoCanApplyHtml),
+
+        reportingTo: reportingTo || undefined,
+        kras,
+        kpis,
+        referenceIndustries,
+        screeningQuestions,
 
         acceptOnlineApplications: toggles.acceptOnline,
         aiCvScreening: toggles.aiScreening,
@@ -798,16 +898,29 @@ function CreateJobForm() {
               careers page job detail view: The Opportunity, Key Responsibilities,
               Who Can Apply (see frontend/app/components/careers/uploade_cv/page.tsx). */}
           <div className="rounded-[8px] border border-[#cbd5e1] bg-white p-3 shadow-2xs">
-            <div className="mb-2 flex items-center gap-2">
-              <span className="grid h-5 w-5 place-items-center rounded-[4px] bg-[#2563eb] text-[10px] font-bold text-white">3</span>
-              <div className="flex items-center gap-1.5">
-                <h2 className="text-[12px] font-bold text-[#0f172a]">Job Description</h2>
-                <span className="text-[10px] font-medium text-[#64748b]">• Provide a clear and detailed description of the role.</span>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="grid h-5 w-5 place-items-center rounded-[4px] bg-[#2563eb] text-[10px] font-bold text-white">3</span>
+                <div className="flex items-center gap-1.5">
+                  <h2 className="text-[12px] font-bold text-[#0f172a]">Job Description</h2>
+                  <span className="text-[10px] font-medium text-[#64748b]">• Provide a clear and detailed description of the role.</span>
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={handleGenerateWithAI}
+                disabled={generatingAI}
+                title="Generates The Opportunity, Key Responsibilities, Who Can Apply, Required/Preferred Skills, Target Industry Segments and Specific Experience from the Basic Information & Compensation above. Click again anytime to regenerate."
+                className="flex shrink-0 items-center gap-1.5 rounded-[6px] bg-gradient-to-r from-[#7c3aed] to-[#2563eb] px-2.5 py-1 text-[10.5px] font-bold text-white shadow-xs hover:opacity-90 disabled:opacity-60"
+              >
+                {generatingAI ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                {generatingAI ? "Generating…" : "Generate with AI"}
+              </button>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
               <RichEditorBlock
+                ref={opportunityEditorRef}
                 label="The Opportunity"
                 required
                 defaultValue={descriptionHtml}
@@ -816,6 +929,7 @@ function CreateJobForm() {
               />
 
               <RichEditorBlock
+                ref={respEditorRef}
                 label="Key Responsibilities"
                 required
                 defaultValue={respHtml}
@@ -824,6 +938,7 @@ function CreateJobForm() {
               />
 
               <RichEditorBlock
+                ref={whoEditorRef}
                 label="Who Can Apply"
                 required
                 defaultValue={whoCanApplyHtml}
