@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Plus, Copy, Check, Pencil, Camera, Loader2, PowerOff, Power, Trash2, ExternalLink, User, ChevronLeft, ChevronRight } from "lucide-react";
 import Swal from "sweetalert2";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { showUploadError } from "@/lib/uploadLimit";
 import typography from "../pages/PagesTypography.module.css";
 import Button from "@/components/ui/Button";
@@ -301,6 +302,9 @@ export default function StaffPage() {
               <thead>
                 <tr className="h-[32px] border-b border-[#e8e5df] bg-[#233D4D]">
                   <th className="rounded-tl-[6px] px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">
+                    Photo
+                  </th>
+                  <th className="px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">
                     Name
                   </th>
                   <th className="px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">
@@ -329,7 +333,7 @@ export default function StaffPage() {
               <tbody className="divide-y divide-[#f0f0ec]">
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center">
+                    <td colSpan={9} className="py-12 text-center">
                       <div className="flex items-center justify-center gap-2 text-[11px] text-[#6c7587]">
                         <Loader2 className="h-4 w-4 animate-spin text-[#293681]" />
                         <span>Loading staff members...</span>
@@ -338,7 +342,7 @@ export default function StaffPage() {
                   </tr>
                 ) : staff.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-[10px] text-[#6c7587]">
+                    <td colSpan={9} className="py-12 text-center text-[10px] text-[#6c7587]">
                       No staff accounts found.
                     </td>
                   </tr>
@@ -356,6 +360,26 @@ export default function StaffPage() {
                         key={s._id}
                         className="transition hover:bg-slate-50/80"
                       >
+                        {/* PHOTO — real avatar if uploaded, otherwise the placeholder animation */}
+                        <td className="px-[12px] py-[8px]">
+                          <div className="h-[26px] w-[26px] shrink-0 overflow-hidden rounded-full border border-[#e2e8f0] bg-[#f8fafc]">
+                            {s.avatarUrl && s.avatarUrl.trim() !== "" ? (
+                              <img
+                                src={s.avatarUrl}
+                                alt={s.name}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <DotLottieReact
+                                src="/avatar-lottie.lottie"
+                                loop
+                                autoplay
+                                style={{ width: "100%", height: "100%", transform: "scale(1.2)" }}
+                              />
+                            )}
+                          </div>
+                        </td>
+
                         {/* NAME — Burgundy/Wine color from previous email */}
                         <td className="px-[12px] py-[8px]">
                           <span className="text-[8.5px] font-semibold text-[#4B1426]">

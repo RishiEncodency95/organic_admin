@@ -317,6 +317,9 @@ export default function MediaLibraryPage() {
   const [formTitle, setFormTitle] = useState("");
   const [formImageAlt, setFormImageAlt] = useState("");
   const [formOrder, setFormOrder] = useState(1);
+  // Only true once the admin actually edits the Order box — until then we don't send an
+  // order at all, so the backend places the new upload at the top on its own.
+  const [formOrderTouched, setFormOrderTouched] = useState(false);
   const [formYear, setFormYear] = useState("2026");
   const [formCategory, setFormCategory] = useState("Inauguration");
   const [formStatus, setFormStatus] = useState<MediaStatus>("Published");
@@ -869,7 +872,10 @@ export default function MediaLibraryPage() {
   const handleOpenUploadModal = () => {
     setFormTitle("");
     setFormImageAlt("");
-    setFormOrder(mediaItems.length > 0 ? Math.max(...mediaItems.map((x) => x.order ?? 0)) + 1 : 1);
+    // Preview only — order is a simple counter (1, 2, 3...); new uploads get the next number
+    // after the current highest, matching what the backend will assign if left untouched.
+    setFormOrder(mediaItems.length > 0 ? Math.max(...mediaItems.map((x) => x.order ?? 1)) + 1 : 1);
+    setFormOrderTouched(false);
     setFormYear(years[0] || "2026");
     setFormCategory(categories[0] || "Inauguration");
     setFormStatus("Published");
@@ -884,6 +890,7 @@ export default function MediaLibraryPage() {
     setFormTitle(item.title);
     setFormImageAlt(item.imageAlt || "");
     setFormOrder(item.order ?? 1);
+    setFormOrderTouched(true);
     setFormYear(item.year);
     setFormCategory(item.category);
     setFormStatus(item.status);
@@ -903,7 +910,7 @@ export default function MediaLibraryPage() {
     const ts = formatTimestamp();
 
     try {
-      const payload = {
+      const payload: Record<string, unknown> = {
         title: finalTitle,
         imageAlt: formImageAlt.trim(),
         year: formYear,
@@ -911,10 +918,14 @@ export default function MediaLibraryPage() {
         image: formImageUrl,
         uploadedBy: loggedInAdminName,
         status: formStatus,
-        order: formOrder,
         date: ts.date,
         time: ts.time,
       };
+      // Only send an explicit order when the admin actually edited the box — otherwise
+      // leave it out so the backend auto-places the new upload at the top of the list.
+      if (formOrderTouched) {
+        payload.order = formOrder;
+      }
 
       const res = await fetch(`${BACKEND_URL}/api/website/gallery/items`, {
         method: "POST",
@@ -1922,7 +1933,10 @@ export default function MediaLibraryPage() {
                 type="number"
                 min={1}
                 value={formOrder}
-                onChange={(e) => setFormOrder(Math.max(1, Number(e.target.value) || 1))}
+                onChange={(e) => {
+                  setFormOrder(Math.max(1, Number(e.target.value) || 1));
+                  setFormOrderTouched(true);
+                }}
                 className="h-[38px] w-full rounded-[4px] border border-surface-border bg-surface-card px-[12px] text-[11px] font-semibold text-[#1e293b] outline-none transition-all hover:border-[#FF9D50] focus:border-[#FF9D50] [box-shadow:rgba(0,0,0,0.02)_0px_1px_3px_0px,rgba(27,31,35,0.15)_0px_0px_0px_1px]"
               />
             </div>

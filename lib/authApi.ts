@@ -42,7 +42,7 @@ export const authApi = {
           phone: res.admin.phone || "",
           avatarUrl: res.admin.avatarUrl || undefined,
           userType: "INTERNAL",
-          roleSlug: res.admin.role === "superadmin" ? "SUPER_ADMIN" : "EXPO_ADMIN",
+          roleSlug: res.admin.roleName || (res.admin.role === "superadmin" ? "SUPER_ADMIN" : "EXPO_ADMIN"),
           permissions: ["*"],
         },
         requiresTwoFactor: false,
@@ -105,7 +105,7 @@ export const authApi = {
         phone: res.user.phone,
         avatarUrl: res.user.avatarUrl || undefined,
         userType: "INTERNAL",
-        roleSlug: res.user.role === "superadmin" ? "SUPER_ADMIN" : "EXPO_ADMIN",
+        roleSlug: res.user.roleName || (res.user.role === "superadmin" ? "SUPER_ADMIN" : "EXPO_ADMIN"),
         permissions: ["*"],
         twoFactorPending: !res.user.isTwoFactorEnabled,
       };
