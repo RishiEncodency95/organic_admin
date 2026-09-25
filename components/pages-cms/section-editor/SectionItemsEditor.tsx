@@ -70,6 +70,7 @@ export function SectionItemsEditor({
     date: 9,
     location: 10,
     alt: 13,
+    imageAlt: 13.5,
     buttonLabel: 14,
     buttonHref: 15,
     secondaryButtonLabel: 16,
@@ -280,6 +281,10 @@ export function SectionItemsEditor({
               itemToEdit.image = item.image || defaultBgImgs[index % defaultBgImgs.length];
             }
             if (itemToEdit.subtitle === undefined) itemToEdit.subtitle = item.subtitle || item.items || "";
+          } else if (sectionId === "global-platform") {
+            delete itemToEdit.icon;
+            if (itemToEdit.image === undefined) itemToEdit.image = item.image || "";
+            if (itemToEdit.imageAlt === undefined) itemToEdit.imageAlt = item.imageAlt || "";
           } else if (sectionId === "gallery-counters") {
             delete itemToEdit.icon;
             delete itemToEdit.iconKey;
@@ -373,7 +378,7 @@ export function SectionItemsEditor({
               {isOpen && (
                 <div className="p-[12px] grid grid-cols-2 gap-[10px] bg-white">
                   {fieldEntries.map(([key, value]) => {
-                    const isImageKey = IMAGE_KEY_PATTERN.test(key);
+                    const isImageKey = IMAGE_KEY_PATTERN.test(key) && key !== "imageAlt";
                     const isVideoKey = VIDEO_KEY_PATTERN.test(key);
                     const isLong = (LONG_TEXT_KEY_PATTERN.test(key) || Array.isArray(value)) && !key.startsWith("feature");
 
@@ -390,7 +395,11 @@ export function SectionItemsEditor({
                                   ? "Award Icon / Image (Upload / URL)"
                                   : sectionId === "awards-process" && key === "image"
                                     ? "Process Icon / Image (Upload / URL)"
-                                    : humanizeKey(key)}
+                                    : sectionId === "global-platform" && key === "image"
+                                      ? "Highlight Icon / Image (Upload)"
+                                      : sectionId === "global-platform" && key === "imageAlt"
+                                        ? "Image Alt Text"
+                                        : humanizeKey(key)}
                         </FieldLabel>
 
                         {key === "icon" && sectionId !== "journey-glimpse" ? (

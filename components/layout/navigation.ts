@@ -74,6 +74,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "Services Management", href: "/services", icon: BriefcaseBusiness },
       { label: "Blog & Insights", href: "/blogs", icon: BookOpenText },
       { label: "Media Library", href: "/gallery", icon: GalleryHorizontalEnd },
+      { label: "Video Highlights", href: "/video-highlights", icon: Video, badge: "NEW" },
       { label: "Exhibitor List", href: "/exhibitor-list", icon: Building2 },
       { label: "Feedback & Reviews", href: "/feedback-reviews", icon: MessageSquareText },
       { label: "Trusted Leaders", href: "/trusted-leaders", icon: Handshake, badge: "NEW" },
