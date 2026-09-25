@@ -8,6 +8,7 @@ import {
   BriefcaseBusiness,
   Building2,
   DatabaseBackup,
+  FileCheck2,
   FileCode,
   FileSearch,
   FileText,
@@ -91,6 +92,13 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "Job Postings", href: "/job-postings", icon: Briefcase },
       { label: "Applications & AI Response", href: "/applications-ai-response", icon: Bot },
       { label: "Career Settings", href: "/career-settings", icon: Settings2 },
+    ],
+  },
+  {
+    title: "MSME Management",
+    items: [
+      { label: "MSME Overview", href: "/msme-overview", icon: Gauge, badge: "NEW" },
+      { label: "MSME Applications", href: "/msme-applications", icon: FileCheck2, badge: "NEW" },
     ],
   },
   {

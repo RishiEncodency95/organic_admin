@@ -816,7 +816,7 @@ export default function FeedbackReviewsPage() {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(15);
 
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -1995,6 +1995,7 @@ export default function FeedbackReviewsPage() {
                     className="ml-2 h-[22px] rounded-[4px] border border-[#d8dce2] bg-white px-[6px] text-[8px] font-semibold text-[#334155] outline-none cursor-pointer"
                   >
                     <option value={10}>10 / page</option>
+                    <option value={15}>15 / page</option>
                     <option value={20}>20 / page</option>
                     <option value={50}>50 / page</option>
                   </select>
