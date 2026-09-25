@@ -84,7 +84,9 @@ export type MediaStatus = "Published" | "Draft";
 export interface MediaItem {
   id: number;
   _id?: string;
+  order?: number;
   title: string;
+  imageAlt?: string;
   year: string;
   category: string;
   size?: string;
@@ -313,6 +315,8 @@ export default function MediaLibraryPage() {
 
   // Form states for upload / edit (Static fields as requested: Title, Year, Category, Status, Image)
   const [formTitle, setFormTitle] = useState("");
+  const [formImageAlt, setFormImageAlt] = useState("");
+  const [formOrder, setFormOrder] = useState(1);
   const [formYear, setFormYear] = useState("2026");
   const [formCategory, setFormCategory] = useState("Inauguration");
   const [formStatus, setFormStatus] = useState<MediaStatus>("Published");
@@ -373,7 +377,9 @@ export default function MediaLibraryPage() {
               // Must be unique per row: selection, delete and React keys all rely on it, and `order` repeats.
               id: idx + 1,
               _id: item._id,
+              order: typeof item.order === "number" ? item.order : idx + 1,
               title: item.title,
+              imageAlt: item.imageAlt || "",
               year: item.year,
               category: item.category,
               size: item.size || "",
@@ -862,6 +868,8 @@ export default function MediaLibraryPage() {
   // Open Upload Modal
   const handleOpenUploadModal = () => {
     setFormTitle("");
+    setFormImageAlt("");
+    setFormOrder(mediaItems.length > 0 ? Math.max(...mediaItems.map((x) => x.order ?? 0)) + 1 : 1);
     setFormYear(years[0] || "2026");
     setFormCategory(categories[0] || "Inauguration");
     setFormStatus("Published");
@@ -874,6 +882,8 @@ export default function MediaLibraryPage() {
   const handleOpenEdit = (item: MediaItem) => {
     setEditingItem(item);
     setFormTitle(item.title);
+    setFormImageAlt(item.imageAlt || "");
+    setFormOrder(item.order ?? 1);
     setFormYear(item.year);
     setFormCategory(item.category);
     setFormStatus(item.status);
@@ -895,12 +905,13 @@ export default function MediaLibraryPage() {
     try {
       const payload = {
         title: finalTitle,
+        imageAlt: formImageAlt.trim(),
         year: formYear,
         category: formCategory,
         image: formImageUrl,
         uploadedBy: loggedInAdminName,
         status: formStatus,
-        order: mediaItems.length + 1,
+        order: formOrder,
         date: ts.date,
         time: ts.time,
       };
@@ -918,7 +929,9 @@ export default function MediaLibraryPage() {
         newItem = {
           id: mediaItems.length > 0 ? Math.max(...mediaItems.map((x) => x.id)) + 1 : 1,
           _id: serverItem._id,
+          order: typeof serverItem.order === "number" ? serverItem.order : formOrder,
           title: serverItem.title || finalTitle,
+          imageAlt: serverItem.imageAlt || formImageAlt.trim(),
           year: serverItem.year || formYear,
           category: serverItem.category || formCategory,
           size: formFileSize || "250 KB",
@@ -931,7 +944,9 @@ export default function MediaLibraryPage() {
       } else {
         newItem = {
           id: mediaItems.length > 0 ? Math.max(...mediaItems.map((x) => x.id)) + 1 : 1,
+          order: formOrder,
           title: finalTitle,
+          imageAlt: formImageAlt.trim(),
           year: formYear,
           category: formCategory,
           size: formFileSize || "250 KB",
@@ -953,7 +968,9 @@ export default function MediaLibraryPage() {
       console.error("Failed to save media item:", err);
       const newItem: MediaItem = {
         id: mediaItems.length > 0 ? Math.max(...mediaItems.map((x) => x.id)) + 1 : 1,
+        order: formOrder,
         title: finalTitle,
+        imageAlt: formImageAlt.trim(),
         year: formYear,
         category: formCategory,
         size: formFileSize || "250 KB",
@@ -985,6 +1002,8 @@ export default function MediaLibraryPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: finalTitle,
+          imageAlt: formImageAlt.trim(),
+          order: formOrder,
           year: formYear,
           category: formCategory,
           status: formStatus,
@@ -1001,6 +1020,8 @@ export default function MediaLibraryPage() {
         ? {
             ...item,
             title: finalTitle,
+            imageAlt: formImageAlt.trim(),
+            order: formOrder,
             year: formYear,
             category: formCategory,
             status: formStatus,
@@ -1403,7 +1424,7 @@ export default function MediaLibraryPage() {
 
                               <td className="px-[12px] py-[8px] whitespace-nowrap">
                                 <span className="text-[8px] font-semibold text-[#293681]">
-                                  #{item.id}
+                                  #{item.order ?? item.id}
                                 </span>
                               </td>
 
@@ -1687,6 +1708,12 @@ export default function MediaLibraryPage() {
                         {selected.uploadedBy || loggedInAdminName}
                       </span>
                     </p>
+                    <p>
+                      <span className="font-semibold text-[#69758c]">Alt Text:</span>{" "}
+                      <span className="font-semibold text-[#34425e]">
+                        {selected.imageAlt || selected.title}
+                      </span>
+                    </p>
                   </div>
 
                   {/* ASSET URL DISPLAY WITH COPY BUTTON */}
@@ -1879,6 +1906,26 @@ export default function MediaLibraryPage() {
               onChange={(e) => setFormTitle(e.target.value)}
               placeholder="e.g. Grand Inaugural Ceremony (Defaults to Category)"
             />
+
+            {/* ALT TEXT (Optional) */}
+            <Input
+              label="Image Alt Text (Optional)"
+              value={formImageAlt}
+              onChange={(e) => setFormImageAlt(e.target.value)}
+              placeholder="Describe the photo for screen readers & SEO (Defaults to Title)"
+            />
+
+            {/* ORDER — auto-filled with the next position, editable to reorder manually */}
+            <div>
+              <Label>Order</Label>
+              <input
+                type="number"
+                min={1}
+                value={formOrder}
+                onChange={(e) => setFormOrder(Math.max(1, Number(e.target.value) || 1))}
+                className="h-[38px] w-full rounded-[4px] border border-surface-border bg-surface-card px-[12px] text-[11px] font-semibold text-[#1e293b] outline-none transition-all hover:border-[#FF9D50] focus:border-[#FF9D50] [box-shadow:rgba(0,0,0,0.02)_0px_1px_3px_0px,rgba(27,31,35,0.15)_0px_0px_0px_1px]"
+              />
+            </div>
 
             {/* SELECT YEAR & SELECT CATEGORY GRID */}
             <div className="grid grid-cols-2 gap-3">

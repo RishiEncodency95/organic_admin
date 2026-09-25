@@ -325,6 +325,12 @@ export function SectionFieldsEditor({
       ) {
         return false;
       }
+      if (
+        (section.key === "topbar" || section.name === "Topbar & Header Contact") &&
+        (key === "title" || key === "marqueeText")
+      ) {
+        return false;
+      }
       return typeof value === "string" || typeof value === "boolean";
     },
   );
