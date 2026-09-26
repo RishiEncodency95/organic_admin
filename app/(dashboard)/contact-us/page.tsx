@@ -9,7 +9,6 @@ import {
   Clock3,
   Copy,
   Eye,
-  Headphones,
   Inbox,
   Mail,
   MessageSquareText,
@@ -420,6 +419,7 @@ export default function ContactUsPage() {
             <table className="w-full min-w-[980px] border-collapse text-left">
               <thead>
                 <tr className="h-[32px] border-b border-[#e8e5df] bg-[#233D4D]">
+                  <th className="w-[36px] px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">S.No</th>
                   <th className="px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">Name</th>
                   <th className="px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">Email</th>
                   <th className="px-[12px] py-[6px] text-[8.5px] font-bold text-white uppercase tracking-wider">WhatsApp No.</th>
@@ -433,25 +433,26 @@ export default function ContactUsPage() {
               <tbody className="divide-y divide-[#f0f0ec]">
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-[10px] text-[#6c7587]">
+                    <td colSpan={9} className="py-12 text-center text-[10px] text-[#6c7587]">
                       Loading contact messages…
                     </td>
                   </tr>
                 ) : loadError ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-[10px] font-semibold text-red-600">
+                    <td colSpan={9} className="py-12 text-center text-[10px] font-semibold text-red-600">
                       {loadError}
                     </td>
                   </tr>
                 ) : paginatedRows.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-[10px] text-[#6c7587]">
+                    <td colSpan={9} className="py-12 text-center text-[10px] text-[#6c7587]">
                       No messages match your filters.
                     </td>
                   </tr>
                 ) : (
-                  paginatedRows.map((enquiry) => (
+                  paginatedRows.map((enquiry, rowIndex) => (
                     <tr key={enquiry._id} className="transition hover:bg-slate-50/80">
+                      <td className="px-[12px] py-[8px] text-[9px] font-semibold text-[#6c7587]">{startIndex + rowIndex + 1}</td>
                       <td className="px-[12px] py-[8px]">
                         <button
                           type="button"
@@ -561,20 +562,6 @@ export default function ContactUsPage() {
               </div>
             </div>
           )}
-        </div>
-
-        {/* NEED HELP STRIP */}
-        <div className="mt-[12px] flex items-start gap-[9px] rounded-[6px] bg-[#eef6f1] p-[11px]">
-          <span className="grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full bg-white text-[#23714a] shadow-2xs">
-            <Headphones className="h-[13px] w-[13px]" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-[9.5px] font-bold text-[#23471d]">Need Help?</p>
-            <p className="mt-0.5 text-[8px] font-medium leading-snug text-[#3f5a4a]">For support, contact IT Team</p>
-            <a href="mailto:it.support@bharatorganicexpo.com" className="text-[8px] font-bold text-[#166b40] hover:underline">
-              it.support@bharatorganicexpo.com
-            </a>
-          </div>
         </div>
       </div>
 

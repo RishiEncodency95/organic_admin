@@ -67,10 +67,15 @@ export const authApi = {
   },
 
   changePassword: async (currentPassword: string, newPassword: string) => {
-    try {
-      await api.post("/auth/change-password", { currentPassword, newPassword });
-    } catch {}
-    return { success: true };
+    // Was previously swallowing every error and always reporting success —
+    // meaning "Change password" logged the admin out and sent them back to
+    // the login screen even when the backend request failed (or, until now,
+    // even though the backend had no /auth/change-password route at all).
+    // Let failures propagate so the modal shows the real error instead.
+    return api.post<{ success: boolean; message?: string }>("/auth/change-password", {
+      currentPassword,
+      newPassword,
+    });
   },
 
   setupTwoFactor: async () => {
