@@ -44,7 +44,6 @@ export function SectionFieldsEditor({
               <ImageUploadField
                 value={String(section.logoImage || "")}
                 onChange={(next) => onFieldChange("logoImage", next)}
-                defaultValue="http://localhost:4000/uploads/bharat-organic_footer/1789129240083-112323989.png"
               />
             </div>
             <div>
@@ -52,7 +51,6 @@ export function SectionFieldsEditor({
               <ImageUploadField
                 value={String(section.leafImage || "")}
                 onChange={(next) => onFieldChange("leafImage", next)}
-                defaultValue="http://localhost:4000/uploads/bharat-organic_footer/1789129240457-21656484.png"
               />
             </div>
             <div>
@@ -60,7 +58,6 @@ export function SectionFieldsEditor({
               <ImageUploadField
                 value={String(section.downImage || "")}
                 onChange={(next) => onFieldChange("downImage", next)}
-                defaultValue="http://localhost:4000/uploads/bharat-organic_footer/1789129240816-597711504.png"
               />
             </div>
             <div>
@@ -68,7 +65,6 @@ export function SectionFieldsEditor({
               <ImageUploadField
                 value={String(section.organisedByLogo || "")}
                 onChange={(next) => onFieldChange("organisedByLogo", next)}
-                defaultValue="http://localhost:4000/uploads/bharat-organic_footer/1789129241128-849314126.png"
               />
             </div>
             <div className="md:col-span-2">
@@ -76,7 +72,6 @@ export function SectionFieldsEditor({
               <ImageUploadField
                 value={String(section.bottomBannerImage || "")}
                 onChange={(next) => onFieldChange("bottomBannerImage", next)}
-                defaultValue="http://localhost:4000/uploads/bharat-organic_footer/1789129242465-452827954.webp"
               />
             </div>
           </div>

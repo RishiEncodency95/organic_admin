@@ -253,20 +253,24 @@ export function mergeSectionWithSavedData(
       merged.description =
         "A global platform uniting over 500+ exhibitors from across the organic value chain, showcasing certified products, advanced agritech, sustainable practices, and the rich heritage of traditional wellness. Discover organic living with conferences and B2B opportunities.";
     }
+    // Left blank on purpose (used to hardcode a local server `/uploads/...`
+    // URL) — the public Footer component already falls back to its own
+    // bundled placeholder art when these are empty. Upload real images via
+    // this editor to set them; new uploads are saved as Cloudinary URLs.
     if (merged.logoImage === undefined || merged.logoImage.includes("km.jpg")) {
-      merged.logoImage = "http://localhost:4000/uploads/bharat-organic_footer/1789129240083-112323989.png";
+      merged.logoImage = "";
     }
     if (merged.leafImage === undefined) {
-      merged.leafImage = "http://localhost:4000/uploads/bharat-organic_footer/1789129240457-21656484.png";
+      merged.leafImage = "";
     }
     if (merged.downImage === undefined) {
-      merged.downImage = "http://localhost:4000/uploads/bharat-organic_footer/1789129240816-597711504.png";
+      merged.downImage = "";
     }
     if (merged.organisedByLogo === undefined) {
-      merged.organisedByLogo = "http://localhost:4000/uploads/bharat-organic_footer/1789129241128-849314126.png";
+      merged.organisedByLogo = "";
     }
     if (merged.bottomBannerImage === undefined) {
-      merged.bottomBannerImage = "http://localhost:4000/uploads/bharat-organic_footer/1789129242465-452827954.webp";
+      merged.bottomBannerImage = "";
     }
     if (merged.contactAddress === undefined) merged.contactAddress = "Hall 12, Pragati Maidan, New Delhi, India 110001";
     if (merged.phoneNumber === undefined) merged.phoneNumber = "+91 96549 00525";

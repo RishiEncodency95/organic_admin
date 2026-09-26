@@ -386,6 +386,7 @@ export default function TestimonialsManagementPage() {
   const [formStatus, setFormStatus] = useState<TestimonialStatus>("Published");
   const [formColor, setFormColor] = useState("#1b5e20");
   const [formLogo, setFormLogo] = useState("");
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
 
   // Settings Modal Rules
@@ -562,24 +563,57 @@ export default function TestimonialsManagementPage() {
     setIsEditModalOpen(true);
   };
 
-  // Handle Logo File Upload (reads as base64 data URI)
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle Logo File Upload — uploads to Cloudinary/the backend's upload
+  // endpoint and stores the returned short CDN URL, the same way Gallery's
+  // Media Library does. This used to read the file as a base64 data URI and
+  // save THAT directly, which meant every testimonial's logo was a
+  // 300KB–2MB text blob sitting in the database; since the homepage embeds
+  // all published testimonials into its server-rendered payload, that
+  // alone was adding several megabytes to every single homepage load.
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
       showError("Image size must be less than 2MB");
+      e.target.value = "";
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        setFormLogo(reader.result);
-        showSuccess("Logo photo uploaded successfully!");
+    setIsUploadingLogo(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", "bharat-organic/testimonials");
+
+      let res = await fetch(`/api/uploads?folder=${encodeURIComponent("bharat-organic/testimonials")}`, {
+        method: "POST",
+        body: formData,
+      }).catch(() => null);
+
+      if (!res) {
+        res = await fetch(`${BACKEND_URL}/api/uploads?folder=${encodeURIComponent("bharat-organic/testimonials")}`, {
+          method: "POST",
+          body: formData,
+        }).catch(() => null);
       }
-    };
-    reader.readAsDataURL(file);
+
+      if (!res || !res.ok) {
+        throw new Error(`Upload failed${res ? ` (status ${res.status})` : " — could not reach the upload server"}.`);
+      }
+
+      const json = await res.json().catch(() => null);
+      const url = json?.data?.url || json?.url || json?.data?.secure_url || json?.secure_url;
+      if (!url) throw new Error("Upload server did not return an image URL.");
+
+      setFormLogo(url);
+      showSuccess("Logo photo uploaded successfully!");
+    } catch (err: any) {
+      showError(err?.message || "Could not upload logo photo. Please try again.");
+    } finally {
+      setIsUploadingLogo(false);
+      e.target.value = "";
+    }
   };
 
   // Save Testimonial (Add or Edit)
@@ -1730,11 +1764,12 @@ export default function TestimonialsManagementPage() {
 
                       <button
                         type="button"
+                        disabled={isUploadingLogo}
                         onClick={() => logoFileInputRef.current?.click()}
-                        className="inline-flex h-[30px] shrink-0 items-center gap-1.5 rounded-[4px] border border-[#cbd5e1] bg-[#f8fafc] px-2.5 text-[9.5px] font-semibold text-[#1e293b] hover:bg-slate-100 cursor-pointer active:scale-95 shadow-xs"
+                        className="inline-flex h-[30px] shrink-0 items-center gap-1.5 rounded-[4px] border border-[#cbd5e1] bg-[#f8fafc] px-2.5 text-[9.5px] font-semibold text-[#1e293b] hover:bg-slate-100 cursor-pointer active:scale-95 shadow-xs disabled:opacity-50"
                       >
-                        <Upload className="h-3 w-3 text-emerald-600" />
-                        Upload
+                        <Upload className={`h-3 w-3 text-emerald-600 ${isUploadingLogo ? "animate-spin" : ""}`} />
+                        {isUploadingLogo ? "Uploading..." : "Upload"}
                       </button>
 
                       <input

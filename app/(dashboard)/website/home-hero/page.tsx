@@ -13,6 +13,7 @@ import { toast } from "react-toastify";
 import Button from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Save, Trash2, Edit, Plus, Image as ImageIcon } from "lucide-react";
+import { getBackendUrl } from "@/lib/api";
 
 export default function HomeHeroPage() {
   const dispatch = useAppDispatch();
@@ -273,7 +274,15 @@ export default function HomeHeroPage() {
               {formData.img && !selectedFile && (
                 <div className="h-12 w-12 shrink-0 rounded border overflow-hidden">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={`http://localhost:5000/uploads/organic_expo/${formData.img}`} alt="Current" className="h-full w-full object-cover" />
+                  <img
+                    src={
+                      formData.img.startsWith("http://") || formData.img.startsWith("https://")
+                        ? formData.img
+                        : `${getBackendUrl()}${formData.img.startsWith("/") ? "" : "/"}${formData.img}`
+                    }
+                    alt="Current"
+                    className="h-full w-full object-cover"
+                  />
                 </div>
               )}
             </div>
