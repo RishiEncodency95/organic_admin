@@ -203,6 +203,11 @@ function ServiceClock({
   expiryDate: string;
   onClick: () => void;
 }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const days = daysRemaining(expiryDate);
   const urgent = countdown.isExpired || days <= URGENT_DAYS;
   const palette = countdown.isExpired
@@ -211,17 +216,18 @@ function ServiceClock({
       ? { card: "border-amber-200 bg-gradient-to-br from-amber-50 via-white to-orange-50 hover:border-amber-300", label: "text-amber-700", digit: "text-amber-700", unit: "text-amber-600", dot: "animate-pulse bg-amber-500", icon: "border-amber-200 bg-amber-50 text-amber-600", live: "bg-amber-100 text-amber-700" }
       : { card: "border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-teal-50 hover:border-emerald-300", label: "text-emerald-700", digit: "text-emerald-700", unit: "text-emerald-600", dot: "bg-emerald-500", icon: "border-emerald-200 bg-emerald-50 text-emerald-600", live: "bg-emerald-100 text-emerald-700" };
   const parts = [
-    { value: countdown.days, unit: "Days" },
-    { value: countdown.hours, unit: "Hours" },
-    { value: countdown.minutes, unit: "Mins" },
-    { value: countdown.seconds, unit: "Secs" },
+    { value: mounted ? countdown.days : 0, unit: "Days" },
+    { value: mounted ? countdown.hours : 0, unit: "Hours" },
+    { value: mounted ? countdown.minutes : 0, unit: "Mins" },
+    { value: mounted ? countdown.seconds : 0, unit: "Secs" },
   ];
 
   return (
     <button
       type="button"
       onClick={onClick}
-      title={`${name} — renews ${new Date(expiryDate).toLocaleDateString()}`}
+      suppressHydrationWarning
+      title={mounted ? `${name} — renews ${new Date(expiryDate).toLocaleDateString()}` : name}
       className={`group flex h-[46px] min-w-[210px] items-center gap-2 rounded-none border px-2.5 text-left shadow-[0_4px_14px_rgba(15,23,42,0.06)] transition-all hover:-translate-y-px hover:shadow-[0_7px_20px_rgba(15,23,42,0.10)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent ${palette.card}`}
     >
       <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-none border shadow-inner ${palette.icon}`}>
@@ -238,7 +244,7 @@ function ServiceClock({
         <span className="grid grid-cols-4 divide-x divide-current/15">
           {parts.map((part) => (
             <span key={part.unit} className={`flex flex-col items-center justify-center px-1 ${palette.digit}`}>
-              <span className="font-mono text-[12px] font-semibold leading-none tabular-nums">{String(part.value).padStart(2, "0")}</span>
+              <span className="font-mono text-[12px] font-semibold leading-none tabular-nums" suppressHydrationWarning>{String(part.value).padStart(2, "0")}</span>
               <small className={`mt-0.5 text-[5.5px] font-semibold uppercase leading-none tracking-wide ${palette.unit}`}>{part.unit}</small>
             </span>
           ))}
@@ -398,8 +404,12 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
     )
     .sort(byExpiry);
 
-  const hostingCountdown = useCountdown(hostingService?.expiryDate ?? FAR_FUTURE);
-  const domainCountdown = useCountdown(domainService?.expiryDate ?? FAR_FUTURE);
+  const fallbackDomainExpiry = "2027-05-31T00:00:00.000Z";
+  const fallbackHostingExpiry = "2027-05-31T00:00:00.000Z";
+  const domainExpiryDate = domainService?.expiryDate ?? fallbackDomainExpiry;
+  const hostingExpiryDate = hostingService?.expiryDate ?? fallbackHostingExpiry;
+  const hostingCountdown = useCountdown(hostingExpiryDate);
+  const domainCountdown = useCountdown(domainExpiryDate);
 
   const urgentOtherCount = otherServices.filter(
     (service) => daysRemaining(service.expiryDate) <= URGENT_DAYS
@@ -436,6 +446,11 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 
   const goToServices = () => {
     setExpiringOpen(false);
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("moksha_system_services_grant");
+      sessionStorage.removeItem("moksha_system_services_expires_at");
+      sessionStorage.removeItem("bharat_organic_system_services_grant");
+    }
     router.push("/system-services");
   };
 
@@ -650,6 +665,26 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
               className="pl-8 pr-3 py-1 w-44 xl:w-56 bg-white border-2 border-slate-300 shadow-xs rounded-full text-xs font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#23471d] focus:ring-4 focus:ring-[#23471d]/10 transition-all focus:w-52 xl:focus:w-64"
             />
           </div>
+        </div>
+
+        {/* CENTER – DOMAIN & HOSTING EXPIRE COUNTDOWN TIMERS */}
+        <div className="hidden lg:flex items-center justify-center gap-2.5 min-w-0 px-2">
+          <ServiceClock
+            label="Domain"
+            name={domainService?.name || "bharatorganicexpo.com"}
+            icon={Globe2}
+            countdown={domainCountdown}
+            expiryDate={domainExpiryDate}
+            onClick={goToServices}
+          />
+          <ServiceClock
+            label="Hosting"
+            name={hostingService?.name || "Server Hosting"}
+            icon={Server}
+            countdown={hostingCountdown}
+            expiryDate={hostingExpiryDate}
+            onClick={goToServices}
+          />
         </div>
 
         {/* RIGHT – ICONS & PROFILE */}

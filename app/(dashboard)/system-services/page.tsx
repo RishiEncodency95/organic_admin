@@ -185,13 +185,10 @@ const PRIMARY_DETAIL: Record<ExternalServiceCategory, string> = {
   SOCIAL_MEDIA: "accountHandle", API_SERVICE: "baseUrl", OTHER: "reference",
 };
 const REQUIRED_DETAILS: Record<ExternalServiceCategory, string[]> = {
-  DOMAIN: ["domainName", "registrar"], HOSTING: ["serverType", "publicIp", "region"],
-  SSL_CERTIFICATE: ["coveredDomains", "issuer"], PAYMENT_GATEWAY: ["merchantId", "environment"],
-  EMAIL_SMTP: ["smtpHost", "smtpPort", "senderEmail"], SMS_WHATSAPP: ["phoneNumber", "wabaId", "phoneNumberId"],
-  MEDIA_STORAGE: ["bucketName", "region"], AI_API: ["model", "projectId"], ANALYTICS: ["propertyId", "measurementId"],
-  DATABASE: ["engine", "clusterHost", "databaseName"], CDN: ["zoneId", "distributionDomain", "origin"],
-  SOFTWARE_LICENSE: ["product", "seats"], SOCIAL_MEDIA: ["platform", "accountHandle"],
-  API_SERVICE: ["baseUrl", "projectId"], OTHER: ["reference"],
+  DOMAIN: [], HOSTING: [], SSL_CERTIFICATE: [], PAYMENT_GATEWAY: [],
+  EMAIL_SMTP: [], SMS_WHATSAPP: [], MEDIA_STORAGE: [], AI_API: [], ANALYTICS: [],
+  DATABASE: [], CDN: [], SOFTWARE_LICENSE: [], SOCIAL_MEDIA: [],
+  API_SERVICE: [], OTHER: [],
 };
 
 const CATEGORY_HELP: Record<ExternalServiceCategory, string> = {
@@ -846,13 +843,29 @@ export default function SystemServicesPage() {
                 {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
             </Field>
-            <Field label="Name" required hint="A short name your team will recognize.">
-              <input className="w-full rounded-lg border border-[#D8D0C7] bg-white px-2.5 py-2 text-[13px] text-[#261B15] placeholder:text-[#81766E] focus:border-[#8B6A3E] focus:outline-none focus:ring-4 focus:ring-[#F5ECDD]" value={form.name} placeholder="Domain — mokshasewa.org"
-                onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            <Field label="Name" required hint="A short name your team will recognize (letters & numbers only).">
+              <input
+                className="w-full rounded-lg border border-[#D8D0C7] bg-white px-2.5 py-2 text-[13px] text-[#261B15] placeholder:text-[#81766E] focus:border-[#8B6A3E] focus:outline-none focus:ring-4 focus:ring-[#F5ECDD]"
+                value={form.name}
+                placeholder="Domain — bharatorganicexpo.com"
+                maxLength={80}
+                onChange={(e) => {
+                  const clean = e.target.value.replace(/[^a-zA-Z0-9\s\-._()&/]/g, "");
+                  setForm({ ...form, name: clean });
+                }}
+              />
             </Field>
-            <Field label="Provider" required hint="The company supplying it, for example Hostinger, Meta or Razorpay.">
-              <input className="w-full rounded-lg border border-[#D8D0C7] bg-white px-2.5 py-2 text-[13px] text-[#261B15] placeholder:text-[#81766E] focus:border-[#8B6A3E] focus:outline-none focus:ring-4 focus:ring-[#F5ECDD]" value={form.provider} placeholder="GoDaddy, Razorpay, Cloudinary"
-                onChange={(e) => setForm({ ...form, provider: e.target.value })} />
+            <Field label="Provider" required hint="Company supplying it (e.g. Hostinger, AWS, GoDaddy).">
+              <input
+                className="w-full rounded-lg border border-[#D8D0C7] bg-white px-2.5 py-2 text-[13px] text-[#261B15] placeholder:text-[#81766E] focus:border-[#8B6A3E] focus:outline-none focus:ring-4 focus:ring-[#F5ECDD]"
+                value={form.provider}
+                placeholder="GoDaddy, Razorpay, AWS"
+                maxLength={60}
+                onChange={(e) => {
+                  const clean = e.target.value.replace(/[^a-zA-Z0-9\s\-._()&]/g, "");
+                  setForm({ ...form, provider: clean });
+                }}
+              />
             </Field>
             <div className="col-span-2 max-[820px]:col-span-1">
               <button type="button" className="flex w-full items-center justify-between rounded-lg border border-dashed border-[#CFC5BA] bg-[#FCFBF9] px-3 py-2.5 text-left text-[12px] font-semibold text-[#684A29] hover:bg-[#F8F3EC]" onClick={() => setShowAccess((value) => !value)}>
@@ -885,17 +898,31 @@ export default function SystemServicesPage() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3 max-[820px]:grid-cols-1">
-              {CATEGORY_FIELDS[form.category].map((field) => (
-                <Field key={field.key} label={field.label} required={REQUIRED_DETAILS[form.category].includes(field.key)} hint={REQUIRED_DETAILS[form.category].includes(field.key) ? `Required to identify this ${CAT_LABEL[form.category].toLowerCase()} correctly.` : "Optional — fill only if available."}>
-                  <input
-                    className="w-full rounded-lg border border-[#D8D0C7] bg-white px-2.5 py-2 text-[13px] text-[#261B15] placeholder:text-[#81766E] focus:border-[#8B6A3E] focus:outline-none focus:ring-4 focus:ring-[#F5ECDD]"
-                    type={field.type ?? "text"}
-                    value={form.details[field.key] ?? ""}
-                    placeholder={field.placeholder}
-                    onChange={(e) => setForm((current) => ({ ...current, details: { ...current.details, [field.key]: e.target.value } }))}
-                  />
-                </Field>
-              ))}
+              {CATEGORY_FIELDS[form.category].map((field) => {
+                const isPhoneField = field.key.toLowerCase().includes("phone") || field.key.toLowerCase().includes("mobile");
+                const isNumberField = field.type === "number" || isPhoneField;
+                return (
+                  <Field key={field.key} label={field.label} required={REQUIRED_DETAILS[form.category].includes(field.key)} hint={isPhoneField ? "Max 10 digits phone number." : field.type === "number" ? "Numbers only." : "Optional detail."}>
+                    <input
+                      className="w-full rounded-lg border border-[#D8D0C7] bg-white px-2.5 py-2 text-[13px] text-[#261B15] placeholder:text-[#81766E] focus:border-[#8B6A3E] focus:outline-none focus:ring-4 focus:ring-[#F5ECDD]"
+                      type={isNumberField ? "text" : field.type ?? "text"}
+                      inputMode={isNumberField ? "numeric" : "text"}
+                      maxLength={isPhoneField ? 10 : undefined}
+                      value={form.details[field.key] ?? ""}
+                      placeholder={field.placeholder}
+                      onChange={(e) => {
+                        let val = e.target.value;
+                        if (isPhoneField) {
+                          val = val.replace(/\D/g, "").slice(0, 10);
+                        } else if (field.type === "number") {
+                          val = val.replace(/\D/g, "");
+                        }
+                        setForm((current) => ({ ...current, details: { ...current.details, [field.key]: val } }));
+                      }}
+                    />
+                  </Field>
+                );
+              })}
             </div>
           </div>
 
@@ -929,13 +956,14 @@ export default function SystemServicesPage() {
               <div className="mt-3 grid grid-cols-3 gap-3 max-[820px]:grid-cols-1">
                 <Field label="Currency" required>
                   <input className="w-full rounded-lg border border-[#D8D0C7] bg-white px-2.5 py-2 text-[13px] text-[#261B15] placeholder:text-[#81766E] focus:border-[#8B6A3E] focus:outline-none focus:ring-4 focus:ring-[#F5ECDD]" value={form.currency}
-                    onChange={(e) => setForm({ ...form, currency: e.target.value })} />
+                    maxLength={5}
+                    onChange={(e) => setForm({ ...form, currency: e.target.value.replace(/[^a-zA-Z]/g, "").toUpperCase() })} />
                 </Field>
-                <Field label="Amount" required hint="Exact amount charged each billing cycle.">
-                  <input className="w-full rounded-lg border border-[#D8D0C7] bg-white px-2.5 py-2 text-[13px] text-[#261B15] placeholder:text-[#81766E] focus:border-[#8B6A3E] focus:outline-none focus:ring-4 focus:ring-[#F5ECDD]" type="number" min={0} value={form.costAmount} placeholder="999"
-                    onChange={(e) => setForm({ ...form, costAmount: e.target.value })} />
+                <Field label="Amount" required hint="Numbers only.">
+                  <input className="w-full rounded-lg border border-[#D8D0C7] bg-white px-2.5 py-2 text-[13px] text-[#261B15] placeholder:text-[#81766E] focus:border-[#8B6A3E] focus:outline-none focus:ring-4 focus:ring-[#F5ECDD]" type="text" inputMode="numeric" value={form.costAmount} placeholder="999"
+                    onChange={(e) => setForm({ ...form, costAmount: e.target.value.replace(/\D/g, "") })} />
                 </Field>
-                <Field label="Billed" required hint="How often this service charges you.">
+                <Field label="Billed" required hint="Billing frequency.">
                   <select className="w-full rounded-lg border border-[#D8D0C7] bg-white px-2.5 py-2 text-[13px] text-[#261B15] placeholder:text-[#81766E] focus:border-[#8B6A3E] focus:outline-none focus:ring-4 focus:ring-[#F5ECDD]" value={form.billingCycle}
                     onChange={(e) => setForm({ ...form, billingCycle: e.target.value as ExternalServiceBillingCycle | "" })}>
                     <option value="">Choose</option>
@@ -989,12 +1017,12 @@ export default function SystemServicesPage() {
             {form.remindersEnabled && (
               <div className="mt-3 grid grid-cols-3 gap-3 max-[820px]:grid-cols-1">
                 <Field label="Popup, days before" hint={`Blank = ${settings?.systemAlerts?.popupReminderDays ?? 15}`}>
-                  <input className="w-full rounded-lg border border-[#D8D0C7] bg-white px-2.5 py-2 text-[13px] text-[#261B15] placeholder:text-[#81766E] focus:border-[#8B6A3E] focus:outline-none focus:ring-4 focus:ring-[#F5ECDD]" type="number" min={0} value={form.popupReminderDays}
-                    onChange={(e) => setForm({ ...form, popupReminderDays: e.target.value })} />
+                  <input className="w-full rounded-lg border border-[#D8D0C7] bg-white px-2.5 py-2 text-[13px] text-[#261B15] placeholder:text-[#81766E] focus:border-[#8B6A3E] focus:outline-none focus:ring-4 focus:ring-[#F5ECDD]" type="text" inputMode="numeric" maxLength={3} value={form.popupReminderDays}
+                    onChange={(e) => setForm({ ...form, popupReminderDays: e.target.value.replace(/\D/g, "").slice(0, 3) })} />
                 </Field>
                 <Field label="Email, days before" hint={`Blank = ${settings?.systemAlerts?.emailReminderDays ?? 15}`}>
-                  <input className="w-full rounded-lg border border-[#D8D0C7] bg-white px-2.5 py-2 text-[13px] text-[#261B15] placeholder:text-[#81766E] focus:border-[#8B6A3E] focus:outline-none focus:ring-4 focus:ring-[#F5ECDD]" type="number" min={0} value={form.emailReminderDays}
-                    onChange={(e) => setForm({ ...form, emailReminderDays: e.target.value })} />
+                  <input className="w-full rounded-lg border border-[#D8D0C7] bg-white px-2.5 py-2 text-[13px] text-[#261B15] placeholder:text-[#81766E] focus:border-[#8B6A3E] focus:outline-none focus:ring-4 focus:ring-[#F5ECDD]" type="text" inputMode="numeric" maxLength={3} value={form.emailReminderDays}
+                    onChange={(e) => setForm({ ...form, emailReminderDays: e.target.value.replace(/\D/g, "").slice(0, 3) })} />
                 </Field>
                 <Field label="Email these people" hint="Blank = default list">
                   <input className="w-full rounded-lg border border-[#D8D0C7] bg-white px-2.5 py-2 text-[13px] text-[#261B15] placeholder:text-[#81766E] focus:border-[#8B6A3E] focus:outline-none focus:ring-4 focus:ring-[#F5ECDD]" value={form.notifyEmails}

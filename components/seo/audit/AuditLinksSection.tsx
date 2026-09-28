@@ -192,7 +192,7 @@ export default function AuditLinksSection({ page, detail }: { page: any; detail:
                 <span>🎯</span> Recommended Internal Anchor Links
               </span>
               <p className="text-slate-300 text-[11.5px] leading-relaxed">
-                Add anchor link from <strong className="text-emerald-300">/about-expo</strong> to <strong className="text-emerald-300">{page?.path ?? "/why-visit"}</strong> using anchor phrase: <em className="text-white font-semibold">&ldquo;Bharat Organic Fair 2027&rdquo;</em>
+                Add anchor link from <strong className="text-emerald-300">/about</strong> to <strong className="text-emerald-300">{page?.path ?? "/why-visit"}</strong> using anchor phrase: <em className="text-white font-semibold">&ldquo;Bharat Organic Fair 2027&rdquo;</em>
               </p>
             </div>
             <div className="rounded-xl border border-slate-700 bg-slate-900/90 p-3 space-y-1">

@@ -26,6 +26,12 @@ export interface LiveDashboardOverview {
       cases: { total: number; open: number };
       newsletter: { total: number; mtd: number };
       campaigns: { total: number; active: number };
+      actionRequired?: {
+        exhibitor: number;
+        buyer: number;
+        sponsor: number;
+        visitor: number;
+      };
     }>;
     analytics: DashboardSource<{
       users: number;

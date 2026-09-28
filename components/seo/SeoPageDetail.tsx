@@ -1,10 +1,28 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { AlertTriangle, ExternalLink, X, ShieldCheck, RefreshCw } from "lucide-react";
+import {
+  AlertTriangle,
+  ExternalLink,
+  X,
+  ShieldCheck,
+  RefreshCw,
+  Sparkles,
+  FileText,
+  CheckCircle2,
+  Monitor,
+  Smartphone,
+  Zap,
+} from "lucide-react";
 import Spinner from "@/components/ui/Spinner";
-import { seoAuditApi, type SeoPageDetail as PageDetail, type SeoRecommendationResponse } from "@/lib/seoAuditApi";
+import {
+  seoAuditApi,
+  type PageSpeedAudit,
+  type SeoPageDetail as PageDetail,
+  type SeoRecommendationResponse,
+} from "@/lib/seoAuditApi";
 import { ScorePill } from "./SeoBadges";
+import SeoSiteCheckupReport from "./SeoSiteCheckupReport";
 
 import AuditOverviewSection from "./audit/AuditOverviewSection";
 import AuditSearchSection from "./audit/AuditSearchSection";
@@ -20,6 +38,8 @@ import { AuditBrowserHealthSection, AuditInfrastructureSection } from "./audit/A
 import AuditIssuesSection from "./audit/AuditIssuesSection";
 import { AuditAiFixesSection, AuditHistorySection } from "./audit/AuditAiFixesSection";
 import { OpenAiAuditModal } from "./audit/OpenAiAuditModal";
+
+type ReportView = "checkup" | "telemetry";
 
 const SECTIONS = [
   { id: "section-overview", label: "Overview" },
@@ -44,9 +64,13 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string>("section-overview");
+  const [reportView, setReportView] = useState<ReportView>("checkup");
   const [aiState, setAiState] = useState<SeoRecommendationResponse | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
+  const [pageSpeed, setPageSpeed] = useState<PageSpeedAudit | null>(null);
+  const [pageSpeedLoading, setPageSpeedLoading] = useState(false);
+  const [pageSpeedStrategy, setPageSpeedStrategy] = useState<"mobile" | "desktop">("mobile");
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -57,6 +81,15 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
     try {
       const response = await seoAuditApi.page(pageId);
       setDetail(response);
+
+      // Live Google PageSpeed run for this route, started once the page is known.
+      setPageSpeedStrategy("mobile");
+      setPageSpeedLoading(true);
+      try {
+        setPageSpeed(await seoAuditApi.pagespeed(response.page.url, "mobile", false));
+      } finally {
+        setPageSpeedLoading(false);
+      }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not load this page audit");
     } finally {
@@ -67,6 +100,22 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
   useEffect(() => {
     void load();
   }, [load]);
+
+  const runPageSpeed = useCallback(
+    async (strategy: "mobile" | "desktop" = pageSpeedStrategy, url?: string, refresh = false) => {
+      const target = url ?? detail?.page?.url;
+      if (!target) return;
+      await null;
+      setPageSpeedStrategy(strategy);
+      setPageSpeedLoading(true);
+      try {
+        setPageSpeed(await seoAuditApi.pagespeed(target, strategy, refresh));
+      } finally {
+        setPageSpeedLoading(false);
+      }
+    },
+    [detail?.page?.url, pageSpeedStrategy],
+  );
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -81,13 +130,11 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
     };
   }, [onClose]);
 
-  // High-performance rAF-throttled scroll listener for active tab highlighting
   useEffect(() => {
     const scrollContainer = containerRef.current;
-    if (!scrollContainer) return;
+    if (!scrollContainer || reportView !== "telemetry") return;
 
     let ticking = false;
-
     const handleScroll = () => {
       if (!ticking) {
         window.requestAnimationFrame(() => {
@@ -110,7 +157,7 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
 
     scrollContainer.addEventListener("scroll", handleScroll, { passive: true });
     return () => scrollContainer.removeEventListener("scroll", handleScroll);
-  }, [detail]);
+  }, [detail, reportView]);
 
   const scrollToSection = (id: string) => {
     setActiveSection(id);
@@ -150,11 +197,11 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
         role="dialog"
         aria-modal="true"
         aria-label="SEO page audit report"
-        className="flex h-full w-full max-w-[1060px] flex-col overflow-hidden rounded-3xl border border-slate-700 bg-slate-900 shadow-2xl text-slate-100 transform-gpu"
+        className="flex h-full w-full max-w-[1150px] flex-col overflow-hidden rounded-3xl border border-indigo-900/70 bg-[#0b1020] shadow-2xl text-slate-100 transform-gpu"
         onClick={(event) => event.stopPropagation()}
       >
         {/* Top Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700 bg-[#1e293b] px-5 py-3.5 shrink-0 shadow-md">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-indigo-800/60 bg-[linear-gradient(115deg,#1e1b4b_0%,#312e81_42%,#4c1d95_100%)] px-5 py-3.5 shrink-0 shadow-md">
           <div className="min-w-0">
             <div className="flex items-center gap-3">
               {page && <ScorePill score={page.score} size="lg" />}
@@ -162,28 +209,110 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">
-                    SEMrush Page Audit Report
+                    SEO Site Checkup Audit Report
                   </p>
                 </div>
                 <h3 className="line-clamp-1 text-[17px] font-black tracking-tight text-white mt-0.5">
                   {page?.title ?? page?.path ?? "Page Audit"}
                 </h3>
+
+                {pageSpeedLoading && !pageSpeed?.ok ? (
+                  <p className="mt-1.5 flex items-center gap-1.5 text-[11px] font-bold text-indigo-100">
+                    <RefreshCw className="h-3 w-3 animate-spin" />
+                    Running Google PageSpeed Insights…
+                  </p>
+                ) : pageSpeed?.ok ? (
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-indigo-100 ring-1 ring-white/20">
+                      <Zap className="h-3 w-3" /> PageSpeed
+                    </span>
+                    {(
+                      [
+                        ["Perf", pageSpeed.scores.performance],
+                        ["A11y", pageSpeed.scores.accessibility],
+                        ["BP", pageSpeed.scores.bestPractices],
+                        ["SEO", pageSpeed.scores.seo],
+                      ] as Array<[string, number | null]>
+                    ).map(([label, value]) => (
+                      <span
+                        key={label}
+                        title={`Google PageSpeed ${label} score`}
+                        className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-black ring-1 ${
+                          value == null
+                            ? "bg-white/5 text-slate-300 ring-white/15"
+                            : value >= 90
+                              ? "bg-emerald-500/20 text-emerald-200 ring-emerald-400/40"
+                              : value >= 50
+                                ? "bg-amber-500/20 text-amber-200 ring-amber-400/40"
+                                : "bg-red-500/20 text-red-200 ring-red-400/40"
+                        }`}
+                      >
+                        {label}
+                        <b className="font-mono">{value == null ? "—" : value}</b>
+                      </span>
+                    ))}
+                    <span className="flex items-center gap-0.5 rounded-md bg-white/10 p-0.5 ring-1 ring-white/15">
+                      {(
+                        [
+                          ["mobile", Smartphone],
+                          ["desktop", Monitor],
+                        ] as Array<["mobile" | "desktop", React.ElementType]>
+                      ).map(([strategy, Icon]) => (
+                        <button
+                          key={strategy}
+                          type="button"
+                          title={`Run PageSpeed Insights for ${strategy}`}
+                          disabled={pageSpeedLoading}
+                          onClick={() => void runPageSpeed(strategy, undefined, true)}
+                          className={`grid h-5 w-5 cursor-pointer place-items-center rounded transition disabled:opacity-50 ${
+                            pageSpeedStrategy === strategy
+                              ? "bg-indigo-400 text-indigo-950"
+                              : "text-indigo-100 hover:bg-white/10"
+                          }`}
+                        >
+                          <Icon className="h-3 w-3" />
+                        </button>
+                      ))}
+                    </span>
+                  </div>
+                ) : (
+                  <p className="mt-1.5 text-[11px] font-semibold text-red-200">
+                    PageSpeed Insights unavailable{pageSpeed?.message ? ` — ${pageSpeed.message}` : ""}
+                  </p>
+                )}
               </div>
             </div>
-            {page && (
-              <a
-                href={page.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-flex max-w-full items-center gap-1.5 truncate text-[11.5px] font-bold text-emerald-300 hover:text-white transition-colors bg-emerald-950/80 border border-emerald-700/80 px-3 py-0.5 rounded-full shadow-sm"
-              >
-                {page.url}
-                <ExternalLink className="h-3 w-3 shrink-0" />
-              </a>
-            )}
           </div>
 
           <div className="flex items-center gap-2.5">
+            {/* View Switcher: Checkup Report vs Detailed Telemetry */}
+            <div className="flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700">
+              <button
+                type="button"
+                onClick={() => setReportView("checkup")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                  reportView === "checkup"
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "text-slate-300 hover:text-white"
+                }`}
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                SEOSiteCheckup Report
+              </button>
+              <button
+                type="button"
+                onClick={() => setReportView("telemetry")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                  reportView === "telemetry"
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "text-slate-300 hover:text-white"
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                Technical Telemetry
+              </button>
+            </div>
+
             <button
               type="button"
               disabled={aiLoading}
@@ -193,126 +322,101 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
                   void generateAi(true);
                 }
               }}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 px-3.5 py-2 text-[12px] font-black text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-3.5 py-1.5 text-xs font-black text-white shadow-md transition hover:scale-105 cursor-pointer disabled:opacity-50"
             >
-              {aiLoading ? (
-                <>
-                  <RefreshCw className="h-3.5 w-3.5 animate-spin text-white" />
-                  <span>Generating Full Audit...</span>
-                </>
-              ) : (
-                <>
-                  <span className="text-emerald-300 text-xs">⚡</span>
-                  <span>Generate Full Audit Report</span>
-                </>
-              )}
+              <Sparkles className="h-3.5 w-3.5 text-emerald-300" />
+              <span>Full AI Audit</span>
             </button>
 
             <button
               type="button"
               aria-label="Close audit details"
               onClick={onClose}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-slate-600 bg-slate-800 text-slate-200 transition-all hover:border-red-500 hover:bg-red-500/20 hover:text-white cursor-pointer shadow-md"
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-slate-600 bg-slate-800 text-slate-200 transition hover:border-red-500 hover:bg-red-500/20 hover:text-white cursor-pointer"
             >
-              <X className="h-4.5 w-4.5" />
+              <X className="h-4 w-4" />
             </button>
           </div>
         </div>
 
-        {/* Sticky Active Tabs Navigation Bar */}
-        <div className="sticky top-0 z-30 flex gap-1.5 overflow-x-auto border-b border-slate-700 bg-[#1e293b] px-5 py-2.5 [scrollbar-width:thin] shrink-0 shadow-lg">
-          {SECTIONS.map((sec) => {
-            const isActive = activeSection === sec.id;
-            return (
-              <button
-                key={sec.id}
-                type="button"
-                onClick={() => scrollToSection(sec.id)}
-                className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-[11.5px] font-extrabold transition-all cursor-pointer ${
-                  isActive
-                    ? "bg-emerald-500 text-slate-950 shadow-md border border-emerald-400 font-black scale-[1.02]"
-                    : "bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white border border-slate-700"
-                }`}
-              >
-                {sec.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Single Scrollable Dark Slate Page Content */}
-        <div
-          ref={containerRef}
-          className="flex-1 overflow-y-auto bg-[#0f172a] p-4 sm:p-5 space-y-6 [scrollbar-width:thin] transform-gpu will-change-scroll"
-        >
-          {loading && (
-            <div className="flex flex-col items-center justify-center py-28 space-y-4">
-              <Spinner />
-              <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest animate-pulse">
-                Loading SEMrush Audit Report...
-              </p>
+        {/* Render View: SEOSiteCheckup Report Component vs Technical Telemetry */}
+        {reportView === "checkup" ? (
+          <div className="flex-1 overflow-y-auto bg-slate-200/70 p-4 sm:p-6 [scrollbar-width:thin]">
+            <SeoSiteCheckupReport
+              pageId={pageId}
+              url={page?.url}
+              meta={{ title: page?.title, description: page?.metaDescription }}
+              pagespeed={pageSpeed}
+              onReAudit={() => void load()}
+            />
+          </div>
+        ) : (
+          <>
+            {/* Sticky Active Tabs Navigation Bar */}
+            <div className="sticky top-0 z-30 flex gap-1.5 overflow-x-auto border-b border-indigo-800/60 bg-[#141b34] px-5 py-2.5 [scrollbar-width:thin] shrink-0 shadow-lg">
+              {SECTIONS.map((sec) => {
+                const isActive = activeSection === sec.id;
+                return (
+                  <button
+                    key={sec.id}
+                    type="button"
+                    onClick={() => scrollToSection(sec.id)}
+                    className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-[11.5px] font-extrabold transition-all cursor-pointer ${
+                      isActive
+                        ? "bg-emerald-500 text-slate-950 shadow-md border border-emerald-400 font-black scale-[1.02]"
+                        : "bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white border border-slate-700"
+                    }`}
+                  >
+                    {sec.label}
+                  </button>
+                );
+              })}
             </div>
-          )}
 
-          {error && (
-            <div className="flex items-center gap-3 rounded-2xl border border-red-500/50 bg-red-950/60 p-5 text-[14px] font-bold text-red-200 shadow-xl">
-              <AlertTriangle className="h-5 w-5 shrink-0 text-red-400" />
-              {error}
+            <div
+              ref={containerRef}
+              className="flex-1 overflow-y-auto bg-[#0b1020] p-4 sm:p-5 space-y-6 [scrollbar-width:thin] transform-gpu"
+            >
+              {loading && (
+                <div className="flex flex-col items-center justify-center py-28 space-y-4">
+                  <Spinner />
+                  <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest animate-pulse">
+                    Loading Technical Telemetry...
+                  </p>
+                </div>
+              )}
+
+              {error && (
+                <div className="flex items-center gap-3 rounded-2xl border border-red-500/50 bg-red-950/60 p-5 text-sm font-bold text-red-200">
+                  <AlertTriangle className="h-5 w-5 shrink-0 text-red-400" />
+                  {error}
+                </div>
+              )}
+
+              {detail && page && (
+                <>
+                  <AuditOverviewSection page={page} />
+                  <AuditSearchSection search={detail.search} />
+                  <AuditMetadataSection page={page} />
+                  <AuditKeywordsSection page={page} />
+                  <AuditSocialSection page={page} />
+                  <AuditHeadingsSection page={page} />
+                  <AuditLinksSection page={page} detail={detail} />
+                  <AuditImagesSection page={page} />
+                  <AuditSchemaSection page={page} />
+                  <AuditPerformanceSection performance={detail.performance} />
+                  <AuditBrowserHealthSection page={page} />
+                  <AuditInfrastructureSection page={page} />
+                  <AuditIssuesSection issues={detail.issues || []} />
+                  <AuditAiFixesSection aiLoading={aiLoading} aiState={aiState} generateAi={generateAi} />
+                  <AuditHistorySection history={detail.history || []} />
+                </>
+              )}
             </div>
-          )}
-
-          {detail && page && (
-            <>
-              {/* 1. Overview */}
-              <AuditOverviewSection page={page} />
-
-              {/* 2. Search Console */}
-              <AuditSearchSection search={detail.search} />
-
-              {/* 3. Metadata */}
-              <AuditMetadataSection page={page} />
-
-              {/* 4. Keywords */}
-              <AuditKeywordsSection page={page} />
-
-              {/* 5. Social SEO */}
-              <AuditSocialSection page={page} />
-
-              {/* 6. Headings */}
-              <AuditHeadingsSection page={page} />
-
-              {/* 7. Links */}
-              <AuditLinksSection page={page} detail={detail} />
-
-              {/* 8. Images */}
-              <AuditImagesSection page={page} />
-
-              {/* 9. Schema */}
-              <AuditSchemaSection page={page} />
-
-              {/* 10. Performance */}
-              <AuditPerformanceSection performance={detail.performance} />
-
-              {/* 11. Browser Health */}
-              <AuditBrowserHealthSection page={page} />
-
-              {/* 12. Infrastructure */}
-              <AuditInfrastructureSection page={page} />
-
-              {/* 13. Issues */}
-              <AuditIssuesSection issues={detail.issues || []} />
-
-              {/* 14. AI Fixes */}
-              <AuditAiFixesSection aiLoading={aiLoading} aiState={aiState} generateAi={generateAi} />
-
-              {/* 15. History */}
-              <AuditHistorySection history={detail.history || []} />
-            </>
-          )}
-        </div>
+          </>
+        )}
       </aside>
 
-      {/* OpenAI Full Audit Report Dedicated Modal */}
       <OpenAiAuditModal
         isOpen={isAuditModalOpen}
         onClose={() => setIsAuditModalOpen(false)}

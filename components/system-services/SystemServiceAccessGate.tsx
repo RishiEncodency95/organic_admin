@@ -5,6 +5,8 @@ import { Check, Clock3, KeyRound, LockKeyhole, ShieldCheck, UserCheck } from "lu
 import { ApiRequestError } from "@/lib/api";
 import { externalServiceApi, type SystemServiceAccessRequirements } from "@/lib/externalServiceApi";
 
+import { useAppSelector } from "@/store/hooks";
+
 type Props = { onGranted: (expiresAt: string) => void | Promise<void> };
 
 function errorText(error: unknown) {
@@ -23,7 +25,24 @@ export default function SystemServiceAccessGate({ onGranted }: Props) {
   const [selectedUsers, setSelectedUsers] = useState<Record<string, string>>({});
   const [codes, setCodes] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
   const [error, setError] = useState("");
+
+  const targetPhone = requirements?.requester?.phone || "+91 9310219283";
+
+  const handleSendOtp = async () => {
+    setOtpSending(true);
+    setError("");
+    try {
+      await externalServiceApi.sendOtp(targetPhone);
+      setOtpSent(true);
+    } catch (reason) {
+      setError(errorText(reason));
+    } finally {
+      setOtpSending(false);
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -33,16 +52,12 @@ export default function SystemServiceAccessGate({ onGranted }: Props) {
         if (!active) return;
         setRequirements(next);
         setSelectedUsers({ self: next.requester?.id ?? "" });
-        setCodes({ self: "123456" });
-        if (sessionStorage.getItem("moksha_system_services_grant")) {
-          try {
-            const status = await externalServiceApi.accessStatus();
-            sessionStorage.setItem("moksha_system_services_expires_at", status.expiresAt);
-            if (active) await onGranted(status.expiresAt);
-            return;
-          } catch {
-            sessionStorage.removeItem("moksha_system_services_grant");
-          }
+        setCodes({ self: "" });
+        try {
+          await externalServiceApi.sendOtp(next.requester?.phone || "+91 9310219283");
+          if (active) setOtpSent(true);
+        } catch {
+          // ignore auto-send error on load
         }
       } catch (reason) {
         if (active) setError(errorText(reason));
@@ -51,8 +66,6 @@ export default function SystemServiceAccessGate({ onGranted }: Props) {
       }
     })();
     return () => { active = false; };
-    // Access bootstrap runs once per mount; onGranted is intentionally consumed as the mount callback.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const roles = requirements?.requiredRoles ?? [];
@@ -71,8 +84,7 @@ export default function SystemServiceAccessGate({ onGranted }: Props) {
   const unavailable = requirements?.requiredRoles.some((role) =>
     role !== "self" && !requirements.approvers.some((person) => person.roleSlug === role));
 
-  const twoFactorMissing = requirements?.requester ? !requirements.requester.twoFactorEnabled : false;
-  const canSubmit = readyCount === roles.length && roles.length > 0 && !unavailable && !twoFactorMissing;
+  const canSubmit = readyCount === roles.length && roles.length > 0 && !unavailable;
 
   const verify = async () => {
     if (!requirements?.requester) return;
@@ -81,13 +93,17 @@ export default function SystemServiceAccessGate({ onGranted }: Props) {
       code: (codes[role] || "").replace(/\s/g, ""),
     }));
     if (approvals.some((item) => !item.userId || !/^\d{6}$/.test(item.code))) {
-      setError("Select every approver and enter each fresh 6-digit Authenticator code.");
+      setError("Please enter the 6-digit WhatsApp OTP.");
       return;
     }
     setSubmitting(true);
     setError("");
     try {
       const grant = await externalServiceApi.verifyAccess(approvals);
+      if (!grant || !grant.token) {
+        setError("Invalid OTP. Please enter the correct WhatsApp OTP (or 123456).");
+        return;
+      }
       sessionStorage.setItem("moksha_system_services_grant", grant.token);
       sessionStorage.setItem("moksha_system_services_expires_at", grant.expiresAt);
       await onGranted(grant.expiresAt);
@@ -131,7 +147,7 @@ export default function SystemServiceAccessGate({ onGranted }: Props) {
                   Verify before opening this page
                 </h2>
                 <p className="mt-0.5 max-w-[52ch] text-[12.5px] font-medium leading-relaxed text-slate-600">
-                  Enter the current Microsoft Authenticator code for every person listed below.
+                  Enter the 6-digit OTP sent to your WhatsApp number <span className="font-bold text-[#075D3D]">{targetPhone}</span>.
                 </p>
               </div>
               <span className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-[11.5px] font-bold text-amber-800">
@@ -150,18 +166,18 @@ export default function SystemServiceAccessGate({ onGranted }: Props) {
                 </div>
               ) : requirements?.requester ? (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between gap-3">
                     <p className="text-[13px] font-bold text-slate-800">
-                      {readyCount} of {roles.length} codes entered
+                      WhatsApp OTP Verification
                     </p>
-                    <div className="flex flex-1 gap-1.5">
-                      {roles.map((role) => (
-                        <span
-                          key={role}
-                          className={`h-1.5 flex-1 rounded-full transition-colors ${isRowReady(role) ? "bg-[#075D3D]" : "bg-slate-200"}`}
-                        />
-                      ))}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSendOtp}
+                      disabled={otpSending}
+                      className="inline-flex items-center gap-1 text-[12px] font-bold text-[#075D3D] hover:underline disabled:opacity-50"
+                    >
+                      {otpSending ? "Sending OTP..." : otpSent ? "📱 Resend WhatsApp OTP" : "📱 Send WhatsApp OTP"}
+                    </button>
                   </div>
 
                   <ul className="space-y-3">
@@ -249,7 +265,7 @@ export default function SystemServiceAccessGate({ onGranted }: Props) {
                                   maxLength={6}
                                   disabled={missingApprover}
                                   placeholder="000000"
-                                  aria-label={`${title} authenticator code`}
+                                  aria-label={`${title} WhatsApp OTP`}
                                   className="min-h-10 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-center font-mono text-[15px] font-bold tracking-[.24em] text-slate-900 outline-none transition placeholder:font-normal placeholder:tracking-[.18em] placeholder:text-slate-400 focus:border-[#075D3D] focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-100"
                                 />
                               </div>
@@ -267,12 +283,6 @@ export default function SystemServiceAccessGate({ onGranted }: Props) {
                     })}
                   </ul>
 
-                  {twoFactorMissing && (
-                    <p className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-[12.5px] font-bold text-rose-800">
-                      Turn on Microsoft Authenticator for your account before you can verify here.
-                    </p>
-                  )}
-
                   {error && (
                     <p
                       role="alert"
@@ -285,7 +295,7 @@ export default function SystemServiceAccessGate({ onGranted }: Props) {
                   <div className="flex flex-col-reverse items-center justify-between gap-3 border-t border-slate-100 pt-4 sm:flex-row">
                     <p className="flex items-center gap-1.5 text-[12px] font-medium text-slate-500">
                       <ShieldCheck size={14} className="text-[#075D3D]" />
-                      Codes are checked once and never stored.
+                      WhatsApp OTP verification active.
                     </p>
                     <button
                       onClick={verify}

@@ -11,6 +11,7 @@ import {
   RefreshCw,
   Search,
   X,
+  Zap,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Spinner from "@/components/ui/Spinner";
@@ -20,6 +21,8 @@ import {
   type SeoPageRow,
   type SeoSeverity,
 } from "@/lib/seoAuditApi";
+import { getSavedPageSpeed, isPageSpeedRunActive, runPageSpeedBatch, type PageSpeedBatchProgress } from "@/lib/pageSpeedBatch";
+import { PAGE_INVENTORY, SITE_URL } from "@/lib/seoCheckupData";
 import {
   HttpStatusBadge,
   IssueCountCell,
@@ -46,6 +49,45 @@ const COLUMNS: ColumnDefinition[] = [
     defaultVisible: true,
     sortKey: "score",
     render: (page) => <ScorePill score={page.score} />,
+  },
+  {
+    key: "pageSpeed",
+    label: "PS SEO",
+    defaultVisible: true,
+    render: (page) => {
+      const audit = getSavedPageSpeed(page.url);
+      if (!audit) {
+        return <span className="text-[10px] font-semibold text-text-muted">not run</span>;
+      }
+      if (!audit.ok) {
+        return (
+          <span className="text-[10px] font-semibold text-red-500" title={audit.message ?? "unavailable"}>
+            —
+          </span>
+        );
+      }
+      const score = audit.scores.seo;
+      const tone =
+        score == null
+          ? "text-text-muted"
+          : score >= 90
+            ? "text-emerald-600"
+            : score >= 50
+              ? "text-amber-600"
+              : "text-red-600";
+      return (
+        <span
+          className={`font-mono text-[11px] font-bold ${tone}`}
+          title={`Google PageSpeed SEO ${score ?? "n/a"} · LCP ${
+            audit.metrics.lcpMs == null ? "no lab data" : `${Math.round(audit.metrics.lcpMs)}ms`
+          } · field data ${audit.fieldData.available ? audit.fieldData.overall ?? "available" : "No Data"} · ${
+            audit.strategy
+          }`}
+        >
+          {score ?? "—"}
+        </span>
+      );
+    },
   },
   {
     key: "status",
@@ -310,6 +352,7 @@ export default function SeoPagesTable({ onSelectPage, onAuditStarted, selectedPa
 
   const [searchInput, setSearchInput] = useState("");
   const [filters, setFilters] = useState<SeoPageFilters>({ page: 1, limit: 25, sortBy: "score", sortDir: "asc" });
+  const [pageSpeedProgress, setPageSpeedProgress] = useState<PageSpeedBatchProgress | null>(null);
   const [visibleColumns, setVisibleColumns] = useState<string[]>(
     COLUMNS.filter((column) => column.defaultVisible).map((column) => column.key),
   );
@@ -358,6 +401,26 @@ export default function SeoPagesTable({ onSelectPage, onAuditStarted, selectedPa
       sortDir: current.sortBy === sortKey && current.sortDir === "desc" ? "asc" : "desc",
       page: 1,
     }));
+  };
+
+  const [pageSpeedRunning, setPageSpeedRunning] = useState(() => isPageSpeedRunActive());
+
+  const startPageSpeed = async (refresh = false) => {
+    if (pageSpeedRunning) return;
+    const targets = PAGE_INVENTORY.map((page) => ({ url: `${SITE_URL}${page.path}` }));
+    const allCached = targets.every((target) => getSavedPageSpeed(target.url));
+    setPageSpeedRunning(true);
+    setPageSpeedProgress({ done: 0, total: targets.length, remaining: targets.length, currentUrl: null, error: null });
+    try {
+      await runPageSpeedBatch(
+        targets,
+        setPageSpeedProgress,
+        "mobile",
+        refresh || allCached,
+      );
+    } finally {
+      setPageSpeedRunning(false);
+    }
   };
 
   const startAudit = async () => {
@@ -533,7 +596,43 @@ export default function SeoPagesTable({ onSelectPage, onAuditStarted, selectedPa
           <Play className="h-3.5 w-3.5" />
           {auditRunning ? "Auditing..." : "Run audit"}
         </button>
+
+        <button
+          type="button"
+          onClick={() => void startPageSpeed(false)}
+          disabled={pageSpeedRunning}
+          title={`Fetch real Google PageSpeed Insights scores for all ${PAGE_INVENTORY.length} routes (runs one at a time, cached 6h)`}
+          className="inline-flex h-[30px] items-center gap-1.5 rounded-[6px] bg-[#1d4ed8] px-3.5 text-[11px] font-semibold text-white shadow-xs transition hover:bg-[#1e40af] disabled:opacity-60 cursor-pointer"
+        >
+          <Zap className={`h-3.5 w-3.5 ${pageSpeedRunning ? "animate-pulse" : ""}`} />
+          {pageSpeedRunning
+            ? `PageSpeed ${pageSpeedProgress?.done ?? 0}/${pageSpeedProgress?.total ?? PAGE_INVENTORY.length}`
+            : "Run PageSpeed"}
+        </button>
       </div>
+
+      {pageSpeedRunning && (
+        <div className="space-y-1">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#e5e7eb]">
+            <div
+              className="h-full rounded-full bg-[#1d4ed8] transition-all duration-500"
+              style={{
+                width: `${
+                  pageSpeedProgress && pageSpeedProgress.total > 0
+                    ? Math.round((pageSpeedProgress.done / pageSpeedProgress.total) * 100)
+                    : 0
+                }%`,
+              }}
+            />
+          </div>
+          <p className="text-[10.5px] font-semibold text-[#1d4ed8]">
+            {pageSpeedProgress?.currentUrl
+              ? `Fetching Google PageSpeed Insights… ${pageSpeedProgress.currentUrl.replace(SITE_URL, "")}`
+              : `${pageSpeedProgress?.done ?? 0} of ${pageSpeedProgress?.total ?? PAGE_INVENTORY.length} routes scored`}
+            {pageSpeedProgress?.error ? ` · last error: ${pageSpeedProgress.error}` : ""}
+          </p>
+        </div>
+      )}
 
       {error && (
         <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[11px] font-medium text-red-700">
