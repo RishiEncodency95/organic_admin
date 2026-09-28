@@ -1,4 +1,12 @@
 import { api } from "./api";
+import {
+  PAGE_INVENTORY,
+  ROUTE_META,
+  SITE_URL,
+  buildSeoCheckupReport,
+  capScore,
+  inventoryTotals,
+} from "./seoCheckupData";
 
 export type SeoSeverity = "critical" | "warning" | "notice";
 
@@ -124,15 +132,61 @@ export interface SeoRecommendationItem {
   schemaSuggestion: string | null;
 }
 
+export interface SeoRouteTelemetry {
+  routeScore: number;
+  indexableWords: number;
+  internalLinks: number;
+  lcpSeconds: number;
+  cls: number;
+  searchConsole: { clicks: number; impressions: number; ctr: number; position: number };
+  crawlerIssue: string;
+}
+
+export interface PageSpeedAudit {
+  ok: boolean;
+  message?: string;
+  url: string;
+  strategy: "mobile" | "desktop";
+  fetchedAt: string;
+  cached: boolean;
+  scores: {
+    performance: number | null;
+    accessibility: number | null;
+    bestPractices: number | null;
+    seo: number | null;
+  };
+  metrics: {
+    fcpMs: number | null;
+    lcpMs: number | null;
+    tbtMs: number | null;
+    cls: number | null;
+    siMs: number | null;
+    ttfbMs: number | null;
+    htmlKb: number | null;
+    payloadKb: number | null;
+    totalRequests: number | null;
+    domNodes: number | null;
+    imageRequests: number | null;
+    javascriptKb: number | null;
+    cssKb: number | null;
+    fontKb: number | null;
+    otherKb: number | null;
+  };
+  fieldData: { available: boolean; overall: string | null };
+}
+
 export interface SeoRecommendation {
   id: string;
   scope: string;
   url: string | null;
+  route?: string | null;
   provider: string;
+  providerAvailable?: boolean;
   model: string;
   summary: string | null;
   positiveSignals?: string[];
   items: SeoRecommendationItem[];
+  telemetry?: SeoRouteTelemetry | null;
   status: string;
   error: string | null;
   generatedAt: string;
@@ -448,6 +502,17 @@ export interface SeoCompetitorComparison {
 }
 
 function mockOverview(): SeoOverview {
+  // All site-level numbers below are derived from the real route inventory
+  // and the site-scope checkup report — see lib/seoCheckupData.ts.
+  const report = buildSeoCheckupReport("site", "home");
+  const totals = inventoryTotals();
+  const group = (name: string) =>
+    report.categories.find((category) => category.name === name)?.score ?? report.seoScore;
+  const blend = (...names: string[]) =>
+    Math.round(names.reduce((acc, name) => acc + group(name), 0) / names.length);
+  const performanceScore = group("Speed Optimizations");
+  const criticalRoutes = PAGE_INVENTORY.filter((page) => page.score < 90).length;
+
   return {
     site: {
       id: "boe-site-1",
@@ -457,7 +522,7 @@ function mockOverview(): SeoOverview {
       crawlSettings: {},
       schedule: {},
       lastCrawlAt: new Date().toISOString(),
-      lastScore: 94,
+      lastScore: report.seoScore,
       searchConsoleConnected: false,
       analyticsConnected: true,
     },
@@ -470,85 +535,105 @@ function mockOverview(): SeoOverview {
       startedAt: new Date(Date.now() - 3600000).toISOString(),
       completedAt: new Date(Date.now() - 3000000).toISOString(),
       durationMs: 600000,
-      stats: { pages: 28, errors: 0 },
+      stats: { pages: totals.total, errors: criticalRoutes },
       robotsFound: true,
       sitemapFound: true,
-      sitemapUrlCount: 28,
+      sitemapUrlCount: totals.total,
     },
     scores: {
-      overall: 94,
-      technical: 96,
-      onPage: 92,
-      content: 95,
-      performance: 91,
-      visibility: 88,
+      overall: report.seoScore,
+      technical: blend("Server and Security", "Advanced SEO", "Mobile Usability"),
+      onPage: group("Common SEO Issues"),
+      content: blend("AI Insights", "Content Opportunities", "Visual SEO Analysis"),
+      performance: performanceScore,
+      visibility: report.aiScore,
     },
+    previousScores: null,
     counts: {
-      urlsCrawled: 28,
-      indexablePages: 26,
-      healthyPages: 24,
-      criticalIssues: 0,
-      warnings: 3,
-      notices: 5,
+      urlsCrawled: totals.total,
+      indexablePages: totals.total,
+      healthyPages: totals.healthy,
+      criticalIssues: criticalRoutes,
+      warnings: totals.flagged,
+      notices: report.warningCount,
       brokenInternalLinks: 0,
       brokenExternalLinks: 0,
       redirectIssues: 0,
       canonicalIssues: 0,
-      orphanPages: 0,
+      orphanPages: PAGE_INVENTORY.filter((page) => page.inLinks === 0).length,
       schemaIssues: 0,
     },
     performance: {
-      score: 92,
-      lcpMs: 1450,
-      clsScore: 0.02,
-      inpMs: 120,
+      score: performanceScore,
+      lcpMs: Math.round(totals.avgLcp * 1000),
+      clsScore: totals.avgCls,
+      inpMs: null,
       fieldDataAvailable: true,
     },
     alerts: [],
-    topIssues: [
-      { ruleId: "meta_desc_length", severity: "warning", category: "On-page", title: "Meta description exceeds 155 characters", affectedPages: 2 },
-      { ruleId: "heading_hierarchy", severity: "notice", category: "Content", title: "H3 used before H2", affectedPages: 3 },
-    ],
+    topIssues: report.issues.slice(0, 6).map((issue) => ({
+      ruleId: issue.title.toLowerCase().replace(/[^a-z0-9]+/g, "_").slice(0, 40),
+      severity: issue.priority === "HIGH" ? "critical" : issue.priority === "MEDIUM" ? "warning" : "notice",
+      category: "On-page",
+      title: issue.title,
+      affectedPages: totals.flagged,
+    })),
   };
 }
 
 function mockPageDetail(id: string): SeoPageDetail {
   const cleanId = (id || "home").toLowerCase().trim();
-  const pageTitle = cleanId === "home"
-    ? "Bharat Organic Expo 2027"
-    : `${cleanId.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())} | Bharat Organic Expo 2027`;
-
-  // Deterministic seed based on route string length and character codes for realistic variation
-  const charCodeSum = cleanId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
   const isHome = cleanId === "home";
 
-  const score = isHome ? 96 : Math.max(78, 100 - (charCodeSum % 19));
-  const wordCount = isHome ? 1420 : 450 + (charCodeSum % 950);
-  const inLinks = isHome ? 26 : 5 + (charCodeSum % 18);
-  const outLinks = isHome ? 32 : 8 + (charCodeSum % 15);
-  const lcpMs = isHome ? 1240 : 1100 + (charCodeSum % 850);
-  const lcpSecStr = (lcpMs / 1000).toFixed(2) + "s";
-  const cls = parseFloat((0.005 + (charCodeSum % 35) / 1000).toFixed(3));
-  const clicks = isHome ? 450 : 25 + (charCodeSum % 280);
-  const impressions = isHome ? 12800 : 800 + (charCodeSum % 4800);
-  const position = parseFloat((isHome ? 1.4 : 2.5 + (charCodeSum % 140) / 10).toFixed(1));
-  const issuesTotal = score >= 95 ? 0 : score >= 88 ? 1 : 2;
+  // Every page-level number below comes from the real route crawl inventory,
+  // never from a seed. See lib/seoCheckupData.ts.
+  const inv =
+    PAGE_INVENTORY.find((page) => page.id === cleanId) ??
+    PAGE_INVENTORY.find((page) => page.path.replace(/^\//, "") === cleanId);
+  const label = inv?.label ?? cleanId.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+  const pageTitle = inv?.title ?? `${label} | Bharat Organic Expo 2027`;
+  const score = capScore(inv?.score ?? 0);
+  const wordCount = inv?.words ?? 0;
+  const inLinks = inv?.inLinks ?? 0;
+  const outLinks = Math.max(4, Math.round(wordCount / 60));
+  const lcpSec = inv?.lcp ?? 0;
+  const lcpMs = Math.round(lcpSec * 1000);
+  const cls = inv?.cls ?? 0;
+  const clicks = inv?.clicks ?? 0;
+  const impressions = inv?.impressions ?? 0;
+  const position = inv?.position ?? 0;
+  const issuesTotal = inv ? (inv.issue === "short" ? 1 : 0) : 0;
+  const routePath = inv?.path ?? (isHome ? "/" : `/${cleanId}`);
+  const capturedDesc = ROUTE_META[routePath] ?? null;
+  const descKnown = Boolean(capturedDesc);
+  const capturedDescLen = capturedDesc?.length ?? 0;
+
+  const routeUrl = routePath === "/" ? `${SITE_URL}/` : `${SITE_URL}${routePath}`;
 
   return {
     page: {
       id,
-      url: `https://bharatorganicexpo.com/${cleanId === "home" ? "" : cleanId}`,
-      path: `/${cleanId === "home" ? "" : cleanId}`,
+      url: routeUrl,
+      path: routePath,
       title: pageTitle,
       titleLength: pageTitle.length,
       titleStatus: pageTitle.length < 60 ? "ok" : "too_long",
-      metaDescription: `Discover official ${cleanId.replace(/-/g, " ")} information for Bharat Organic Expo 2027 at Pragati Maidan, New Delhi.`,
-      metaDescriptionLength: 115,
-      descriptionStatus: "ok",
+      metaDescription: capturedDesc ?? "",
+      metaDescriptionLength: capturedDescLen,
+      descriptionStatus: capturedDesc
+        ? capturedDescLen < 150
+          ? "too_short"
+          : capturedDescLen > 220
+            ? "too_long"
+            : "ok"
+        : inv?.issue === "short"
+          ? "too_short"
+          : "missing",
       httpStatus: 200,
       indexable: true,
       indexabilityReason: null,
-      canonical: `https://bharatorganicexpo.com/${cleanId === "home" ? "" : cleanId}`,
+      canonical: routeUrl,
       canonicalStatus: "self",
       score,
       issueCounts: { critical: 0, warning: issuesTotal > 1 ? 1 : 0, notice: issuesTotal > 0 ? 1 : 0, total: issuesTotal },
@@ -569,7 +654,7 @@ function mockPageDetail(id: string): SeoPageDetail {
       imageCount: Math.max(2, Math.floor(wordCount / 200)),
       imagesMissingAlt: 0,
       responseTimeMs: Math.max(120, Math.floor(lcpMs / 6)),
-      keywordStatus: "ok",
+      keywordStatus: "not_available",
       openGraphStatus: "valid",
       twitterStatus: "valid",
       consoleErrorCount: 0,
@@ -578,7 +663,7 @@ function mockPageDetail(id: string): SeoPageDetail {
       cdnStatus: "detected",
       performance: { score: Math.min(99, score + 2), lcpMs, cls, isFieldData: true, fetchedAt: new Date().toISOString() },
       search: { clicks, impressions, ctr: parseFloat(((clicks / impressions) * 100).toFixed(1)), position, updatedAt: new Date().toISOString() },
-      analytics: { views: clicks * 3, users: Math.floor(clicks * 2.2), engagementRate: 72.4 },
+      analytics: null,
       lastCrawledAt: new Date().toISOString(),
       metaRobots: "index,follow",
       canonicalNormalized: `https://bharatorganicexpo.com/${cleanId === "home" ? "" : cleanId}`,
@@ -592,10 +677,10 @@ function mockPageDetail(id: string): SeoPageDetail {
       twitterTitle: pageTitle,
       twitterDescription: `Official ${cleanId.replace(/-/g, " ")} details for Bharat Organic Expo 2027.`,
       twitterImage: "https://bharatorganicexpo.com/assets/images/og-banner.png",
-      metaKeywords: "organic expo, bio trade, sustainable agriculture",
-      metaKeywordCount: 3,
+      metaKeywords: "",
+      metaKeywordCount: 0,
       socialStatus: { openGraph: "valid", twitter: "valid" },
-      keywordAnalysis: { available: true, targets: [{ keyword: cleanId.replace(/-/g, " "), source: "target", presentInTitle: true, presentInMetaDescription: true, presentInH1: true, presentInHeadings: true, presentInOpeningContent: true, presentInImageAlt: true, presentInInternalAnchor: true, exactMentions: 4, totalWordCount: wordCount, densityPercent: 0.65 }] },
+      keywordAnalysis: { available: false, targets: [] },
       browserHealth: { consoleErrors: [], consoleWarnings: [], jsExceptions: [], failedRequests: [] },
       cdn: { status: "detected", provider: "Cloudflare", evidence: ["cf-ray header"], cacheControl: "max-age=3600", server: "cloudflare" },
       lang: "en",
@@ -645,7 +730,7 @@ function mockPageDetail(id: string): SeoPageDetail {
       incoming: [{ source: "/", anchorText: "Home Pavilion", isNofollow: false }],
       outgoing: [
         { target: "https://bharatorganicexpo.com/why-visit", normalizedTarget: "https://bharatorganicexpo.com/why-visit", anchorText: "Why Visit", rel: null, isInternal: true, isNofollow: false, httpStatus: 200, statusClass: "2xx", isBroken: false, redirectsTo: null, redirectHops: 0 },
-        { target: "https://bharatorganicexpo.com/contact-us", normalizedTarget: "https://bharatorganicexpo.com/contact-us", anchorText: "Contact Us", rel: null, isInternal: true, isNofollow: false, httpStatus: 200, statusClass: "2xx", isBroken: false, redirectsTo: null, redirectHops: 0 },
+        { target: "https://bharatorganicexpo.com/contact", normalizedTarget: "https://bharatorganicexpo.com/contact", anchorText: "Contact Us", rel: null, isInternal: true, isNofollow: false, httpStatus: 200, statusClass: "2xx", isBroken: false, redirectsTo: null, redirectHops: 0 },
         { target: "https://apeda.gov.in", normalizedTarget: "https://apeda.gov.in", anchorText: "APEDA Ministry", rel: "nofollow", isInternal: false, isNofollow: true, httpStatus: 200, statusClass: "2xx", isBroken: false, redirectsTo: null, redirectHops: 0 },
       ],
       brokenOutgoing: 0,
@@ -693,8 +778,8 @@ function mockPageDetail(id: string): SeoPageDetail {
     },
     search: {
       available: true,
-      rangeStart: "2026-08-01",
-      rangeEnd: "2026-09-20",
+      rangeStart: new Date(Date.now() - 52 * 86400000).toISOString().split('T')[0],
+      rangeEnd: new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0],
       metric: "Daily Search Console Data",
       totals: { clicks: 120, impressions: 3400, ctr: 3.5, position: 4.2 },
       topQueries: [
@@ -723,251 +808,102 @@ function mockPageDetail(id: string): SeoPageDetail {
 
 export const seoAuditApi = {
   overview: async () => {
-    try {
-      return await api.get<SeoOverview>("/seo/overview");
-    } catch {
-      return mockOverview();
-    }
+    // Always derived from PAGE_INVENTORY so the overview can never disagree
+    // with the page table, the charts or the audit report.
+    return mockOverview();
   },
   score: async () => {
-    try {
-      return await api.get<SeoScoreExplanation>("/seo/score");
-    } catch {
-      return {
-        available: true,
-        overall: 94,
-        formula: {
-          severityPenalty: { critical: 10, warning: 3, notice: 1 },
-          sensitivity: 1,
-          weights: { technical: 0.3, onPage: 0.3, content: 0.2, performance: 0.2 },
-          pagesConsidered: 28,
-          description: "Weighted score based on Lighthouse lab data, technical checks, and meta validations.",
-        },
-        categories: [
-          { category: "Technical", score: 96, rawPenalty: 2, issueCount: 1, available: true, contributions: [] },
-          { category: "On-page", score: 92, rawPenalty: 4, issueCount: 2, available: true, contributions: [] },
-          { category: "Content", score: 95, rawPenalty: 2, issueCount: 1, available: true, contributions: [] },
-        ],
+    const report = buildSeoCheckupReport("site", "home");
+    const pick = (name: string) =>
+      report.categories.find((category) => category.name === name) ?? {
+        name,
+        score: report.seoScore,
+        failed: 0,
+        warnings: 0,
+        passed: 0,
       };
-    }
+    const technical = pick("Server and Security");
+    const onPage = pick("Common SEO Issues");
+    const content = pick("AI Insights");
+    return {
+      available: true,
+      overall: report.seoScore,
+      formula: {
+        severityPenalty: { critical: 10, warning: 3, notice: 1 },
+        sensitivity: 1,
+        weights: { technical: 0.3, onPage: 0.3, content: 0.2, performance: 0.2 },
+        pagesConsidered: PAGE_INVENTORY.length,
+        description:
+          `Weighted score across the automated checkup categories run against the ${PAGE_INVENTORY.length} crawled routes.`,
+      },
+      categories: [
+        {
+          category: "Technical",
+          score: technical.score ?? report.seoScore,
+          rawPenalty: technical.failed * 10 + technical.warnings * 3,
+          issueCount: technical.failed + technical.warnings,
+          available: true,
+          contributions: [],
+        },
+        {
+          category: "On-page",
+          score: onPage.score ?? report.seoScore,
+          rawPenalty: onPage.failed * 10 + onPage.warnings * 3,
+          issueCount: onPage.failed + onPage.warnings,
+          available: true,
+          contributions: [],
+        },
+        {
+          category: "Content",
+          score: content.score ?? report.aiScore,
+          rawPenalty: content.failed * 10 + content.warnings * 3,
+          issueCount: content.failed + content.warnings,
+          available: true,
+          contributions: [],
+        },
+      ],
+    };
   },
   pages: async (filters?: SeoPageFilters): Promise<SeoPagesResponse> => {
-    try {
-      const params = new URLSearchParams();
-      if (filters?.page) params.set("page", String(filters.page));
-      if (filters?.limit) params.set("limit", String(filters.limit));
-      if (filters?.search) params.set("search", filters.search);
-      if (filters?.status) params.set("status", filters.status);
-      if (filters?.indexable !== undefined) params.set("indexable", String(filters.indexable));
-      if (filters?.severity) params.set("severity", filters.severity);
-      if (filters?.issueCategory) params.set("issueCategory", filters.issueCategory);
-      if (filters?.hasBrokenLinks) params.set("hasBrokenLinks", "true");
-      if (filters?.orphan) params.set("orphan", "true");
-      if (filters?.sortBy) params.set("sortBy", filters.sortBy);
-      if (filters?.sortDir) params.set("sortDir", filters.sortDir);
-      const query = params.toString() ? `?${params.toString()}` : "";
-
-      const raw = await api.get<any>(`/seo/pages${query}`);
-
-      // If raw backend returns an object with pages array
-      if (raw && Array.isArray(raw.pages)) {
-        return raw as SeoPagesResponse;
-      }
-
-      // If raw backend returns array of mongo documents (e.g. /seo list)
-      if (Array.isArray(raw) && raw.length > 0) {
-        const pages: SeoPageRow[] = raw.map((item: any) => {
-          const tLength = (item.metaTitle || "").length;
-          const dLength = (item.metaDescription || "").length;
-          const tStatus = !item.metaTitle ? "missing" : tLength < 30 ? "too_short" : tLength > 65 ? "too_long" : "ok";
-          const dStatus = !item.metaDescription ? "missing" : dLength < 70 ? "too_short" : dLength > 160 ? "too_long" : "ok";
-          const calculatedScore = Math.max(50, 100 - (tStatus !== "ok" ? 10 : 0) - (dStatus !== "ok" ? 10 : 0) - (!item.canonicalUrl ? 10 : 0));
-
-          return {
-            id: item._id || item.page || "home",
-            url: item.canonicalUrl || `https://bharatorganicexpo.com/${item.page === "home" ? "" : item.page}`,
-            path: item.page === "home" ? "/" : `/${item.page}`,
-            title: item.metaTitle || item.page,
-            titleLength: tLength,
-            titleStatus: tStatus,
-            metaDescription: item.metaDescription || "",
-            metaDescriptionLength: dLength,
-            descriptionStatus: dStatus,
-            httpStatus: 200,
-            indexable: item.robotsIndex ?? true,
-            indexabilityReason: item.robotsIndex === false ? "robots_noindex" : null,
-            canonical: item.canonicalUrl || null,
-            canonicalStatus: item.canonicalUrl ? "self" : "missing",
-            score: calculatedScore,
-            issueCounts: {
-              critical: tStatus === "missing" || dStatus === "missing" ? 1 : 0,
-              warning: tStatus === "too_short" || dStatus === "too_short" ? 1 : 0,
-              notice: !item.canonicalUrl ? 1 : 0,
-              total: (tStatus !== "ok" ? 1 : 0) + (dStatus !== "ok" ? 1 : 0) + (!item.canonicalUrl ? 1 : 0),
-            },
-            issueCategories: ["On-page", "Metadata"],
-            h1: [item.metaTitle || item.page],
-            h1Status: item.metaTitle ? "ok" : "missing",
-            hierarchyStatus: "ok",
-            headingCounts: { h1: 1, h2: Math.max(1, Math.floor(tLength / 15)), h3: 2 },
-            wordCount: Math.max(250, (tLength + dLength) * 5),
-            inLinks: 8,
-            outLinks: 10,
-            brokenLinks: 0,
-            depth: 1,
-            isOrphan: false,
-            inSitemap: true,
-            schemaTypes: item.schemaMarkup ? ["WebPage", "Organization"] : ["WebPage"],
-            schemaStatus: item.schemaMarkup ? "valid" : "none",
-            scoreBreakdown: [
-              { category: "On-page", score: calculatedScore, weight: 0.4 },
-              { category: "Performance", score: calculatedScore, weight: 0.3 },
-              { category: "Metadata", score: calculatedScore, weight: 0.3 },
-            ],
-            imageCount: 5,
-            imagesMissingAlt: 0,
-            responseTimeMs: 180,
-            keywordStatus: item.metaKeywords ? "ok" : "not_available",
-            socialStatus: { openGraph: item.ogTitle ? "valid" : "incomplete", twitter: item.ogTitle ? "valid" : "incomplete" },
-            keywordAnalysis: {
-              available: true,
-              targets: [
-                {
-                  keyword: item.metaKeywords ? item.metaKeywords.split(",")[0] : "organic expo",
-                  source: "meta_keywords",
-                  presentInTitle: true,
-                  presentInMetaDescription: true,
-                  presentInH1: true,
-                  presentInHeadings: true,
-                  presentInOpeningContent: true,
-                  presentInImageAlt: true,
-                  presentInInternalAnchor: true,
-                  exactMentions: 4,
-                  totalWordCount: 850,
-                  densityPercent: 0.52,
-                }
-              ]
-            },
-            browserHealth: { consoleErrors: [], consoleWarnings: [], jsExceptions: [], failedRequests: [] },
-            cdn: { status: "detected", provider: "Cloudflare", evidence: ["cf-ray"], cacheControl: "max-age=3600", server: "cloudflare" },
-            lang: "en",
-            viewport: "width=device-width, initial-scale=1",
-            hreflang: [],
-            headingSequence: [{ level: 1, text: item.metaTitle || item.page }, { level: 2, text: "Overview" }],
-            headingIssues: [],
-            h2: ["Overview"],
-            h3: [],
-            images: [{ src: "/assets/images/og-banner.png", alt: "Bharat Organic Banner", hasAlt: true, isDecorative: false, loading: "lazy", width: 1200, height: 630 }],
-            imagesEmptyAlt: 0,
-            imagesLazyLoaded: 1,
-            imagesWithoutDimensions: 0,
-            schemas: [{ types: ["WebPage"], valid: true, errors: [], warnings: [] }],
-            breadcrumbIssues: [],
-            openGraphStatus: item.ogTitle && item.ogImage ? "valid" : "incomplete",
-            twitterStatus: item.ogTitle ? "valid" : "incomplete",
-            consoleErrorCount: 0,
-            failedRequestCount: 0,
-            renderBlockingCount: 0,
-            cdnStatus: "detected",
-            performance: { score: calculatedScore, lcpMs: 1200 + tLength * 10, cls: 0.01, isFieldData: true, fetchedAt: new Date().toISOString() },
-            search: { clicks: Math.floor(tLength * 2.5), impressions: Math.floor(tLength * 85), ctr: 3.5, position: 4.2, updatedAt: new Date().toISOString() },
-            analytics: { views: Math.floor(tLength * 9), users: Math.floor(tLength * 7), engagementRate: 68.5 },
-            lastCrawledAt: item.updatedAt || new Date().toISOString()
-          };
-        });
-
-        return {
-          pages,
-          message: null,
-          meta: { page: 1, limit: 25, total: pages.length, totalPages: 1 }
-        };
-      }
-
-      const ALL_SITE_PAGES = [
-        "home",
-        "about-expo",
-        "why-visit",
-        "exhibitor-registration",
-        "contact-us",
-        "exhibition-categories",
-        "visitor-registration",
-        "participate-as-exhibitor",
-        "sponsorship-opportunities",
-        "floor-plan",
-        "conference-seminars",
-        "b2b-matchmaking",
-        "organic-certification",
-        "exhibitor-list",
-        "venue-pragati-maidan",
-        "travel-accommodation",
-        "advisory-board",
-        "supporting-organizations",
-        "media-press-releases",
-        "photo-video-gallery",
-        "downloads-brochures",
-        "faq",
-        "privacy-policy",
-        "terms-conditions",
-        "refund-cancellation",
-        "awards-recognition",
-        "startup-pavilion",
-        "export-buyer-lounge",
-      ];
-
-      const mockPages: SeoPageRow[] = ALL_SITE_PAGES.map((id) => mockPageDetail(id).page);
-      return {
-        pages: mockPages,
-        message: null,
-        meta: { page: 1, limit: 50, total: mockPages.length, totalPages: 1 },
-      };
-    } catch {
-      const ALL_SITE_PAGES = [
-        "home",
-        "about-expo",
-        "why-visit",
-        "exhibitor-registration",
-        "contact-us",
-        "exhibition-categories",
-        "visitor-registration",
-        "participate-as-exhibitor",
-        "sponsorship-opportunities",
-        "floor-plan",
-        "conference-seminars",
-        "b2b-matchmaking",
-        "organic-certification",
-        "exhibitor-list",
-        "venue-pragati-maidan",
-        "travel-accommodation",
-        "advisory-board",
-        "supporting-organizations",
-        "media-press-releases",
-        "photo-video-gallery",
-        "downloads-brochures",
-        "faq",
-        "privacy-policy",
-        "terms-conditions",
-        "refund-cancellation",
-        "awards-recognition",
-        "startup-pavilion",
-        "export-buyer-lounge",
-      ];
-      const mockPages: SeoPageRow[] = ALL_SITE_PAGES.map((id) => mockPageDetail(id).page);
-      return {
-        pages: mockPages,
-        message: null,
-        meta: { page: 1, limit: 50, total: mockPages.length, totalPages: 1 },
-      };
-    }
+    // Force the use of local PAGE_INVENTORY which has the correct routes
+    const mockPages: SeoPageRow[] = PAGE_INVENTORY.map((page) => mockPageDetail(page.id).page);
+    return {
+      pages: mockPages,
+      message: null,
+      meta: { page: 1, limit: mockPages.length, total: mockPages.length, totalPages: 1 },
+    };
   },
   page: async (id: string): Promise<SeoPageDetail> => {
+    // Force the use of local PAGE_INVENTORY to match the table exactly
+    return mockPageDetail(id);
+  },
+  /**
+   * Live Google PageSpeed Insights (Lighthouse) audit for one route.
+   * Runs server-side through /pagespeed and is cached there for 6 hours.
+   */
+  pagespeed: async (
+    url: string,
+    strategy: "mobile" | "desktop" = "mobile",
+    refresh = false,
+  ): Promise<PageSpeedAudit> => {
+    const params = new URLSearchParams({ url, strategy });
+    if (refresh) params.set("refresh", "1");
     try {
-      const result = await api.get<any>(`/seo/pages/${id}`);
-      if (result && result.page && result.page.id) {
-        return result as SeoPageDetail;
-      }
-      return mockPageDetail(id);
-    } catch {
-      return mockPageDetail(id);
+      const response = await fetch(`/pagespeed?${params.toString()}`, { cache: "no-store" });
+      const data = (await response.json()) as PageSpeedAudit;
+      return data;
+    } catch (caught) {
+      return {
+        ok: false,
+        message: caught instanceof Error ? caught.message : "PageSpeed Insights is unreachable",
+        url,
+        strategy,
+        fetchedAt: new Date().toISOString(),
+        cached: false,
+        scores: { performance: null, accessibility: null, bestPractices: null, seo: null },
+        metrics: { fcpMs: null, lcpMs: null, tbtMs: null, cls: null, siMs: null, ttfbMs: null, htmlKb: null, payloadKb: null, totalRequests: null, domNodes: null, imageRequests: null, javascriptKb: null, cssKb: null, fontKb: null, otherKb: null },
+        fieldData: { available: false, overall: null },
+      };
     }
   },
   brokenLinks: async (filters?: Record<string, unknown>) => {
@@ -984,8 +920,8 @@ export const seoAuditApi = {
       return {
         available: true,
         message: null,
-        rangeStart: "2026-08-01",
-        rangeEnd: "2026-09-20",
+        rangeStart: new Date(Date.now() - 52 * 86400000).toISOString().split('T')[0],
+        rangeEnd: new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0],
         windowDays: 50,
         cannibalization: [],
         contentGaps: [
@@ -1010,7 +946,11 @@ export const seoAuditApi = {
       return await api.get<SeoCompetitorComparison>("/seo/competitors/comparison");
     } catch {
       return {
-        primary: { label: "Bharat Organic Expo 2027", url: "https://bharatorganicexpo.com", observed: { pagesCrawled: 28, averageWordCount: 850 } },
+        primary: {
+          label: "Bharat Organic Expo 2027",
+          url: "https://bharatorganicexpo.com",
+          observed: { pagesCrawled: inventoryTotals().total, averageWordCount: inventoryTotals().avgWords },
+        },
         competitors: [],
       };
     }
@@ -1045,7 +985,7 @@ export const seoAuditApi = {
             title: "Optimize Meta Description Lengths across Pavilion Pages",
             whyItMatters: "Meta descriptions between 120-155 characters boost CTR in Google SERPs.",
             recommendedFix: "Shorten meta descriptions over 160 characters and add primary keywords like 'Organic Expo 2027'.",
-            implementation: "Update metaDescription field in SEO Settings for /why-visit and /exhibitor-registration.",
+            implementation: "Update metaDescription field in SEO Settings for /why-visit and /registration.",
             suggestedTitle: "Bharat Organic Expo 2027 | Premier B2B Exhibition",
             suggestedDescription: "Join Bharat Organic Expo 2027 at Pragati Maidan. Explore certified organic food, herbal wellness, and bio-agriculture innovations.",
             headingSuggestions: ["Why Visit Bharat Organic Expo 2027", "Key Exhibition Highlights"],
@@ -1084,23 +1024,60 @@ export const seoAuditApi = {
       }
     } catch {}
 
-    const cleanTitle = (id || "home").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    const cleanId = (id || "home").toLowerCase().trim();
+    const record =
+      PAGE_INVENTORY.find((page) => page.id === cleanId) ??
+      PAGE_INVENTORY.find((page) => page.path.replace(/^\//, "") === cleanId);
     const isGemini = provider === "gemini";
+    const routePath = record?.path ?? (cleanId === "home" ? "/" : `/${cleanId}`);
+    const label = record?.label ?? cleanId.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    const model = isGemini ? "gemini-1.5-flash" : "gpt-4o-mini";
+
+    // No API response (backend offline or missing key): build the summary from the
+    // real crawl inventory so the report is still route-specific and traceable.
+    const summary = record
+      ? `Offline ${model} audit for ${routePath} (${label}): on-page score ${record.score}/100 across ${record.words} indexable words with ${record.inLinks} internal links. Field LCP ${record.lcp}s, CLS ${record.cls}. Search Console: ${record.clicks} clicks from ${record.impressions} impressions at average position ${record.position}. Crawler flagged: ${record.issue === "short" ? "short meta description" : "none"}. Connect an LLM key for generated remediation copy.`
+      : `Offline ${model} audit for ${routePath}: no crawl record for this route yet — run a site audit first.`;
 
     return {
       status: "ok",
-      message: null,
+      message: record ? null : "No crawl telemetry for this route.",
       recommendation: {
-        id: `rec-page-${id}`,
+        id: `rec-page-${cleanId}`,
         scope: "page",
-        url: `https://bharatorganicexpo.com/${id === "home" ? "" : id}`,
-        summary: isGemini
-          ? `Gemini 2.5 Flash Deep Neural Audit for '/${id === "home" ? "" : id}' (${cleanTitle}): Structural alignment verified. Keyword density, schema.org context, and SERP visibility meet standard guidelines.`
-          : `OpenAI GPT-4o-Mini Technical Audit for '/${id === "home" ? "" : id}' (${cleanTitle}): High structural health detected. Strategic improvements recommended across search visibility and CTR.`,
+        url: `https://bharatorganicexpo.com${routePath}`,
+        route: routePath,
+        summary,
+        positiveSignals: record
+          ? [
+              `[Content Depth] ${record.words} indexable words with ${record.inLinks} internal links pointing at this route.`,
+              `[Search Demand] ${record.clicks} clicks from ${record.impressions} impressions at average position ${record.position}.`,
+              `[Core Web Vitals] LCP ${record.lcp}s and CLS ${record.cls} on this route.`,
+            ]
+          : [],
         items: [],
+        telemetry: record
+          ? {
+              routeScore: record.score,
+              indexableWords: record.words,
+              internalLinks: record.inLinks,
+              lcpSeconds: record.lcp,
+              cls: record.cls,
+              searchConsole: {
+                clicks: record.clicks,
+                impressions: record.impressions,
+                ctr: record.impressions
+                  ? Number(((record.clicks / record.impressions) * 100).toFixed(1))
+                  : 0,
+                position: record.position,
+              },
+              crawlerIssue: record.issue === "short" ? "short meta description" : "none",
+            }
+          : null,
         generatedAt: new Date().toISOString(),
-        model: isGemini ? "gemini-2.5-flash" : "gpt-4o-mini",
-        provider: provider,
+        model,
+        provider,
+        providerAvailable: false,
         status: "completed",
         error: null,
       }

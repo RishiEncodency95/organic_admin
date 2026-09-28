@@ -1,0 +1,198 @@
+[
+  {
+    "path": "/",
+    "perfScore": 51,
+    "seoScore": 100,
+    "lcp": 5.2520215470772635,
+    "cls": 1.0474384834522845
+  },
+  {
+    "path": "/about-expo",
+    "perfScore": 43,
+    "seoScore": 61,
+    "lcp": 10.788707096941497,
+    "cls": 0.6818694112614995
+  },
+  {
+    "path": "/why-visit",
+    "perfScore": 34,
+    "seoScore": 92,
+    "lcp": 31.280444903553807,
+    "cls": 0.8784933171324423
+  },
+  {
+    "path": "/exhibitor-registration",
+    "perfScore": 48,
+    "seoScore": 61,
+    "lcp": 12.738823630329723,
+    "cls": 0.6618088588031398
+  },
+  {
+    "path": "/contact-us",
+    "perfScore": 45,
+    "seoScore": 61,
+    "lcp": 10.575038926447087,
+    "cls": 0.7450828319819026
+  },
+  {
+    "path": "/exhibition-categories",
+    "perfScore": 90,
+    "seoScore": 100,
+    "lcp": 3.552023957257672,
+    "cls": 0.010595824515561821
+  },
+  {
+    "path": "/visitor-registration",
+    "perfScore": 49,
+    "seoScore": 61,
+    "lcp": 12.264689675092075,
+    "cls": 0.675001251211444
+  },
+  {
+    "path": "/participate-as-exhibitor",
+    "perfScore": 44,
+    "seoScore": 100,
+    "lcp": 9.077129410727013,
+    "cls": 1.0474384834522845
+  },
+  {
+    "path": "/sponsorship-opportunities",
+    "perfScore": 44,
+    "seoScore": 61,
+    "lcp": 11.84028546573848,
+    "cls": 0.6895118500416149
+  },
+  {
+    "path": "/floor-plan",
+    "perfScore": 49,
+    "seoScore": 61,
+    "lcp": 11.035610489868814,
+    "cls": 0.6765437291957717
+  },
+  {
+    "path": "/conference-seminars",
+    "perfScore": 48,
+    "seoScore": 61,
+    "lcp": 12.125359971530415,
+    "cls": 0.6668279058152871
+  },
+  {
+    "path": "/b2b-matchmaking",
+    "perfScore": 26,
+    "seoScore": 61,
+    "lcp": 10.982058767056202,
+    "cls": 0.736649534922919
+  },
+  {
+    "path": "/organic-certification",
+    "perfScore": 49,
+    "seoScore": 61,
+    "lcp": 12.765417896944738,
+    "cls": 0.6697724639386305
+  },
+  {
+    "path": "/exhibitor-list",
+    "perfScore": 59,
+    "seoScore": 61,
+    "lcp": 13.129672252690217,
+    "cls": 0.18045069262454608
+  },
+  {
+    "path": "/venue-pragati-maidan",
+    "perfScore": 35,
+    "seoScore": 61,
+    "lcp": 10.958332976360818,
+    "cls": 0.6770036187396239
+  },
+  {
+    "path": "/travel-accommodation",
+    "perfScore": 47,
+    "seoScore": 61,
+    "lcp": 10.50835478505793,
+    "cls": 0.7457002237110857
+  },
+  {
+    "path": "/advisory-board",
+    "perfScore": 49,
+    "seoScore": 61,
+    "lcp": 10.568032615854866,
+    "cls": 0.6766158434485202
+  },
+  {
+    "path": "/supporting-organizations",
+    "perfScore": 33,
+    "seoScore": 61,
+    "lcp": 11.073830015489941,
+    "cls": 0.754107689616886
+  },
+  {
+    "path": "/media-press-releases",
+    "perfScore": 49,
+    "seoScore": 61,
+    "lcp": 9.452189727100318,
+    "cls": 0.7457005711566703
+  },
+  {
+    "path": "/photo-video-gallery",
+    "perfScore": 43,
+    "seoScore": 61,
+    "lcp": 11.021852818802133,
+    "cls": 0.07767734173711197
+  },
+  {
+    "path": "/downloads-brochures",
+    "perfScore": 65,
+    "seoScore": 61,
+    "lcp": 9.960019039920375,
+    "cls": 0.011562901493013901
+  },
+  {
+    "path": "/faq",
+    "perfScore": 16,
+    "seoScore": 61,
+    "lcp": 10.999294601862035,
+    "cls": 0.6588699878493317
+  },
+  {
+    "path": "/privacy-policy",
+    "perfScore": 42,
+    "seoScore": 61,
+    "lcp": 12.178470479507796,
+    "cls": 0.8386360771364554
+  },
+  {
+    "path": "/terms-conditions",
+    "perfScore": 39,
+    "seoScore": 61,
+    "lcp": 12.046085790238129,
+    "cls": 0.6662321626607483
+  },
+  {
+    "path": "/refund-cancellation",
+    "perfScore": 43,
+    "seoScore": 61,
+    "lcp": 13.123532280146021,
+    "cls": 0.8387067136286984
+  },
+  {
+    "path": "/awards-recognition",
+    "perfScore": 47,
+    "seoScore": 61,
+    "lcp": 13.042830201777893,
+    "cls": 0.8420269669689007
+  },
+  {
+    "path": "/startup-pavilion",
+    "perfScore": 46,
+    "seoScore": 61,
+    "lcp": 10.795825312490466,
+    "cls": 0.6768494830709553
+  },
+  {
+    "path": "/export-buyer-lounge",
+    "perfScore": 48,
+    "seoScore": 61,
+    "lcp": 11.974401503608412,
+    "cls": 0.7515747039848677
+  }
+]

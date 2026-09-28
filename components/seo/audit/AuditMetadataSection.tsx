@@ -64,7 +64,7 @@ export default function AuditMetadataSection({ page }: { page: any }) {
             label="Description"
             value={
               <span className="flex items-center gap-2 flex-wrap">
-                <span className="text-slate-200">{page.metaDescription ?? "Missing"}</span>
+                <span className="text-slate-200">{page.metaDescription || "Missing"}</span>
                 <StatusChip
                   value={page.descriptionStatus}
                   title={`${page.metaDescriptionLength} characters`}
