@@ -259,7 +259,7 @@ export default function LoginPage() {
                 phone: data.admin.phone || "",
                 avatarUrl: data.admin.avatarUrl || undefined,
                 userType: "INTERNAL",
-                roleSlug: data.admin.role === "superadmin" ? "SUPER_ADMIN" : "EXPO_ADMIN",
+                roleSlug: data.admin.roleName || (data.admin.role === "superadmin" ? "SUPER_ADMIN" : "EXPO_ADMIN"),
                 permissions: ["*"],
               },
               accessToken: data.accessToken,

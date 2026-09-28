@@ -4,6 +4,9 @@ import { getImageSizeError, showUploadError } from "@/lib/uploadLimit";
 import { useMemo, useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Modal from "@/components/ui/Modal";
+import CropImageModal from "@/components/gallery/CropImageModal";
+import SkeletonBentoView from "@/components/gallery/SkeletonBentoView";
+import GalleryPagination from "@/components/gallery/GalleryPagination";
 import { Input, Label } from "@/components/ui/Input";
 import typography from "../pages/PagesTypography.module.css";
 import { useAppSelector } from "@/store/hooks";
@@ -16,6 +19,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Copy,
+  Crop,
   Download,
   ExternalLink,
   Eye,
@@ -28,6 +32,7 @@ import {
   HardDrive,
   Image as ImageIcon,
   Layers,
+  LayoutTemplate,
   List,
   MoreVertical,
   Music2,
@@ -84,7 +89,9 @@ export type MediaStatus = "Published" | "Draft";
 export interface MediaItem {
   id: number;
   _id?: string;
+  order?: number;
   title: string;
+  imageAlt?: string;
   year: string;
   category: string;
   size?: string;
@@ -294,8 +301,11 @@ export default function MediaLibraryPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [pageSize, setPageSize] = useState<number>(10);
-  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+  // 12 matches the public Gallery / Glimpses page's own PAGE_SIZE and bento
+  // layout cycle (frontend/app/components/gallery/GalleryGrid.tsx), so a full
+  // admin page always maps 1:1 onto one live bento layout.
+  const [pageSize, setPageSize] = useState<number>(12);
+  const [viewMode, setViewMode] = useState<"table" | "grid" | "skeleton">("table");
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -313,11 +323,23 @@ export default function MediaLibraryPage() {
 
   // Form states for upload / edit (Static fields as requested: Title, Year, Category, Status, Image)
   const [formTitle, setFormTitle] = useState("");
+  const [formImageAlt, setFormImageAlt] = useState("");
+  const [formOrder, setFormOrder] = useState(1);
+  // Only true once the admin actually edits the Order box — until then we don't send an
+  // order at all, so the backend places the new upload at the top on its own.
+  const [formOrderTouched, setFormOrderTouched] = useState(false);
   const [formYear, setFormYear] = useState("2026");
   const [formCategory, setFormCategory] = useState("Inauguration");
   const [formStatus, setFormStatus] = useState<MediaStatus>("Published");
   const [formImageUrl, setFormImageUrl] = useState("");
   const [formFileSize, setFormFileSize] = useState("250 KB");
+
+  // Crop modal state — reused both for the file picked in the Upload/Edit modal
+  // ("form" context) and for cropping an already-published asset from the right
+  // sidebar ("existing" context, which re-uploads + saves immediately).
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  const [cropContext, setCropContext] = useState<"form" | "existing" | null>(null);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
 
   // Load from localStorage and backend MongoDB on mount
   useEffect(() => {
@@ -373,7 +395,9 @@ export default function MediaLibraryPage() {
               // Must be unique per row: selection, delete and React keys all rely on it, and `order` repeats.
               id: idx + 1,
               _id: item._id,
+              order: typeof item.order === "number" ? item.order : idx + 1,
               title: item.title,
+              imageAlt: item.imageAlt || "",
               year: item.year,
               category: item.category,
               size: item.size || "",
@@ -862,6 +886,11 @@ export default function MediaLibraryPage() {
   // Open Upload Modal
   const handleOpenUploadModal = () => {
     setFormTitle("");
+    setFormImageAlt("");
+    // Preview only — order is a simple counter (1, 2, 3...); new uploads get the next number
+    // after the current highest, matching what the backend will assign if left untouched.
+    setFormOrder(mediaItems.length > 0 ? Math.max(...mediaItems.map((x) => x.order ?? 1)) + 1 : 1);
+    setFormOrderTouched(false);
     setFormYear(years[0] || "2026");
     setFormCategory(categories[0] || "Inauguration");
     setFormStatus("Published");
@@ -874,6 +903,9 @@ export default function MediaLibraryPage() {
   const handleOpenEdit = (item: MediaItem) => {
     setEditingItem(item);
     setFormTitle(item.title);
+    setFormImageAlt(item.imageAlt || "");
+    setFormOrder(item.order ?? 1);
+    setFormOrderTouched(true);
     setFormYear(item.year);
     setFormCategory(item.category);
     setFormStatus(item.status);
@@ -893,17 +925,22 @@ export default function MediaLibraryPage() {
     const ts = formatTimestamp();
 
     try {
-      const payload = {
+      const payload: Record<string, unknown> = {
         title: finalTitle,
+        imageAlt: formImageAlt.trim(),
         year: formYear,
         category: formCategory,
         image: formImageUrl,
         uploadedBy: loggedInAdminName,
         status: formStatus,
-        order: mediaItems.length + 1,
         date: ts.date,
         time: ts.time,
       };
+      // Only send an explicit order when the admin actually edited the box — otherwise
+      // leave it out so the backend auto-places the new upload at the top of the list.
+      if (formOrderTouched) {
+        payload.order = formOrder;
+      }
 
       const res = await fetch(`${BACKEND_URL}/api/website/gallery/items`, {
         method: "POST",
@@ -918,7 +955,9 @@ export default function MediaLibraryPage() {
         newItem = {
           id: mediaItems.length > 0 ? Math.max(...mediaItems.map((x) => x.id)) + 1 : 1,
           _id: serverItem._id,
+          order: typeof serverItem.order === "number" ? serverItem.order : formOrder,
           title: serverItem.title || finalTitle,
+          imageAlt: serverItem.imageAlt || formImageAlt.trim(),
           year: serverItem.year || formYear,
           category: serverItem.category || formCategory,
           size: formFileSize || "250 KB",
@@ -931,7 +970,9 @@ export default function MediaLibraryPage() {
       } else {
         newItem = {
           id: mediaItems.length > 0 ? Math.max(...mediaItems.map((x) => x.id)) + 1 : 1,
+          order: formOrder,
           title: finalTitle,
+          imageAlt: formImageAlt.trim(),
           year: formYear,
           category: formCategory,
           size: formFileSize || "250 KB",
@@ -953,7 +994,9 @@ export default function MediaLibraryPage() {
       console.error("Failed to save media item:", err);
       const newItem: MediaItem = {
         id: mediaItems.length > 0 ? Math.max(...mediaItems.map((x) => x.id)) + 1 : 1,
+        order: formOrder,
         title: finalTitle,
+        imageAlt: formImageAlt.trim(),
         year: formYear,
         category: formCategory,
         size: formFileSize || "250 KB",
@@ -985,6 +1028,8 @@ export default function MediaLibraryPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: finalTitle,
+          imageAlt: formImageAlt.trim(),
+          order: formOrder,
           year: formYear,
           category: formCategory,
           status: formStatus,
@@ -1001,6 +1046,8 @@ export default function MediaLibraryPage() {
         ? {
             ...item,
             title: finalTitle,
+            imageAlt: formImageAlt.trim(),
+            order: formOrder,
             year: formYear,
             category: formCategory,
             status: formStatus,
@@ -1061,6 +1108,114 @@ export default function MediaLibraryPage() {
       saveMediaToLocal(updated);
       showSuccess("Photo asset replaced on Cloudinary CDN!");
     }
+  };
+
+  // Opens the crop modal for the image currently in the Upload/Edit form.
+  const handleOpenCropForForm = () => {
+    if (!formImageUrl) return;
+    setCropContext("form");
+    setCropImageSrc(formImageUrl);
+    setIsCropModalOpen(true);
+  };
+
+  // Opens the crop modal for an already-published asset selected in the right sidebar.
+  const handleOpenCropForExisting = () => {
+    if (!selected) return;
+    setCropContext("existing");
+    setCropImageSrc(selected.image);
+    setIsCropModalOpen(true);
+  };
+
+  const handleCloseCropModal = () => {
+    setIsCropModalOpen(false);
+    setCropContext(null);
+    setCropImageSrc(null);
+  };
+
+  // Uploads the cropped result and, depending on context, either fills the open
+  // form (new upload / edit-in-progress) or saves it straight to the already
+  // published asset — mirroring handleQuickReplace's persistence logic.
+  const handleCropApplied = async (file: File) => {
+    let newUrl: string;
+    try {
+      newUrl = await uploadToCloudinary(file);
+    } catch (err) {
+      showUploadError(err);
+      return;
+    }
+
+    if (cropContext === "form") {
+      setFormImageUrl(newUrl);
+      setFormFileSize(`${(file.size / 1024).toFixed(1)} KB`);
+      showSuccess("Photo cropped and uploaded!");
+    } else if (cropContext === "existing" && selected) {
+      const ts = formatTimestamp();
+      if (selected._id) {
+        await fetch(`${BACKEND_URL}/api/website/gallery/items/${selected._id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            image: newUrl,
+            uploadedBy: loggedInAdminName,
+            date: ts.date,
+            time: ts.time,
+          }),
+        }).catch(() => null);
+      }
+      const updated = mediaItems.map((item) =>
+        item.id === selected.id
+          ? {
+              ...item,
+              image: newUrl,
+              size: `${(file.size / 1024).toFixed(1)} KB`,
+              uploadedBy: loggedInAdminName,
+              date: ts.date,
+              time: ts.time,
+            }
+          : item
+      );
+      setMediaItems(updated);
+      saveMediaToLocal(updated);
+      showSuccess("Cropped photo saved to Cloudinary CDN!");
+    }
+
+    handleCloseCropModal();
+  };
+
+  // Dragging a photo onto another in the Skeleton layout view swaps their
+  // `order` values — the same field that determines each photo's position
+  // (and therefore its bento slot) on the live Gallery / Glimpses page.
+  const handleSwapOrder = async (itemA: MediaItem, itemB: MediaItem) => {
+    const orderA = itemA.order ?? 0;
+    const orderB = itemB.order ?? 0;
+
+    const updated = mediaItems
+      .map((item) => {
+        if (item.id === itemA.id) return { ...item, order: orderB };
+        if (item.id === itemB.id) return { ...item, order: orderA };
+        return item;
+      })
+      .sort((a, b) => (b.order ?? 0) - (a.order ?? 0));
+
+    setMediaItems(updated);
+    saveMediaToLocal(updated);
+
+    await Promise.all(
+      [
+        itemA._id ? { id: itemA._id, order: orderB } : null,
+        itemB._id ? { id: itemB._id, order: orderA } : null,
+      ]
+        .filter((x): x is { id: string; order: number } => x !== null)
+        .map((x) =>
+          fetch(`${BACKEND_URL}/api/website/gallery/items/${x.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ order: x.order }),
+          }).catch(() => null)
+        )
+    );
+
+    showSuccess("Layout position swapped!");
   };
 
   return (
@@ -1289,6 +1444,18 @@ export default function MediaLibraryPage() {
                 >
                   <Grid className="h-[15px] w-[15px]" />
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("skeleton")}
+                  className={`flex h-[32px] w-[32px] items-center justify-center rounded-[4px] transition ${
+                    viewMode === "skeleton"
+                      ? "bg-[#233D4D] text-white shadow-xs"
+                      : "text-[#59657a] hover:bg-slate-100"
+                  }`}
+                  title="Live Website Layout Preview"
+                >
+                  <LayoutTemplate className="h-[15px] w-[15px]" />
+                </button>
               </div>
 
               <button
@@ -1403,7 +1570,7 @@ export default function MediaLibraryPage() {
 
                               <td className="px-[12px] py-[8px] whitespace-nowrap">
                                 <span className="text-[8px] font-semibold text-[#293681]">
-                                  #{item.id}
+                                  #{item.order ?? item.id}
                                 </span>
                               </td>
 
@@ -1518,71 +1685,45 @@ export default function MediaLibraryPage() {
                   </table>
                 </div>
 
-                {/* Table Footer Stats & Pagination (Staff & Exhibitor List style) */}
-                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#e8e5df] bg-[#fafafa] px-[12px] py-[6px] text-[8px]">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-[#2563eb]">
-                      Total Photos: <strong className="font-bold text-[#1d4ed8]">{filteredRows.length}</strong>
-                    </span>
-                    <span className="text-[7.5px] text-[#8a92a0]">
-                      (Showing {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filteredRows.length)} of {filteredRows.length})
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-[4px]">
-                    <button
-                      type="button"
-                      disabled={currentPage <= 1}
-                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                      className="flex h-[22px] w-[22px] items-center justify-center rounded-[4px] border border-[#d8dce2] bg-white text-[#334155] transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-30"
-                      title="Previous Page"
-                    >
-                      <ChevronLeft className="h-3 w-3" />
-                    </button>
-
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-                      <button
-                        key={pageNum}
-                        type="button"
-                        onClick={() => setCurrentPage(pageNum)}
-                        className={`flex h-[22px] min-w-[22px] px-1.5 items-center justify-center rounded-[4px] border text-[8px] font-bold transition ${
-                          currentPage === pageNum
-                            ? "border-[#233D4D] bg-[#233D4D] text-white shadow-xs"
-                            : "border-[#d8dce2] bg-white text-[#334155] hover:bg-slate-50"
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    ))}
-
-                    <button
-                      type="button"
-                      disabled={currentPage >= totalPages}
-                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                      className="flex h-[22px] w-[22px] items-center justify-center rounded-[4px] border border-[#d8dce2] bg-white text-[#334155] transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-30"
-                      title="Next Page"
-                    >
-                      <ChevronRight className="h-3 w-3" />
-                    </button>
-
-                    <select
-                      value={pageSize}
-                      onChange={(e) => {
-                        setPageSize(Number(e.target.value));
-                        setCurrentPage(1);
-                      }}
-                      className="ml-2 h-[22px] rounded-[4px] border border-[#d8dce2] bg-white px-[6px] text-[8px] font-semibold text-[#334155] outline-none"
-                    >
-                      <option value={10}>10 / page</option>
-                      <option value={20}>20 / page</option>
-                      <option value={50}>50 / page</option>
-                    </select>
-                  </div>
-                </div>
+                <GalleryPagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  pageSize={pageSize}
+                  totalCount={filteredRows.length}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={(size) => {
+                    setPageSize(size);
+                    setCurrentPage(1);
+                  }}
+                />
+              </div>
+            ) : viewMode === "skeleton" ? (
+              /* SKELETON / LIVE LAYOUT VIEW — mirrors the public Gallery /
+                 Glimpses page's bento layout exactly, filled photos draggable
+                 onto each other to swap their live display position. */
+              <div className="mt-[12px] rounded-[7px] bg-white border border-[#e8e5df] p-3">
+                <SkeletonBentoView
+                  items={paginatedRows}
+                  selectedId={selectedId}
+                  onSelect={setSelectedId}
+                  onSwapOrder={handleSwapOrder}
+                />
+                <GalleryPagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  pageSize={pageSize}
+                  totalCount={filteredRows.length}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={(size) => {
+                    setPageSize(size);
+                    setCurrentPage(1);
+                  }}
+                />
               </div>
             ) : (
               /* GRID VIEW */
-              <div className="mt-[12px] grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+              <div className="mt-[12px] rounded-[7px] bg-white border border-[#e8e5df] p-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
                 {paginatedRows.map((item) => {
                   const isCurrent = selectedId === item.id;
                   return (
@@ -1614,6 +1755,18 @@ export default function MediaLibraryPage() {
                     </div>
                   );
                 })}
+              </div>
+              <GalleryPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalCount={filteredRows.length}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+              />
               </div>
             )}
           </div>
@@ -1687,6 +1840,12 @@ export default function MediaLibraryPage() {
                         {selected.uploadedBy || loggedInAdminName}
                       </span>
                     </p>
+                    <p>
+                      <span className="font-semibold text-[#69758c]">Alt Text:</span>{" "}
+                      <span className="font-semibold text-[#34425e]">
+                        {selected.imageAlt || selected.title}
+                      </span>
+                    </p>
                   </div>
 
                   {/* ASSET URL DISPLAY WITH COPY BUTTON */}
@@ -1710,15 +1869,24 @@ export default function MediaLibraryPage() {
                     </div>
                   </div>
 
-                  {/* ACTIONS: EDIT, REPLACE, DELETE */}
-                  <div className="mt-[14px] flex items-center gap-2 border-t border-[#f0f2f5] pt-3">
+                  {/* ACTIONS: EDIT, CROP, REPLACE, DELETE */}
+                  <div className="mt-[14px] grid grid-cols-2 gap-2 border-t border-[#f0f2f5] pt-3">
                     <button
                       type="button"
                       onClick={() => handleOpenEdit(selected)}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-[4px] border border-[#d8dce2] bg-white py-1.5 text-[8.5px] font-bold text-[#334155] shadow-xs transition hover:bg-slate-50"
+                      className="inline-flex items-center justify-center gap-1.5 rounded-[4px] border border-[#d8dce2] bg-white py-1.5 text-[8.5px] font-bold text-[#334155] shadow-xs transition hover:bg-slate-50"
                     >
                       <Pencil className="h-3 w-3 text-blue-600" />
                       Edit
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleOpenCropForExisting}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-[4px] border border-[#d8dce2] bg-white py-1.5 text-[8.5px] font-bold text-[#334155] shadow-xs transition hover:bg-slate-50"
+                    >
+                      <Crop className="h-3 w-3 text-violet-600" />
+                      Crop
                     </button>
 
                     <input
@@ -1733,7 +1901,7 @@ export default function MediaLibraryPage() {
                       type="button"
                       onClick={() => replaceFileRef.current?.click()}
                       disabled={isUploading}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-[4px] border border-[#d8dce2] bg-white py-1.5 text-[8.5px] font-bold text-[#334155] shadow-xs transition hover:bg-slate-50 disabled:opacity-50"
+                      className="inline-flex items-center justify-center gap-1.5 rounded-[4px] border border-[#d8dce2] bg-white py-1.5 text-[8.5px] font-bold text-[#334155] shadow-xs transition hover:bg-slate-50 disabled:opacity-50"
                     >
                       <RefreshCw className={`h-3 w-3 text-emerald-600 ${isUploading ? "animate-spin" : ""}`} />
                       {isUploading ? "Uploading..." : "Replace"}
@@ -1742,7 +1910,7 @@ export default function MediaLibraryPage() {
                     <button
                       type="button"
                       onClick={() => handleDelete(selected)}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-[4px] border border-rose-200 bg-rose-50 py-1.5 text-[8.5px] font-bold text-rose-700 shadow-xs transition hover:bg-rose-100"
+                      className="inline-flex items-center justify-center gap-1.5 rounded-[4px] border border-rose-200 bg-rose-50 py-1.5 text-[8.5px] font-bold text-rose-700 shadow-xs transition hover:bg-rose-100"
                     >
                       <Trash2 className="h-3 w-3 text-rose-600" />
                       Delete
@@ -1760,34 +1928,6 @@ export default function MediaLibraryPage() {
                   </p>
                 </div>
               )}
-            </section>
-
-            {/* FILE USAGE CARD */}
-            <section
-              className="bg-white px-[14px] py-[13px]"
-              style={{
-                borderRadius: "0px",
-                boxShadow:
-                  "rgba(0, 0, 0, 0.05) 0px 0px 0px 1px, rgb(209, 213, 219) 0px 0px 0px 1px inset",
-              }}
-            >
-              <h2 className="text-[12px] font-bold text-[#19274a]">
-                File Usage
-              </h2>
-              <p className="mt-[6px] text-[8.5px] font-medium text-[#64748b]">
-                Active in 5 website components
-              </p>
-              <div className="mt-[8px] flex flex-wrap gap-1.5">
-                {["Home Highlights", "Gallery Glimpses", "Expo Showcase", "Conference", "Awards Gallery"].map((page) => (
-                  <span
-                    key={page}
-                    className="inline-flex items-center gap-1 rounded-[3px] bg-[#f1f5f9] px-2 py-0.5 text-[8px] font-semibold text-[#334155]"
-                  >
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    {page}
-                  </span>
-                ))}
-              </div>
             </section>
 
             {/* QUICK ACTIONS CARD */}
@@ -1879,6 +2019,29 @@ export default function MediaLibraryPage() {
               onChange={(e) => setFormTitle(e.target.value)}
               placeholder="e.g. Grand Inaugural Ceremony (Defaults to Category)"
             />
+
+            {/* ALT TEXT (Optional) */}
+            <Input
+              label="Image Alt Text (Optional)"
+              value={formImageAlt}
+              onChange={(e) => setFormImageAlt(e.target.value)}
+              placeholder="Describe the photo for screen readers & SEO (Defaults to Title)"
+            />
+
+            {/* ORDER — auto-filled with the next position, editable to reorder manually */}
+            <div>
+              <Label>Order</Label>
+              <input
+                type="number"
+                min={1}
+                value={formOrder}
+                onChange={(e) => {
+                  setFormOrder(Math.max(1, Number(e.target.value) || 1));
+                  setFormOrderTouched(true);
+                }}
+                className="h-[38px] w-full rounded-[4px] border border-surface-border bg-surface-card px-[12px] text-[11px] font-semibold text-[#1e293b] outline-none transition-all hover:border-[#FF9D50] focus:border-[#FF9D50] [box-shadow:rgba(0,0,0,0.02)_0px_1px_3px_0px,rgba(27,31,35,0.15)_0px_0px_0px_1px]"
+              />
+            </div>
 
             {/* SELECT YEAR & SELECT CATEGORY GRID */}
             <div className="grid grid-cols-2 gap-3">
@@ -2007,12 +2170,34 @@ export default function MediaLibraryPage() {
                         </>
                       )}
                     </button>
+
+                    <button
+                      type="button"
+                      disabled={isUploading || !formImageUrl}
+                      onClick={handleOpenCropForForm}
+                      className="inline-flex h-[28px] items-center gap-1.5 border border-[#cbd5e1] bg-[#f8fafc] px-3 text-[11px] font-semibold text-[#334155] transition hover:bg-slate-100 disabled:opacity-50 active:scale-95"
+                      style={{
+                        borderRadius: "4px",
+                        boxShadow: "rgba(0,0,0,0.02) 0px 1px 3px 0px, rgba(27,31,35,0.15) 0px 0px 0px 1px",
+                      }}
+                    >
+                      <Crop className="h-3 w-3 text-violet-600" />
+                      Crop
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </Modal>
+
+        {/* MODAL: CROP PHOTO (shared by the Upload/Edit form and the right-sidebar "Crop" action) */}
+        <CropImageModal
+          isOpen={isCropModalOpen}
+          imageSrc={cropImageSrc}
+          onCancel={handleCloseCropModal}
+          onCropped={handleCropApplied}
+        />
 
         {/* MODAL 2: MANAGE CATEGORIES & YEARS MODAL */}
         <Modal

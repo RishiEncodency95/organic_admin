@@ -42,7 +42,7 @@ export const authApi = {
           phone: res.admin.phone || "",
           avatarUrl: res.admin.avatarUrl || undefined,
           userType: "INTERNAL",
-          roleSlug: res.admin.role === "superadmin" ? "SUPER_ADMIN" : "EXPO_ADMIN",
+          roleSlug: res.admin.roleName || (res.admin.role === "superadmin" ? "SUPER_ADMIN" : "EXPO_ADMIN"),
           permissions: ["*"],
         },
         requiresTwoFactor: false,
@@ -67,10 +67,15 @@ export const authApi = {
   },
 
   changePassword: async (currentPassword: string, newPassword: string) => {
-    try {
-      await api.post("/auth/change-password", { currentPassword, newPassword });
-    } catch {}
-    return { success: true };
+    // Was previously swallowing every error and always reporting success —
+    // meaning "Change password" logged the admin out and sent them back to
+    // the login screen even when the backend request failed (or, until now,
+    // even though the backend had no /auth/change-password route at all).
+    // Let failures propagate so the modal shows the real error instead.
+    return api.post<{ success: boolean; message?: string }>("/auth/change-password", {
+      currentPassword,
+      newPassword,
+    });
   },
 
   setupTwoFactor: async () => {
@@ -105,7 +110,7 @@ export const authApi = {
         phone: res.user.phone,
         avatarUrl: res.user.avatarUrl || undefined,
         userType: "INTERNAL",
-        roleSlug: res.user.role === "superadmin" ? "SUPER_ADMIN" : "EXPO_ADMIN",
+        roleSlug: res.user.roleName || (res.user.role === "superadmin" ? "SUPER_ADMIN" : "EXPO_ADMIN"),
         permissions: ["*"],
         twoFactorPending: !res.user.isTwoFactorEnabled,
       };

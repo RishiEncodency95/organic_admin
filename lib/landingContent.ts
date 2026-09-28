@@ -638,11 +638,13 @@ export const defaultLandingSections: LandingSectionContent[] = [
     enabled: true,
     description:
       "A global platform uniting over 500+ exhibitors from across the organic value chain, showcasing certified products, advanced agritech, sustainable practices, and the rich heritage of traditional wellness. Discover organic living with conferences and B2B opportunities.",
-    logoImage: "http://localhost:4000/uploads/bharat-organic_footer/1789129240083-112323989.png",
-    leafImage: "http://localhost:4000/uploads/bharat-organic_footer/1789129240457-21656484.png",
-    downImage: "http://localhost:4000/uploads/bharat-organic_footer/1789129240816-597711504.png",
-    organisedByLogo: "http://localhost:4000/uploads/bharat-organic_footer/1789129241128-849314126.png",
-    bottomBannerImage: "http://localhost:4000/uploads/bharat-organic_footer/1789129242465-452827954.webp",
+    // Left blank on purpose — see settings.controller.ts on the backend for
+    // why these no longer hardcode a local `/uploads/...` URL.
+    logoImage: "",
+    leafImage: "",
+    downImage: "",
+    organisedByLogo: "",
+    bottomBannerImage: "",
     websiteUrl: "www.bharatorganicexpo.com",
     contactAddress: "Hall 12, Pragati Maidan, New Delhi, India 110001",
     phoneNumber: "+91 96549 00525",

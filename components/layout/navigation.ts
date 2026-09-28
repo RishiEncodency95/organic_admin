@@ -8,6 +8,7 @@ import {
   BriefcaseBusiness,
   Building2,
   DatabaseBackup,
+  FileCheck2,
   FileCode,
   FileSearch,
   FileText,
@@ -54,6 +55,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: "Dashboard", href: "/", icon: LayoutDashboard },
       { label: "General Enquiries", href: "/general-enquiries", icon: Mail },
+      { label: "Contact Us Messages", href: "/contact-us", icon: MessageSquareText },
       { label: "Communication / Follow-ups", href: "/communication", icon: MessageSquare, badge: "NEW" },
     ],
   },
@@ -74,6 +76,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "Services Management", href: "/services", icon: BriefcaseBusiness },
       { label: "Blog & Insights", href: "/blogs", icon: BookOpenText },
       { label: "Media Library", href: "/gallery", icon: GalleryHorizontalEnd },
+      { label: "Video Highlights", href: "/video-highlights", icon: Video, badge: "NEW" },
       { label: "Exhibitor List", href: "/exhibitor-list", icon: Building2 },
       { label: "Feedback & Reviews", href: "/feedback-reviews", icon: MessageSquareText },
       { label: "Trusted Leaders", href: "/trusted-leaders", icon: Handshake, badge: "NEW" },
@@ -91,6 +94,13 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "Job Postings", href: "/job-postings", icon: Briefcase },
       { label: "Applications & AI Response", href: "/applications-ai-response", icon: Bot },
       { label: "Career Settings", href: "/career-settings", icon: Settings2 },
+    ],
+  },
+  {
+    title: "MSME Management",
+    items: [
+      { label: "MSME Overview", href: "/msme-overview", icon: Gauge, badge: "NEW" },
+      { label: "MSME Applications", href: "/msme-applications", icon: FileCheck2, badge: "NEW" },
     ],
   },
   {
