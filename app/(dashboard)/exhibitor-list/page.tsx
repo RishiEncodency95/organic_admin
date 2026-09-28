@@ -180,6 +180,8 @@ const INITIAL_EXHIBITORS: ExhibitorItem[] = [
   { id: 48, _id: "ex48", name: "Viridian", category: "AYURVEDA", location: "India", order: 48, logo: "/exhibitors/48.jpg", altText: "Viridian Pure Botanical Extract Nutrition Logo", status: "Published", updatedAt: "07 May 2026, 11:00 AM", updatedBy: "Vansh Chaudhary", fileSize: "3.2 KB" },
 ];
 
+const MAX_BULK_IMAGES = 10;
+
 const CATEGORIES = [
   "ALL",
   "ORGANIC FOOD",
@@ -786,6 +788,123 @@ export default function ExhibitorListPage() {
     }
   };
 
+  // ---------- Bulk Upload (up to 10 logos, one shared alt text) ----------
+  // Deliberately skips getImageSizeError: the "Max Image Upload Size" setting does not apply here.
+  const [isBulkOpen, setIsBulkOpen] = useState(false);
+  const [bulkFiles, setBulkFiles] = useState<{ file: File; preview: string }[]>([]);
+  const [bulkAltText, setBulkAltText] = useState("");
+  const [bulkCategory, setBulkCategory] = useState("ORGANIC FOOD");
+  const [bulkStatus, setBulkStatus] = useState<"Published" | "Draft">("Published");
+  const [isBulkUploading, setIsBulkUploading] = useState(false);
+  const bulkInputRef = useRef<HTMLInputElement>(null);
+
+  const clearBulkFiles = () => {
+    bulkFiles.forEach((f) => URL.revokeObjectURL(f.preview));
+    setBulkFiles([]);
+  };
+
+  const handleOpenBulk = () => {
+    clearBulkFiles();
+    setBulkAltText("Exhibitor Brand Logo - Bharat Organic Expo");
+    setBulkCategory("ORGANIC FOOD");
+    setBulkStatus("Published");
+    setIsBulkOpen(true);
+  };
+
+  const handleCloseBulk = () => {
+    if (isBulkUploading) return;
+    clearBulkFiles();
+    setIsBulkOpen(false);
+  };
+
+  const handleBulkSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const picked = Array.from(e.target.files ?? []).filter((f) => f.type.startsWith("image/"));
+    e.target.value = "";
+    if (picked.length === 0) return;
+    if (picked.length > MAX_BULK_IMAGES) {
+      showError(`You can select up to ${MAX_BULK_IMAGES} images at a time (you picked ${picked.length}).`);
+      return;
+    }
+    clearBulkFiles();
+    setBulkFiles(picked.map((file) => ({ file, preview: URL.createObjectURL(file) })));
+  };
+
+  const removeBulkFile = (index: number) => {
+    setBulkFiles((prev) => {
+      URL.revokeObjectURL(prev[index].preview);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  const handleBulkUpload = async () => {
+    if (bulkFiles.length === 0) {
+      showError("Please select at least one image.");
+      return;
+    }
+    const altText = bulkAltText.trim();
+    if (!altText) {
+      showError("Please enter a common alt text.");
+      return;
+    }
+
+    const formData = new FormData();
+    bulkFiles.forEach(({ file }) => formData.append("images", file));
+    formData.append("altText", altText);
+    formData.append("category", bulkCategory);
+    formData.append("status", bulkStatus);
+    formData.append("updatedBy", getAdminName());
+
+    setIsBulkUploading(true);
+    try {
+      let res = await fetch(`${BACKEND_URL}/api/website/participate/exhibitor-list/items/bulk`, {
+        method: "POST",
+        body: formData,
+      }).catch(() => null);
+      if (!res) {
+        res = await fetch(`/api/website/participate/exhibitor-list/items/bulk`, {
+          method: "POST",
+          body: formData,
+        }).catch(() => null);
+      }
+      if (!res) throw new Error("Could not reach the server. Please try again.");
+
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !Array.isArray(json?.data)) {
+        throw new Error(json?.message || `Bulk upload failed (status ${res.status}).`);
+      }
+
+      const created: ExhibitorItem[] = json.data.map((item: any) => ({
+        id: item.order,
+        _id: item._id,
+        name: item.name || item.title || "Exhibitor",
+        category: item.category || bulkCategory,
+        location: item.location || "India",
+        order: item.order,
+        logo: item.logo || item.image,
+        altText: item.altText || altText,
+        status: (item.status === "Draft" ? "Draft" : "Published") as "Published" | "Draft",
+        websiteUrl: item.websiteUrl || "",
+        updatedAt: item.updatedAt ? formatTimestampFrom(item.updatedAt) : formatTimestamp(),
+        updatedBy: item.updatedBy || getAdminName(),
+        fileSize: item.fileSize,
+      }));
+      const updatedList = [...exhibitors, ...created].sort((a, b) => a.order - b.order);
+      setExhibitors(updatedList);
+      if (created.length > 0) setSelectedId(created[0].id);
+      try {
+        localStorage.setItem("bharat_exhibitor_list_data", JSON.stringify(updatedList));
+      } catch {}
+
+      clearBulkFiles();
+      setIsBulkOpen(false);
+      showSuccess(`${created.length} exhibitor logo(s) uploaded successfully!`);
+    } catch (err) {
+      showUploadError(err, "Bulk upload failed.");
+    } finally {
+      setIsBulkUploading(false);
+    }
+  };
+
   // Save Modal Form
   const handleSaveModal = async (e?: React.FormEvent) => {
     if (e?.preventDefault) e.preventDefault();
@@ -1068,6 +1187,18 @@ export default function ExhibitorListPage() {
               />
               View on Website
             </a>
+
+            <button
+              type="button"
+              onClick={handleOpenBulk}
+              className="flex h-[30px] items-center justify-center gap-[5px] rounded-[6px] border border-[#bbf7d0] bg-[#f0fdf4] px-[14px] text-[8.5px] font-semibold text-[#15803d] transition hover:bg-[#dcfce7] shadow-sm"
+            >
+              <Upload
+                className="h-[12px] w-[12px]"
+                strokeWidth={1.7}
+              />
+              Bulk Upload
+            </button>
 
             <button
               type="button"
@@ -1874,6 +2005,153 @@ export default function ExhibitorListPage() {
               placeholder="e.g. Ropuiliani Organic Food Exhibitor Logo - Bharat Organic Expo"
               hint="Unique for every exhibitor. Embedded into HTML <img alt='...'> tag for image SEO and screen readers."
             />
+          </div>
+        </Modal>
+
+        {/* MODAL: BULK UPLOAD (up to 10 logos, one shared alt text) */}
+        <Modal
+          isOpen={isBulkOpen}
+          onClose={handleCloseBulk}
+          title={`Bulk Upload Exhibitor Logos (max ${MAX_BULK_IMAGES})`}
+          size="lg"
+          footer={
+            <>
+              <button
+                type="button"
+                onClick={handleCloseBulk}
+                disabled={isBulkUploading}
+                className="inline-flex h-[32px] items-center gap-1.5 px-[14px] text-[12px] font-semibold text-red-600 transition-all hover:bg-red-100 active:scale-95 disabled:opacity-50"
+                style={{
+                  background: "#fff1f2",
+                  borderRadius: "4px",
+                  boxShadow: "rgba(0,0,0,0.02) 0px 1px 3px 0px, rgba(220,38,38,0.15) 0px 0px 0px 1px",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleBulkUpload}
+                disabled={isBulkUploading || bulkFiles.length === 0}
+                className="inline-flex h-[32px] items-center gap-1.5 px-[14px] text-[12px] font-semibold text-white transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
+                style={{
+                  background: "#16a34a",
+                  borderRadius: "4px",
+                  boxShadow: "rgba(0,0,0,0.02) 0px 1px 3px 0px, rgba(22,163,74,0.2) 0px 0px 0px 1px",
+                }}
+              >
+                {isBulkUploading ? (
+                  <>
+                    <RefreshCw className="h-3 w-3 animate-spin" />
+                    Uploading {bulkFiles.length} image(s)...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-3 w-3" />
+                    Upload {bulkFiles.length > 0 ? `${bulkFiles.length} ` : ""}Image(s)
+                  </>
+                )}
+              </button>
+            </>
+          }
+        >
+          <div className="space-y-3">
+            <div>
+              <Label required>Exhibitor Logos</Label>
+              <input
+                type="file"
+                ref={bulkInputRef}
+                className="hidden"
+                accept="image/*"
+                multiple
+                onChange={handleBulkSelect}
+              />
+              <button
+                type="button"
+                disabled={isBulkUploading}
+                onClick={() => bulkInputRef.current?.click()}
+                className="flex w-full flex-col items-center justify-center gap-1 border border-dashed border-[#94a3b8] bg-[#f8fafc] px-3 py-4 text-[11px] font-semibold text-[#334155] transition hover:bg-slate-100 disabled:opacity-50"
+                style={{ borderRadius: "4px" }}
+              >
+                <Upload className="h-4 w-4 text-slate-600" />
+                {bulkFiles.length > 0 ? "Choose different images" : "Choose images from your computer"}
+                <span className="text-[10px] font-medium text-slate-500">
+                  Select up to {MAX_BULK_IMAGES} images at once. The max image upload size setting does not apply to bulk upload.
+                </span>
+              </button>
+            </div>
+
+            {bulkFiles.length > 0 && (
+              <div>
+                <p className="mb-1.5 text-[11px] font-semibold text-slate-600">
+                  {bulkFiles.length} / {MAX_BULK_IMAGES} selected — exhibitor names are taken from the file names (you can edit them later).
+                </p>
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                  {bulkFiles.map(({ file, preview }, idx) => (
+                    <div
+                      key={`${file.name}-${idx}`}
+                      className="relative flex flex-col items-center gap-1 border border-surface-border bg-surface-card p-1.5 shadow-xs"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => removeBulkFile(idx)}
+                        disabled={isBulkUploading}
+                        className="absolute right-0.5 top-0.5 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-white/90 text-red-500 shadow hover:bg-red-50 disabled:opacity-50"
+                        title="Remove"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                      <img src={preview} alt={file.name} className="h-[56px] w-full object-contain" />
+                      <span className="w-full truncate text-center text-[9.5px] font-medium text-slate-600" title={file.name}>
+                        {file.name}
+                      </span>
+                      <span className="text-[9px] text-slate-400">{(file.size / 1024).toFixed(1)} KB</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <Input
+              label="Common Alt Text (applied to all images)"
+              required
+              value={bulkAltText}
+              onChange={(e) => setBulkAltText(e.target.value)}
+              placeholder="e.g. Exhibitor Brand Logo - Bharat Organic Expo"
+              hint="Every logo in this batch gets this alt text. You can make it unique per exhibitor later from Edit."
+            />
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Category</Label>
+                <select
+                  value={bulkCategory}
+                  onChange={(e) => setBulkCategory(e.target.value)}
+                  className="h-[38px] w-full cursor-pointer rounded-[4px] border border-surface-border bg-white px-[12px] text-[11px] font-semibold text-[#334155] outline-none shadow-xs"
+                >
+                  {CATEGORIES.filter((c) => c !== "ALL").map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <Label>Status</Label>
+                <select
+                  value={bulkStatus}
+                  onChange={(e) => setBulkStatus(e.target.value as "Published" | "Draft")}
+                  className={`h-[38px] w-full cursor-pointer rounded-[4px] px-[12px] text-[11px] font-bold outline-none shadow-xs ${
+                    bulkStatus === "Published"
+                      ? "bg-[#e8f5e9] text-[#23714a] border border-[#a5d6a7]"
+                      : "bg-[#ffebee] text-[#c62828] border border-[#ef9a9a]"
+                  }`}
+                >
+                  <option value="Published">Published</option>
+                  <option value="Draft">Draft</option>
+                </select>
+              </div>
+            </div>
           </div>
         </Modal>
       </div>

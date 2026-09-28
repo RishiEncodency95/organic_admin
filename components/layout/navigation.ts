@@ -58,6 +58,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: "Dashboard", href: "/", icon: LayoutDashboard },
       { label: "General Enquiries", href: "/general-enquiries", icon: Mail },
+      { label: "Contact Us Messages", href: "/contact-us", icon: MessageSquareText },
       { label: "Communication / Follow-ups", href: "/communication", icon: MessageSquare, badge: "NEW" },
     ],
   },
@@ -68,6 +69,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "Buyer Registrations", href: "/forms-submissions", icon: BriefcaseBusiness, badge: "125" },
       { label: "Visitor Registrations", href: "/requests", icon: Users, badge: "210" },
       { label: "Sponsorships & Partners", href: "/enquiries?category=csr", icon: Handshake, badge: "36" },
+      { label: "Partnership Enquiries", href: "/partnership-enquiries", icon: Handshake },
       { label: "Newsletter Subscribers", href: "/newsletter", icon: Mail, badge: "342" },
       { label: "Award Nominations", href: "/website/award-nominations", icon: Award, badge: "NEW" },
     ],

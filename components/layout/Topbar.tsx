@@ -337,7 +337,15 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 
     adminNotificationsApi
       .list()
-      .then(({ notifications, unreadCount }) => {
+      .then((result) => {
+        // The backend has no /notifications/admin route yet, so a failed
+        // request currently resolves to a bare mock `[]` rather than the
+        // expected `{ notifications, unreadCount }` shape — destructuring
+        // that blindly left both values `undefined` and crashed the whole
+        // dashboard (Topbar wraps every page) on `.length`. Guard both
+        // regardless of what actually comes back.
+        const notifications = Array.isArray(result?.notifications) ? result.notifications : [];
+        const unreadCount = typeof result?.unreadCount === "number" ? result.unreadCount : 0;
         setNotifications(notifications);
         setUnreadCount(unreadCount);
       })
