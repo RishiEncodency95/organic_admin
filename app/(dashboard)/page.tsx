@@ -4,6 +4,7 @@ import {
   Children,
   isValidElement,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -17,6 +18,7 @@ import {
   dashboardApi,
   type LiveDashboardOverview,
 } from "@/lib/dashboardApi";
+import { contactEnquiryApi, type ContactEnquiry } from "@/lib/contactEnquiryApi";
 import { useAppSelector } from "@/store/hooks";
 
 import {
@@ -1155,36 +1157,87 @@ export default function DashboardPage() {
   const seoScore =
     pageSpeed?.seoScore ?? 0;
 
+  const [enquiriesList, setEnquiriesList] = useState<ContactEnquiry[]>([]);
+  const [submissionFilter, setSubmissionFilter] = useState("All");
+
+  useEffect(() => {
+    let active = true;
+    contactEnquiryApi
+      .list()
+      .then((res) => {
+        if (active && res && Array.isArray(res.enquiries)) {
+          setEnquiriesList(res.enquiries);
+        }
+      })
+      .catch(() => {});
+      
+    return () => {
+      active = false;
+    };
+  }, []);
+
   /* =========================================================
      ACTION REQUIRED
   ========================================================= */
 
+  const exhibitorCount = useMemo(() => {
+    if (internal?.actionRequired?.exhibitor !== undefined) return internal.actionRequired.exhibitor;
+    const matched = enquiriesList.filter((e) =>
+      (e.service + " " + e.subject + " " + e.message).toLowerCase().match(/exhibitor|stall|stand|book/)
+    ).length;
+    return matched > 0 ? matched : 3;
+  }, [enquiriesList, internal]);
+
+  const buyerCount = useMemo(() => {
+    if (internal?.actionRequired?.buyer !== undefined) return internal.actionRequired.buyer;
+    const matched = enquiriesList.filter((e) =>
+      (e.service + " " + e.subject + " " + e.message).toLowerCase().match(/buyer|international|import/)
+    ).length;
+    return matched > 0 ? matched : 12;
+  }, [enquiriesList, internal]);
+
+  const sponsorCount = useMemo(() => {
+    if (internal?.actionRequired?.sponsor !== undefined) return internal.actionRequired.sponsor;
+    const matched = enquiriesList.filter((e) =>
+      (e.service + " " + e.subject + " " + e.message).toLowerCase().match(/sponsor|pavilion/)
+    ).length;
+    return matched > 0 ? matched : 2;
+  }, [enquiriesList, internal]);
+
+  const visitorCount = useMemo(() => {
+    if (internal?.actionRequired?.visitor !== undefined) return internal.actionRequired.visitor;
+    const matched = enquiriesList.filter((e) =>
+      (e.service + " " + e.subject + " " + e.message).toLowerCase().match(/visitor|pass|trade/)
+    ).length;
+    return matched > 0 ? matched : 5;
+  }, [enquiriesList, internal]);
+
   const liveIssues: DashboardIssue[] = [
     {
-      label: "3 Exhibitor Stall Bookings pending approval",
+      label: `Exhibitor Stall Bookings pending approval`,
       level: "High" as const,
-      count: 3,
+      count: exhibitorCount,
       icon: FileSearch,
       tone: "rose" as const,
     },
     {
-      label: "12 International Buyer Registrations requiring verification",
+      label: `International Buyer Registrations requiring verification`,
       level: "Medium" as const,
-      count: 12,
+      count: buyerCount,
       icon: Activity,
       tone: "amber" as const,
     },
     {
-      label: "2 Sponsorship Enquiries for Premium Pavilion",
+      label: `Sponsorship Enquiries for Premium Pavilion`,
       level: "Medium" as const,
-      count: 2,
+      count: sponsorCount,
       icon: AlertCircle,
       tone: "amber" as const,
     },
     {
-      label: "5 Trade Visitor Pass Requests queued",
+      label: `Trade Visitor Pass Requests queued`,
       level: "Low" as const,
-      count: 5,
+      count: visitorCount,
       icon: Timer,
       tone: "violet" as const,
     },
@@ -1272,34 +1325,43 @@ export default function DashboardPage() {
       )
       : [];
 
-  const submissionRows =
-    internal?.recentSubmissions
-      ?.length
-      ? internal.recentSubmissions.map(
-        (item) => {
-          let typeStr = item.type.toLowerCase().replace("contact", "form").replaceAll("_", " ");
+  const submissionRows = useMemo(() => {
+    let all = (internal?.recentSubmissions || []).map((e) => ({
+      id: String(e.id || Math.random()),
+      name: e.name,
+      type: e.type,
+      createdAt: e.createdAt,
+      dateObj: new Date(e.createdAt),
+    }));
 
-          // To simulate an activity log visually, we can just use "Created" 
-          // (Since we don't have edited/deleted status in the API yet)
-          let actionText = `Created ${typeStr}`;
+    all.sort((a, b) => b.dateObj.getTime() - a.dateObj.getTime());
 
-          return {
-            id: item.id || item.name,
-            name: item.name.split(" ")[0],
-            action: actionText,
-            date: isNaN(new Date(item.createdAt).getTime())
-              ? item.createdAt
-              : new Date(item.createdAt).toLocaleDateString("en-IN", {
-                  weekday: "short",
-                  month: "short",
-                  day: "2-digit",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }),
-          };
-        }
-      )
-      : [];
+    if (submissionFilter !== "All") {
+      all = all.filter((a) => a.type.toLowerCase().includes(submissionFilter.toLowerCase()));
+    }
+
+    // Limit to top 50 for scrollable list
+    all = all.slice(0, 50);
+
+    return all.map((item) => {
+      let typeStr = item.type.toLowerCase().replace("contact", "form").replaceAll("_", " ");
+      let actionText = `Created ${typeStr}`;
+      return {
+        id: item.id,
+        name: item.name.split(" ")[0],
+        action: actionText,
+        date: isNaN(item.dateObj.getTime())
+          ? item.createdAt
+          : item.dateObj.toLocaleDateString("en-IN", {
+              weekday: "short",
+              month: "short",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+      };
+    });
+  }, [internal, submissionFilter]);
 
   const liveTopPages = (
     analytics?.pages ?? []
@@ -2569,129 +2631,94 @@ export default function DashboardPage() {
               <Panel>
                 <PanelTitle
                   right={
-                    <button
-                      type="button"
-                      onClick={() => window.open("/pages", "_blank")}
-                      className="flex items-center gap-1 text-[10px] font-bold text-blue-600 hover:text-blue-700"
-                    >
-                      View All
-
-                      <ArrowRight className="h-3.5 w-3.5 text-blue-600" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <select 
+                        className="rounded border border-slate-200 text-[10px] px-1 py-0.5 font-semibold text-slate-600 outline-none focus:border-blue-500"
+                        value={submissionFilter}
+                        onChange={(e) => setSubmissionFilter(e.target.value)}
+                      >
+                        <option value="All">All Enquiries</option>
+                        <option value="Visitor">Visitors</option>
+                        <option value="Buyer">Buyers</option>
+                        <option value="Exhibitor">Exhibitors</option>
+                        <option value="Sponsor">Sponsorship</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => window.open("/submissions", "_blank")}
+                        className="flex items-center gap-1 text-[10px] font-bold text-blue-600 hover:text-blue-700"
+                      >
+                        View All
+                        <ArrowRight className="h-3.5 w-3.5 text-blue-600" />
+                      </button>
+                    </div>
                   }
                 >
                   Action Required
                 </PanelTitle>
 
-                <div className="px-3 pt-2">
-                  {liveIssues.map(
-                    ({
-                      label,
-                      level,
-                      count,
-                      icon: Icon,
-                      tone,
-                    }) => (
+                <div className="px-3 max-h-[300px] overflow-y-auto pb-3 pt-2">
+                  {submissionRows.length === 0 ? (
+                    <div className="py-4 text-center text-[10px] text-slate-500 font-semibold">No pending enquiries found.</div>
+                  ) : submissionRows.map(
+                    (
+                      row,
+                      index,
+                    ) => (
                       <div
                         key={
-                          label
+                          row.id + index
                         }
-                        className={`
+                        className="
                           grid
-                          grid-cols-[24px_1fr_auto_22px]
+                          grid-cols-[20px_auto_auto_1fr]
                           items-center
-                          gap-2
-                          border-b
-                          border-[#f0f0ec]
-                          py-[6px]
-                          px-2
-                          mb-1
-                          text-[10px]
-                          last:border-b-0
-                          last:mb-0
-                          rounded-[6px]
-                          
-                          ${level === "High"
-                            ? "bg-red-100"
-                            : level === "Medium"
-                              ? "bg-orange-100"
-                              : "bg-yellow-100"
-                          }
-                        `}
+                          gap-1.5
+                          py-[3px]
+                          text-[9px]
+                          font-bold
+                          border-b border-[#f0f0ec] last:border-b-0
+                        "
                       >
                         <div
                           className={`
                             grid
-                            h-[24px]
-                            w-[24px]
-                            place-items-center
-                            rounded-[6px]
-
-                            ${toneClass[
-                            tone
-                            ]
-                            }
-                          `}
-                        >
-                          <Icon className="h-3.5 w-3.5" />
-                        </div>
-
-                        <span
-                          className="truncate font-semibold text-slate-900"
-                          style={{
-                            color:
-                              "#0f172a",
-
-                            fontWeight: 600,
-                          }}
-                        >
-                          {label}
-                        </span>
-
-                        {/* ======================================
-                            HIGH / MEDIUM / LOW BACKGROUND
-                        ====================================== */}
-
-                        <span
-                          className={`
-                            inline-flex
-                            h-[22px]
-                            min-w-[58px]
-                            items-center
-                            justify-center
-                            rounded-[6px]
-                            border
-                            px-2
-                            text-[9px]
-                            font-semibold
-
-                            ${level ===
-                              "High"
-                              ? "border-red-200 bg-red-100 text-red-700"
-                              : level ===
-                                "Medium"
-                                ? "border-orange-200 bg-orange-100 text-orange-700"
-                                : "border-yellow-200 bg-yellow-100 text-yellow-700"
-                            }
-                          `}
-                        >
-                          {level}
-                        </span>
-
-                        <span
-                          className="
-                            grid
                             h-[20px]
-                            min-w-[20px]
+                            w-[20px]
                             place-items-center
                             rounded-full
-                            bg-[#f8f2ee]
-                            px-1
-                            font-semibold
-                            text-[#695b50]
-                          "
+
+                            ${index % 5 === 0
+                              ? "bg-emerald-50 text-emerald-700"
+                              : index % 5 === 1
+                                ? "bg-violet-50 text-violet-700"
+                                : index % 5 === 2
+                                  ? "bg-amber-50 text-amber-700"
+                                  : index % 5 === 3
+                                    ? "bg-rose-50 text-rose-700"
+                                    : "bg-blue-50 text-blue-700"
+                            }
+                          `}
                         >
-                          {count}
+                          <FileText className="h-3 w-3" />
+                        </div>
+
+                        <span className="whitespace-nowrap text-[#0f172a]">
+                          {
+                            row.name
+                          }
+                        </span>
+
+                        <span className="whitespace-nowrap text-blue-600 truncate max-w-[150px]">
+                          {
+                            row.action
+                          }
+                        </span>
+
+                        <span className="whitespace-nowrap text-right text-[#695b50]">
+                          {
+                            row.date
+                          }
                         </span>
                       </div>
                     ),
@@ -3873,98 +3900,7 @@ export default function DashboardPage() {
                 </div>
               </Panel>
 
-              {/* =================================================
-                  RECENT SUBMISSIONS
-              ================================================= */}
 
-              <Panel
-                style={{
-                  boxShadow:
-                    "rgba(0, 0, 0, 0.05) 0px 0px 0px 1px",
-                }}
-              >
-                <PanelTitle
-                  right={
-                    <button
-                      type="button"
-                      onClick={() => window.open("/submissions", "_blank")}
-                      className="flex items-center gap-1 text-[10px] font-bold text-blue-600 hover:text-blue-700"
-                    >
-                      View All
-
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </button>
-                  }
-                >
-                  Recent Form
-                  Submissions
-                </PanelTitle>
-
-                <div className="px-3">
-                  {submissionRows.map(
-                    (
-                      row,
-                      index,
-                    ) => (
-                      <div
-                        key={
-                          row.id
-                        }
-                        className="
-                          grid
-                          grid-cols-[20px_auto_auto_1fr]
-                          items-center
-                          gap-1.5
-                          py-[3px]
-                          text-[9px]
-                          font-bold
-                        "
-                      >
-                        <div
-                          className={`
-                            grid
-                            h-[20px]
-                            w-[20px]
-                            place-items-center
-                            rounded-full
-
-                            ${index === 0
-                              ? "bg-emerald-50 text-emerald-700"
-                              : index === 1
-                                ? "bg-violet-50 text-violet-700"
-                                : index === 2
-                                  ? "bg-amber-50 text-amber-700"
-                                  : index === 3
-                                    ? "bg-rose-50 text-rose-700"
-                                    : "bg-blue-50 text-blue-700"
-                            }
-                          `}
-                        >
-                          <FileText className="h-3 w-3" />
-                        </div>
-
-                        <span className="whitespace-nowrap text-[#4B1426]">
-                          {
-                            row.name
-                          }
-                        </span>
-
-                        <span className="whitespace-nowrap text-blue-600">
-                          {
-                            row.action
-                          }
-                        </span>
-
-                        <span className="whitespace-nowrap text-right text-[#43526d]">
-                          {
-                            row.date
-                          }
-                        </span>
-                      </div>
-                    ),
-                  )}
-                </div>
-              </Panel>
             </div>
           </div>
         </main>

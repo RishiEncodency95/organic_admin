@@ -65,7 +65,7 @@ export default function CropImageModal({
     } else {
       // Keep the current selection but drop the aspect lock so every handle
       // (left, right, top, bottom, corners) can be dragged independently.
-      setCrop((c) => (c ? { ...c } : centeredFreeCrop(img.width, img.height)));
+      setCrop((c?: Crop) => (c ? { ...c } : centeredFreeCrop(img.width, img.height)));
     }
   };
 
@@ -158,8 +158,8 @@ export default function CropImageModal({
           {imageSrc && (
             <ReactCrop
               crop={crop}
-              onChange={(_, percentCrop) => setCrop(percentCrop)}
-              onComplete={(c) => setCompletedCrop(c)}
+              onChange={(_: PixelCrop, percentCrop: Crop) => setCrop(percentCrop)}
+              onComplete={(c: PixelCrop) => setCompletedCrop(c)}
               aspect={aspectMode === "locked" ? GALLERY_ASPECT : undefined}
               minWidth={20}
               minHeight={20}
