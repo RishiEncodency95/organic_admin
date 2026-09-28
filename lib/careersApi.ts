@@ -44,6 +44,12 @@ export interface JobPosting {
   requirements: string[];
   preferredQualifications?: string[];
 
+  reportingTo?: string;
+  kras?: { label: string; result: string }[];
+  kpis?: { label: string; measurement: string }[];
+  referenceIndustries?: string[];
+  screeningQuestions?: string[];
+
   acceptOnlineApplications?: boolean;
   aiCvScreening?: boolean;
   cvUploadMandatory?: boolean;
@@ -107,6 +113,21 @@ async function downloadJobDocx(id: string, fallbackFilename: string): Promise<vo
   URL.revokeObjectURL(url);
 }
 
+export interface GeneratedJobContent {
+  opportunity: string;
+  keyResponsibilities: string[];
+  whoCanApply: string[];
+  requiredSkills: string[];
+  preferredSkills: string[];
+  targetIndustrySegments: string[];
+  specificExperience: string;
+  reportingTo: string;
+  kras: { label: string; result: string }[];
+  kpis: { label: string; measurement: string }[];
+  referenceIndustries: string[];
+  screeningQuestions: string[];
+}
+
 export const jobsApi = {
   list: () => api.get<JobPosting[]>("/careers/admin/jobs"),
   getById: (id: string) => api.get<JobPosting>(`/careers/admin/jobs/${id}`),
@@ -114,4 +135,24 @@ export const jobsApi = {
   update: (id: string, data: Partial<JobPosting>) => api.patch<JobPosting>(`/careers/admin/jobs/${id}`, data),
   remove: (id: string) => api.delete<{ message: string }>(`/careers/admin/jobs/${id}`),
   downloadDocx: (id: string, jobTitle: string) => downloadJobDocx(id, `${jobTitle || "job-description"}.docx`),
+  generateDescription: (data: {
+    title: string;
+    designation?: string;
+    company?: string;
+    projectEvent?: string;
+    department: string;
+    jobCode?: string;
+    employmentType?: string;
+    workplaceType?: string;
+    totalOpenings?: number;
+    location: string;
+    experienceMin?: number;
+    experienceMax?: number;
+    educationRequirements?: string;
+    ctcMin?: number;
+    ctcMax?: number;
+    salaryType?: string;
+    performanceIncentiveApplicable?: boolean;
+    incentiveType?: string;
+  }) => api.post<GeneratedJobContent>("/careers/admin/jobs/generate-description", data),
 };

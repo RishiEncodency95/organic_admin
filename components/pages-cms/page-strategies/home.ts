@@ -110,6 +110,8 @@ export function syncHomeSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft):
                           .map((c: any) => ({
                             title: c.title ?? "",
                             description: c.description ?? c.desc ?? "",
+                            image: c.image ?? "",
+                            imageAlt: c.imageAlt ?? "",
                           }))
                       : sec.items,
                 }
@@ -391,6 +393,8 @@ export async function saveHomeSections(sectionsDraft: SectionsDraft): Promise<vo
           title: it.title ?? "",
           description: it.description ?? it.desc ?? "",
           desc: it.description ?? it.desc ?? "",
+          image: it.image ?? "",
+          imageAlt: it.imageAlt ?? "",
         })),
       });
     } catch (err) {

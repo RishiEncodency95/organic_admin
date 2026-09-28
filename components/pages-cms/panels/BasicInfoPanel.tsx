@@ -17,7 +17,6 @@ const TEMPLATE_OPTIONS = [
   "DELEGATE REGISTRATION",
   "REGISTER AS BUYER",
   "SPONSORSHIP OPPORTUNITIES",
-  "TALK TO EXPO ADVISOR",
   "Terms & Conditions",
   "Privacy Policy",
   "Refund Policy",
