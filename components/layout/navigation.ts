@@ -1,5 +1,6 @@
 import {
   Activity,
+  Award,
   BarChart3,
   BellRing,
   BookOpenText,
@@ -7,6 +8,7 @@ import {
   Briefcase,
   BriefcaseBusiness,
   Building2,
+  CalendarClock,
   DatabaseBackup,
   FileCheck2,
   FileCode,
@@ -16,6 +18,7 @@ import {
   Gauge,
   Handshake,
   History,
+  IndianRupee,
   LayoutDashboard,
   LayoutGrid,
   Link2,
@@ -66,6 +69,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "Visitor Registrations", href: "/requests", icon: Users, badge: "210" },
       { label: "Sponsorships & Partners", href: "/enquiries?category=csr", icon: Handshake, badge: "36" },
       { label: "Newsletter Subscribers", href: "/newsletter", icon: Mail, badge: "342" },
+      { label: "Award Nominations", href: "/website/award-nominations", icon: Award, badge: "NEW" },
     ],
   },
   {
@@ -137,6 +141,13 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "Backups & Restore", icon: DatabaseBackup, disabled: true },
       { label: "Audit Logs", href: "/audit-log", icon: History },
       { label: "Settings", href: "/settings", icon: Settings },
+    ],
+  },
+  {
+    title: "Add by Admin",
+    items: [
+      { label: "Day Period", href: "/add-by-admin/day-period", icon: CalendarClock },
+      { label: "Expected CTC", href: "/add-by-admin/expected-ctc", icon: IndianRupee },
     ],
   },
 ];
