@@ -2,6 +2,8 @@ import type { CmsPage } from "@/lib/cmsPages";
 
 export function getTemplateForPage(p: { type?: string; configKey?: string; title: string }): string {
   if (p.type === "home" || p.configKey === "landingPage") return "Homepage";
+  // "Talk to Expo Advisor" and "Contact Us" are the same page; only "Contact Us" is offered as a template.
+  if (p.configKey === "contactPage") return "Contact Us";
   return p.title;
 }
 
