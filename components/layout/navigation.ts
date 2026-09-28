@@ -24,6 +24,7 @@ import {
   Mail,
   MessageSquare,
   MessageSquareText,
+  PlusCircle,
   Route,
   SearchCheck,
   Settings,
@@ -136,6 +137,12 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "Backups & Restore", icon: DatabaseBackup, disabled: true },
       { label: "Audit Logs", href: "/audit-log", icon: History },
       { label: "Settings", href: "/settings", icon: Settings },
+    ],
+  },
+  {
+    title: "Add By Admin",
+    items: [
+      { label: "Coming Soon", icon: PlusCircle, disabled: true },
     ],
   },
 ];
