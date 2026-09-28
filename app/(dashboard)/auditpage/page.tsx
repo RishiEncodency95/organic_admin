@@ -2,71 +2,134 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, FileSearch, Gauge, Globe2, ShieldCheck, TriangleAlert } from "lucide-react";
-import { seoAuditApi, type SeoOverview } from "@/lib/seoAuditApi";
+import { ArrowLeft, FileSearch, Gauge, Globe2, ShieldCheck, TriangleAlert, RefreshCw, Search } from "lucide-react";
+import { seoAuditApi, type SeoOverview, type PageSpeedAudit } from "@/lib/seoAuditApi";
+import SeoSiteCheckupReport from "@/components/seo/SeoSiteCheckupReport";
+import { PAGE_INVENTORY } from "@/lib/seoCheckupData";
+import Spinner from "@/components/ui/Spinner";
+
+const ALL_SITE_PAGES = PAGE_INVENTORY.map((page) => ({
+  id: page.id,
+  label: page.label,
+  path: page.path,
+}));
 
 export default function SeoAuditedPagesPage() {
   const [overview, setOverview] = useState<SeoOverview | null>(null);
+  const [selectedPageId, setSelectedPageId] = useState<string>("home");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [pageSpeed, setPageSpeed] = useState<PageSpeedAudit | null>(null);
+  const [loadingSpeed, setLoadingSpeed] = useState(false);
 
   useEffect(() => {
     seoAuditApi.overview().then(setOverview).catch(() => undefined);
   }, []);
 
-  const counts = overview?.counts;
-  const stats = [
-    { label: "Pages crawled", value: counts?.urlsCrawled ?? 28, hint: `${counts?.indexablePages ?? 26} indexable`, icon: Globe2, tone: "text-accent bg-accent-soft" },
-    { label: "Average SEO score", value: overview?.scores?.overall ?? 94, hint: "Latest site score", icon: Gauge, tone: "text-status-success-text bg-status-success-bg" },
-    { label: "Critical issues", value: counts?.criticalIssues ?? 0, hint: "Needs immediate action", icon: TriangleAlert, tone: "text-status-danger-text bg-status-danger-bg" },
-    { label: "Healthy pages", value: counts ? Math.max(0, (counts.urlsCrawled ?? 28) - (counts.pagesWithIssues ?? 4)) : 24, hint: "No open issues", icon: ShieldCheck, tone: "text-status-progress-text bg-status-progress-bg" },
-  ];
+  useEffect(() => {
+    const pageObj = ALL_SITE_PAGES.find((p) => p.id === selectedPageId) || ALL_SITE_PAGES[0];
+    const targetUrl = pageObj.id === "home" ? "https://bharatorganicexpo.com" : `https://bharatorganicexpo.com${pageObj.path}`;
+    
+    setLoadingSpeed(true);
+    seoAuditApi.pagespeed(targetUrl, "mobile", false)
+      .then(setPageSpeed)
+      .catch(() => setPageSpeed(null))
+      .finally(() => setLoadingSpeed(false));
+  }, [selectedPageId]);
+
+  const filteredPages = ALL_SITE_PAGES.filter(
+    (p) =>
+      p.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.path.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const selectedPageObj = ALL_SITE_PAGES.find((p) => p.id === selectedPageId) || ALL_SITE_PAGES[0];
 
   return (
-    <div className="h-full min-h-0 overflow-y-auto bg-white p-3 lg:p-4 space-y-4">
-      {/* Header matching Bharat Organic SEO Intelligence */}
-      <div className="flex shrink-0 items-center justify-between border-b-[2px] border-[#23471d] pb-[10px]">
+    <div className="min-h-screen bg-slate-100 p-4 lg:p-6 space-y-6 text-slate-900">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b-2 border-[#23471d] pb-4 bg-white p-4 rounded-xl shadow-xs">
         <div>
-          <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[#16a34a]">
-            <FileSearch className="h-3.5 w-3.5" /> Bharat Organic SEO Intelligence
+          <div className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-emerald-600">
+            <FileSearch className="h-4 w-4" /> Bharat Organic SEO Intelligence
           </div>
-          <h1 className="text-[19px] font-bold leading-[1.15] tracking-[-0.018em]" style={{ color: "#23471d" }}>
-            Audited Pages Inventory
+          <h1 className="text-xl font-extrabold text-[#23471d]">
+            Page-by-Page SEO Audit Reports
           </h1>
-          <p className="mt-0.5 text-[10px] font-medium text-[#6c7587]">
-            Inspect discovered Bharat Organic Expo URLs with technical facts, Core Web Vitals, and crawler findings.
+          <p className="text-xs font-medium text-slate-500 mt-0.5">
+            Select any website route to generate its SEOSiteCheckup audit report automatically.
           </p>
         </div>
-        <Link
-          href="/seo"
-          className="inline-flex h-[32px] items-center gap-1.5 rounded-[5px] border border-[#d1d5db] bg-white px-3 text-[11px] font-semibold text-[#374151] hover:bg-[#f9fafb] shadow-xs"
-        >
-          <ArrowLeft className="h-3.5 w-3.5 text-[#16a34a]" /> Command Center
-        </Link>
+
+        <div className="flex items-center gap-3">
+          <Link
+            href="/seo"
+            className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3.5 text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-xs transition"
+          >
+            <ArrowLeft className="h-4 w-4 text-emerald-600" /> Command Center
+          </Link>
+        </div>
       </div>
 
-      {/* Stats Cards Grid */}
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        {stats.map(({ label, value, hint, icon: Icon }) => (
-          <div
-            key={label}
-            className="relative flex flex-col justify-center overflow-hidden rounded-[8px] p-3.5"
-            style={{
-              background: "linear-gradient(135deg, #ffffff 0%, #ffffff 55%, #f0fdf4 100%)",
-              boxShadow: "rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px",
-            }}
+      {/* Page Selection Selector Bar */}
+      <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3 flex-1 min-w-[280px]">
+          <span className="text-xs font-extrabold uppercase text-slate-500 shrink-0">
+            Select Page Route:
+          </span>
+          <select
+            value={selectedPageId}
+            onChange={(e) => setSelectedPageId(e.target.value)}
+            className="h-10 w-full max-w-md rounded-lg border border-slate-300 bg-slate-50 px-3 text-xs font-bold text-slate-900 outline-none focus:border-emerald-600 focus:bg-white shadow-xs transition cursor-pointer"
           >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#166534]">{label}</p>
-                <p className="mt-1 text-[22px] font-extrabold tracking-[-0.03em] text-[#166534]">{value}</p>
-                <p className="text-[10px] font-medium text-[#16a34a]">{hint}</p>
-              </div>
-              <span className="grid h-[34px] w-[34px] place-items-center rounded-full bg-[#dcfce7] text-[#166534]">
-                <Icon className="h-4 w-4" />
-              </span>
-            </div>
-          </div>
-        ))}
+            {ALL_SITE_PAGES.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.label} ({p.path})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Quick Page Filter Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1 [scrollbar-width:thin]">
+          {ALL_SITE_PAGES.slice(0, 7).map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => setSelectedPageId(p.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition cursor-pointer whitespace-nowrap ${
+                selectedPageId === p.id
+                  ? "bg-[#23471d] text-white shadow-xs"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
       </div>
+
+      {/* Embedded SEOSiteCheckup Report Component */}
+      {loadingSpeed ? (
+        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl shadow-xs border border-slate-200">
+          <Spinner />
+          <p className="mt-4 text-sm font-bold text-slate-500 animate-pulse">Running live SEO Analysis...</p>
+        </div>
+      ) : (
+        <SeoSiteCheckupReport
+          pageId={selectedPageObj.id}
+          url={selectedPageObj.id === "home" ? "https://bharatorganicexpo.com" : `https://bharatorganicexpo.com${selectedPageObj.path}`}
+          pagespeed={pageSpeed}
+          onReAudit={() => {
+            const targetUrl = selectedPageObj.id === "home" ? "https://bharatorganicexpo.com" : `https://bharatorganicexpo.com${selectedPageObj.path}`;
+            setLoadingSpeed(true);
+            seoAuditApi.pagespeed(targetUrl, "mobile", true)
+              .then(setPageSpeed)
+              .catch(() => setPageSpeed(null))
+              .finally(() => setLoadingSpeed(false));
+          }}
+        />
+      )}
     </div>
   );
 }

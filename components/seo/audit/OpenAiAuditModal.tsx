@@ -31,6 +31,44 @@ export function OpenAiAuditModal({
 
   const page = pageDetail?.page;
   const rec = aiState?.recommendation;
+
+  const num = (value: unknown, suffix = "") =>
+    value === undefined || value === null || value === "" ? "—" : `${value}${suffix}`;
+  const lcpText = page?.performance?.lcpMs
+    ? `${(page.performance.lcpMs / 1000).toFixed(2)}s`
+    : "—";
+  const clsText =
+    page?.performance?.clsScore !== undefined && page?.performance?.clsScore !== null
+      ? Number(page.performance.clsScore).toFixed(3)
+      : "—";
+  const perfScore = page?.performance?.score;
+  const wordText = num(page?.wordCount, " words");
+  const scoreText = page?.score !== undefined && page?.score !== null ? `${page.score} / 100` : "—";
+  const httpText = page?.httpStatus !== undefined && page?.httpStatus !== null
+    ? `${page.httpStatus}${page.httpStatus === 200 ? " OK" : ""}`
+    : "—";
+  const rttText = num(page?.responseTimeMs, "ms");
+  const densityTarget = Array.isArray(page?.keywordAnalysis?.targets)
+    ? page.keywordAnalysis.targets[0]
+    : undefined;
+  const densityText = densityTarget?.densityPercent !== undefined ? `${densityTarget.densityPercent}%` : "—";
+  const trackedTerms = Array.isArray(page?.keywordAnalysis?.targets) ? page.keywordAnalysis.targets.length : 0;
+  const h1Count = page?.headingCounts?.h1;
+  const ogImagePath = typeof page?.ogImage === "string" && page.ogImage ? page.ogImage.split("/").pop() : "—";
+  const schemaTypesText =
+    Array.isArray(page?.schemaTypes) && page.schemaTypes.length ? page.schemaTypes.join(", ") : "—";
+  const schemaErrors = page?.schemas?.[0]?.errors?.length ?? 0;
+  const schemaWarnings = page?.schemas?.[0]?.warnings?.length ?? 0;
+  const inboundLinks = page?.inLinks ?? page?.internalLinkCount;
+  const outboundLinks = page?.outLinks ?? page?.externalLinkCount;
+  const metaBadge =
+    page?.titleStatus === "ok" && page?.descriptionStatus === "ok" ? "PASSED" : "NEEDS WORK";
+  const ogBadge = page?.socialStatus?.openGraph === "valid" ? "VALID OG TAGS" : "CHECK OG TAGS";
+  const schemaBadge = schemaErrors === 0 ? "VALID JSON-LD" : `${schemaErrors} SCHEMA ERRORS`;
+  const serpDescription =
+    page?.metaDescription ||
+    "No meta description was captured for this route — set one in the SEO editor.";
+  const keywordTerms = page?.metaKeywords || "—";
   const activeProvider: "openai" | "gemini" = rec?.provider === "gemini" ? "gemini" : "openai";
 
   const handleApplyFix = async (idx: number, item: any) => {
@@ -45,7 +83,7 @@ export function OpenAiAuditModal({
 
       const newDesc = item.suggestedDescription && !item.suggestedDescription.startsWith("<")
         ? item.suggestedDescription
-        : `Discover official ${cleanTitleName.toLowerCase()} details for Bharat Organic Expo 2027 at Pragati Maidan, New Delhi. Connect with 10,000+ certified organic food exporters & bio brands!`;
+        : `Discover official ${cleanTitleName.toLowerCase()} details for Bharat Organic Expo 2027 at Pragati Maidan, New Delhi. Connect with certified organic food exporters and bio brands from India!`;
 
       await seoAuditApi.updateSeo(targetPageId, {
         metaTitle: newTitle,
@@ -182,17 +220,15 @@ export function OpenAiAuditModal({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <div className="rounded-lg border border-emerald-500/30 bg-[#1e293b] p-2.5 shadow-sm">
                   <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">Overall Score</span>
-                  <div className="text-[17px] font-black text-emerald-400 mt-0.5">{page?.score ?? 94} / 100</div>
+                  <div className="text-[17px] font-black text-emerald-400 mt-0.5">{scoreText}</div>
                 </div>
                 <div className="rounded-lg border border-slate-700 bg-[#1e293b] p-2.5 shadow-sm">
                   <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">Word Count</span>
-                  <div className="text-[17px] font-black text-white mt-0.5">{page?.wordCount ?? 850} words</div>
+                  <div className="text-[17px] font-black text-white mt-0.5">{wordText}</div>
                 </div>
                 <div className="rounded-lg border border-teal-500/30 bg-[#1e293b] p-2.5 shadow-sm">
                   <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">Performance (LCP)</span>
-                  <div className="text-[17px] font-black text-teal-300 mt-0.5">
-                    {page?.performance?.lcpMs ? (page.performance.lcpMs / 1000).toFixed(2) + "s" : "1.24s"}
-                  </div>
+                  <div className="text-[17px] font-black text-teal-300 mt-0.5">{lcpText}</div>
                 </div>
                 <div className="rounded-lg border border-amber-500/30 bg-[#1e293b] p-2.5 shadow-sm">
                   <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">Audit Fix Items</span>
@@ -232,7 +268,7 @@ export function OpenAiAuditModal({
                     {page?.title || "Bharat Organic Expo 2027"}
                   </h4>
                   <p className="text-[12px] text-slate-300 leading-normal line-clamp-2">
-                    {page?.metaDescription || "Join Bharat Organic Expo 2027, the premier exhibition and conference for organic food, bio-agriculture, and natural products in India."}
+                    {serpDescription}
                   </p>
                 </div>
               </div>
@@ -249,13 +285,13 @@ export function OpenAiAuditModal({
                   <div className="rounded-lg border border-slate-700 bg-slate-900/90 p-3 space-y-1.5">
                     <div className="flex items-center justify-between font-extrabold text-emerald-400 border-b border-slate-800 pb-1.5">
                       <span>01 Overview & Crawl Health</span>
-                      <span className="text-[9.5px] font-bold bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800 uppercase">STATUS: {page?.httpStatus ?? 200} OK</span>
+                      <span className="text-[9.5px] font-bold bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800 uppercase">STATUS: {httpText}</span>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11.5px] text-slate-300">
-                      <div>HTTP Status: <strong className="text-emerald-400">{page?.httpStatus ?? 200} OK</strong></div>
+                      <div>HTTP Status: <strong className="text-emerald-400">{httpText}</strong></div>
                       <div>Indexable: <strong className="text-white">{page?.indexable ? "Yes (index,follow)" : "No"}</strong></div>
-                      <div>Response Time: <strong className="text-teal-300">{page?.responseTimeMs ?? 206}ms</strong></div>
-                      <div>Word Count: <strong className="text-white">{page?.wordCount ?? 850} words</strong></div>
+                      <div>Response Time: <strong className="text-teal-300">{rttText}</strong></div>
+                      <div>Word Count: <strong className="text-white">{wordText}</strong></div>
                     </div>
                   </div>
 
@@ -266,10 +302,10 @@ export function OpenAiAuditModal({
                       <span className="text-[9.5px] font-bold bg-blue-950 text-blue-300 px-2 py-0.5 rounded border border-blue-800 uppercase">SEARCH DATA</span>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11.5px] text-slate-300">
-                      <div>Clicks: <strong className="text-white">{page?.search?.clicks ?? 450}</strong></div>
-                      <div>Impressions: <strong className="text-white">{page?.search?.impressions?.toLocaleString() ?? "12,800"}</strong></div>
-                      <div>CTR: <strong className="text-teal-300">{page?.search?.ctr ?? 3.5}%</strong></div>
-                      <div>Avg Position: <strong className="text-cyan-300">#{page?.search?.position ?? 1.4}</strong></div>
+                      <div>Clicks: <strong className="text-white">{num(page?.search?.clicks)}</strong></div>
+                      <div>Impressions: <strong className="text-white">{page?.search?.impressions != null ? page.search.impressions.toLocaleString("en-IN") : "—"}</strong></div>
+                      <div>CTR: <strong className="text-teal-300">{num(page?.search?.ctr, "%")}</strong></div>
+                      <div>Avg Position: <strong className="text-cyan-300">{page?.search?.position != null ? `#${page.search.position}` : "—"}</strong></div>
                     </div>
                   </div>
 
@@ -277,11 +313,11 @@ export function OpenAiAuditModal({
                   <div className="rounded-lg border border-slate-700 bg-slate-900/90 p-3 space-y-1.5">
                     <div className="flex items-center justify-between font-extrabold text-cyan-400 border-b border-slate-800 pb-1.5">
                       <span>03 Metadata & Canonicals</span>
-                      <span className="text-[9.5px] font-bold bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded border border-cyan-800 uppercase">PASSED</span>
+                      <span className={`text-[9.5px] font-bold px-2 py-0.5 rounded border uppercase ${metaBadge === "PASSED" ? "bg-emerald-950 text-emerald-300 border-emerald-800" : "bg-amber-950 text-amber-300 border-amber-800"}`}>{metaBadge}</span>
                     </div>
                     <div className="space-y-1 text-[11.5px] text-slate-300">
                       <div>Title Tag: <strong className="text-white">{page?.title} ({titleLength} / 60 chars)</strong></div>
-                      <div>Meta Description: <strong className="text-slate-200">{page?.metaDescription} ({descLength} / 160 chars)</strong></div>
+                      <div>Meta Description: <strong className="text-slate-200">{page?.metaDescription || "Not set"} ({descLength} / 160 chars)</strong></div>
                       <div>Canonical Tag: <strong className="text-emerald-400 font-mono text-[11px]">{page?.url}</strong></div>
                     </div>
                   </div>
@@ -290,13 +326,13 @@ export function OpenAiAuditModal({
                   <div className="rounded-lg border border-slate-700 bg-slate-900/90 p-3 space-y-1.5">
                     <div className="flex items-center justify-between font-extrabold text-purple-400 border-b border-slate-800 pb-1.5">
                       <span>04 Keyword Placement & Content Density</span>
-                      <span className="text-[9.5px] font-bold bg-purple-950 text-purple-300 px-2 py-0.5 rounded border border-purple-800 uppercase">OPTIMAL</span>
+                      <span className="text-[9.5px] font-bold bg-purple-950 text-purple-300 px-2 py-0.5 rounded border border-purple-800 uppercase">{trackedTerms} TRACKED</span>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11.5px] text-slate-300">
-                      <div>Target Terms: <strong className="text-white">{page?.metaKeywords || "organic expo, bio trade"}</strong></div>
-                      <div>H1 Heading: <strong className="text-emerald-400">1 Present</strong></div>
-                      <div>Density Score: <strong className="text-purple-300">1.25%</strong></div>
-                      <div>LSI Density: <strong className="text-white">High (4 Keywords)</strong></div>
+                      <div>Target Terms: <strong className="text-white">{keywordTerms}</strong></div>
+                      <div>H1 Heading: <strong className="text-emerald-400">{h1Count != null ? `${h1Count} Present` : "—"}</strong></div>
+                      <div>Keyword Density: <strong className="text-purple-300">{densityText}</strong></div>
+                      <div>Tracked Keywords: <strong className="text-white">{trackedTerms || "—"}</strong></div>
                     </div>
                   </div>
 
@@ -304,12 +340,12 @@ export function OpenAiAuditModal({
                   <div className="rounded-lg border border-slate-700 bg-slate-900/90 p-3 space-y-1.5">
                     <div className="flex items-center justify-between font-extrabold text-pink-400 border-b border-slate-800 pb-1.5">
                       <span>05 Social SEO & Sharing Cards</span>
-                      <span className="text-[9.5px] font-bold bg-pink-950 text-pink-300 px-2 py-0.5 rounded border border-pink-800 uppercase">VALID OG TAGS</span>
+                      <span className="text-[9.5px] font-bold bg-pink-950 text-pink-300 px-2 py-0.5 rounded border border-pink-800 uppercase">{ogBadge}</span>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11.5px] text-slate-300">
                       <div>og:title: <strong className="text-white truncate block">{page?.title}</strong></div>
-                      <div>og:image: <strong className="text-pink-300 font-mono text-[11px]">og-banner.png</strong></div>
-                      <div>twitter:card: <strong className="text-white">summary_large_image</strong></div>
+                      <div>og:image: <strong className="text-pink-300 font-mono text-[11px]">{ogImagePath}</strong></div>
+                      <div>twitter:card: <strong className="text-white">{num(page?.twitterCard)}</strong></div>
                     </div>
                   </div>
 
@@ -317,12 +353,12 @@ export function OpenAiAuditModal({
                   <div className="rounded-lg border border-slate-700 bg-slate-900/90 p-3 space-y-1.5">
                     <div className="flex items-center justify-between font-extrabold text-amber-400 border-b border-slate-800 pb-1.5">
                       <span>06 Schema.org & Rich Snippets</span>
-                      <span className="text-[9.5px] font-bold bg-amber-950 text-amber-300 px-2 py-0.5 rounded border border-amber-800 uppercase">VALID JSON-LD</span>
+                      <span className="text-[9.5px] font-bold bg-amber-950 text-amber-300 px-2 py-0.5 rounded border border-amber-800 uppercase">{schemaBadge}</span>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11.5px] text-slate-300">
-                      <div>Declared Type: <strong className="text-amber-300">{page?.path === "/" ? "Event, Organization" : "WebPage"}</strong></div>
-                      <div>Rich Snippet: <strong className="text-emerald-400">Eligible</strong></div>
-                      <div>Errors / Warnings: <strong className="text-white">0 Schema Errors</strong></div>
+                      <div>Declared Type: <strong className="text-amber-300">{schemaTypesText}</strong></div>
+                      <div>Rich Snippet: <strong className="text-emerald-400">{page?.schemas?.[0]?.valid === false ? "Not eligible" : "Eligible"}</strong></div>
+                      <div>Errors / Warnings: <strong className="text-white">{schemaErrors} / {schemaWarnings}</strong></div>
                     </div>
                   </div>
 
@@ -333,10 +369,10 @@ export function OpenAiAuditModal({
                       <span className="text-[9.5px] font-bold bg-teal-950 text-teal-300 px-2 py-0.5 rounded border border-teal-800 uppercase">SILO ACTIVE</span>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11.5px] text-slate-300">
-                      <div>Inbound Links: <strong className="text-white">{page?.internalInbound ?? 12}</strong></div>
-                      <div>Outbound Links: <strong className="text-white">{page?.internalOutbound ?? 18}</strong></div>
-                      <div>Broken Links: <strong className="text-emerald-400">0 Broken</strong></div>
-                      <div>Cannibalization: <strong className="text-emerald-400">0 Conflict</strong></div>
+                      <div>Inbound Links: <strong className="text-white">{num(inboundLinks)}</strong></div>
+                      <div>Outbound Links: <strong className="text-white">{num(outboundLinks)}</strong></div>
+                      <div>Broken Links: <strong className="text-emerald-400">{num(page?.brokenLinks)}</strong></div>
+                      <div>Orphan Risk: <strong className="text-emerald-400">{page?.isOrphan === undefined ? "—" : page.isOrphan ? "Orphan page" : "No conflict"}</strong></div>
                     </div>
                   </div>
 
@@ -344,13 +380,13 @@ export function OpenAiAuditModal({
                   <div className="rounded-lg border border-slate-700 bg-slate-900/90 p-3 space-y-1.5">
                     <div className="flex items-center justify-between font-extrabold text-emerald-400 border-b border-slate-800 pb-1.5">
                       <span>08 Lighthouse & Core Web Vitals</span>
-                      <span className="text-[9.5px] font-bold bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800 uppercase">PERFORMANCE: 94/100</span>
+                      <span className="text-[9.5px] font-bold bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800 uppercase">PERFORMANCE: {perfScore != null ? `${perfScore}/100` : "—"}</span>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11.5px] text-slate-300">
-                      <div>LCP: <strong className="text-emerald-400">{page?.performance?.lcpMs ? (page.performance.lcpMs / 1000).toFixed(2) + "s" : "1.24s"}</strong></div>
-                      <div>CLS: <strong className="text-emerald-400">0.010</strong></div>
-                      <div>FID / INP: <strong className="text-white">12ms</strong></div>
-                      <div>TTFB: <strong className="text-teal-300">180ms</strong></div>
+                      <div>LCP: <strong className="text-emerald-400">{lcpText}</strong></div>
+                      <div>CLS: <strong className="text-emerald-400">{clsText}</strong></div>
+                      <div>Field Data: <strong className="text-white">{page?.performance?.isFieldData === undefined ? "—" : page.performance.isFieldData ? "CrUX field data" : "Lab only"}</strong></div>
+                      <div>Server response: <strong className="text-teal-300">{rttText}</strong></div>
                     </div>
                   </div>
                 </div>
@@ -434,7 +470,7 @@ export function OpenAiAuditModal({
                           <CheckCircle2 className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
                           <div>
                             <strong className="text-white font-bold block">3. Broken Internal Links & Indexability Clearance:</strong>
-                            <span>Scan all 28 site routes for 404 response errors, ensure self-referencing canonical tags, and replace generic anchor text ('click here') with keyword-descriptive links.</span>
+                            <span>Scan all of the site's crawled routes for 404 response errors, ensure self-referencing canonical tags, and replace generic anchor text ('click here') with keyword-descriptive links.</span>
                           </div>
                         </div>
                       </div>
@@ -476,7 +512,7 @@ export function OpenAiAuditModal({
                           <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
                           <div>
                             <strong className="text-white font-bold block">1. Schema.org JSON-LD Contextual Metadata:</strong>
-                            <span>Embed validated JSON-LD script blocks: Event & Organization schema for Home, ContactPage for /contact-us, AboutPage for /about-expo, with APEDA & Namo Gange Trust publisher authority.</span>
+                            <span>Embed validated JSON-LD script blocks: Event & Organization schema for Home, ContactPage for /contact, AboutPage for /about, with APEDA & Namo Gange Trust publisher authority.</span>
                           </div>
                         </div>
                         <div className="flex items-start gap-2">
@@ -615,7 +651,7 @@ export function OpenAiAuditModal({
                     <CheckCircle2 className="mx-auto h-7 w-7 text-emerald-400" />
                     <h5 className="text-[13.5px] font-bold text-white">No Issues Found for this Priority Filter</h5>
                     <p className="text-[11.5px] text-slate-300">
-                      All inspected metrics for route <strong>{page?.path}</strong> meet 100% technical SEO standards.
+                      No <strong>{priorityFilter}</strong> priority findings came back for route <strong>{page?.path}</strong> in this audit run.
                     </p>
                   </div>
                 )}
