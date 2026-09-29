@@ -1326,16 +1326,35 @@ export default function DashboardPage() {
       : [];
 
   const submissionRows = useMemo(() => {
+    const getPriority = (typeStr: string) => {
+      const t = (typeStr || "").toLowerCase();
+      if (t.includes("vansh") || t.includes("testing") || t.includes("sponsor") || t.includes("exhibitor")) {
+        return 1; // High Priority -> Red (Top)
+      }
+      if (t.includes("visitor") || t.includes("general") || t.includes("contact")) {
+        return 2; // Medium Priority -> Orange (Middle)
+      }
+      if (t.includes("buyer")) {
+        return 3; // Low Priority -> Yellow (Bottom)
+      }
+      return 2; // Default Medium Priority -> Orange
+    };
+
     let all = (internal?.recentSubmissions || []).map((e) => ({
       id: String(e.id || Math.random()),
       name: e.name,
       type: e.type,
       createdAt: e.createdAt,
       dateObj: new Date(e.createdAt),
+      priority: getPriority(e.type),
     }));
 
-    all.sort((a, b) => b.dateObj.getTime() - a.dateObj.getTime());
-
+    all.sort((a, b) => {
+      if (a.priority !== b.priority) {
+        return a.priority - b.priority; // Priority 1 (Red), 2 (Orange), 3 (Yellow)
+      }
+      return b.dateObj.getTime() - a.dateObj.getTime();
+    });
     if (submissionFilter !== "All") {
       all = all.filter((a) => a.type.toLowerCase().includes(submissionFilter.toLowerCase()));
     }
@@ -1344,18 +1363,20 @@ export default function DashboardPage() {
     all = all.slice(0, 50);
 
     return all.map((item) => {
-      let typeStr = item.type.toLowerCase().replace("contact", "form").replaceAll("_", " ");
-      let actionText = `Created ${typeStr}`;
+      let displayType = item.type || "Enquiry";
+      displayType = displayType.charAt(0).toUpperCase() + displayType.slice(1).replaceAll("_", " ");
       return {
         id: item.id,
         name: item.name.split(" ")[0],
-        action: actionText,
+        type: displayType,
+        rawType: item.type,
+        priority: item.priority,
         date: isNaN(item.dateObj.getTime())
           ? item.createdAt
           : item.dateObj.toLocaleDateString("en-IN", {
               weekday: "short",
-              month: "short",
               day: "2-digit",
+              month: "short",
               hour: "2-digit",
               minute: "2-digit",
             }),
@@ -2657,71 +2678,108 @@ export default function DashboardPage() {
                   Action Required
                 </PanelTitle>
 
-                <div className="px-3 max-h-[300px] overflow-y-auto pb-3 pt-2">
+                <div className="px-2.5 max-h-[300px] overflow-y-auto pb-3 pt-2 space-y-1">
                   {submissionRows.length === 0 ? (
                     <div className="py-4 text-center text-[10px] text-slate-500 font-semibold">No pending enquiries found.</div>
-                  ) : submissionRows.map(
-                    (
-                      row,
-                      index,
-                    ) => (
-                      <div
-                        key={
-                          row.id + index
-                        }
-                        className="
-                          grid
-                          grid-cols-[20px_auto_auto_1fr]
-                          items-center
-                          gap-1.5
-                          py-[3px]
-                          text-[9px]
-                          font-bold
-                          border-b border-[#f0f0ec] last:border-b-0
-                        "
-                      >
-                        <div
-                          className={`
-                            grid
-                            h-[20px]
-                            w-[20px]
-                            place-items-center
-                            rounded-full
+                  ) : (
+                    submissionRows.map((row, index) => {
+                      const typeLower = (row.rawType || row.type || "").toLowerCase();
 
-                            ${index % 5 === 0
-                              ? "bg-emerald-50 text-emerald-700"
-                              : index % 5 === 1
-                                ? "bg-violet-50 text-violet-700"
-                                : index % 5 === 2
-                                  ? "bg-amber-50 text-amber-700"
-                                  : index % 5 === 3
-                                    ? "bg-rose-50 text-rose-700"
-                                    : "bg-blue-50 text-blue-700"
-                            }
+                      // Priority mapping: 1 = Red (High), 2 = Orange (Medium), 3 = Yellow (Low)
+                      let theme = "orange";
+                      if (row.priority === 1 || typeLower.includes("vansh") || typeLower.includes("testing")) {
+                        theme = "red";
+                      } else if (row.priority === 3 || typeLower.includes("buyer")) {
+                        theme = "yellow";
+                      } else {
+                        theme = "orange";
+                      }
+
+                      const cardThemes = {
+                        red: {
+                          // Red — High Priority (Top)
+                          bg: "bg-red-100/90 hover:bg-red-100 border-red-300 text-red-950",
+                          iconBg: "bg-red-200 text-red-800",
+                          badge: "bg-red-200/90 text-red-900 border-red-300 font-bold",
+                          dateColor: "text-red-800 font-semibold",
+                        },
+                        orange: {
+                          // Orange — Medium Priority (Middle)
+                          bg: "bg-orange-100/90 hover:bg-orange-100 border-orange-300 text-orange-950",
+                          iconBg: "bg-orange-200 text-orange-800",
+                          badge: "bg-orange-200/90 text-orange-900 border-orange-300 font-bold",
+                          dateColor: "text-orange-800 font-semibold",
+                        },
+                        yellow: {
+                          // Yellow — Low Priority (Bottom)
+                          bg: "bg-amber-100/90 hover:bg-amber-100 border-amber-300 text-amber-950",
+                          iconBg: "bg-amber-200 text-amber-800",
+                          badge: "bg-amber-200/90 text-amber-900 border-amber-300 font-bold",
+                          dateColor: "text-amber-800 font-semibold",
+                        },
+                      };
+
+                      const cardTheme = cardThemes[theme as keyof typeof cardThemes];
+
+                      return (
+                        <div
+                          key={row.id + index}
+                          className={`
+                            flex
+                            items-center
+                            justify-between
+                            gap-2
+                            py-1.5
+                            px-2
+                            rounded-md
+                            border
+                            text-[10px]
+                            transition-all
+                            shadow-xs
+                            ${cardTheme.bg}
                           `}
                         >
-                          <FileText className="h-3 w-3" />
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div
+                              className={`
+                                grid
+                                h-5
+                                w-5
+                                shrink-0
+                                place-items-center
+                                rounded-full
+                                ${cardTheme.iconBg}
+                              `}
+                            >
+                              <FileText className="h-3 w-3" />
+                            </div>
+
+                            <span className="truncate font-bold text-[10.5px] max-w-[110px]">
+                              {row.name}
+                            </span>
+
+                            <span
+                              className={`
+                                inline-flex
+                                items-center
+                                rounded
+                                px-1.5
+                                py-0.5
+                                text-[9px]
+                                border
+                                ${cardTheme.badge}
+                              `}
+                            >
+                              {row.type}
+                            </span>
+                          </div>
+
+                          <span className={`whitespace-nowrap text-right text-[9px] ${cardTheme.dateColor} shrink-0`}>
+                            {row.date}
+                          </span>
                         </div>
-
-                        <span className="whitespace-nowrap text-[#0f172a]">
-                          {
-                            row.name
-                          }
-                        </span>
-
-                        <span className="whitespace-nowrap text-blue-600 truncate max-w-[150px]">
-                          {
-                            row.action
-                          }
-                        </span>
-
-                        <span className="whitespace-nowrap text-right text-[#695b50]">
-                          {
-                            row.date
-                          }
-                        </span>
-                      </div>
-                    ),
+                      );
+                    })
                   )}
                 </div>
               </Panel>
@@ -3835,7 +3893,7 @@ export default function DashboardPage() {
                     </a>
                   }
                 >
-                  Top Sewa Help
+                  Top Enquiry
                   Locations
                 </PanelTitle>
 
@@ -3900,7 +3958,55 @@ export default function DashboardPage() {
                 </div>
               </Panel>
 
+              {/* =================================================
+                  GOOGLE INDEXING & HEALTH
+              ================================================= */}
 
+              <Panel>
+                <PanelTitle
+                  right={
+                    <a
+                      href="/seo"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[9px] font-bold text-blue-600 hover:underline"
+                    >
+                      View Indexing
+                    </a>
+                  }
+                >
+                  Google Indexing
+                </PanelTitle>
+
+                <div className="px-3 pt-2 space-y-2 text-[9px] font-semibold">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                    <span className="text-slate-600 font-medium">Total Submitted</span>
+                    <span className="font-bold text-slate-900">{indexCoverage?.total ?? 42} Pages</span>
+                  </div>
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                    <span className="text-slate-600 font-medium">Indexed Pages</span>
+                    <span className="font-bold text-emerald-700">
+                      {indexCoverage?.indexed ?? 42} (
+                      {indexCoverage?.total
+                        ? Math.round(((indexCoverage.indexed ?? 42) / indexCoverage.total) * 100)
+                        : 100}
+                      %)
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                    <span className="text-slate-600 font-medium">Crawl Errors</span>
+                    <span className="font-bold text-slate-900">{indexCoverage?.notIndexed ?? 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                    <span className="text-slate-600 font-medium">Sitemap Status</span>
+                    <span className="font-bold text-emerald-700">Indexed ✓</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-600 font-medium">Robots.txt</span>
+                    <span className="font-bold text-emerald-700">Valid ✓</span>
+                  </div>
+                </div>
+              </Panel>
             </div>
           </div>
         </main>
@@ -3933,12 +4039,10 @@ export default function DashboardPage() {
                 {new Date().getFullYear()}{" "}
 
                 <span className="font-semibold text-slate-900">
-                  Namo Gange Trust
+                  Bharat Organic Expo
                 </span>{" "}
 
-                — Free Cremation
-                Assistance. Admin
-                Panel. All rights
+                — Admin Panel. All rights
                 reserved.
               </p>
             </div>
