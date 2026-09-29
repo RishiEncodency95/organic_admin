@@ -8,7 +8,7 @@ const TEMPLATE_OPTIONS = [
   "About Expo",
   "Advisory Board Members",
   "Nominate Advisory Board Member",
-  "Support Services Helpdesk",
+  // "Support Services Helpdesk",
   "Blogs & News",
   "Participate as Exhibitor",
   "Exhibition Categories",
