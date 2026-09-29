@@ -21,11 +21,6 @@ export interface LiveDashboardOverview {
       growth: { posts: number | null; enquiriesMtd: number | null };
       recentSubmissions: Array<{ id: string; name: string; type: string; city?: string; createdAt: string }>;
       topLocations: Array<{ city: string; count: number }>;
-      donations: { total: number; mtd: number; totalAmount: number };
-      volunteers: { total: number; active: number };
-      cases: { total: number; open: number };
-      newsletter: { total: number; mtd: number };
-      campaigns: { total: number; active: number };
       actionRequired?: {
         exhibitor: number;
         buyer: number;
@@ -167,12 +162,7 @@ export const dashboardApi = {
             { city: "Bengaluru", count: 44 },
             { city: "Dubai (UAE)", count: 28 },
             { city: "Singapore", count: 18 }
-          ],
-          donations: { total: 36, mtd: 12, totalAmount: 450000 },
-          volunteers: { total: 48, active: 42 },
-          cases: { total: 125, open: 18 },
-          newsletter: { total: 342, mtd: 45 },
-          campaigns: { total: 8, active: 4 }
+          ]
         }
       },
       analytics: {

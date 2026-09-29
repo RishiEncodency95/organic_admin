@@ -3894,7 +3894,7 @@ export default function DashboardPage() {
                     </a>
                   }
                 >
-                  Top Sewa Help
+                  Top Enquiry
                   Locations
                 </PanelTitle>
 
@@ -3986,7 +3986,13 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                     <span className="text-slate-600 font-medium">Indexed Pages</span>
-                    <span className="font-bold text-emerald-700">{indexCoverage?.indexed ?? 42} (100%)</span>
+                    <span className="font-bold text-emerald-700">
+                      {indexCoverage?.indexed ?? 42} (
+                      {indexCoverage?.total
+                        ? Math.round(((indexCoverage.indexed ?? 42) / indexCoverage.total) * 100)
+                        : 100}
+                      %)
+                    </span>
                   </div>
                   <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                     <span className="text-slate-600 font-medium">Crawl Errors</span>
@@ -4034,12 +4040,10 @@ export default function DashboardPage() {
                 {new Date().getFullYear()}{" "}
 
                 <span className="font-semibold text-slate-900">
-                  Namo Gange Trust
+                  Bharat Organic Expo
                 </span>{" "}
 
-                — Free Cremation
-                Assistance. Admin
-                Panel. All rights
+                — Admin Panel. All rights
                 reserved.
               </p>
             </div>
