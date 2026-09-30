@@ -248,59 +248,72 @@ export default function DropdownListsManager() {
   const firstRow = (currentPage - 1) * PAGE_SIZE;
   const pageRows = visibleOptions.slice(firstRow, firstRow + PAGE_SIZE);
 
-  // The list picker, filter and list details share the first row of the list card.
-  const picker = (
-    <>
-        <span className="text-xs font-semibold text-text-secondary">Dropdown list</span>
-        <select
-          className={`${compactInput} w-auto min-w-[260px] max-w-md flex-1`}
-          value={selectedKey ?? ""}
-          disabled={listsLoading}
-          onChange={(e) => selectList(e.target.value)}
-        >
-          {listsLoading && <option value="">Loading…</option>}
-          {groupedLists.map(([group, items]) => (
-            <optgroup key={group} label={group}>
-              {items.map((list) => (
-                <option key={list.key} value={list.key}>
-                  {list.name} ({list.active}/{list.total})
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
-        <div className="relative w-full sm:w-56">
+  // Left panel: every list, grouped. It scrolls on its own so the page itself never has to.
+  const listPanel = (
+    <aside className="flex flex-col overflow-hidden rounded-lg border border-surface-border bg-surface-card shadow-sm lg:h-[calc(100vh-190px)]">
+      <div className="border-b border-surface-border px-2.5 py-2">
+        <div className="relative">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
           <input
             className={`${compactInput} pl-8`}
-            placeholder="Filter lists or forms…"
+            placeholder="Search lists or forms…"
             value={listSearch}
             onChange={(e) => setListSearch(e.target.value)}
           />
         </div>
-        <span className="ml-auto text-[11px] text-text-muted">
+        <p className="mt-1 text-[11px] text-text-muted">
           {listSearch.trim() ? `${groupedLists.reduce((n, [, items]) => n + items.length, 0)} of ` : ""}
-          {lists.length} lists
-        </span>
-    </>
+          {lists.length} dropdown lists
+        </p>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto py-1">
+        {listsLoading ? (
+          <p className="px-3 py-2 text-sm text-text-secondary">Loading…</p>
+        ) : (
+          groupedLists.map(([group, items]) => (
+            <div key={group}>
+              <p className="px-3 pb-0.5 pt-2 text-[10px] font-semibold uppercase tracking-wide text-text-muted">{group}</p>
+              {items.map((list) => (
+                <button
+                  key={list.key}
+                  type="button"
+                  onClick={() => selectList(list.key)}
+                  className={`flex w-full items-center justify-between gap-2 px-3 py-1 text-left text-[13px] transition-colors ${
+                    list.key === selectedKey
+                      ? "bg-accent/10 font-semibold text-accent"
+                      : "text-text-primary hover:bg-surface-sunken"
+                  }`}
+                >
+                  <span className="truncate">{list.name}</span>
+                  <span className="shrink-0 text-[11px] text-text-muted">
+                    {list.active}/{list.total}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ))
+        )}
+      </div>
+    </aside>
   );
 
   return (
     <div className="space-y-2">
+      <div className="grid items-start gap-2 lg:grid-cols-[230px_1fr]">
+      {listPanel}
+
       {/* SELECTED LIST */}
       <section className="min-w-0 space-y-2">
         {!selected ? (
-          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-surface-border bg-surface-card px-3 py-2 shadow-sm">
-            {picker}
+          <div className="rounded-lg border border-surface-border bg-surface-card p-6 text-center text-sm text-text-secondary">
+            {listsLoading ? "Loading…" : "Choose a dropdown list on the left."}
           </div>
         ) : (
           <>
             <div className="rounded-lg border border-surface-border bg-surface-card px-3 py-2 shadow-sm">
-              {/* ROW 1: list picker + filter, then key, counts and where the list is used */}
-              <div className="flex flex-wrap items-center gap-2">
-                {picker}
-              </div>
-              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+              {/* ROW 1: name, key, counts and where the list is used */}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <h2 className="text-sm font-semibold text-text-primary">{selected.name}</h2>
                 <span className="font-mono text-[11px] text-text-muted">{selected.key}</span>
                 <span className="rounded-full bg-surface-sunken px-2 py-0.5 text-[11px] text-text-secondary">
                   {selected.active} active · {selected.total} total
@@ -590,6 +603,7 @@ export default function DropdownListsManager() {
           </>
         )}
       </section>
+      </div>
 
       <ConfirmDialog
         isOpen={pendingDelete !== null}
