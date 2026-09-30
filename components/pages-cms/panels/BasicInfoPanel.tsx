@@ -45,6 +45,7 @@ const TEMPLATE_OPTIONS = [
   "Delegates Login Portal",
   "User Login Portal",
   "Our Services",
+  "Careers",
   "Contact Us",
 ];
 

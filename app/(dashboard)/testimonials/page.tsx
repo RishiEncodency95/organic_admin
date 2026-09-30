@@ -283,6 +283,7 @@ export interface Testimonial {
   author: string;
   color: string;
   logo?: string;
+  logoAlt?: string;
   logoText?: string;
 }
 
@@ -386,6 +387,7 @@ export default function TestimonialsManagementPage() {
   const [formStatus, setFormStatus] = useState<TestimonialStatus>("Published");
   const [formColor, setFormColor] = useState("#1b5e20");
   const [formLogo, setFormLogo] = useState("");
+  const [formLogoAlt, setFormLogoAlt] = useState("");
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -415,6 +417,7 @@ export default function TestimonialsManagementPage() {
           author: t.author || getAdminDisplayName(),
           color: t.color || "#1b5e20",
           logo: t.logo || "",
+          logoAlt: t.logoAlt || "",
           logoText: t.logoText || "",
         }));
         setTestimonials(mapped);
@@ -448,6 +451,7 @@ export default function TestimonialsManagementPage() {
           quote: t.message,
           color: t.color || "#1b5e20",
           logo: t.logo || "",
+          logoAlt: t.logoAlt || "",
           logoText: t.logoText || "",
           status: t.status,
           author: t.author || getAdminDisplayName(),
@@ -546,6 +550,7 @@ export default function TestimonialsManagementPage() {
     setFormStatus("Published");
     setFormColor("#1b5e20");
     setFormLogo("");
+    setFormLogoAlt("");
     setIsAddModalOpen(true);
   };
 
@@ -560,6 +565,7 @@ export default function TestimonialsManagementPage() {
     setFormStatus(item.status);
     setFormColor(item.color || "#1b5e20");
     setFormLogo(item.logo || "");
+    setFormLogoAlt(item.logoAlt || "");
     setIsEditModalOpen(true);
   };
 
@@ -649,6 +655,7 @@ export default function TestimonialsManagementPage() {
               status: formStatus,
               color: formColor,
               logo: formLogo.trim(),
+              logoAlt: formLogo.trim() ? formLogoAlt.trim() : "",
               author: adminName,
               date: nowFormatted,
             }
@@ -672,6 +679,7 @@ export default function TestimonialsManagementPage() {
         author: adminName,
         color: formColor,
         logo: formLogo.trim(),
+        logoAlt: formLogo.trim() ? formLogoAlt.trim() : "",
       };
 
       updatedList = [newTestimonial, ...testimonials];
@@ -1744,7 +1752,10 @@ export default function TestimonialsManagementPage() {
                     {formLogo && (
                       <button
                         type="button"
-                        onClick={() => setFormLogo("")}
+                        onClick={() => {
+                          setFormLogo("");
+                          setFormLogoAlt("");
+                        }}
                         className="text-[8.5px] font-bold text-red-600 hover:underline cursor-pointer"
                       >
                         ✕ Remove (Use Initials)
@@ -1780,8 +1791,22 @@ export default function TestimonialsManagementPage() {
                         className="w-full h-[30px] rounded-[4px] border border-[#cbd5e1] px-2 text-[10px] text-slate-700 placeholder:text-slate-400 outline-none focus:border-[#0284c7]"
                       />
                     </div>
+                    <div>
+                      <span className="block mb-1 text-[9px] font-semibold text-[#1e293b]">Image Alt Text</span>
+                      <input
+                        type="text"
+                        value={formLogoAlt}
+                        onChange={(e) => setFormLogoAlt(e.target.value)}
+                        disabled={!formLogo}
+                        placeholder={formLogo ? `e.g. ${formName.trim() || "Reviewer"} photo` : "Upload an image first to add alt text"}
+                        maxLength={120}
+                        className="w-full h-[30px] rounded-[4px] border border-[#cbd5e1] px-2 text-[10px] text-slate-700 placeholder:text-slate-400 outline-none focus:border-[#0284c7] disabled:bg-slate-50 disabled:cursor-not-allowed"
+                      />
+                    </div>
                     <p className="text-[8px] text-slate-500 leading-tight">
-                      Leave blank to auto-use First & Last name initials ({getInitials(formName) || "AK"}).
+                      {formLogo
+                        ? "Alt text describes the image for SEO & screen readers. Leave blank to use the reviewer name."
+                        : `Leave blank to auto-use First & Last name initials (${getInitials(formName) || "AK"}).`}
                     </p>
                   </div>
                 </div>

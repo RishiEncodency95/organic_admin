@@ -1,6 +1,9 @@
 import { api } from "@/lib/api";
 import type { SectionsDraft, SetSectionsDraft } from "./types";
 
+// Old placeholder photo that ended up in saved pillar items; treat it as "no image" so the site shows its static default.
+const isPlaceholderImage = (img: unknown) => typeof img === "string" && img.includes("moksha-sewa/assets/km.jpg");
+
 export function syncAboutSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft): void {
   api.get("/website/abouts/about/about-hero")
     .then((res: any) => {
@@ -56,6 +59,38 @@ export function syncAboutSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft)
       }
     })
     .catch(() => {});
+
+  api.get("/website/abouts/about/four-pillars")
+    .then((res: any) => {
+      const data = res?.data?.data || res?.data || res;
+      if (data) {
+        setSectionsDraft((prev) =>
+          prev.map((sec) => {
+            if (sec.key === "four-pillars" || sec.name === "FourPillars") {
+              const pillars = Array.isArray(data.pillars) ? data.pillars : [];
+              return {
+                ...sec,
+                enabled: typeof data.enabled === "boolean" ? data.enabled : sec.enabled,
+                eyebrow: data.eyebrow || sec.eyebrow,
+                title: data.title || sec.title,
+                subtitle: data.subtitle || sec.subtitle,
+                items: pillars.length
+                  ? pillars.map((p: any) => ({
+                      title: Array.isArray(p.title) ? p.title.join(" ") : p.title || "",
+                      description: p.desc || "",
+                      image: isPlaceholderImage(p.img) ? "" : p.img || "",
+                      imageAlt: p.imgAlt || "",
+                      icon: p.icon || "",
+                    }))
+                  : (sec.items || []).map((it: any) => ({ imageAlt: "", ...it })),
+              };
+            }
+            return sec;
+          })
+        );
+      }
+    })
+    .catch(() => {});
 }
 
 export async function saveAboutSections(sectionsDraft: SectionsDraft): Promise<void> {
@@ -88,6 +123,24 @@ export async function saveAboutSections(sectionsDraft: SectionsDraft): Promise<v
         { boldLead: "", text: homeAboutSec.secondaryDescription || "" },
         { boldLead: "", text: homeAboutSec.bottomStatement || "" },
       ],
+    });
+  }
+
+  const pillarsSec = sectionsDraft.find((s) => s.key === "four-pillars" || s.name === "FourPillars");
+  if (pillarsSec) {
+    const items = Array.isArray(pillarsSec.items) ? pillarsSec.items : [];
+    await api.put("/website/abouts/about/four-pillars", {
+      enabled: pillarsSec.enabled !== false,
+      eyebrow: pillarsSec.eyebrow || "",
+      title: pillarsSec.title || "",
+      subtitle: pillarsSec.subtitle || "",
+      pillars: items.map((it: any) => ({
+        title: it.title || "",
+        desc: it.description || "",
+        img: isPlaceholderImage(it.image) ? "" : it.image || "",
+        imgAlt: it.imageAlt || "",
+        icon: it.icon || "",
+      })),
     });
   }
 }

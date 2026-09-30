@@ -20,12 +20,14 @@ export function mergeSectionWithSavedData(
   };
   if (fallbackItem.key === "awards-hero" || merged.key === "awards-hero") {
     delete merged.shortDescription;
+    if (!merged.imageAlt) merged.imageAlt = fallbackItem.imageAlt;
     if (!merged.date || merged.date.includes("T") || String(merged.date).trim().length < 5) {
       merged.date = "19 - 21 February 2027";
     }
   }
   if (fallbackItem.key === "awards-nomination-hero" || merged.key === "awards-nomination-hero") {
-    delete merged.eyebrow;
+    if (merged.eyebrow === undefined) merged.eyebrow = fallbackItem.eyebrow;
+    if (!merged.imageAlt) merged.imageAlt = fallbackItem.imageAlt;
     if (!merged.date || merged.date.includes("T") || String(merged.date).trim().length < 5) {
       merged.date = "19 - 21 February 2027";
     }
@@ -87,11 +89,57 @@ export function mergeSectionWithSavedData(
     delete merged.subtitle;
     delete merged.items;
   }
+  if (fallbackItem.key === "buyer-seller-meet" || merged.key === "buyer-seller-meet") {
+    // Why Visit's Buyer-Seller Meet shows its date/venue as plain text; clear out
+    // values left behind by the old datetime picker.
+    if (fallbackItem.date !== undefined && (!merged.date || String(merged.date).includes("T"))) {
+      merged.date = fallbackItem.date;
+    }
+    if (fallbackItem.location !== undefined && !merged.location) {
+      merged.location = fallbackItem.location;
+    }
+    // The homepage Buyer-Seller Meet (no date field) no longer has a secondary button.
+    if (fallbackItem.date === undefined) {
+      delete merged.secondaryButtonLabel;
+      delete merged.secondaryButtonHref;
+    }
+  }
+  if (fallbackItem.key === "buyer-seller-meet-hero" || merged.key === "buyer-seller-meet-hero") {
+    // Title Primary + Title Secondary are now one H1 "title" field.
+    if (merged.titlePrimary || merged.titleSecondary) {
+      const combined = [merged.titlePrimary, merged.titleSecondary].filter(Boolean).join(" ").trim();
+      if (combined && (!savedItem.title || savedItem.title === fallbackItem.title)) merged.title = combined;
+    }
+    delete merged.titlePrimary;
+    delete merged.titleSecondary;
+    delete merged.logoImage;
+    // Drop the old placeholder photo that was never a real background.
+    if (typeof merged.image === "string" && merged.image.includes("moksha-sewa/assets/km.jpg")) merged.image = "";
+    if (!merged.date) merged.date = fallbackItem.date;
+    if (!merged.location) merged.location = fallbackItem.location;
+    if (!merged.imageAlt) merged.imageAlt = fallbackItem.imageAlt;
+  }
+  if (fallbackItem.key === "msme-director-message" || merged.key === "msme-director-message") {
+    // The right-hand media is a video now (upload / YouTube / Instagram), not images.
+    delete merged.image;
+    delete merged.imageAlt;
+    delete merged.logoImage;
+    delete merged.secondaryImage;
+    if (!merged.messageTitle) merged.messageTitle = fallbackItem.messageTitle;
+    if (merged.videoUrl === undefined) merged.videoUrl = fallbackItem.videoUrl;
+  }
   if (fallbackItem.key === "audience-strip" || merged.key === "audience-strip") {
     delete merged.title;
   }
   if (fallbackItem.key === "introduction-section" || merged.key === "introduction-section") {
     delete merged.items;
+    // Title Primary + Title Secondary are shown as one H1 "title" field now.
+    if (merged.titlePrimary || merged.titleSecondary) {
+      const combined = [merged.titlePrimary, merged.titleSecondary].filter(Boolean).join(" ").trim();
+      if (combined && (!savedItem.title || savedItem.title === fallbackItem.title)) merged.title = combined;
+    }
+    delete merged.titlePrimary;
+    delete merged.titleSecondary;
     if (!merged.description2) {
       merged.description2 =
         "Designed to foster business growth, knowledge sharing, innovation, and international collaboration, Bharat Organic Expo serves as the perfect destination for discovering new products, building strategic partnerships, expanding global markets, and promoting a sustainable future.";
@@ -129,7 +177,7 @@ export function mergeSectionWithSavedData(
     if (!merged.buttonLabel) merged.buttonLabel = "BOOK A STALL";
     if (!merged.buttonHref) merged.buttonHref = "/registration/book-a-stand";
     if (!merged.secondaryButtonLabel) merged.secondaryButtonLabel = "Download Brochure";
-    if (!merged.secondaryButtonHref) merged.secondaryButtonHref = "/download/invited card.pdf";
+    if (!merged.secondaryButtonHref) merged.secondaryButtonHref = "/boe.pdf";
     if (!merged.tertiaryButtonLabel) merged.tertiaryButtonLabel = "Why Exhibit?";
     if (!merged.tertiaryButtonHref) merged.tertiaryButtonHref = "/why-exhibit";
   }

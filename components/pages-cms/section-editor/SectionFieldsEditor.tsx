@@ -231,7 +231,7 @@ export function SectionFieldsEditor({
         return false;
       }
       if (
-        (section.key === "why-exhibit-hero" || section.name === "HeroSection") &&
+        section.key === "why-exhibit-hero" &&
         (key === "date" || key === "location")
       ) {
         return false;
@@ -287,12 +287,6 @@ export function SectionFieldsEditor({
       if (
         (section.key === "awards-process" || section.name === "Our Evaluation Process") &&
         (key === "description" || key === "shortDescription")
-      ) {
-        return false;
-      }
-      if (
-        (section.key === "awards-nomination-hero" || section.name === "Awards Nomination Form Hero") &&
-        key === "eyebrow"
       ) {
         return false;
       }
@@ -354,6 +348,9 @@ export function SectionFieldsEditor({
           section.key !== "awards-hero" &&
           section.key !== "awards-nomination-hero" &&
           section.key !== "msme-pms-banner" &&
+          section.key !== "buyer-seller-meet" &&
+          section.key !== "buyer-seller-meet-hero" &&
+          key !== "timerTitle" &&
           /date|time/i.test(key) &&
           typeof value === "string";
         const fieldLimit = isLong ? 450 : 140;
@@ -370,7 +367,55 @@ export function SectionFieldsEditor({
                     ? "Background Image (Upload)"
                     : (section.key === "msme-pms-banner" || section.name === "MsmePmsBanner") && key === "imageAlt"
                       ? "Background Image Alt Text"
-                      : humanizeKey(key);
+                      : (section.key === "careers-hero" || section.key === "careers-bottom-banner") && key === "image"
+                        ? "Background Image (Upload)"
+                      : (section.key === "careers-hero" || section.key === "careers-bottom-banner") && key === "imageAlt"
+                        ? "Background Image Alt Text"
+                      : section.key === "careers-hero" && key === "title"
+                        ? "H1 Title"
+                      : section.key === "careers-hero" && key === "badgeText"
+                        ? "Green Badge Text (bottom right)"
+                      : section.key === "careers-openings" && key === "emptyTitle"
+                        ? "No Openings: Title"
+                      : section.key === "careers-openings" && key === "emptyDescription"
+                        ? "No Openings: Description"
+                      : section.key === "careers-openings" && key === "emptyNote"
+                        ? "No Openings: Note"
+                      : section.key === "introduction-section" && key === "title"
+                        ? "H1 Title"
+                      : section.key === "awards-hero" && key === "title"
+                        ? "H1 Title"
+                      : section.key === "awards-hero" && key === "image"
+                        ? "Background Image (Upload)"
+                      : section.key === "awards-hero" && key === "imageAlt"
+                        ? "Background Image Alt Text"
+                      : section.key === "awards-nomination-hero" && key === "title"
+                        ? "H1 Title"
+                      : section.key === "awards-nomination-hero" && key === "image"
+                        ? "Background Image (Upload)"
+                      : section.key === "awards-nomination-hero" && key === "imageAlt"
+                        ? "Background Image Alt Text"
+                      : section.key === "buyer-seller-meet-hero" && key === "title"
+                        ? "H1 Title"
+                      : section.key === "buyer-seller-meet-hero" && key === "image"
+                        ? "Background Image (Upload)"
+                      : section.key === "buyer-seller-meet-hero" && key === "imageAlt"
+                        ? "Background Image Alt Text"
+                      : section.key === "buyer-seller-meet-hero" && key === "date"
+                        ? "Event Date"
+                      : section.key === "buyer-seller-meet-hero" && key === "location"
+                        ? "Event Location"
+                      : section.key === "msme-director-message" && key === "videoUrl"
+                        ? "Video (Upload / YouTube Link / Instagram Link)"
+                      : section.key === "msme-director-message" && key === "thumbnailImage"
+                        ? "Video Thumbnail (Custom Cover Image - optional)"
+                      : section.key === "msme-director-message" && key === "thumbnailAlt"
+                        ? "Video Thumbnail Alt Text"
+                      : section.key === "terms-page-hero" && key === "image"
+                        ? "Background Image (Upload)"
+                        : section.key === "terms-page-hero" && key === "imageAlt"
+                          ? "Background Image Alt Text"
+                          : humanizeKey(key);
 
         return (
           <div

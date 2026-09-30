@@ -199,6 +199,8 @@ export const defaultTermsAndConditionsSections: LandingSectionContent[] = [
     subtitle: "Bharat Organic Expo 2027",
     description: "Please read these terms carefully before proceeding.",
     buttonLabel: "Print Terms & Conditions",
+    image: "",
+    imageAlt: "Terms & Conditions - Bharat Organic Expo 2027",
   },
   {
     key: "terms-page-blocks",
