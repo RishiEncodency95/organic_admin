@@ -8,5 +8,8 @@ export { syncGallerySectionsFromLiveApi, saveGallerySections } from "./gallery";
 export { syncAboutSectionsFromLiveApi, saveAboutSections } from "./about";
 export { syncAdvisorySectionsFromLiveApi, saveAdvisorySections } from "./advisory";
 export { syncSponsorshipSectionsFromLiveApi, saveSponsorshipSections } from "./sponsorship";
+export { syncTermsSectionsFromLiveApi, saveTermsSections } from "./terms";
+export { syncMsmeSectionsFromLiveApi, saveMsmeSections } from "./msme";
+export { syncBuyerSellerMeetSectionsFromLiveApi, saveBuyerSellerMeetSections } from "./buyerSellerMeet";
 export { syncPageSeoFromLiveApi, savePageCore } from "./pageSeo";
 export type { SectionsDraft, SetSectionsDraft } from "./types";

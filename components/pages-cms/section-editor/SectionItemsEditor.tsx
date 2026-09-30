@@ -331,6 +331,7 @@ export function SectionItemsEditor({
                 !(sectionId === "awards-categories" && (key === "icon" || key === "description" || key === "shortDescription" || key === "cardBg" || key === "points" || key === "items")) &&
                 !(sectionId === "awards-grand-awards" && (key === "icon" || key === "description" || key === "shortDescription" || key === "label")) &&
                 !(sectionId === "awards-process" && key === "icon") &&
+                !(sectionId === "four-pillars" && key === "subtitle") &&
                 !(sectionId === "gallery-counters" && (key === "icon" || key === "iconKey")) &&
                 (typeof value === "string" ||
                   typeof value === "number" ||

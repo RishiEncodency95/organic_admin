@@ -18,7 +18,6 @@ import {
   Sun,
   Moon,
   Sunrise,
-  Search,
   AlertTriangle,
   HeartHandshake,
   Mail,
@@ -655,16 +654,6 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
               </div>
             </motion.div>
           )}
-
-          {/* SEARCH BOX */}
-          <div className="hidden lg:flex items-center relative ml-4 xl:ml-8">
-            <Search className="absolute left-3 text-slate-400 pointer-events-none" size={14} />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="pl-8 pr-3 py-1 w-44 xl:w-56 bg-white border-2 border-slate-300 shadow-xs rounded-full text-xs font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#23471d] focus:ring-4 focus:ring-[#23471d]/10 transition-all focus:w-52 xl:focus:w-64"
-            />
-          </div>
         </div>
 
         {/* CENTER – DOMAIN & HOSTING EXPIRE COUNTDOWN TIMERS */}
