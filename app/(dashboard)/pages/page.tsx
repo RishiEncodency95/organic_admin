@@ -287,7 +287,9 @@ export default function PagesCmsPage() {
       if (!active) return;
       const raw = settings as unknown as Record<string, any>;
       setRawSettings(raw);
-      const realPages = cmsPagesFromSettings(raw);
+      // Support Services Helpdesk is hidden from the Pages list. It stays in pageDefinitions
+      // (lib/cmsPages.ts) because page IDs come from list position, so removing it would shift every later page's ID.
+      const realPages = cmsPagesFromSettings(raw).filter((p) => p.configKey !== "supportServicesPage");
       setPages(realPages);
       setSelectedPage(realPages[0] ?? null);
       const sections = Object.entries(raw).reduce((count, [key, value]) => {
