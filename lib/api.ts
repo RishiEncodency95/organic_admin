@@ -644,6 +644,12 @@ async function request<T>(path: string, options?: ApiRequestOptions, isRetry = f
     path.includes("/msme") ||
     path.includes("/awards/nominations") ||
     path.includes("/contact-enquiry") ||
+    path.startsWith("/dropdowns") ||
+    path.startsWith("/locations") ||
+    path.startsWith("/crm-") ||
+    path.startsWith("/events/") ||
+    path.startsWith("/stalls/") ||
+    path.startsWith("/stall-rates/") ||
     (isWrite && (path.startsWith("/settings") || path.startsWith("/uploads") || path.startsWith("/website")));
 
   try {

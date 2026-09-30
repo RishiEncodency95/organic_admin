@@ -1,17 +1,6 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import CareerOptionManager from "@/components/add-by-admin/CareerOptionManager";
-
-const TYPES = [{ value: "expected_ctc" as const, label: "Expected CTC (Annual)" }];
-
+// Managed as a tab of the Dropdown Manager now; kept so old links and bookmarks still work.
 export default function ExpectedCtcPage() {
-  return (
-    <CareerOptionManager
-      title="Expected CTC (Annual)"
-      description="Salary ranges candidates can pick as their expected annual CTC on the application form."
-      types={TYPES}
-      valueLabel="Expected CTC"
-      valuePlaceholder="e.g. ₹6 - 8 LPA"
-    />
-  );
+  redirect("/add-by-admin/dropdowns?tab=ctc");
 }
