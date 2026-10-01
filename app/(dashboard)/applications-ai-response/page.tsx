@@ -32,6 +32,29 @@ import {
 } from "lucide-react";
 import Swal from "sweetalert2";
 import typography from "../pages/PagesTypography.module.css";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Suspense } from "react";
+import ApplicationSentModal from "@/components/ApplicationSentModal";
+import CandidateDetailsModal from "@/components/CandidateDetailsModal";
+import ForwardToHRModal from "@/components/ForwardToHRModal";
+
+function ModalHandler() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const modal = searchParams.get("modal");
+
+  const closeModals = () => {
+    router.push("/applications-ai-response");
+  };
+
+  return (
+    <>
+      <ApplicationSentModal isOpen={modal === "submitform"} onClose={closeModals} />
+      <CandidateDetailsModal isOpen={modal === "candidatedetails"} onClose={closeModals} />
+      <ForwardToHRModal isOpen={modal === "forwardtohr"} onClose={closeModals} />
+    </>
+  );
+}
 
 // --- Types ---
 export type AIResultType = "Eligible" | "Partial Match" | "Not Eligible";
@@ -1263,6 +1286,9 @@ export default function ApplicationsAiResponsePage() {
           </div>
         )}
       </div>
+      <Suspense fallback={null}>
+        <ModalHandler />
+      </Suspense>
     </div>
   );
 }
