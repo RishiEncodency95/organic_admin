@@ -85,6 +85,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "Feedback & Reviews", href: "/feedback-reviews", icon: MessageSquareText },
       { label: "Trusted Leaders", href: "/trusted-leaders", icon: Handshake, badge: "NEW" },
       { label: "Advisory Board Members", href: "/advisory-board-members", icon: Users, badge: "NEW" },
+      { label: "Exhibitor Testimonials", href: "/exhibitor-testimonials", icon: MessageSquareText, badge: "NEW" },
       { label: "Testimonials", href: "/testimonials", icon: MessageSquare },
       { label: "Testimonial Videos", href: "/testimonial-videos", icon: Video },
       { label: "FAQs", href: "/faqs", icon: MessageSquare },

@@ -383,6 +383,8 @@ export function SectionFieldsEditor({
                         ? "No Openings: Note"
                       : section.key === "introduction-section" && key === "title"
                         ? "H1 Title"
+                      : (section.key === "about-hero" || section.key === "advisory-hero") && key === "title"
+                        ? "H1 Title"
                       : section.key === "awards-hero" && key === "title"
                         ? "H1 Title"
                       : section.key === "awards-hero" && key === "image"
