@@ -8,7 +8,6 @@ import {
   Briefcase,
   BriefcaseBusiness,
   Building2,
-  CalendarClock,
   DatabaseBackup,
   FileCheck2,
   FileCode,
@@ -18,10 +17,10 @@ import {
   Gauge,
   Handshake,
   History,
-  IndianRupee,
   LayoutDashboard,
   LayoutGrid,
   Link2,
+  ListChecks,
   ListTree,
   LockKeyhole,
   Mail,
@@ -149,8 +148,7 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     title: "Add by Admin",
     items: [
-      { label: "Day Period", href: "/add-by-admin/day-period", icon: CalendarClock },
-      { label: "Expected CTC", href: "/add-by-admin/expected-ctc", icon: IndianRupee },
+      { label: "Dropdown Manager", href: "/add-by-admin/dropdowns", icon: ListChecks, badge: "NEW" },
     ],
   },
 ];

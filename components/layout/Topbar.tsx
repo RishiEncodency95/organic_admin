@@ -547,7 +547,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
       });
 
       if (refreshToken) {
-        await authApi.logout(refreshToken).catch(() => {});
+        await authApi.logout(refreshToken).catch(() => { });
       }
 
       dispatch(logout());
