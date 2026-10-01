@@ -38,8 +38,9 @@ export function syncHomeSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft):
                   ...sec,
                   enabled: data.enabled !== false,
                   eyebrow: data.eyebrow ?? sec.eyebrow,
-                  titlePrimary: data.titlePrimary ?? sec.titlePrimary,
-                  titleSecondary: data.titleSecondary ?? sec.titleSecondary,
+                  title:
+                    [data.titlePrimary, data.titleSecondary].filter(Boolean).join(" ").trim() ||
+                    sec.title,
                   subtitle: data.subtitle ?? sec.subtitle,
                   description: data.description ?? sec.description,
                   description2: data.description2 ?? sec.description2,
@@ -353,11 +354,15 @@ export async function saveHomeSections(sectionsDraft: SectionsDraft): Promise<vo
   const introSec = sectionsDraft.find((s) => s.key === "introduction-section");
   if (introSec) {
     try {
+      // The website shows the last word of the title in yellow ("2027"), so keep the
+      // backend's two-part title: everything else -> titlePrimary, last word -> titleSecondary.
+      const introTitle = String(introSec.title || "").trim();
+      const lastWordMatch = introTitle.match(/^(.*\S)\s+(\S+)$/);
       await api.put("/website/home/introduction-section", {
         enabled: introSec.enabled !== false,
         eyebrow: introSec.eyebrow,
-        titlePrimary: introSec.titlePrimary,
-        titleSecondary: introSec.titleSecondary,
+        titlePrimary: lastWordMatch ? lastWordMatch[1] : introTitle,
+        titleSecondary: lastWordMatch ? lastWordMatch[2] : "",
         subtitle: introSec.subtitle,
         description: introSec.description,
         description2: introSec.description2,

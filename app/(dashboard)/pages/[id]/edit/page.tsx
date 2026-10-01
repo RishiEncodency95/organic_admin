@@ -48,6 +48,12 @@ import {
   saveAdvisorySections,
   syncSponsorshipSectionsFromLiveApi,
   saveSponsorshipSections,
+  syncTermsSectionsFromLiveApi,
+  saveTermsSections,
+  syncMsmeSectionsFromLiveApi,
+  saveMsmeSections,
+  syncBuyerSellerMeetSectionsFromLiveApi,
+  saveBuyerSellerMeetSections,
   syncPageSeoFromLiveApi,
   savePageCore,
 } from "@/components/pages-cms/page-strategies";
@@ -467,6 +473,18 @@ export default function CmsEditPage() {
       syncSponsorshipSectionsFromLiveApi(setSectionsDraft);
     }
 
+    if (page.configKey === "termsAndConditionsPage" || page.slug?.includes("terms-and-conditions")) {
+      syncTermsSectionsFromLiveApi(setSectionsDraft);
+    }
+
+    if (page.configKey === "msmePage") {
+      syncMsmeSectionsFromLiveApi(setSectionsDraft);
+    }
+
+    if (page.configKey === "buyerSellerMeetPage") {
+      syncBuyerSellerMeetSectionsFromLiveApi(setSectionsDraft);
+    }
+
     syncPageSeoFromLiveApi(page, setForm, canonicalEditorRef);
   }, [settings, page]);
 
@@ -649,6 +667,18 @@ export default function CmsEditPage() {
 
       if (savingKey === "sponsorshipPage" || page.slug === "/sponsorship") {
         await saveSponsorshipSections(sectionsDraft);
+      }
+
+      if (savingKey === "termsAndConditionsPage" || page.slug?.includes("terms-and-conditions")) {
+        await saveTermsSections(sectionsDraft);
+      }
+
+      if (savingKey === "msmePage") {
+        await saveMsmeSections(sectionsDraft);
+      }
+
+      if (savingKey === "buyerSellerMeetPage") {
+        await saveBuyerSellerMeetSections(sectionsDraft);
       }
 
       const updated = await savePageCore({

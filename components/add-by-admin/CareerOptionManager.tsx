@@ -22,6 +22,8 @@ interface CareerOptionManagerProps {
   types: TypeChoice[];
   valueLabel: string;
   valuePlaceholder: string;
+  /** Rendered inside another page (e.g. a Dropdown Manager tab): no page padding, smaller heading. */
+  embedded?: boolean;
 }
 
 const emptyForm = (type: CareerOptionType): CareerOptionInput => ({
@@ -40,6 +42,7 @@ export default function CareerOptionManager({
   types,
   valueLabel,
   valuePlaceholder,
+  embedded = false,
 }: CareerOptionManagerProps) {
   const typeValues = useMemo(() => types.map((t) => t.value), [types]);
   const typeLabel = (value: CareerOptionType) => types.find((t) => t.value === value)?.label ?? value;
@@ -150,18 +153,18 @@ export default function CareerOptionManager({
   );
 
   return (
-    <div className="space-y-5 p-6">
+    <div className={embedded ? "space-y-3" : "space-y-5 p-6"}>
       <div>
-        <h1 className="text-xl font-semibold text-text-primary">{title}</h1>
+        <h1 className={`${embedded ? "text-base" : "text-xl"} font-semibold text-text-primary`}>{title}</h1>
         <p className="mt-1 text-sm text-text-secondary">{description}</p>
       </div>
 
       {/* FORM */}
       <form
         onSubmit={handleSubmit}
-        className="rounded-lg border border-surface-border bg-surface-card p-5 shadow-sm"
+        className="rounded-lg border border-surface-border bg-surface-card p-4 shadow-sm"
       >
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-text-primary">
             {editingId ? `Edit ${valueLabel}` : `Add ${valueLabel}`}
           </h2>
@@ -225,7 +228,7 @@ export default function CareerOptionManager({
 
         {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
-        <div className="mt-4 flex justify-end">
+        <div className="mt-3 flex justify-end">
           <Button type="submit" loading={saving}>
             {editingId ? <Pencil className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
             {editingId ? "Update" : "Add"}
@@ -235,7 +238,7 @@ export default function CareerOptionManager({
 
       {/* TABLE */}
       <div className="rounded-lg border border-surface-border bg-surface-card shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-border px-5 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-border px-4 py-2.5">
           <div className="flex flex-wrap gap-2">
             {showType &&
               [{ value: "all" as const, label: "All" }, ...types].map((t) => (
@@ -262,23 +265,23 @@ export default function CareerOptionManager({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-surface-border text-left text-xs uppercase tracking-wide text-text-secondary">
-                <th className="px-5 py-3 font-medium">#</th>
-                {showType && <th className="px-5 py-3 font-medium">Type</th>}
-                <th className="px-5 py-3 font-medium">{valueLabel}</th>
-                <th className="px-5 py-3 font-medium">Status</th>
-                <th className="px-5 py-3 text-right font-medium">Actions</th>
+                <th className="px-4 py-2.5 font-medium">#</th>
+                {showType && <th className="px-4 py-2.5 font-medium">Type</th>}
+                <th className="px-4 py-2.5 font-medium">{valueLabel}</th>
+                <th className="px-4 py-2.5 font-medium">Status</th>
+                <th className="px-4 py-2.5 text-right font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={showType ? 5 : 4} className="px-5 py-8 text-center text-text-secondary">
+                  <td colSpan={showType ? 5 : 4} className="px-4 py-6 text-center text-text-secondary">
                     Loading…
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={showType ? 5 : 4} className="px-5 py-8 text-center text-text-secondary">
+                  <td colSpan={showType ? 5 : 4} className="px-4 py-6 text-center text-text-secondary">
                     No entries yet. Add one using the form above.
                   </td>
                 </tr>
@@ -290,10 +293,10 @@ export default function CareerOptionManager({
                       editingId === option._id ? "bg-surface-sunken" : ""
                     }`}
                   >
-                    <td className="px-5 py-3 text-text-secondary">{index + 1}</td>
-                    {showType && <td className="px-5 py-3 text-text-secondary">{typeLabel(option.type)}</td>}
-                    <td className="px-5 py-3 font-medium text-text-primary">{option.label}</td>
-                    <td className="px-5 py-3">
+                    <td className="px-4 py-2.5 text-text-secondary">{index + 1}</td>
+                    {showType && <td className="px-4 py-2.5 text-text-secondary">{typeLabel(option.type)}</td>}
+                    <td className="px-4 py-2.5 font-medium text-text-primary">{option.label}</td>
+                    <td className="px-4 py-2.5">
                       <button
                         type="button"
                         onClick={() => toggleStatus(option)}
@@ -305,7 +308,7 @@ export default function CareerOptionManager({
                         {option.isActive ? "Active" : "Inactive"}
                       </button>
                     </td>
-                    <td className="px-5 py-3">
+                    <td className="px-4 py-2.5">
                       <div className="flex justify-end gap-2">
                         <Button variant="secondary" size="sm" onClick={() => startEdit(option)}>
                           <Pencil className="h-3.5 w-3.5" /> Edit
