@@ -136,6 +136,8 @@ const routeAliases: Record<string, string> = {
   "logistics-partner": "logisticsPartnerPage",
   "stall-design-partner": "stallDesignPartnerPage",
   "hotel-stay-partner": "hotelStayPartnerPage",
+  "career": "careersPage",
+  "careers": "careersPage",
 };
 
 export function findCmsPageByRouteKey(pages: CmsPage[], routeKey?: string): CmsPage | undefined {
@@ -284,6 +286,8 @@ const pageDefinitions = [
   ["logisticsPartnerPage", "Logistics Partner", "/partnership/logistics-partner", "page"],
   ["stallDesignPartnerPage", "Stall Design Partner", "/partnership/stall-design-partner", "page"],
   ["hotelStayPartnerPage", "Hotel & Stay Partner", "/partnership/hotel-stay-partner", "page"],
+  // Appended last: page ids are list positions, so new pages must not shift existing ones.
+  ["careersPage", "Careers", "/careers", "page"],
 ] as const;
 
 function seoScore(config: SettingsPageConfig): number {

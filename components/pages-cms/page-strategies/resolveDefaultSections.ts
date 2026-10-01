@@ -34,6 +34,7 @@ import { defaultAwardsSections, defaultAwardsNominationSections } from "@/lib/aw
 import { defaultContactSections } from "@/lib/contactContent";
 import { defaultSponsorshipSections, defaultEPromotionSections, defaultPartnershipPageSections, defaultSubPartnershipSections } from "@/lib/opportunityContent";
 import { defaultSupportServicesSections } from "@/lib/extraPagesContent";
+import { defaultCareersSections } from "@/lib/careersContent";
 import type { SectionsDraft } from "./types";
 
 /**
@@ -46,6 +47,7 @@ export function resolveDefaultSectionsForPage(page: CmsPage): SectionsDraft {
   const title = (page.title || "").toLowerCase();
   const slug = (page.slug || "").toLowerCase();
 
+  if (key === "careerspage" || slug === "/careers") return defaultCareersSections;
   if (key === "msmeeligibilitycheckpage" || slug.includes("eligibility-check")) return defaultMsmeEligibilityCheckSections;
   if (key === "msmeapplypaymentpage" || slug.includes("participate/msme/apply/payment")) return defaultMsmeApplyPaymentSections;
   if (key === "msmeapplyparticipationdetailspage" || slug.includes("participation-details")) return defaultMsmeParticipationDetailsSections;
@@ -96,7 +98,8 @@ export function resolveResetDefaultsForPage(page: CmsPage): SectionsDraft {
   const title = (page.title || "").toLowerCase();
   const slug = (page.slug || "").toLowerCase();
   let defaults = defaultLandingSections;
-  if (key === "msmeeligibilitycheckpage" || slug.includes("eligibility-check")) defaults = defaultMsmeEligibilityCheckSections;
+  if (key === "careerspage" || slug === "/careers") defaults = defaultCareersSections;
+  else if (key === "msmeeligibilitycheckpage" || slug.includes("eligibility-check")) defaults = defaultMsmeEligibilityCheckSections;
   else if (key === "msmeapplypaymentpage" || slug.includes("participate/msme/apply/payment")) defaults = defaultMsmeApplyPaymentSections;
   else if (key === "msmeapplyparticipationdetailspage" || slug.includes("participation-details")) defaults = defaultMsmeParticipationDetailsSections;
   else if (key === "msmeapplypage" || (slug.includes("participate/msme/apply") && !slug.includes("participation-details") && !slug.includes("payment"))) defaults = defaultMsmeApplySections;

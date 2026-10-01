@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { ExternalLink, FileText, Trash2, Upload } from "lucide-react";
+import Swal from "sweetalert2";
 import { uploadApi } from "@/lib/uploadApi";
+import { ApiRequestError } from "@/lib/api";
 import { TextInput } from "./TextInput";
 
 export function PdfUploadField({
@@ -21,13 +23,18 @@ export function PdfUploadField({
     try {
       const res: any = await uploadApi.file(file, "bharat-organic/brochures");
       const uploadedUrl = res?.url || res?.data?.url;
-      if (uploadedUrl) {
-        onChange(uploadedUrl);
-      }
+      if (!uploadedUrl) throw new Error("Server did not return a PDF URL.");
+      onChange(uploadedUrl);
     } catch (err) {
-      console.error("Failed to upload PDF", err);
+      Swal.fire({
+        title: "Upload Failed",
+        text: err instanceof ApiRequestError || err instanceof Error ? err.message : "Could not upload the PDF.",
+        icon: "error",
+        confirmButtonColor: "#218DAE",
+      });
     } finally {
       setUploading(false);
+      e.target.value = "";
     }
   };
 
@@ -50,6 +57,7 @@ export function PdfUploadField({
           value={value}
           onChange={onChange}
           placeholder="https://... or click Upload PDF"
+          hideLimit={true}
         />
         <label className="flex shrink-0 cursor-pointer items-center gap-1 rounded border border-[#2563eb] bg-[#eff6ff] px-2.5 py-1.5 text-[9px] font-bold text-[#1d4ed8] hover:bg-[#dbeafe] transition-colors shadow-2xs">
           <Upload className="h-3 w-3" />

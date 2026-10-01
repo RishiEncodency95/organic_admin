@@ -38,6 +38,7 @@ export function syncAwardsSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft
                       ? `${data.venueLine1}, ${data.venueLine2}`
                       : data.venueLine1 || sec.location),
                   image: data.image || sec.image,
+                  imageAlt: data.imageAlt || sec.imageAlt || "Bharat Organic Excellence Awards 2027",
                   buttonLabel:
                     data.buttonLabel ||
                     (Array.isArray(data.buttons) && data.buttons[0]?.label) ||
@@ -293,6 +294,7 @@ export function syncAwardsSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft
               const updatedSec = {
                 ...sec,
                 enabled: data.enabled !== false,
+                eyebrow: data.eyebrow ?? sec.eyebrow ?? "",
                 title: data.title || sec.title || "Bharat Organic Excellence Awards 2027",
                 subtitle: data.subtitle || sec.subtitle || "Celebrating Excellence • Innovation • Sustainability",
                 description: data.description || data.shortDescription || sec.description || "Honouring the changemakers, organizations and innovations during india's organic, natural and sustainable future.",
@@ -303,8 +305,8 @@ export function syncAwardsSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft
                 date: data.date || sec.date || "19 - 21 February 2027",
                 location: data.location || sec.location || "Hall 12, Bharat Mandapam, PRAGATI MAIDAN, NEW DELHI, INDIA",
                 image: data.image || data.bgImage || sec.image || "",
+                imageAlt: data.imageAlt || sec.imageAlt || "Bharat Organic Excellence Awards 2027",
               };
-              delete (updatedSec as any).eyebrow;
               return updatedSec;
             }
             return sec;
@@ -360,6 +362,7 @@ export async function saveAwardsSections(sectionsDraft: SectionsDraft): Promise<
         date: heroSec.date,
         location: heroSec.location,
         image: heroSec.image,
+        imageAlt: heroSec.imageAlt || "Bharat Organic Excellence Awards 2027",
         buttonLabel: heroSec.buttonLabel,
         buttonHref: heroSec.buttonHref,
         secondaryButtonLabel: heroSec.secondaryButtonLabel,
@@ -482,7 +485,8 @@ export async function saveAwardsSections(sectionsDraft: SectionsDraft): Promise<
     try {
       await api.put("/website/awards/nomination-hero", {
         enabled: nomHeroSec.enabled !== false,
-        eyebrow: nomHeroSec.eyebrow || "EXCELLENCE AWARDS NOMINATION",
+        // Empty eyebrow hides the badge on the website.
+        eyebrow: nomHeroSec.eyebrow ?? "",
         title: nomHeroSec.title || "Bharat Organic Excellence Awards 2027",
         subtitle: nomHeroSec.subtitle || "Celebrating Excellence • Innovation • Sustainability",
         description: nomHeroSec.description || nomHeroSec.shortDescription || "Honouring the changemakers, organizations and innovations during india's organic, natural and sustainable future.",
@@ -493,6 +497,9 @@ export async function saveAwardsSections(sectionsDraft: SectionsDraft): Promise<
         date: nomHeroSec.date || "19 - 21 February 2027",
         location: nomHeroSec.location || "Hall 12, Bharat Mandapam, PRAGATI MAIDAN, NEW DELHI, INDIA",
         image: nomHeroSec.image || "",
+        // Keep the legacy bgImage in step so deleting the image really clears it.
+        bgImage: nomHeroSec.image || "",
+        imageAlt: nomHeroSec.imageAlt || "Bharat Organic Excellence Awards 2027",
       });
     } catch (err) {
       console.error("Failed to sync awards nomination hero to backend:", err);
