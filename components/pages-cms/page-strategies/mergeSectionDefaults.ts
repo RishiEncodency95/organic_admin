@@ -44,6 +44,19 @@ export function mergeSectionWithSavedData(
       merged.description = "Honouring the changemakers, organizations and innovations during india's organic, natural and sustainable future.";
     }
   }
+  if (
+    fallbackItem.key === "about-hero" || merged.key === "about-hero" ||
+    fallbackItem.key === "advisory-hero" || merged.key === "advisory-hero"
+  ) {
+    // The two-part title (titlePrimary + titleSecondary) became a single H1 "title" field.
+    const legacyTitle = [savedItem.titlePrimary, savedItem.titleSecondary]
+      .filter((x) => typeof x === "string" && x.trim())
+      .join(" ")
+      .trim();
+    if (legacyTitle && !savedItem.title) merged.title = legacyTitle;
+    delete merged.titlePrimary;
+    delete merged.titleSecondary;
+  }
   if (fallbackItem.key === "awards-stats" || merged.key === "awards-stats") {
     delete merged.eyebrow;
     delete merged.title;

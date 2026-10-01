@@ -9,6 +9,8 @@ interface GalleryPaginationProps {
   totalCount: number;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
+  // The Skeleton view is locked to the live site's 12 per page, so it hides the selector.
+  hidePageSize?: boolean;
 }
 
 /**
@@ -23,6 +25,7 @@ export default function GalleryPagination({
   totalCount,
   onPageChange,
   onPageSizeChange,
+  hidePageSize = false,
 }: GalleryPaginationProps) {
   return (
     <div className="mt-[12px] flex flex-wrap items-center justify-between gap-2 border-t border-[#e8e5df] bg-[#fafafa] px-[12px] py-[6px] text-[8px]">
@@ -72,15 +75,17 @@ export default function GalleryPagination({
           <ChevronRight className="h-3 w-3" />
         </button>
 
-        <select
-          value={pageSize}
-          onChange={(e) => onPageSizeChange(Number(e.target.value))}
-          className="ml-2 h-[22px] rounded-[4px] border border-[#d8dce2] bg-white px-[6px] text-[8px] font-semibold text-[#334155] outline-none"
-        >
-          <option value={12}>12 / page</option>
-          <option value={24}>24 / page</option>
-          <option value={48}>48 / page</option>
-        </select>
+        {!hidePageSize && (
+          <select
+            value={pageSize}
+            onChange={(e) => onPageSizeChange(Number(e.target.value))}
+            className="ml-2 h-[22px] rounded-[4px] border border-[#d8dce2] bg-white px-[6px] text-[8px] font-semibold text-[#334155] outline-none"
+          >
+            <option value={12}>12 / page</option>
+            <option value={24}>24 / page</option>
+            <option value={48}>48 / page</option>
+          </select>
+        )}
       </div>
     </div>
   );

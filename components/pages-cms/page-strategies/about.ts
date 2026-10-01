@@ -12,11 +12,16 @@ export function syncAboutSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft)
         setSectionsDraft((prev) =>
           prev.map((sec) => {
             if (sec.key === "about-hero" || sec.name === "AboutHero") {
+              // Older saves only have the two-part title; join it into the single H1 field.
+              const legacyTitle = [data.titlePart1, data.titlePart2]
+                .filter((x: unknown) => typeof x === "string" && x.trim())
+                .join(" ")
+                .trim();
+              const { titlePrimary: _p, titleSecondary: _s, ...rest } = sec as Record<string, any>;
               return {
-                ...sec,
+                ...rest,
                 eyebrow: data.tagline || sec.eyebrow,
-                titlePrimary: data.titlePart1 || sec.titlePrimary,
-                titleSecondary: data.titlePart2 || sec.titleSecondary,
+                title: data.title || legacyTitle || sec.title,
                 subtitle: data.subtitle || sec.subtitle,
                 description: data.description || sec.description,
                 image: data.image || sec.image,
@@ -98,8 +103,7 @@ export async function saveAboutSections(sectionsDraft: SectionsDraft): Promise<v
   if (heroSec) {
     await api.put("/website/abouts/about/about-hero", {
       tagline: heroSec.eyebrow,
-      titlePart1: heroSec.titlePrimary,
-      titlePart2: heroSec.titleSecondary,
+      title: heroSec.title,
       subtitle: heroSec.subtitle,
       description: heroSec.description,
       image: heroSec.image,

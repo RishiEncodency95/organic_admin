@@ -133,6 +133,15 @@ const INITIAL_MEDIA: MediaItem[] = [];
 // baked in from a local .env file — see lib/api.ts's getBackendUrl for the full rationale.
 const BACKEND_URL = getBackendUrl();
 
+// Same ordering as the backend and the live gallery: highest `order` first. Array sort is
+// stable, so photos sharing an order keep their current relative position (the backend's
+// createdAt tie-break from the initial load).
+const sortByDisplayOrder = (items: MediaItem[]) =>
+  [...items].sort((a, b) => (b.order ?? 0) - (a.order ?? 0));
+
+// The live Gallery / Glimpses page always shows 12 published photos per page.
+const LIVE_PAGE_SIZE = 12;
+
 const formatTimestamp = () => {
   const d = new Date();
   const dateStr = d.toLocaleDateString("en-GB", {
@@ -509,12 +518,18 @@ export default function MediaLibraryPage() {
   };
 
   // Upload helper directly to Cloudinary CDN (or backend local upload)
-  const uploadToCloudinary = async (file: File): Promise<string> => {
+  // `target` must be passed when the upload belongs to an existing photo (Replace / Crop
+  // from the sidebar) — the form's year/category are left over from whatever modal was
+  // opened last, so they would file the image under the wrong category folder.
+  const uploadToCloudinary = async (
+    file: File,
+    target: { year: string; category: string } = { year: formYear, category: formCategory }
+  ): Promise<string> => {
     const sizeError = await getImageSizeError(file);
     if (sizeError) throw new Error(sizeError);
     try {
       setIsUploading(true);
-      const targetFolder = `bharat-organic/gallery/${formYear || "2026"}/${(formCategory || "general").toLowerCase().replace(/\s+/g, "-")}`;
+      const targetFolder = `bharat-organic/gallery/${target.year || "2026"}/${(target.category || "general").toLowerCase().replace(/\s+/g, "-")}`;
       const formData = new FormData();
       formData.append("file", file);
       formData.append("folder", targetFolder);
@@ -677,6 +692,20 @@ export default function MediaLibraryPage() {
     const start = (currentPage - 1) * pageSize;
     return filteredRows.slice(start, start + pageSize);
   }, [filteredRows, currentPage, pageSize]);
+
+  // The Skeleton (live layout) view must page exactly like the live site: drafts never
+  // appear there and it is always 12 per page, whatever page size the table uses —
+  // otherwise slot N in the preview is a different photo from slot N on the website.
+  const layoutRows = useMemo(
+    () => filteredRows.filter((item) => item.status === "Published"),
+    [filteredRows]
+  );
+  const layoutTotalPages = Math.ceil(layoutRows.length / LIVE_PAGE_SIZE) || 1;
+  const layoutPage = Math.min(currentPage, layoutTotalPages);
+  const layoutPageRows = useMemo(() => {
+    const start = (layoutPage - 1) * LIVE_PAGE_SIZE;
+    return layoutRows.slice(start, start + LIVE_PAGE_SIZE);
+  }, [layoutRows, layoutPage]);
 
   // Selected item for right details panel
   const selected = useMemo(() => {
@@ -984,7 +1013,7 @@ export default function MediaLibraryPage() {
         };
       }
 
-      const updated = [newItem, ...mediaItems];
+      const updated = sortByDisplayOrder([newItem, ...mediaItems]);
       setMediaItems(updated);
       saveMediaToLocal(updated);
       setSelectedId(newItem.id);
@@ -1006,7 +1035,7 @@ export default function MediaLibraryPage() {
         status: formStatus,
         image: formImageUrl,
       };
-      const updated = [newItem, ...mediaItems];
+      const updated = sortByDisplayOrder([newItem, ...mediaItems]);
       setMediaItems(updated);
       saveMediaToLocal(updated);
       setSelectedId(newItem.id);
@@ -1041,7 +1070,7 @@ export default function MediaLibraryPage() {
       }).catch(() => null);
     }
 
-    const updated = mediaItems.map((item) =>
+    const updated = sortByDisplayOrder(mediaItems.map((item) =>
       item.id === editingItem.id
         ? {
             ...item,
@@ -1058,7 +1087,7 @@ export default function MediaLibraryPage() {
             time: ts.time,
           }
         : item
-    );
+    ));
 
     setMediaItems(updated);
     saveMediaToLocal(updated);
@@ -1074,7 +1103,7 @@ export default function MediaLibraryPage() {
       const ts = formatTimestamp();
       let newUrl: string;
       try {
-        newUrl = await uploadToCloudinary(file);
+        newUrl = await uploadToCloudinary(file, { year: selected.year, category: selected.category });
       } catch (err) {
         showUploadError(err);
         e.target.value = "";
@@ -1138,7 +1167,10 @@ export default function MediaLibraryPage() {
   const handleCropApplied = async (file: File) => {
     let newUrl: string;
     try {
-      newUrl = await uploadToCloudinary(file);
+      newUrl = await uploadToCloudinary(
+        file,
+        cropContext === "existing" && selected ? { year: selected.year, category: selected.category } : undefined
+      );
     } catch (err) {
       showUploadError(err);
       return;
@@ -1185,35 +1217,61 @@ export default function MediaLibraryPage() {
   // Dragging a photo onto another in the Skeleton layout view swaps their
   // `order` values — the same field that determines each photo's position
   // (and therefore its bento slot) on the live Gallery / Glimpses page.
+  //
+  // If two photos share an `order` value, swapping those numbers changes nothing (and the
+  // backend's createdAt tie-break can shuffle them unexpectedly), so in that case the whole
+  // list is renumbered 1..n in its current display order first — only the two swapped
+  // photos actually move.
   const handleSwapOrder = async (itemA: MediaItem, itemB: MediaItem) => {
-    const orderA = itemA.order ?? 0;
-    const orderB = itemB.order ?? 0;
+    if (itemA.id === itemB.id) return;
+    const previous = mediaItems;
+    const current = sortByDisplayOrder(mediaItems);
 
-    const updated = mediaItems
-      .map((item) => {
-        if (item.id === itemA.id) return { ...item, order: orderB };
-        if (item.id === itemB.id) return { ...item, order: orderA };
-        return item;
-      })
-      .sort((a, b) => (b.order ?? 0) - (a.order ?? 0));
+    const orders = current.map((x) => x.order ?? 0);
+    const hasDuplicates = new Set(orders).size !== orders.length;
+
+    let updated: MediaItem[];
+    if (!hasDuplicates) {
+      const orderA = itemA.order ?? 0;
+      const orderB = itemB.order ?? 0;
+      updated = sortByDisplayOrder(
+        current.map((item) => {
+          if (item.id === itemA.id) return { ...item, order: orderB };
+          if (item.id === itemB.id) return { ...item, order: orderA };
+          return item;
+        })
+      );
+    } else {
+      const positions = [...current];
+      const ia = positions.findIndex((x) => x.id === itemA.id);
+      const ib = positions.findIndex((x) => x.id === itemB.id);
+      if (ia === -1 || ib === -1) return;
+      [positions[ia], positions[ib]] = [positions[ib], positions[ia]];
+      updated = positions.map((item, i) => ({ ...item, order: positions.length - i }));
+    }
+
+    const previousOrder = new Map(previous.map((x) => [x.id, x.order]));
+    const changes = updated
+      .filter((x) => x._id && previousOrder.get(x.id) !== x.order)
+      .map((x) => ({ id: x._id as string, order: x.order as number }));
 
     setMediaItems(updated);
     saveMediaToLocal(updated);
 
-    await Promise.all(
-      [
-        itemA._id ? { id: itemA._id, order: orderB } : null,
-        itemB._id ? { id: itemB._id, order: orderA } : null,
-      ]
-        .filter((x): x is { id: string; order: number } => x !== null)
-        .map((x) =>
-          fetch(`${BACKEND_URL}/api/website/gallery/items/${x.id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ order: x.order }),
-          }).catch(() => null)
-        )
-    );
+    if (changes.length > 0) {
+      const res = await fetch(`${BACKEND_URL}/api/website/gallery/items/reorder`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: changes }),
+      }).catch(() => null);
+
+      if (!res || !res.ok) {
+        setMediaItems(previous);
+        saveMediaToLocal(previous);
+        showError("Could not save the new position. Please try again.");
+        return;
+      }
+    }
 
     showSuccess("Layout position swapped!");
   };
@@ -1703,21 +1761,20 @@ export default function MediaLibraryPage() {
                  onto each other to swap their live display position. */
               <div className="mt-[12px] rounded-[7px] bg-white border border-[#e8e5df] p-3">
                 <SkeletonBentoView
-                  items={paginatedRows}
+                  items={layoutPageRows}
+                  allItems={mediaItems}
                   selectedId={selectedId}
                   onSelect={setSelectedId}
                   onSwapOrder={handleSwapOrder}
                 />
                 <GalleryPagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  pageSize={pageSize}
-                  totalCount={filteredRows.length}
+                  currentPage={layoutPage}
+                  totalPages={layoutTotalPages}
+                  pageSize={LIVE_PAGE_SIZE}
+                  totalCount={layoutRows.length}
                   onPageChange={setCurrentPage}
-                  onPageSizeChange={(size) => {
-                    setPageSize(size);
-                    setCurrentPage(1);
-                  }}
+                  onPageSizeChange={() => {}}
+                  hidePageSize
                 />
               </div>
             ) : (
