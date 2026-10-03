@@ -10,7 +10,7 @@ import AIEligibilityTab from "./AIEligibilityTab";
 import DocumentsTab from "./DocumentsTab";
 import EmailTemplatesTab from "./EmailTemplatesTab";
 import NotificationsTab from "./NotificationsTab";
-import HRWorkflowTab from "./HRWorkflowTab";
+import HRWorkflowSettings from "./HRWorkflowSettings";
 import ResultMessagesTab from "./ResultMessagesTab";
 
 export default function CareerSettingsPage() {
@@ -75,7 +75,7 @@ export default function CareerSettingsPage() {
         {activeTab === "Result Messages" && <ResultMessagesTab />}
         {activeTab === "Notifications" && <NotificationsTab />}
         {activeTab === "Email Templates" && <EmailTemplatesTab />}
-        {activeTab === "HR & Workflow" && <HRWorkflowTab />}
+        {activeTab === "HR & Workflow" && <HRWorkflowSettings />}
         
         {/* Placeholder for other tabs */}
         {activeTab !== "General Settings" && activeTab !== "AI Eligibility & Screening" && activeTab !== "Documents & Application Form" && activeTab !== "Email Templates" && activeTab !== "Notifications" && activeTab !== "HR & Workflow" && activeTab !== "Result Messages" && (
