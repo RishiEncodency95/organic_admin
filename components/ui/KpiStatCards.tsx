@@ -117,10 +117,16 @@ function AnimatedCounter({ value, duration = 1200 }: { value: string | number; d
 export default function KpiStatCards({
   items,
   gridClassName = "mt-[12px] grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6",
+  compact = false,
 }: {
   items: KpiStatCardItem[];
   gridClassName?: string;
+  // Smaller text and icon, for pages that fit more cards in a row.
+  compact?: boolean;
 }) {
+  const sz = compact
+    ? { card: "h-[82px]", icon: "h-[26px] w-[26px]", iconSvg: "h-3.5 w-3.5", title: "text-[7.5px]", value: "text-[17px]", small: "text-[8px]", footer: "text-[7.5px]", arrow: "h-2.5 w-2.5" }
+    : { card: "h-[98px]", icon: "h-[30px] w-[30px]", iconSvg: "h-4 w-4", title: "text-[8.5px]", value: "text-[21px]", small: "text-[9.5px]", footer: "text-[8px]", arrow: "h-3 w-3" };
   return (
     <div className={gridClassName}>
       {items.map((item) => {
@@ -128,7 +134,7 @@ export default function KpiStatCards({
         return (
           <div
             key={item.title}
-            className="relative flex h-[98px] flex-col overflow-hidden rounded-[11px] border border-[#e5e7e6] bg-white p-2 !pb-5.5 transition-all hover:translate-y-[-1px]"
+            className={`relative flex ${sz.card} flex-col overflow-hidden rounded-[11px] border border-[#e5e7e6] bg-white p-2 !pb-5.5 transition-all hover:translate-y-[-1px]`}
             style={{
               background: item.gradient,
               borderColor: item.borderColor || undefined,
@@ -137,14 +143,14 @@ export default function KpiStatCards({
           >
             <div className="flex items-start gap-1.5">
               <div
-                className={`grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full ring-1 bg-white/80 shadow-xs ${kpiToneClass[item.tone]}`}
+                className={`grid ${sz.icon} shrink-0 place-items-center rounded-full ring-1 bg-white/80 shadow-xs ${kpiToneClass[item.tone]}`}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className={sz.iconSvg} />
               </div>
 
               <div className="min-w-0 flex-1">
                 <p
-                  className="truncate text-[8.5px] !font-semibold tracking-[0.01em] text-slate-900"
+                  className={`truncate ${sz.title} !font-semibold tracking-[0.01em] text-slate-900`}
                   style={{ fontWeight: 600, color: "#0f172a" }}
                 >
                   {item.title}
@@ -152,17 +158,17 @@ export default function KpiStatCards({
 
                 <div className="mt-1.5 flex items-end gap-1">
                   <span
-                    className="text-[21px] !font-semibold leading-none tracking-[-0.04em]"
+                    className={`${sz.value} !font-semibold leading-none tracking-[-0.04em]`}
                     style={{ color: item.numColor, fontWeight: 600 }}
                   >
                     <AnimatedCounter value={item.value} />
                   </span>
 
-                  {item.suffix && <span className="mb-0.5 text-[9.5px] font-bold">{item.suffix}</span>}
+                  {item.suffix && <span className={`mb-0.5 ${sz.small} font-bold`}>{item.suffix}</span>}
 
                   {item.trend && (
                     <span
-                      className={`mb-0.5 ml-auto text-[9.5px] font-bold ${
+                      className={`mb-0.5 ml-auto ${sz.small} font-bold ${
                         item.trend.startsWith("↓") ? "text-[#dc2626]" : "text-[#16a34a]"
                       }`}
                     >
@@ -175,10 +181,10 @@ export default function KpiStatCards({
 
             <div
               onClick={item.onClick}
-              className="absolute bottom-1 left-2 right-2 flex cursor-pointer items-center justify-center gap-1 text-[8px] font-semibold text-[#293957] transition hover:text-blue-600"
+              className={`absolute bottom-1 left-2 right-2 flex cursor-pointer items-center justify-center gap-1 ${sz.footer} font-semibold text-[#293957] transition hover:text-blue-600`}
             >
               {item.footer}
-              <ArrowRight className="h-3 w-3" />
+              <ArrowRight className={sz.arrow} />
             </div>
           </div>
         );

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Search,
   Download,
@@ -32,6 +32,8 @@ import {
 } from "lucide-react";
 import Swal from "sweetalert2";
 import typography from "../pages/PagesTypography.module.css";
+import { api, getBackendUrl } from "@/lib/api";
+import { useAppSelector } from "@/store/hooks";
 import KpiStatCards, { type KpiStatCardItem } from "@/components/ui/KpiStatCards";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense } from "react";
@@ -95,277 +97,126 @@ export interface CandidateApplication {
   joiningAvailability: string;
   willingToRelocate: string;
   updatedByHrOn?: string;
+  // From /careers/admin/applications-board
+  source?: "application" | "cv"; // "cv" = CV checked by AI but no application started
+  currentDesignation?: string;
+  skills?: string[];
+  strengths?: string[];
+  gaps?: string[];
+  cvUrl?: string;
+  cvFileName?: string;
+  cvFileSize?: number;
+  whyInterested?: string;
+  notes?: string;
 }
 
-// --- Initial Mock Data ---
-const INITIAL_APPLICATIONS: CandidateApplication[] = [
-  {
-    id: "APP-001",
-    name: "Priya Sharma",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
-    experienceYrs: "5 Yrs Exp",
-    position: "Sales Manager – Domestic Exhibition",
-    department: "Sales & Sponsorships",
-    phone: "+91 98765 43210",
-    email: "priya.sharma@gmail.com",
-    aiScore: 92,
-    aiResult: "Eligible",
-    aiAnalysisSummary: "Strong match for the role based on skills, experience and industry background.",
-    stage: "Submitted",
-    hrStatus: "Shortlisted",
-    appliedOn: "17 Oct 2026",
-    appliedTime: "11:24 AM",
-    jobCode: "BOE-SALES-001",
-    location: "Delhi NCR",
-    currentCompany: "ABC Exhibitions Pvt. Ltd.",
-    currentCtc: "₹45,000 / month",
-    expectedCtc: "₹50,000 – ₹55,000 / month",
-    noticePeriod: "30 Days",
-    joiningAvailability: "After 30 Days",
-    willingToRelocate: "Yes",
-    updatedByHrOn: "18 Oct 2026, 02:10 PM",
-  },
-  {
-    id: "APP-002",
-    name: "Amit Verma",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-    experienceYrs: "4 Yrs Exp",
-    position: "Sales Manager – Domestic Exhibition",
-    department: "Sales & Sponsorships",
-    phone: "+91 98111 22334",
-    email: "amit.verma@outlook.com",
-    aiScore: 78,
-    aiResult: "Partial Match",
-    aiAnalysisSummary: "Good sales background, moderate experience in domestic trade shows.",
-    stage: "Submitted",
-    hrStatus: "Under Review",
-    appliedOn: "16 Oct 2026",
-    appliedTime: "04:10 PM",
-    jobCode: "BOE-SALES-001",
-    location: "Mumbai",
-    currentCompany: "Global Trades Ltd.",
-    currentCtc: "₹40,000 / month",
-    expectedCtc: "₹50,000 / month",
-    noticePeriod: "15 Days",
-    joiningAvailability: "Immediate",
-    willingToRelocate: "Yes",
-    updatedByHrOn: "17 Oct 2026, 10:00 AM",
-  },
-  {
-    id: "APP-003",
-    name: "Neha Gupta",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-    experienceYrs: "4 Yrs Exp",
-    position: "Sales Manager – Domestic Exhibition",
-    department: "Sales & Sponsorships",
-    phone: "+91 98710 55667",
-    email: "neha.gupta@gmail.com",
-    aiScore: 88,
-    aiResult: "Eligible",
-    aiAnalysisSummary: "High overall qualification alignment and strong communication skills.",
-    stage: "Submitted",
-    hrStatus: "Interview",
-    appliedOn: "16 Oct 2026",
-    appliedTime: "01:35 PM",
-    jobCode: "BOE-SALES-001",
-    location: "Bengaluru",
-    currentCompany: "Expo Solutions",
-    currentCtc: "₹48,000 / month",
-    expectedCtc: "₹60,000 / month",
-    noticePeriod: "60 Days",
-    joiningAvailability: "60 Days",
-    willingToRelocate: "No",
-    updatedByHrOn: "17 Oct 2026, 11:30 AM",
-  },
-  {
-    id: "APP-004",
-    name: "Rohit Kumar",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
-    experienceYrs: "3 Yrs Exp",
-    position: "Sales Manager – Domestic Exhibition",
-    department: "Sales & Sponsorships",
-    phone: "+91 99901 23456",
-    email: "rohit.kumar@gmail.com",
-    aiScore: 46,
-    aiResult: "Not Eligible",
-    aiAnalysisSummary: "Lacks mandatory experience in large-scale domestic exhibition sales.",
-    stage: "Submitted",
-    hrStatus: "Not Forwarded",
-    appliedOn: "15 Oct 2026",
-    appliedTime: "05:20 PM",
-    jobCode: "BOE-SALES-001",
-    location: "Gurugram",
-    currentCompany: "Event Horizon",
-    currentCtc: "₹30,000 / month",
-    expectedCtc: "₹42,000 / month",
-    noticePeriod: "30 Days",
-    joiningAvailability: "30 Days",
-    willingToRelocate: "Yes",
-    updatedByHrOn: "16 Oct 2026, 09:15 AM",
-  },
-  {
-    id: "APP-005",
-    name: "Sneha Mehta",
-    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-    experienceYrs: "7 Yrs Exp",
-    position: "Sales Manager – Domestic Exhibition",
-    department: "Sales & Sponsorships",
-    phone: "+91 98100 88990",
-    email: "sneha.mehta@rediffmail.com",
-    aiScore: 81,
-    aiResult: "Eligible",
-    aiAnalysisSummary: "Extensive experience in corporate sponsorships and key client management.",
-    stage: "Submitted",
-    hrStatus: "Selected",
-    appliedOn: "15 Oct 2026",
-    appliedTime: "12:15 PM",
-    jobCode: "BOE-SALES-001",
-    location: "Noida",
-    currentCompany: "Apex Expo Media",
-    currentCtc: "₹55,000 / month",
-    expectedCtc: "₹65,000 / month",
-    noticePeriod: "15 Days",
-    joiningAvailability: "15 Days",
-    willingToRelocate: "Yes",
-    updatedByHrOn: "16 Oct 2026, 04:00 PM",
-  },
-  {
-    id: "APP-006",
-    name: "Vikram Singh",
-    avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80",
-    experienceYrs: "5 Yrs Exp",
-    position: "Sales Manager – Domestic Exhibition",
-    department: "Sales & Sponsorships",
-    phone: "+91 98990 11223",
-    email: "vikram.singh@gmail.com",
-    aiScore: 69,
-    aiResult: "Partial Match",
-    aiAnalysisSummary: "Meets basic criteria, but higher CTC expectation than budgeted range.",
-    stage: "CV Uploaded",
-    hrStatus: "Sent to HR",
-    appliedOn: "14 Oct 2026",
-    appliedTime: "03:40 PM",
-    jobCode: "BOE-SALES-001",
-    location: "Chandigarh",
-    currentCompany: "Organic World Events",
-    currentCtc: "₹42,000 / month",
-    expectedCtc: "₹58,000 / month",
-    noticePeriod: "30 Days",
-    joiningAvailability: "30 Days",
-    willingToRelocate: "Yes",
-    updatedByHrOn: "15 Oct 2026, 11:00 AM",
-  },
-  {
-    id: "APP-007",
-    name: "Kavita Rao",
-    avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
-    experienceYrs: "4 Yrs Exp",
-    position: "Sales Manager – Domestic Exhibition",
-    department: "Sales & Sponsorships",
-    phone: "+91 98765 77889",
-    email: "kavita.rao@gmail.com",
-    aiScore: 85,
-    aiResult: "Eligible",
-    aiAnalysisSummary: "Strong technical sales aptitude and domestic exhibition client network.",
-    stage: "Submitted",
-    hrStatus: "Rejected",
-    appliedOn: "14 Oct 2026",
-    appliedTime: "11:05 AM",
-    jobCode: "BOE-SALES-001",
-    location: "Hyderabad",
-    currentCompany: "Deccan Trade Fairs",
-    currentCtc: "₹45,000 / month",
-    expectedCtc: "₹52,000 / month",
-    noticePeriod: "30 Days",
-    joiningAvailability: "30 Days",
-    willingToRelocate: "No",
-    updatedByHrOn: "15 Oct 2026, 02:20 PM",
-  },
-  {
-    id: "APP-008",
-    name: "Arjun Patel",
-    avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80",
-    experienceYrs: "2 Yrs Exp",
-    position: "Sales Manager – Domestic Exhibition",
-    department: "Sales & Sponsorships",
-    phone: "+91 98211 44556",
-    email: "arjun.patel@gmail.com",
-    aiScore: 62,
-    aiResult: "Partial Match",
-    aiAnalysisSummary: "Junior level experience; needs further verification of exhibition portfolio.",
-    stage: "Incomplete",
-    hrStatus: "Not Forwarded",
-    appliedOn: "13 Oct 2026",
-    appliedTime: "04:22 PM",
-    jobCode: "BOE-SALES-001",
-    location: "Ahmedabad",
-    currentCompany: "Gujarat Expo",
-    currentCtc: "₹28,000 / month",
-    expectedCtc: "₹38,000 / month",
-    noticePeriod: "15 Days",
-    joiningAvailability: "15 Days",
-    willingToRelocate: "Yes",
-    updatedByHrOn: "14 Oct 2026, 09:30 AM",
-  },
-  {
-    id: "APP-009",
-    name: "Simran Kaur",
-    avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
-    experienceYrs: "6 Yrs Exp",
-    position: "Sales Manager – Domestic Exhibition",
-    department: "Sales & Sponsorships",
-    phone: "+91 99102 33445",
-    email: "simran.kaur@gmail.com",
-    aiScore: 90,
-    aiResult: "Eligible",
-    aiAnalysisSummary: "Exceptional profile with verified high-value exhibition deal history.",
-    stage: "Submitted",
-    hrStatus: "On Hold",
-    appliedOn: "12 Oct 2026",
-    appliedTime: "02:18 PM",
-    jobCode: "BOE-SALES-001",
-    location: "Delhi NCR",
-    currentCompany: "North Fairs India",
-    currentCtc: "₹50,000 / month",
-    expectedCtc: "₹62,000 / month",
-    noticePeriod: "30 Days",
-    joiningAvailability: "Immediate",
-    willingToRelocate: "Yes",
-    updatedByHrOn: "13 Oct 2026, 01:15 PM",
-  },
-  {
-    id: "APP-010",
-    name: "Aditya Mishra",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
-    experienceYrs: "3 Yrs Exp",
-    position: "Sales Manager – Domestic Exhibition",
-    department: "Sales & Sponsorships",
-    phone: "+91 98908 77665",
-    email: "aditya.mishra@gmail.com",
-    aiScore: 71,
-    aiResult: "Partial Match",
-    aiAnalysisSummary: "Adequate background in general sales, limited exhibition stall management.",
-    stage: "Submitted",
-    hrStatus: "Not Forwarded",
-    appliedOn: "12 Oct 2026",
-    appliedTime: "10:40 AM",
-    jobCode: "BOE-SALES-001",
-    location: "Lucknow",
-    currentCompany: "UP Trade Promoters",
-    currentCtc: "₹32,000 / month",
-    expectedCtc: "₹42,000 / month",
-    noticePeriod: "30 Days",
-    joiningAvailability: "30 Days",
-    willingToRelocate: "Yes",
-    updatedByHrOn: "13 Oct 2026, 10:00 AM",
-  },
-];
+interface ApplicationEventRow {
+  _id: string;
+  oldStatus?: string;
+  newStatus: string;
+  changedBy?: string;
+  note?: string;
+  createdAt: string;
+}
+
+const BACKEND_URL = getBackendUrl();
+
+// CVs and photos are Cloudinary URLs, files stored on the backend ("/uploads/..."), or —
+// for photos added on the eligibility screen — inline base64 data URLs.
+const toFileUrl = (url?: string) =>
+  !url
+    ? ""
+    : /^(https?:|data:|blob:)/i.test(url)
+    ? url
+    : `${BACKEND_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+
+// Cloudinary refuses to serve PDFs from its public URLs on this account (401), so CV PDFs
+// are opened through the backend's /api/files/pdf endpoint, which streams them inline.
+const toCvUrl = (url?: string) => {
+  const full = toFileUrl(url);
+  return /^https:\/\/res\.cloudinary\.com\/[^?#]+\.pdf$/i.test(full)
+    ? `${BACKEND_URL}/api/files/pdf?url=${encodeURIComponent(full)}`
+    : full;
+};
+
+const initialsOf = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() || "")
+    .join("") || "?";
+
+// Candidate photo when they added one, otherwise (or if the file is missing) their initials.
+function CandidateAvatar({ app, className }: { app: CandidateApplication; className: string }) {
+  const src = toFileUrl(app.avatar);
+  const [failedSrc, setFailedSrc] = useState("");
+  if (src && failedSrc !== src) {
+    return (
+      <img src={src} alt={app.name} onError={() => setFailedSrc(src)} className={`${className} object-cover`} />
+    );
+  }
+  return (
+    <div className={`${className} flex items-center justify-center bg-[#e8f5e9] text-[#1b5e20] font-bold text-[11px]`}>
+      {initialsOf(app.name)}
+    </div>
+  );
+}
+
+// Candidate names go into a SweetAlert html body, so they are escaped first.
+const escapeHtml = (v: string) =>
+  v.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string);
+
+const formatBytes = (bytes?: number) =>
+  !bytes ? "" : bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.round(bytes / 1024)} KB`;
 
 export default function ApplicationsAiResponsePage() {
-  const [applications, setApplications] = useState<CandidateApplication[]>(INITIAL_APPLICATIONS);
-  const [selectedCandidate, setSelectedCandidate] = useState<CandidateApplication | null>(
-    INITIAL_APPLICATIONS[0]
-  );
+  const currentAdmin = useAppSelector((state) => state.auth.admin);
+  const adminName = currentAdmin?.name?.trim() || "Admin";
+  const [applications, setApplications] = useState<CandidateApplication[]>([]);
+  const [selectedCandidate, setSelectedCandidate] = useState<CandidateApplication | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  // Activity of one application, tagged with its id so another candidate's history never shows.
+  const [eventsFor, setEventsFor] = useState<{ id: string; list: ApplicationEventRow[] }>({ id: "", list: [] });
+
+  // Everyone who used the /careers flow: applications plus AI-checked CV uploads.
+  const fetchBoard = () =>
+    api.get<CandidateApplication[]>(`/careers/admin/applications-board?_=${Date.now()}`);
+
+  const applyBoard = useCallback((rows: CandidateApplication[]) => {
+    const list = (Array.isArray(rows) ? rows : []).map((r) => ({ ...r, joiningAvailability: r.joiningAvailability || "" }));
+    setLoadError("");
+    setApplications(list);
+    setSelectedCandidate((prev) => list.find((r) => r.id === prev?.id) || list[0] || null);
+    setLoading(false);
+  }, []);
+
+  const failBoard = useCallback((err: unknown) => {
+    setLoadError((err as Error)?.message || "Could not load applications.");
+    setLoading(false);
+  }, []);
+
+  // Re-fetch after an HR update or note.
+  const loadApplications = useCallback(async () => {
+    try {
+      applyBoard(await fetchBoard());
+    } catch (err) {
+      failBoard(err);
+    }
+  }, [applyBoard, failBoard]);
+
+  // Everyone who used the /careers flow: applications plus AI-checked CV uploads.
+  useEffect(() => {
+    let active = true;
+    fetchBoard()
+      .then((rows) => active && applyBoard(rows))
+      .catch((err) => active && failBoard(err));
+    return () => {
+      active = false;
+    };
+  }, [applyBoard, failBoard]);
+
   const [activeDrawerTab, setActiveDrawerTab] = useState<
     "Overview" | "Application" | "AI Analysis" | "HR Status" | "Activity"
   >("Overview");
@@ -436,7 +287,7 @@ export default function ApplicationsAiResponsePage() {
     setCurrentPage(1);
   };
 
-  const showToast = (icon: "success" | "info" | "warning", title: string) => {
+  const showToast = (icon: "success" | "info" | "warning" | "error", title: string) => {
     Swal.fire({
       toast: true,
       position: "top-end",
@@ -448,21 +299,202 @@ export default function ApplicationsAiResponsePage() {
     });
   };
 
-  const handleForwardToHr = (app: CandidateApplication) => {
-    setApplications((prev) =>
-      prev.map((item) =>
-        item.id === app.id
-          ? { ...item, hrStatus: "Sent to HR", updatedByHrOn: new Date().toLocaleString() }
-          : item
-      )
-    );
-    if (selectedCandidate?.id === app.id) {
-      setSelectedCandidate((prev) =>
-        prev ? { ...prev, hrStatus: "Sent to HR", updatedByHrOn: new Date().toLocaleString() } : null
-      );
+  const notAppliedYet = (app: CandidateApplication) => {
+    if (app.source === "cv") {
+      showToast("warning", `${app.name} only checked their CV and hasn't applied yet`);
+      return true;
     }
-    showToast("success", `Application of ${app.name} forwarded to HR`);
+    return false;
   };
+
+  const updateHrStatus = async (app: CandidateApplication, next: HRStatusType) => {
+    if (notAppliedYet(app)) return;
+    try {
+      await api.patch(`/careers/admin/applications/${encodeURIComponent(app.id)}/hr`, {
+        hrStatus: next,
+        changedBy: adminName,
+      });
+      showToast("success", `HR status updated to ${next}`);
+      await loadApplications();
+    } catch (err) {
+      showToast("error", (err as Error)?.message || "Could not update HR status");
+    }
+  };
+
+  // Eye icon in the table opens the full Candidate Details popup for that row.
+  const [detailsId, setDetailsId] = useState<string | null>(null);
+
+  // "Forward to HR" opens the forward form; submitting it marks the application "Sent to HR".
+  const [forwardTarget, setForwardTarget] = useState<CandidateApplication | null>(null);
+
+  const handleForwardToHr = (app: CandidateApplication) => {
+    if (notAppliedYet(app)) return;
+    setForwardTarget(app);
+  };
+
+  const submitForwardToHr = async ({ recipients, note, share }: { recipients: string[]; note: string; share: string[] }) => {
+    const app = forwardTarget;
+    if (!app) return;
+    try {
+      await api.patch(`/careers/admin/applications/${encodeURIComponent(app.id)}/hr`, {
+        hrStatus: "Sent to HR",
+        changedBy: adminName,
+        note: `Forwarded to HR (${recipients.join(", ")}). Shared: ${share.join(", ")}${note ? `. Note: ${note}` : ""}`,
+        forward: { recipients, share, note },
+      });
+      // Close the form and confirm straight away; the list refreshes in the background
+      // (re-loading every candidate first is what made the alert feel late).
+      setForwardTarget(null);
+      void loadApplications();
+      void Swal.fire({
+        icon: "success",
+        title: "Forwarded to HR!",
+        html:
+          `<p style="margin:0 0 8px">${escapeHtml(app.name)}'s application has been sent to <b>${escapeHtml(recipients.join(", "))}</b>.</p>` +
+          `<p style="margin:0;font-size:13px;color:#475569">Shared: ${escapeHtml(share.join(", "))}</p>`,
+        confirmButtonText: "OK",
+        confirmButtonColor: "#148943",
+      });
+    } catch (err) {
+      await Swal.fire({
+        icon: "error",
+        title: "Could not forward",
+        text: (err as Error)?.message || "Please try again.",
+        confirmButtonColor: "#dc2626",
+      });
+    }
+  };
+
+  const handleAddNote = async (app: CandidateApplication) => {
+    if (notAppliedYet(app)) return;
+    const { value: note } = await Swal.fire({
+      title: `Add note for ${app.name}`,
+      input: "textarea",
+      inputPlaceholder: "Write a note for this application...",
+      showCancelButton: true,
+      confirmButtonText: "Save Note",
+      confirmButtonColor: "#0f766e",
+      inputValidator: (v) => (!v || !v.trim() ? "Please write a note" : undefined),
+    });
+    if (!note) return;
+    try {
+      await api.post(`/careers/admin/applications/${encodeURIComponent(app.id)}/notes`, {
+        note,
+        changedBy: adminName,
+      });
+      showToast("success", "Note added");
+      await loadApplications();
+      if (activeDrawerTab === "Activity") loadEvents(app);
+    } catch (err) {
+      showToast("error", (err as Error)?.message || "Could not add note");
+    }
+  };
+
+  // PDFs open in a new tab; Word files (and anything else) are downloaded under their own name.
+  const openCv = async (app: CandidateApplication) => {
+    const url = toCvUrl(app.cvUrl);
+    if (!url) {
+      showToast("warning", "No CV file found for this candidate");
+      return;
+    }
+    const name = app.cvFileName || app.cvUrl?.split("/").pop() || "cv";
+    const isPdf = /\.pdf$/i.test(name) || /\.pdf($|\?)/i.test(app.cvUrl || "");
+    if (isPdf) {
+      window.open(url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    try {
+      // A download attribute is ignored for cross-origin links, so fetch the file first.
+      const res = await fetch(url);
+      if (!res.ok) {
+        showToast("error", res.status === 404 ? "CV file not found on the server" : `Could not download CV (${res.status})`);
+        return;
+      }
+      const blobUrl = URL.createObjectURL(await res.blob());
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = name;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      // Browsers download .doc/.docx when navigated to, so this still saves the file.
+      window.location.href = url;
+    }
+  };
+
+  const loadEvents = useCallback(async (app: CandidateApplication) => {
+    if (app.source !== "application") return;
+    try {
+      const res = await api.get<{ events: ApplicationEventRow[] }>(
+        `/careers/admin/applications/${encodeURIComponent(app.id)}?_=${Date.now()}`
+      );
+      setEventsFor({ id: app.id, list: Array.isArray(res?.events) ? res.events : [] });
+    } catch {
+      setEventsFor({ id: app.id, list: [] });
+    }
+  }, []);
+
+  useEffect(() => {
+    const app = detailsId ? applications.find((a) => a.id === detailsId) : null;
+    if (app) loadEvents(app);
+  }, [detailsId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (selectedCandidate && activeDrawerTab === "Activity") loadEvents(selectedCandidate);
+  }, [selectedCandidate?.id, activeDrawerTab, loadEvents]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Download the rows currently shown (all filters applied) as a CSV file.
+  const handleExport = () => {
+    const cols: [string, (a: CandidateApplication) => string | number][] = [
+      ["Application ID", (a) => (a.source === "application" ? a.id : "")],
+      ["Name", (a) => a.name],
+      ["Email", (a) => a.email],
+      ["Phone", (a) => a.phone],
+      ["Location", (a) => a.location],
+      ["Position", (a) => a.position],
+      ["Department", (a) => a.department],
+      ["Experience", (a) => a.experienceYrs],
+      ["AI Score %", (a) => a.aiScore],
+      ["AI Result", (a) => a.aiResult],
+      ["Stage", (a) => a.stage],
+      ["HR Status", (a) => a.hrStatus],
+      ["Current Company", (a) => a.currentCompany],
+      ["Current CTC", (a) => a.currentCtc],
+      ["Expected CTC", (a) => a.expectedCtc],
+      ["Notice Period", (a) => a.noticePeriod],
+      ["Applied On", (a) => `${a.appliedOn} ${a.appliedTime}`],
+      ["CV", (a) => toCvUrl(a.cvUrl)],
+    ];
+    const esc = (v: string | number) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const csv = [cols.map(([h]) => esc(h)).join(","), ...filteredApplications.map((a) => cols.map(([, f]) => esc(f(a))).join(","))].join("\n");
+    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `applications-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const positions = useMemo(
+    () => Array.from(new Set(applications.map((a) => a.position).filter(Boolean))).sort(),
+    [applications]
+  );
+
+  const counts = useMemo(() => {
+    const by = (pred: (a: CandidateApplication) => boolean) => applications.filter(pred).length;
+    return {
+      total: applications.length,
+      cvUploaded: by((a) => a.stage === "CV Uploaded"),
+      submitted: by((a) => a.stage === "Submitted"),
+      eligible: by((a) => a.aiResult === "Eligible"),
+      partial: by((a) => a.aiResult === "Partial Match"),
+      notEligible: by((a) => a.aiResult === "Not Eligible"),
+      incomplete: by((a) => a.stage === "Incomplete"),
+    };
+  }, [applications]);
 
   const applyCardFilter = (apply: () => void) => {
     handleResetFilters();
@@ -472,21 +504,19 @@ export default function ApplicationsAiResponsePage() {
 
   const statCards: KpiStatCardItem[] = [
     {
-      title: "TOTAL APPLICATIONS",
-      value: 148,
-      trend: "↑ 12%",
+      title: "TOTAL CANDIDATES",
+      value: counts.total,
       icon: FileText,
       tone: "blue",
       gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #bae6fd 100%)",
       borderColor: "#bae6fd",
       numColor: "#0284c7",
-      footer: "View all applications",
+      footer: "View all candidates",
       onClick: handleResetFilters,
     },
     {
-      title: "CV UPLOADED",
-      value: 132,
-      trend: "↑ 89%",
+      title: "CV ONLY (NOT APPLIED)",
+      value: counts.cvUploaded,
       icon: Download,
       tone: "indigo",
       gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #c7d2fe 100%)",
@@ -497,8 +527,7 @@ export default function ApplicationsAiResponsePage() {
     },
     {
       title: "APPLICATIONS SUBMITTED",
-      value: 125,
-      trend: "↑ 84%",
+      value: counts.submitted,
       icon: CheckCircle,
       tone: "teal",
       gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #99f6e4 100%)",
@@ -509,8 +538,7 @@ export default function ApplicationsAiResponsePage() {
     },
     {
       title: "ELIGIBLE (AI)",
-      value: 62,
-      trend: "↑ 42%",
+      value: counts.eligible,
       icon: Sparkles,
       tone: "emerald",
       gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #bbf7d0 100%)",
@@ -521,8 +549,7 @@ export default function ApplicationsAiResponsePage() {
     },
     {
       title: "PARTIAL MATCH",
-      value: 38,
-      trend: "↑ 26%",
+      value: counts.partial,
       icon: AlertCircle,
       tone: "amber",
       gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #fed7aa 100%)",
@@ -533,8 +560,7 @@ export default function ApplicationsAiResponsePage() {
     },
     {
       title: "NOT ELIGIBLE",
-      value: 25,
-      trend: "↑ 17%",
+      value: counts.notEligible,
       icon: XCircle,
       tone: "rose",
       gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #fecdd3 100%)",
@@ -545,8 +571,7 @@ export default function ApplicationsAiResponsePage() {
     },
     {
       title: "INCOMPLETE",
-      value: 23,
-      trend: "↑ 16%",
+      value: counts.incomplete,
       icon: Clock3,
       tone: "slate",
       gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #e2e8f0 100%)",
@@ -632,7 +657,7 @@ export default function ApplicationsAiResponsePage() {
         <div className="flex items-center gap-[10px]">
           <button
             type="button"
-            onClick={() => showToast("info", "Applications export downloaded")}
+            onClick={handleExport}
             className="flex h-[30px] items-center justify-center gap-[5px] rounded-[6px] border border-[#bbf7d0] bg-[#f0fdf4] px-[14px] text-[8.5px] font-semibold text-[#15803d] transition hover:bg-[#dcfce7] shadow-sm"
           >
             <Download className="h-[12px] w-[12px]" strokeWidth={1.7} />
@@ -645,6 +670,7 @@ export default function ApplicationsAiResponsePage() {
       <KpiStatCards
         items={statCards}
         gridClassName="mb-[12px] mt-[12px] grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-7"
+        compact
       />
 
       <div className="flex flex-col lg:flex-row items-start gap-4">
@@ -665,7 +691,9 @@ export default function ApplicationsAiResponsePage() {
                   className="h-7 px-2 bg-white border border-slate-300 rounded text-[10px] font-medium text-slate-700 outline-none w-full"
                 >
                   <option value="All Positions">All Positions</option>
-                  <option value="Sales Manager – Domestic Exhibition">Sales Manager – Domestic Exhibition</option>
+                  {positions.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
                 </select>
               </div>
 
@@ -804,7 +832,13 @@ export default function ApplicationsAiResponsePage() {
                   {currentPaginatedRows.length === 0 ? (
                     <tr>
                       <td colSpan={10} className="py-12 text-center text-xs font-medium text-slate-500">
-                        No applications match your filter criteria.
+                        {loading
+                          ? "Loading applications..."
+                          : loadError
+                          ? `Could not load applications: ${loadError}`
+                          : applications.length === 0
+                          ? "No applications yet. They appear here when candidates upload a CV on the Careers page."
+                          : "No applications match your filter criteria."}
                       </td>
                     </tr>
                   ) : (
@@ -829,12 +863,9 @@ export default function ApplicationsAiResponsePage() {
                           {/* Candidate Name */}
                           <td className="px-[12px] py-[8px]">
                             <div className="flex items-center gap-[10px] min-w-[160px]">
-                              <img
-                                src={app.avatar}
-                                alt={app.name}
-                                className="h-[32px] w-[32px] shrink-0 rounded-full border-[2px] border-white object-cover"
-                                style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.08), 0 0 0 1.5px #e2e8f0" }}
-                              />
+                              <div style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.08), 0 0 0 1.5px #e2e8f0" }} className="shrink-0 rounded-full">
+                                <CandidateAvatar app={app} className="h-[32px] w-[32px] rounded-full border-[2px] border-white" />
+                              </div>
                               <div className="min-w-0 flex-1">
                                 <p className="truncate text-[10.5px] font-bold text-[#1b5e20]">{app.name}</p>
                                 <p className="truncate text-[8px] font-semibold text-[#4B1426]">{app.experienceYrs}</p>
@@ -893,7 +924,10 @@ export default function ApplicationsAiResponsePage() {
                               <button
                                 type="button"
                                 title="View Details"
-                                onClick={() => setSelectedCandidate(app)}
+                                onClick={() => {
+                                  setSelectedCandidate(app);
+                                  setDetailsId(app.id);
+                                }}
                                 className="flex h-[25px] w-[25px] items-center justify-center rounded-[6px] bg-orange-500/10 text-orange-600 backdrop-blur-md border border-orange-400/30 shadow-[0_2px_6px_rgba(249,115,22,0.12)] transition-all hover:bg-orange-500/20 hover:border-orange-400/50 hover:shadow-[0_3px_10px_rgba(249,115,22,0.25)] hover:scale-105 active:scale-95 cursor-pointer"
                               >
                                 <Eye className="h-[12px] w-[12px] text-orange-600" />
@@ -1000,11 +1034,7 @@ export default function ApplicationsAiResponsePage() {
             {/* Profile Summary Card */}
             <div className="p-3 border-b border-slate-100 bg-white space-y-2.5">
               <div className="flex items-start gap-2.5">
-                <img
-                  src={selectedCandidate.avatar}
-                  alt={selectedCandidate.name}
-                  className="w-12 h-12 rounded-full object-cover border border-slate-200 shrink-0"
-                />
+                <CandidateAvatar app={selectedCandidate} className="w-12 h-12 rounded-full border border-slate-200 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1">
                     <h2 className="text-xs font-bold text-slate-900 truncate">{selectedCandidate.name}</h2>
@@ -1055,7 +1085,7 @@ export default function ApplicationsAiResponsePage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => showToast("success", "CV Download started")}
+                  onClick={() => openCv(selectedCandidate)}
                   className="flex items-center justify-center gap-1 px-2.5 py-1 bg-[#15803d] hover:bg-[#166534] text-white rounded text-[9px] font-bold transition active:scale-95 whitespace-nowrap"
                 >
                   <Download className="w-3 h-3 text-white" />
@@ -1143,7 +1173,7 @@ export default function ApplicationsAiResponsePage() {
                       <h3 className="font-bold text-[#23471d] text-[11px]">AI Analysis</h3>
                       <button
                         type="button"
-                        onClick={() => showToast("info", "Opening AI report")}
+                        onClick={() => setActiveDrawerTab("AI Analysis")}
                         className="inline-flex items-center gap-0.5 rounded-[4px] border border-[#bfdbfe] bg-[#eff6ff] px-2 py-0.5 text-[8.5px] font-bold text-[#1d4ed8] transition hover:bg-[#dbeafe]"
                       >
                         View Full Analysis <ArrowUpRight className="w-3 h-3" />
@@ -1173,10 +1203,14 @@ export default function ApplicationsAiResponsePage() {
                         {selectedCandidate.hrStatus}
                       </span>
                       <span className="text-[9px] text-[#64748b]">
-                        Updated by HR •{" "}
-                        <span className="font-semibold text-[#293681]">
-                          {selectedCandidate.updatedByHrOn || "18 Oct 2026, 02:10 PM"}
-                        </span>
+                        {selectedCandidate.updatedByHrOn ? (
+                          <>
+                            Updated by HR •{" "}
+                            <span className="font-semibold text-[#293681]">{selectedCandidate.updatedByHrOn}</span>
+                          </>
+                        ) : (
+                          "Not updated by HR yet"
+                        )}
                       </span>
                     </div>
                   </div>
@@ -1193,7 +1227,7 @@ export default function ApplicationsAiResponsePage() {
                           <span className={`flex items-center gap-1.5 ${labelClass}`}>
                             <Icon className={`w-3.5 h-3.5 ${iconColor}`} /> {label}
                           </span>
-                          <span className={`font-semibold ${valueColor}`}>{value}</span>
+                          <span className={`font-semibold ${valueColor}`}>{value || "—"}</span>
                         </div>
                       ))}
                     </div>
@@ -1206,79 +1240,143 @@ export default function ApplicationsAiResponsePage() {
                 <div className="space-y-2.5 text-slate-700">
                   <div className="p-2.5 bg-slate-50 rounded border border-slate-200">
                     <p className="font-bold text-slate-900">Resume File</p>
-                    <p className="text-slate-500 text-[10px] mb-2">Priya_Sharma_Resume.pdf (1.8 MB)</p>
+                    <p className="text-slate-500 text-[10px] mb-2 break-all">
+                      {selectedCandidate.cvFileName || "CV"}
+                      {selectedCandidate.cvFileSize ? ` (${formatBytes(selectedCandidate.cvFileSize)})` : ""}
+                    </p>
                     <button
                       type="button"
-                      onClick={() => showToast("success", "Downloading resume...")}
+                      onClick={() => openCv(selectedCandidate)}
                       className="px-2.5 py-1 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition text-[10px]"
                     >
-                      View Resume PDF
+                      View Resume
                     </button>
                   </div>
+                  {selectedCandidate.whyInterested && (
+                    <div className="p-2.5 bg-slate-50 rounded border border-slate-200">
+                      <p className="font-bold text-slate-900 mb-1">Why interested</p>
+                      <p className="text-[10px] text-slate-600 whitespace-pre-line">{selectedCandidate.whyInterested}</p>
+                    </div>
+                  )}
+                  {(selectedCandidate.skills?.length ?? 0) > 0 && (
+                    <div className="p-2.5 bg-slate-50 rounded border border-slate-200">
+                      <p className="font-bold text-slate-900 mb-1">Skills</p>
+                      <div className="flex flex-wrap gap-1">
+                        {selectedCandidate.skills!.map((sk) => (
+                          <span key={sk} className="rounded border border-[#bae6fd] bg-[#e0f2fe] px-1.5 py-0.5 text-[9px] font-semibold text-[#0369a1]">
+                            {sk}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {selectedCandidate.notes && (
+                    <div className="p-2.5 bg-amber-50 rounded border border-amber-200">
+                      <p className="font-bold text-amber-900 mb-1">Notes</p>
+                      <p className="text-[10px] text-amber-800 whitespace-pre-line">{selectedCandidate.notes}</p>
+                    </div>
+                  )}
                 </div>
               )}
 
               {activeDrawerTab === "AI Analysis" && (
-                <div className="p-2.5 bg-emerald-50 rounded border border-emerald-200 text-emerald-900">
-                  <p className="font-bold">Key Strengths Detected:</p>
-                  <ul className="list-disc list-inside mt-1 space-y-1 text-emerald-800">
-                    <li>5+ Years in Domestic Exhibition Sales</li>
-                    <li>Proven track record in stall bookings</li>
-                  </ul>
+                <div className="space-y-2.5">
+                  {selectedCandidate.aiAnalysisSummary && (
+                    <p className="text-[10px] text-slate-700 leading-snug">{selectedCandidate.aiAnalysisSummary}</p>
+                  )}
+                  <div className="p-2.5 bg-emerald-50 rounded border border-emerald-200 text-emerald-900">
+                    <p className="font-bold">Key Strengths Detected:</p>
+                    {(selectedCandidate.strengths?.length ?? 0) > 0 ? (
+                      <ul className="list-disc list-inside mt-1 space-y-1 text-emerald-800">
+                        {selectedCandidate.strengths!.map((x, i) => (
+                          <li key={i}>{x}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-1 text-emerald-800">None recorded.</p>
+                    )}
+                  </div>
+                  <div className="p-2.5 bg-rose-50 rounded border border-rose-200 text-rose-900">
+                    <p className="font-bold">Gaps:</p>
+                    {(selectedCandidate.gaps?.length ?? 0) > 0 ? (
+                      <ul className="list-disc list-inside mt-1 space-y-1 text-rose-800">
+                        {selectedCandidate.gaps!.map((x, i) => (
+                          <li key={i}>{x}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-1 text-rose-800">None recorded.</p>
+                    )}
+                  </div>
                 </div>
               )}
 
               {activeDrawerTab === "HR Status" && (
                 <div className="space-y-2">
                   <label className="font-bold text-slate-900 block">Update Status:</label>
-                  <select
-                    value={selectedCandidate.hrStatus}
-                    onChange={(e) => {
-                      const next = e.target.value as HRStatusType;
-                      setApplications((prev) =>
-                        prev.map((item) =>
-                          item.id === selectedCandidate.id ? { ...item, hrStatus: next } : item
-                        )
-                      );
-                      setSelectedCandidate((prev) => (prev ? { ...prev, hrStatus: next } : null));
-                      showToast("success", `HR status updated to ${next}`);
-                    }}
-                    className="w-full p-2 border border-slate-300 rounded font-medium text-slate-800 bg-white"
-                  >
-                    <option value="Shortlisted">Shortlisted</option>
-                    <option value="Under Review">Under Review</option>
-                    <option value="Interview">Interview</option>
-                    <option value="Sent to HR">Sent to HR</option>
-                    <option value="Selected">Selected</option>
-                    <option value="On Hold">On Hold</option>
-                    <option value="Rejected">Rejected</option>
-                    <option value="Not Forwarded">Not Forwarded</option>
-                  </select>
+                  {selectedCandidate.source === "cv" ? (
+                    <p className="text-[10px] text-slate-500">
+                      This candidate only checked their CV and hasn&apos;t applied yet, so there is no application to update.
+                    </p>
+                  ) : (
+                    <select
+                      value={selectedCandidate.hrStatus}
+                      onChange={(e) => updateHrStatus(selectedCandidate, e.target.value as HRStatusType)}
+                      className="w-full p-2 border border-slate-300 rounded font-medium text-slate-800 bg-white"
+                    >
+                      <option value="Not Forwarded">Not Forwarded</option>
+                      <option value="Sent to HR">Sent to HR</option>
+                      <option value="Under Review">Under Review</option>
+                      <option value="Shortlisted">Shortlisted</option>
+                      <option value="Interview">Interview</option>
+                      <option value="Selected">Selected</option>
+                      <option value="On Hold">On Hold</option>
+                      <option value="Rejected">Rejected</option>
+                    </select>
+                  )}
                 </div>
               )}
 
-              {activeDrawerTab === "Activity" && (
+              {activeDrawerTab === "Activity" && (() => {
+                const events = eventsFor.id === selectedCandidate.id ? eventsFor.list : [];
+                return (
                 <div className="space-y-1 text-slate-600">
-                  <div className="border-l-2 border-blue-500 pl-2 py-1">
-                    <p className="font-semibold text-slate-800">Application Received</p>
-                    <p className="text-[9.5px] text-slate-400">17 Oct 2026, 11:24 AM</p>
-                  </div>
+                  {events.length === 0 && (
+                    <div className="border-l-2 border-blue-500 pl-2 py-1">
+                      <p className="font-semibold text-slate-800">
+                        {selectedCandidate.source === "cv" ? "CV checked by AI" : "Application received"}
+                      </p>
+                      <p className="text-[9.5px] text-slate-400">
+                        {selectedCandidate.appliedOn}, {selectedCandidate.appliedTime}
+                      </p>
+                    </div>
+                  )}
+                  {events.map((ev) => (
+                    <div key={ev._id} className="border-l-2 border-blue-500 pl-2 py-1">
+                      <p className="font-semibold text-slate-800">{ev.note || ev.newStatus}</p>
+                      <p className="text-[9.5px] text-slate-400">
+                        {new Date(ev.createdAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}
+                        {ev.changedBy ? ` • ${ev.changedBy}` : ""}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-              )}
+                );
+              })()}
             </div>
 
             {/* Bottom Action Footer */}
             <div className="p-2.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2">
               <button
                 type="button"
-                onClick={() => showToast("info", "Opening full application detail view")}
+                onClick={() => setActiveDrawerTab("Application")}
                 className="flex-1 py-1.5 px-2 text-center text-[10px] font-bold text-white bg-[#233D4D] rounded hover:bg-[#1a2e3a] transition active:scale-95"
               >
                 View Full Application
               </button>
               <button
                 type="button"
-                onClick={() => showToast("info", "Note added")}
+                onClick={() => handleAddNote(selectedCandidate)}
                 className="flex-1 py-1.5 px-2 text-center text-[10px] font-bold text-white bg-[#0f766e] rounded hover:bg-[#0d655e] transition active:scale-95"
               >
                 Add Note
@@ -1287,6 +1385,90 @@ export default function ApplicationsAiResponsePage() {
           </div>
         )}
       </div>
+      {(() => {
+        const detailsApp = detailsId ? applications.find((a) => a.id === detailsId) || null : null;
+        const idx = detailsApp ? filteredApplications.findIndex((a) => a.id === detailsApp.id) : -1;
+        const goTo = (i: number) => {
+          const next = filteredApplications[i];
+          if (!next) return;
+          setDetailsId(next.id);
+          setSelectedCandidate(next);
+        };
+        const activity =
+          detailsApp && eventsFor.id === detailsApp.id
+            ? eventsFor.list.map((ev) => ({
+                id: ev._id,
+                title: ev.note || ev.newStatus,
+                when: new Date(ev.createdAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }),
+                by: ev.changedBy,
+              }))
+            : [];
+        return (
+          <CandidateDetailsModal
+            isOpen={!!detailsApp}
+            onClose={() => setDetailsId(null)}
+            activity={activity}
+            onPrev={idx > 0 ? () => goTo(idx - 1) : undefined}
+            onNext={idx >= 0 && idx < filteredApplications.length - 1 ? () => goTo(idx + 1) : undefined}
+            onForwardToHr={detailsApp ? () => handleForwardToHr(detailsApp) : undefined}
+            onDownloadCv={detailsApp ? () => openCv(detailsApp) : undefined}
+            onAddNote={detailsApp ? () => handleAddNote(detailsApp) : undefined}
+            candidate={
+              detailsApp && {
+                name: detailsApp.name,
+                avatarUrl: toFileUrl(detailsApp.avatar),
+                position: detailsApp.position,
+                department: detailsApp.department,
+                jobCode: detailsApp.jobCode,
+                appliedOn: `${detailsApp.appliedOn}, ${detailsApp.appliedTime}`,
+                phone: detailsApp.phone,
+                email: detailsApp.email,
+                location: detailsApp.location,
+                source: detailsApp.source,
+                stage: detailsApp.stage,
+                aiScore: detailsApp.aiScore,
+                aiResult: detailsApp.aiResult,
+                aiSummary: detailsApp.aiAnalysisSummary,
+                strengths: detailsApp.strengths,
+                gaps: detailsApp.gaps,
+                skills: detailsApp.skills,
+                hrStatus: detailsApp.hrStatus,
+                updatedByHrOn: detailsApp.updatedByHrOn,
+                experience: detailsApp.experienceYrs,
+                currentCompany: detailsApp.currentCompany,
+                currentDesignation: detailsApp.currentDesignation,
+                currentCtc: detailsApp.currentCtc,
+                expectedCtc: detailsApp.expectedCtc,
+                noticePeriod: detailsApp.noticePeriod,
+                willingToRelocate: detailsApp.willingToRelocate,
+                whyInterested: detailsApp.whyInterested,
+                notes: detailsApp.notes,
+                cvFileName: detailsApp.cvFileName,
+              }
+            }
+          />
+        );
+      })()}
+      <ForwardToHRModal
+        isOpen={!!forwardTarget}
+        onClose={() => setForwardTarget(null)}
+        onSubmit={submitForwardToHr}
+        candidate={
+          forwardTarget && {
+            name: forwardTarget.name,
+            avatarUrl: toFileUrl(forwardTarget.avatar),
+            position: forwardTarget.position,
+            department: forwardTarget.department,
+            jobCode: forwardTarget.jobCode,
+            experience: forwardTarget.experienceYrs,
+            location: forwardTarget.location,
+            appliedOn: `${forwardTarget.appliedOn}, ${forwardTarget.appliedTime}`,
+            aiScore: forwardTarget.aiScore,
+            aiResult: forwardTarget.aiResult,
+            aiSummary: forwardTarget.aiAnalysisSummary,
+          }
+        }
+      />
       <Suspense fallback={null}>
         <ModalHandler />
       </Suspense>
