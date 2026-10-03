@@ -6,8 +6,8 @@ export const defaultWhyExhibitSections: LandingSectionContent[] = [
     name: "HeroSection",
     enabled: true,
     eyebrow: "INDIA'S PREMIER ORGANIC & WELLNESS EVENT",
-    titlePrimary: "CONNECT. COLLABORATE.",
-    titleSecondary: "CULTIVATE A HEALTHIER TOMORROW.",
+    // Single H1. The website shows the first two words on the green line, the rest maroon.
+    title: "CONNECT. COLLABORATE. CULTIVATE A HEALTHIER TOMORROW.",
     description: "Bharat Organic Expo brings together global innovators, brands, buyers & experts to promote sustainable living and natural well-being.",
     buttonLabel: "Book Your Stall",
     buttonHref: "/registration/book-a-stand",

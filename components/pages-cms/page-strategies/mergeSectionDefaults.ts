@@ -46,7 +46,9 @@ export function mergeSectionWithSavedData(
   }
   if (
     fallbackItem.key === "about-hero" || merged.key === "about-hero" ||
-    fallbackItem.key === "advisory-hero" || merged.key === "advisory-hero"
+    fallbackItem.key === "advisory-hero" || merged.key === "advisory-hero" ||
+    fallbackItem.key === "why-exhibit-hero" || merged.key === "why-exhibit-hero" ||
+    fallbackItem.key === "blog-hero" || merged.key === "blog-hero"
   ) {
     // The two-part title (titlePrimary + titleSecondary) became a single H1 "title" field.
     const legacyTitle = [savedItem.titlePrimary, savedItem.titleSecondary]
@@ -56,6 +58,97 @@ export function mergeSectionWithSavedData(
     if (legacyTitle && !savedItem.title) merged.title = legacyTitle;
     delete merged.titlePrimary;
     delete merged.titleSecondary;
+  }
+  if (fallbackItem.key === "exhibitors-hero" || merged.key === "exhibitors-hero") {
+    // The old admin-only hero (subtitle + stats) never matched the live page.
+    delete merged.subtitle;
+    delete merged.items;
+    if (!merged.title || merged.title === "Meet Leading Exhibitors at Bharat Organic Expo") {
+      merged.title = fallbackItem.title;
+    }
+    if (!merged.description || String(merged.description).startsWith("Browse our exhibitors across")) {
+      merged.description = fallbackItem.description;
+    }
+    if (!merged.image) merged.image = fallbackItem.image;
+  }
+  if ((fallbackItem.key === "blog-hero" || merged.key === "blog-hero") && !merged.image) {
+    merged.image = fallbackItem.image;
+  }
+  if ((fallbackItem.key === "contact-hero" || merged.key === "contact-hero") &&
+    (!merged.image || String(merged.image).includes("moksha-sewa/"))) {
+    // The old default was a placeholder photo from another project.
+    merged.image = fallbackItem.image;
+  }
+  if (fallbackItem.key === "sub-partnership-hero" || merged.key === "sub-partnership-hero") {
+    // The old generic hero had fields the website never showed.
+    delete merged.eyebrow;
+    if (!merged.date || String(merged.date).includes("T")) merged.date = fallbackItem.date;
+    if (typeof merged.image === "string" && merged.image.includes("og-banner.png")) merged.image = "";
+    if (merged.title === "Official Expo Partner") merged.title = "";
+    if (String(merged.subtitle || "").startsWith("Collaborate with Bharat Organic Expo 2027 to expand")) merged.subtitle = "";
+    if (String(merged.description || "").startsWith("Access direct networking, exclusive brand")) merged.description = "";
+    if (merged.location === "Bharat Mandapam, New Delhi") merged.location = fallbackItem.location;
+    if (merged.imageAlt === undefined) merged.imageAlt = "";
+  }
+  if (fallbackItem.key === "partnership-page-hero" || merged.key === "partnership-page-hero") {
+    // The date was saved through a datetime picker that couldn't hold "19 – 21 February 2027".
+    if (!merged.date || String(merged.date).includes("T")) merged.date = fallbackItem.date;
+    // Old placeholders (another account's km.jpg, the OG banner) were never the real background.
+    const img = typeof merged.image === "string" ? merged.image : "";
+    if (!img || img.includes("moksha-sewa/assets/km.jpg") || img.includes("og-banner.png")) {
+      merged.image = fallbackItem.image;
+    }
+    if (!merged.imageAlt) merged.imageAlt = fallbackItem.imageAlt;
+  }
+  if ((fallbackItem.key === "epromotion-hero" || merged.key === "epromotion-hero")) {
+    if (!merged.image) merged.image = fallbackItem.image;
+    if (!merged.imageAlt) merged.imageAlt = fallbackItem.imageAlt;
+  }
+  if (fallbackItem.key === "sponsorship-hero" || merged.key === "sponsorship-hero") {
+    // Old placeholders (another account's km.jpg, the OG banner) were never the real
+    // background; saving them would have replaced the live background.
+    const img = typeof merged.image === "string" ? merged.image : "";
+    if (!img || img.includes("moksha-sewa/assets/km.jpg") || img.includes("og-banner.png")) {
+      merged.image = fallbackItem.image;
+    }
+    if (!merged.imageAlt) merged.imageAlt = fallbackItem.imageAlt;
+  }
+  if (fallbackItem.key === "why-visit-hero" || merged.key === "why-visit-hero") {
+    // The three-part title (primary + secondary + highlight) became a single H1 "title".
+    const legacyTitle = [savedItem.titlePrimary, savedItem.titleSecondary, savedItem.titleHighlight]
+      .filter((x) => typeof x === "string" && x.trim())
+      .join(" ")
+      .trim();
+    if (legacyTitle && !savedItem.title) merged.title = legacyTitle;
+    delete merged.titlePrimary;
+    delete merged.titleSecondary;
+    delete merged.titleHighlight;
+  }
+  if (fallbackItem.key === "nominate-hero" || merged.key === "nominate-hero") {
+    // Fields from the old hero layout that the website never showed; the old two-part
+    // title (uppercase, never live) is dropped in favour of the website's own H1.
+    for (const k of [
+      "titlePrimary", "titleSecondary", "subtitle", "buttonLabel", "buttonHref",
+      "secondaryButtonLabel", "secondaryButtonHref",
+    ]) {
+      delete merged[k];
+    }
+    if (!savedItem.title) merged.title = fallbackItem.title;
+    if (!merged.image) merged.image = fallbackItem.image;
+    if (!merged.imageAlt) merged.imageAlt = fallbackItem.imageAlt;
+  }
+  if (fallbackItem.key === "exhibition-hero" || merged.key === "exhibition-hero") {
+    // Fields from the old hero layout that the website never showed.
+    for (const k of [
+      "eyebrow", "titlePrimary", "titleSecondary", "date", "location",
+      "buttonLabel", "buttonHref", "secondaryButtonLabel", "secondaryButtonHref",
+      // The background is a CSS image, which can't carry alt text.
+      "imageAlt",
+    ]) {
+      delete merged[k];
+    }
+    if (!merged.title) merged.title = fallbackItem.title;
+    if (!merged.image) merged.image = fallbackItem.image;
   }
   if (fallbackItem.key === "awards-stats" || merged.key === "awards-stats") {
     delete merged.eyebrow;

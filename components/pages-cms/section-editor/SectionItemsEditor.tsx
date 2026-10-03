@@ -80,6 +80,8 @@ export function SectionItemsEditor({
 
   const getSectionAddLabel = () => {
     if (sectionId === "hero") return "Add Hero Slide";
+    if (sectionId === "exhibition-hero") return "Add Feature";
+    if (sectionId === "nominate-hero") return "Add Feature";
     if (sectionId === "why-exhibit-hero") return "Add Hero Highlight Block";
     if (sectionId === "why-visit-hero") return "Add Impact Stat Counter";
     if (sectionId === "why-visit-matters") return "Add Opportunity Card";
@@ -132,6 +134,8 @@ export function SectionItemsEditor({
                             sectionId === "sponsorship-categories" ? "Sponsorship Packages & Tiers" :
                               sectionId === "buyer-seller-meet" ? "Matchmaking Process Steps" :
                                 sectionId === "testimonials-carousel" ? "Exhibitor & Visitor Reviews" :
+                                  sectionId === "exhibition-hero" ? "Hero Features (Stats Bar)" :
+                                  sectionId === "nominate-hero" ? "Hero Features (Icon Row)" :
                                   sectionId === "navbar" ? "Header Navigation Links" :
                                     sectionId === "footer" ? "Footer Quick Links" : "Section Content Blocks"}
           </span>
@@ -400,7 +404,13 @@ export function SectionItemsEditor({
                                       ? "Highlight Icon / Image (Upload)"
                                       : sectionId === "global-platform" && key === "imageAlt"
                                         ? "Image Alt Text"
-                                        : humanizeKey(key)}
+                                        : sectionId === "exhibition-hero" && key === "title"
+                                          ? "Feature Value (e.g. 200+)"
+                                          : sectionId === "exhibition-hero" && key === "subtitle"
+                                            ? "Feature Label (e.g. Exhibitors Expected)"
+                                            : sectionId === "nominate-hero" && key === "title"
+                                              ? "Feature Label (e.g. Expertise)"
+                                            : humanizeKey(key)}
                         </FieldLabel>
 
                         {key === "icon" && sectionId !== "journey-glimpse" ? (

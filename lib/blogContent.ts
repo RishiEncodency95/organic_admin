@@ -6,11 +6,11 @@ export const defaultBlogSections: LandingSectionContent[] = [
     name: "BlogHero",
     enabled: true,
     eyebrow: "BHARAT ORGANIC EXPO",
-    titlePrimary: "BLOGS &",
-    titleSecondary: "NEWS",
+    // Single H1: the website shows the last word on the orange line, the rest green.
+    title: "BLOGS & NEWS",
     subtitle: "Insights. Innovation. Impact.",
     description: "Stay updated with the latest trends, expert perspectives, innovations and success stories shaping India's organic food, agriculture and sustainable products industry.",
-    image: "",
+    image: "https://res.cloudinary.com/ldlcnnhz/image/upload/v1791010203/bharat-organic/blog/hero-bg.webp",
     imageAlt: "Bharat Organic Expo Blog Banner",
   },
   {

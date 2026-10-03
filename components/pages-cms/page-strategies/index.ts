@@ -11,5 +11,12 @@ export { syncSponsorshipSectionsFromLiveApi, saveSponsorshipSections } from "./s
 export { syncTermsSectionsFromLiveApi, saveTermsSections } from "./terms";
 export { syncMsmeSectionsFromLiveApi, saveMsmeSections } from "./msme";
 export { syncBuyerSellerMeetSectionsFromLiveApi, saveBuyerSellerMeetSections } from "./buyerSellerMeet";
+export { syncExhibitionCategoriesSectionsFromLiveApi, saveExhibitionCategoriesSections } from "./exhibitionCategories";
+export { syncNominateAdvisorySectionsFromLiveApi, saveNominateAdvisorySections } from "./nominateAdvisory";
+export { syncBlogSectionsFromLiveApi, saveBlogSections } from "./blog";
+export { syncExhibitorsSectionsFromLiveApi, saveExhibitorsSections } from "./exhibitors";
+export { syncEPromotionSectionsFromLiveApi, saveEPromotionSections } from "./epromotion";
+export { syncPartnershipSectionsFromLiveApi, savePartnershipSections } from "./partnership";
+export { SUB_PARTNERSHIP_SLUGS, syncSubPartnershipSectionsFromLiveApi, saveSubPartnershipSections } from "./subPartnership";
 export { syncPageSeoFromLiveApi, savePageCore } from "./pageSeo";
 export type { SectionsDraft, SetSectionsDraft } from "./types";

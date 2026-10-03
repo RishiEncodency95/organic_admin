@@ -152,17 +152,23 @@ export const defaultAdvisorySections: LandingSectionContent[] = [
 
 export const defaultNominateAdvisorySections: LandingSectionContent[] = [
   {
+    // Matches the website's Nominate hero; saved to /website/nominatehero.
     key: "nominate-hero",
     name: "Nominate Advisory Hero",
     enabled: true,
-    eyebrow: "NOMINATE A LEADER",
-    titlePrimary: "NOMINATE AN",
-    titleSecondary: "ADVISORY BOARD MEMBER",
-    subtitle: "Help shape the future of Bharat Organic Expo 2027.",
-    description: "Do you know a visionary leader, industry pioneer, or subject matter expert who can guide the organic & natural ecosystem? Submit your nomination below.",
-    image: "",
-    buttonLabel: "VIEW ADVISORY BOARD",
-    buttonHref: "/about/advisory_board_member",
+    eyebrow: "JOIN OUR LEADERSHIP COUNCIL",
+    // Single H1: the website shows the first two words dark, the rest green.
+    title: "Nominate an Advisory Board Member",
+    description: "Recognize leaders who can guide, support and strengthen the vision of Bharat Organic Expo.",
+    image: "https://res.cloudinary.com/ldlcnnhz/image/upload/v1791009918/bharat-organic/nominate-advisory/hero-bg.webp",
+    imageAlt: "Nominate Advisory Board Member",
+    // Icon row under the description: title = label, icon = lucide icon name.
+    items: [
+      { title: "Expertise", icon: "Users" },
+      { title: "Vision", icon: "Lightbulb" },
+      { title: "Collaboration", icon: "Handshake" },
+      { title: "Global Impact", icon: "Globe" },
+    ],
   },
   {
     key: "nominate-sidebar-info",

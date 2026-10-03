@@ -42,8 +42,15 @@ export function PdfUploadField({
     onChange("");
   };
 
+  // "/api/files/pdf?url=…" (what uploads now return) works as-is, since the admin forwards
+  // /api to the backend. Direct Cloudinary PDF links are routed through the same endpoint,
+  // because Cloudinary refuses to serve PDFs from its public URLs (401).
   const displayUrl = value
-    ? value.startsWith("http")
+    ? value.startsWith("/api/")
+      ? value
+      : /^https:\/\/res\.cloudinary\.com\/[^?#]+\.pdf$/i.test(value)
+      ? `/api/files/pdf?url=${encodeURIComponent(value)}`
+      : value.startsWith("http")
       ? value
       : value.startsWith("/")
         ? `http://localhost:4000${value}`

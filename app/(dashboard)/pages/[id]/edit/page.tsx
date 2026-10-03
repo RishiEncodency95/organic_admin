@@ -53,7 +53,22 @@ import {
   syncMsmeSectionsFromLiveApi,
   saveMsmeSections,
   syncBuyerSellerMeetSectionsFromLiveApi,
+  syncExhibitionCategoriesSectionsFromLiveApi,
+  syncNominateAdvisorySectionsFromLiveApi,
+  syncBlogSectionsFromLiveApi,
+  syncExhibitorsSectionsFromLiveApi,
+  syncEPromotionSectionsFromLiveApi,
+  syncPartnershipSectionsFromLiveApi,
+  SUB_PARTNERSHIP_SLUGS,
+  syncSubPartnershipSectionsFromLiveApi,
   saveBuyerSellerMeetSections,
+  saveExhibitionCategoriesSections,
+  saveNominateAdvisorySections,
+  saveBlogSections,
+  saveExhibitorsSections,
+  saveEPromotionSections,
+  savePartnershipSections,
+  saveSubPartnershipSections,
   syncPageSeoFromLiveApi,
   savePageCore,
 } from "@/components/pages-cms/page-strategies";
@@ -485,6 +500,34 @@ export default function CmsEditPage() {
       syncBuyerSellerMeetSectionsFromLiveApi(setSectionsDraft);
     }
 
+    if (page.configKey === "exhibitionCategoriesPage") {
+      syncExhibitionCategoriesSectionsFromLiveApi(setSectionsDraft);
+    }
+
+    if (page.configKey === "nominateAdvisoryPage") {
+      syncNominateAdvisorySectionsFromLiveApi(setSectionsDraft);
+    }
+
+    if (page.configKey === "blogPage") {
+      syncBlogSectionsFromLiveApi(setSectionsDraft);
+    }
+
+    if (page.configKey === "exhibitorsPage") {
+      syncExhibitorsSectionsFromLiveApi(setSectionsDraft);
+    }
+
+    if (page.configKey === "epromotionPage") {
+      syncEPromotionSectionsFromLiveApi(setSectionsDraft);
+    }
+
+    if (page.configKey === "partnershipPage") {
+      syncPartnershipSectionsFromLiveApi(setSectionsDraft);
+    }
+
+    if (page.configKey && SUB_PARTNERSHIP_SLUGS[page.configKey]) {
+      syncSubPartnershipSectionsFromLiveApi(SUB_PARTNERSHIP_SLUGS[page.configKey], setSectionsDraft);
+    }
+
     syncPageSeoFromLiveApi(page, setForm, canonicalEditorRef);
   }, [settings, page]);
 
@@ -679,6 +722,34 @@ export default function CmsEditPage() {
 
       if (savingKey === "buyerSellerMeetPage") {
         await saveBuyerSellerMeetSections(sectionsDraft);
+      }
+
+      if (savingKey === "exhibitionCategoriesPage") {
+        await saveExhibitionCategoriesSections(sectionsDraft);
+      }
+
+      if (savingKey === "nominateAdvisoryPage") {
+        await saveNominateAdvisorySections(sectionsDraft);
+      }
+
+      if (savingKey === "blogPage") {
+        await saveBlogSections(sectionsDraft);
+      }
+
+      if (savingKey === "exhibitorsPage") {
+        await saveExhibitorsSections(sectionsDraft);
+      }
+
+      if (savingKey === "epromotionPage") {
+        await saveEPromotionSections(sectionsDraft);
+      }
+
+      if (savingKey === "partnershipPage") {
+        await savePartnershipSections(sectionsDraft);
+      }
+
+      if (savingKey && SUB_PARTNERSHIP_SLUGS[savingKey]) {
+        await saveSubPartnershipSections(SUB_PARTNERSHIP_SLUGS[savingKey], sectionsDraft);
       }
 
       const updated = await savePageCore({

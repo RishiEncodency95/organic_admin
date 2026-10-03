@@ -10,7 +10,7 @@ export const defaultContactSections: ContactSectionContent[] = [
     eyebrow: "CONTACT US",
     title: "Let's Grow Organic Together",
     subtitle: "We're here to answer your questions, help exhibitors, guide visitors, and support partners.",
-    image: "https://res.cloudinary.com/dr8mld4i0/image/upload/v1788164944/moksha-sewa/hero-images/dignity-in-every-final-journey-bg.png",
+    image: "https://res.cloudinary.com/ldlcnnhz/image/upload/v1790240961/bharat-organic/content/vhqyewkdtm7hhhsxeohu.webp",
     items: [
       {
         title: "Visit Us",

@@ -33,6 +33,7 @@ export function syncSponsorshipSectionsFromLiveApi(setSectionsDraft: SetSections
                 subtitle: data.badgeText || sec.subtitle,
                 description,
                 image: data.image || sec.image,
+                imageAlt: data.imageAlt || sec.imageAlt,
                 items,
               };
             }
@@ -57,6 +58,7 @@ export async function saveSponsorshipSections(sectionsDraft: SectionsDraft): Pro
       descriptionBold: heroSec.description,
       descriptionText: "",
       image: heroSec.image,
+      imageAlt: heroSec.imageAlt || "",
       stats: Array.isArray(heroSec.items)
         ? heroSec.items.map((it: any) => ({
             iconKey: it.icon || "Users",

@@ -6,9 +6,8 @@ export const defaultWhyVisitSections: LandingSectionContent[] = [
     name: "HeroSection",
     enabled: true,
     eyebrow: "WHY VISIT BHARAT ORGANIC EXPO 2027",
-    titlePrimary: "Source Better.",
-    titleSecondary: "Connect Directly.",
-    titleHighlight: "Grow Your Business.",
+    // Single H1: the website puts each sentence on its own line, the last one in green.
+    title: "Source Better. Connect Directly. Grow Your Business.",
     description: "Discover new products, meet manufacturers and suppliers, explore sourcing opportunities and build valuable business connections across India's growing organic, natural and sustainable ecosystem.",
     image: "",
     imageAlt: "Why Visit Bharat Organic Expo 2027",

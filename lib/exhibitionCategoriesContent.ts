@@ -2,21 +2,21 @@ import { LandingSectionContent } from "./landingContent";
 
 export const defaultExhibitionCategoriesSections: LandingSectionContent[] = [
   {
+    // Matches the website's Exhibition Categories hero; saved to /website/exhibition-categories/hero.
     key: "exhibition-hero",
     name: "Exhibition Categories Hero",
     enabled: true,
-    eyebrow: "EXHIBITION SECTORS",
-    titlePrimary: "EXPLORE OUR",
-    titleSecondary: "EXHIBITION CATEGORIES",
-    subtitle: "Showcasing the entire organic & natural ecosystem.",
-    description: "Discover innovative products, sustainable solutions, certified organic produce, and cutting-edge technologies across key sector categories.",
-    date: "19–21 February 2027",
-    location: "Hall 12, Bharat Mandapam, New Delhi",
-    image: "",
-    buttonLabel: "BOOK YOUR STALL",
-    buttonHref: "/registration/book-a-stand",
-    secondaryButtonLabel: "REGISTER AS VISITOR",
-    secondaryButtonHref: "/registration/visitor-registration",
+    title: "EXHIBITION CATEGORIES",
+    subtitle: "EXPLORE THE COMPLETE ORGANIC ECOSYSTEM",
+    description: "From farm inputs and organic production to finished products, technology, certification and global trade—discover every opportunity to grow your business at Bharat Organic Expo 2027.",
+    image: "https://res.cloudinary.com/ldlcnnhz/image/upload/v1791006354/bharat-organic/exhibition-categories/hero-bg.webp",
+    // Stats bar features: title = value ("200+"), subtitle = label ("Exhibitors Expected").
+    items: [
+      { title: "200+", subtitle: "Exhibitors Expected" },
+      { title: "8000+", subtitle: "Business Visitors" },
+      { title: "Global", subtitle: "Business Platform" },
+      { title: "Endless", subtitle: "Business Opportunities" },
+    ],
   },
   {
     key: "exhibition-sectors",

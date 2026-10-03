@@ -1,6 +1,13 @@
 import { api } from "@/lib/api";
 import type { SectionsDraft, SetSectionsDraft } from "./types";
 
+// The hero H1 is one admin field; the backend keeps it as two parts because the website
+// colours them differently: the first two words (green line) and the rest (maroon line).
+function splitWhyExhibitTitle(text: string): { prefix: string; highlight: string } {
+  const words = (text || "").trim().split(/\s+/).filter(Boolean);
+  return { prefix: words.slice(0, 2).join(" "), highlight: words.slice(2).join(" ") };
+}
+
 export function syncWhyExhibitSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft): void {
   api.get("/website/participate/why-exhibit/hero")
     .then((res: any) => {
@@ -10,11 +17,14 @@ export function syncWhyExhibitSectionsFromLiveApi(setSectionsDraft: SetSectionsD
           prev.map((sec) =>
             sec.key === "why-exhibit-hero"
               ? {
-                  ...sec,
+                  ...(({ titlePrimary: _p, titleSecondary: _s, ...rest }) => rest)(sec as Record<string, any>),
                   enabled: data.enabled !== false,
                   eyebrow: data.tagline ?? sec.eyebrow,
-                  titlePrimary: data.titlePrefix ?? sec.titlePrimary,
-                  titleSecondary: data.titleHighlight ?? sec.titleSecondary,
+                  title:
+                    [data.titlePrefix, data.titleHighlight]
+                      .filter((x: unknown) => typeof x === "string" && x.trim())
+                      .join(" ")
+                      .trim() || sec.title,
                   description: data.description ?? sec.description,
                   bgImage: data.bgImage ?? sec.bgImage ?? "",
                   buttonLabel: data.buttons?.[0]?.label ?? sec.buttonLabel,
@@ -146,8 +156,8 @@ export async function saveWhyExhibitSections(sectionsDraft: SectionsDraft): Prom
     try {
       await api.put("/website/participate/why-exhibit/hero", {
         tagline: whyHeroSec.eyebrow,
-        titlePrefix: whyHeroSec.titlePrimary,
-        titleHighlight: whyHeroSec.titleSecondary,
+        titlePrefix: splitWhyExhibitTitle(whyHeroSec.title || "").prefix,
+        titleHighlight: splitWhyExhibitTitle(whyHeroSec.title || "").highlight,
         description: whyHeroSec.description,
         bgImage: whyHeroSec.bgImage || "",
         buttons: [

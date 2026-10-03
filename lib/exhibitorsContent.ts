@@ -68,13 +68,22 @@ export const BOTTOM_STATS = [
 
 export const defaultExhibitorsSections: LandingSectionContent[] = [
   {
+    // Matches the /exhibitors page hero; saved to /website/exhibitors/hero.
     key: "exhibitors-hero",
     name: "HeroSection",
     enabled: true,
-    title: "Meet Leading Exhibitors at Bharat Organic Expo",
-    subtitle: "Explore 200+ Verified Organic, Ayurveda, AgriTech & Sustainable Brands",
-    description: "Browse our exhibitors across Organic Food, AYUSH, Natural Care, AgriTech, Bio-Inputs, and Sustainable Solutions.",
-    items: HERO_STATS.map((s) => ({ value: s.value, label: s.label })),
+    eyebrow: "TRUSTED BY",
+    // Single H1: the website shows word 1 dark + word 2 green on line 1, the rest on line 2.
+    title: "150+ Leading Health & Wellness Brands",
+    description: "India's most influential health, Ayurveda, fitness and wellness companies have chosen Bharat Organic Expo as the platform to showcase, connect and grow.",
+    date: "19-21 February 2027",
+    location: "Hall 12, Bharat Mandapam, New Delhi",
+    buttonLabel: "REGISTER AS A BUYER",
+    buttonHref: "/registration/buyer-registration",
+    secondaryButtonLabel: "PARTICIPATE AS AN EXHIBITOR",
+    secondaryButtonHref: "/registration/book-a-stand",
+    image: "https://res.cloudinary.com/ldlcnnhz/image/upload/v1791010810/bharat-organic/exhibitors/hero-bg.webp",
+    imageAlt: "Bharat Organic Expo exhibitors",
   },
   {
     key: "exhibitors-list",

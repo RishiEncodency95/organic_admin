@@ -39,6 +39,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import typography from "../pages/PagesTypography.module.css";
+import KpiStatCards, { type KpiStatCardItem } from "@/components/ui/KpiStatCards";
 
 /* =========================================================
    MOCK DATA
@@ -61,32 +62,7 @@ function notImplemented(action: string) {
   Toast.fire({ icon: "info", iconColor: "#38bdf8", title: `${action} — coming soon` });
 }
 
-const toneClass = {
-  slate: "bg-slate-50 text-slate-700 ring-slate-200",
-  blue: "bg-sky-50 text-sky-700 ring-sky-200",
-  violet: "bg-violet-50 text-violet-700 ring-violet-200",
-  indigo: "bg-indigo-50 text-indigo-700 ring-indigo-200",
-  cyan: "bg-cyan-50 text-cyan-700 ring-cyan-200",
-  emerald: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  amber: "bg-amber-50 text-amber-700 ring-amber-200",
-  rose: "bg-rose-50 text-rose-700 ring-rose-200",
-  teal: "bg-teal-50 text-teal-700 ring-teal-200",
-} as const;
-
-interface StatCardItem {
-  title: string;
-  value: string | number;
-  icon: LucideIcon;
-  tone: keyof typeof toneClass;
-  gradient: string;
-  borderColor: string;
-  numColor: string;
-  trend: string;
-  footer: string;
-  onClick: () => void;
-}
-
-const STAT_CARDS: StatCardItem[] = [
+const STAT_CARDS: KpiStatCardItem[] = [
   {
     title: "ACTIVE JOBS",
     value: 6,
@@ -445,7 +421,7 @@ export default function CareerDashboardPage() {
         {/* =================================================
             HEADER
         ================================================= */}
-        <div className="mb-[14px] flex flex-wrap items-start justify-between gap-[10px] border-b-[2px] border-[#293681] pb-[10px]">
+        <div className="mb-[18px] flex flex-wrap items-center justify-between gap-[10px] border-b-[2px] border-[#293681] pb-[8px]">
           <div>
             <h1 className="text-[19px] font-bold leading-[1.15] tracking-[-0.018em] text-[#23471d]">
               Careers Dashboard
@@ -471,62 +447,10 @@ export default function CareerDashboardPage() {
         {/* =================================================
             STATS ROW
         ================================================= */}
-        <div className="mb-[12px] grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-9">
-          {STAT_CARDS.map((item) => {
-            const Icon = item.icon;
-            return (
-              <div
-                key={item.title}
-                className="relative flex h-[76px] flex-col overflow-hidden rounded-[10px] border border-[#e5e7e6] bg-white p-1.5 !pb-4 transition-all hover:translate-y-[-1px]"
-                style={{
-                  background: item.gradient,
-                  borderColor: item.borderColor || undefined,
-                  boxShadow: "rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px",
-                }}
-              >
-                <div className="flex items-start gap-1.5">
-                  <div
-                    className={`grid h-[22px] w-[22px] shrink-0 place-items-center rounded-full ring-1 bg-white/80 shadow-xs ${toneClass[item.tone]}`}
-                  >
-                    <Icon className="h-3 w-3" />
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <p
-                      className="truncate text-[7.6px] !font-semibold leading-tight tracking-[0.01em] text-slate-900"
-                      style={{ fontWeight: 600, color: "#0f172a" }}
-                    >
-                      {item.title}
-                    </p>
-
-                    <div className="mt-1 flex items-end justify-between">
-                      <span
-                        className="text-[14.5px] !font-semibold leading-none tracking-[-0.04em]"
-                        style={{ color: item.numColor, fontWeight: 600 }}
-                      >
-                        <AnimatedCounter value={item.value} />
-                      </span>
-
-                      <span
-                        className={`mb-0.5 text-[6.7px] font-bold ${item.trend.startsWith("↓") ? "text-[#dc2626]" : "text-[#16a34a]"}`}
-                      >
-                        {item.trend}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  onClick={item.onClick}
-                  className="absolute bottom-1 left-1.5 right-1.5 flex cursor-pointer items-center justify-center gap-1 text-[7.6px] font-semibold text-[#293957] transition hover:text-blue-600"
-                >
-                  {item.footer}
-                  <ArrowRight className="h-2.5 w-2.5" />
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <KpiStatCards
+          items={STAT_CARDS}
+          gridClassName="mb-[12px] mt-[12px] grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-9"
+        />
 
         {/* =================================================
             MAIN GRID

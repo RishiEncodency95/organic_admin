@@ -20,7 +20,6 @@ import {
   DollarSign,
   Clock,
   Send,
-  Plus,
   ArrowUpRight,
   CheckCircle,
   AlertCircle,
@@ -29,9 +28,11 @@ import {
   TrendingUp,
   Sparkles,
   ArrowUpDown,
+  Eye,
 } from "lucide-react";
 import Swal from "sweetalert2";
 import typography from "../pages/PagesTypography.module.css";
+import KpiStatCards, { type KpiStatCardItem } from "@/components/ui/KpiStatCards";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense } from "react";
 import ApplicationSentModal from "@/components/ApplicationSentModal";
@@ -463,26 +464,129 @@ export default function ApplicationsAiResponsePage() {
     showToast("success", `Application of ${app.name} forwarded to HR`);
   };
 
-  // Badge Color Mappers
+  const applyCardFilter = (apply: () => void) => {
+    handleResetFilters();
+    apply();
+    setCurrentPage(1);
+  };
+
+  const statCards: KpiStatCardItem[] = [
+    {
+      title: "TOTAL APPLICATIONS",
+      value: 148,
+      trend: "↑ 12%",
+      icon: FileText,
+      tone: "blue",
+      gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #bae6fd 100%)",
+      borderColor: "#bae6fd",
+      numColor: "#0284c7",
+      footer: "View all applications",
+      onClick: handleResetFilters,
+    },
+    {
+      title: "CV UPLOADED",
+      value: 132,
+      trend: "↑ 89%",
+      icon: Download,
+      tone: "indigo",
+      gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #c7d2fe 100%)",
+      borderColor: "#c7d2fe",
+      numColor: "#4338ca",
+      footer: "View CV uploads",
+      onClick: () => applyCardFilter(() => setStageFilter("CV Uploaded")),
+    },
+    {
+      title: "APPLICATIONS SUBMITTED",
+      value: 125,
+      trend: "↑ 84%",
+      icon: CheckCircle,
+      tone: "teal",
+      gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #99f6e4 100%)",
+      borderColor: "#99f6e4",
+      numColor: "#0f766e",
+      footer: "View submitted",
+      onClick: () => applyCardFilter(() => setStageFilter("Submitted")),
+    },
+    {
+      title: "ELIGIBLE (AI)",
+      value: 62,
+      trend: "↑ 42%",
+      icon: Sparkles,
+      tone: "emerald",
+      gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #bbf7d0 100%)",
+      borderColor: "#bbf7d0",
+      numColor: "#15803d",
+      footer: "View eligible",
+      onClick: () => applyCardFilter(() => setAiResultFilter("Eligible")),
+    },
+    {
+      title: "PARTIAL MATCH",
+      value: 38,
+      trend: "↑ 26%",
+      icon: AlertCircle,
+      tone: "amber",
+      gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #fed7aa 100%)",
+      borderColor: "#fed7aa",
+      numColor: "#c2410c",
+      footer: "View partial matches",
+      onClick: () => applyCardFilter(() => setAiResultFilter("Partial Match")),
+    },
+    {
+      title: "NOT ELIGIBLE",
+      value: 25,
+      trend: "↑ 17%",
+      icon: XCircle,
+      tone: "rose",
+      gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #fecdd3 100%)",
+      borderColor: "#fecdd3",
+      numColor: "#be123c",
+      footer: "View not eligible",
+      onClick: () => applyCardFilter(() => setAiResultFilter("Not Eligible")),
+    },
+    {
+      title: "INCOMPLETE",
+      value: 23,
+      trend: "↑ 16%",
+      icon: Clock3,
+      tone: "slate",
+      gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #e2e8f0 100%)",
+      borderColor: "#e2e8f0",
+      numColor: "#334155",
+      footer: "View incomplete",
+      onClick: () => applyCardFilter(() => setStageFilter("Incomplete")),
+    },
+  ];
+
+  // Badge Color Mappers — same chip palette as the Testimonials table status pills
+  const CHIP_GREEN = "bg-[#e8f5e9] text-[#23714a] border-[#a5d6a7]";
+  const CHIP_AMBER = "bg-[#fff8e1] text-[#b78103] border-[#ffe082]";
+  const CHIP_RED = "bg-[#ffebee] text-[#c62828] border-[#ef9a9a]";
+  const CHIP_BLUE = "bg-[#e0f2fe] text-[#0369a1] border-[#bae6fd]";
+  const CHIP_TEAL = "bg-[#e0f7fa] text-[#00838f] border-[#80deea]";
+  const CHIP_VIOLET = "bg-[#f3e8fd] text-[#7e22ce] border-[#d8b4fe]";
+  const CHIP_GREY = "bg-[#f1f5f9] text-[#475569] border-[#cbd5e1]";
+
+  const getAiScoreBadge = (score: number) => (score >= 80 ? CHIP_GREEN : score >= 60 ? CHIP_AMBER : CHIP_RED);
+
   const getAiResultBadge = (result: AIResultType) => {
     switch (result) {
       case "Eligible":
-        return "bg-[#e6f4ea] text-[#137333]";
+        return CHIP_GREEN;
       case "Partial Match":
-        return "bg-[#fef7e0] text-[#b06000]";
+        return CHIP_AMBER;
       case "Not Eligible":
-        return "bg-[#fce8e6] text-[#c5221f]";
+        return CHIP_RED;
     }
   };
 
   const getStageBadge = (stage: ApplicationStageType) => {
     switch (stage) {
       case "Submitted":
-        return "bg-[#e8f0fe] text-[#1a73e8]";
+        return CHIP_BLUE;
       case "CV Uploaded":
-        return "bg-[#e0f7fa] text-[#00838f]";
+        return CHIP_TEAL;
       case "Incomplete":
-        return "bg-[#f1f3f4] text-[#5f6368]";
+        return CHIP_GREY;
     }
   };
 
@@ -490,144 +594,64 @@ export default function ApplicationsAiResponsePage() {
     switch (status) {
       case "Shortlisted":
       case "Selected":
-        return "bg-[#e6f4ea] text-[#137333]";
+        return CHIP_GREEN;
       case "Under Review":
       case "Sent to HR":
-        return "bg-[#e8f0fe] text-[#1a73e8]";
+        return CHIP_BLUE;
       case "Interview":
-        return "bg-[#f3e8fd] text-[#8e24aa]";
+        return CHIP_VIOLET;
       case "Rejected":
-        return "bg-[#fce8e6] text-[#c5221f]";
+        return CHIP_RED;
       case "On Hold":
-        return "bg-[#fef7e0] text-[#b06000]";
+        return CHIP_AMBER;
       case "Not Forwarded":
       default:
-        return "bg-[#f1f3f4] text-[#5f6368]";
+        return CHIP_GREY;
     }
   };
 
+  const chipClass = "inline-flex h-[22px] items-center whitespace-nowrap rounded-[4px] border px-[8px] text-[8px] font-bold shadow-xs";
+  const thClass = "px-[12px] py-[6px] whitespace-nowrap text-[8.5px] font-bold text-white uppercase tracking-wider";
+
   return (
-    <div className={`${typography.pages} min-h-screen w-full bg-[#f8fafc] text-[#1e293b] font-sans p-3 md:p-4 text-[11px]`}>
+    <div className={`${typography.pages} min-h-screen w-full bg-[#fffefb] px-[18px] py-[14px] text-[#1e293b] font-sans text-[11px]`}>
+      {/* TOP HEADING — same as the Exhibitor List page */}
+      <div className="mb-[18px] flex shrink-0 items-center justify-between border-b-[2px] border-[#293681] pb-[8px]">
+        <div>
+          <h1
+            className="text-[19px] font-bold leading-[1.15] tracking-[-0.018em] text-[#23471d]"
+            style={{ color: "#23471d" }}
+          >
+            Applications & AI Response
+          </h1>
+          <p className="mt-0.5 text-[9px] font-medium text-[#6c7587]">
+            Manage job applications, AI analysis results and HR status in one place.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-[10px]">
+          <button
+            type="button"
+            onClick={() => showToast("info", "Applications export downloaded")}
+            className="flex h-[30px] items-center justify-center gap-[5px] rounded-[6px] border border-[#bbf7d0] bg-[#f0fdf4] px-[14px] text-[8.5px] font-semibold text-[#15803d] transition hover:bg-[#dcfce7] shadow-sm"
+          >
+            <Download className="h-[12px] w-[12px]" strokeWidth={1.7} />
+            Export
+          </button>
+        </div>
+      </div>
+
+      {/* METRIC STATS CARDS (same cards as Exhibitor List) */}
+      <KpiStatCards
+        items={statCards}
+        gridClassName="mb-[12px] mt-[12px] grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-7"
+      />
+
       <div className="flex flex-col lg:flex-row items-start gap-4">
         {/* =========================================================
-            LEFT COLUMN (HEADER, 7 CARDS IN 1 ROW, FILTERS IN 1 ROW, TABLE)
+            LEFT COLUMN (FILTERS IN 1 ROW, TABLE)
         ========================================================= */}
         <div className="flex-1 min-w-0 space-y-2.5 w-full">
-          {/* HEADER & BREADCRUMB */}
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <div className="text-[10px] font-medium text-slate-500 mb-0.5">
-                Careers & Applications <span className="mx-1 text-slate-400">/</span>{" "}
-                <span className="font-semibold text-slate-700">Applications & AI Response</span>
-              </div>
-              <h1 className="text-lg font-bold text-slate-900 tracking-tight leading-tight">
-                Applications & AI Response
-              </h1>
-              <p className="text-[10.5px] text-slate-500">
-                Manage job applications, AI analysis results and HR status in one place.
-              </p>
-            </div>
-
-            <div>
-              <button
-                type="button"
-                onClick={() => showToast("info", "Applications export downloaded")}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded hover:bg-slate-50 shadow-2xs transition active:scale-95 whitespace-nowrap"
-              >
-                <Plus className="w-3.5 h-3.5 text-slate-500" />
-                Export
-              </button>
-            </div>
-          </div>
-
-          {/* METRIC / STAT CARDS ROW (Reduced Height, Sleek & Compact 7 Cards in 1 Row) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-2">
-            {/* Total Applications */}
-            <div className="bg-white border border-slate-200 rounded-lg p-2 shadow-2xs">
-              <div className="flex items-center gap-1 text-[9.5px] font-semibold text-slate-500 mb-0.5">
-                <FileText className="w-3 h-3 text-blue-500 shrink-0" />
-                <span className="truncate">Total Applications</span>
-              </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-sm font-bold text-slate-900">148</span>
-                <span className="text-[8.5px] font-bold text-emerald-600 bg-emerald-50 px-1 rounded">↑ 12%</span>
-              </div>
-              <div className="text-[8.5px] text-slate-400">All time</div>
-            </div>
-
-            {/* CV Uploaded */}
-            <div className="bg-white border border-slate-200 rounded-lg p-2 shadow-2xs">
-              <div className="flex items-center gap-1 text-[9.5px] font-semibold text-slate-500 mb-0.5">
-                <Download className="w-3 h-3 text-blue-500 shrink-0" />
-                <span className="truncate">CV Uploaded</span>
-              </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-sm font-bold text-slate-900">132</span>
-                <span className="text-[8.5px] font-bold text-emerald-600 bg-emerald-50 px-1 rounded">↑ 89%</span>
-              </div>
-            </div>
-
-            {/* Applications Submitted */}
-            <div className="bg-white border border-slate-200 rounded-lg p-2 shadow-2xs">
-              <div className="flex items-center gap-1 text-[9.5px] font-semibold text-slate-500 mb-0.5">
-                <CheckCircle className="w-3 h-3 text-emerald-600 shrink-0" />
-                <span className="truncate">Applications Submitted</span>
-              </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-sm font-bold text-slate-900">125</span>
-                <span className="text-[8.5px] font-bold text-emerald-600 bg-emerald-50 px-1 rounded">↑ 84%</span>
-              </div>
-            </div>
-
-            {/* Eligible (AI) */}
-            <div className="bg-white border border-slate-200 rounded-lg p-2 shadow-2xs">
-              <div className="flex items-center gap-1 text-[9.5px] font-semibold text-slate-500 mb-0.5">
-                <Sparkles className="w-3 h-3 text-emerald-600 shrink-0" />
-                <span className="truncate">Eligible (AI)</span>
-              </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-sm font-bold text-slate-900">62</span>
-                <span className="text-[8.5px] font-bold text-emerald-600 bg-emerald-50 px-1 rounded">↑ 42%</span>
-              </div>
-            </div>
-
-            {/* Partial Match */}
-            <div className="bg-white border border-slate-200 rounded-lg p-2 shadow-2xs">
-              <div className="flex items-center gap-1 text-[9.5px] font-semibold text-slate-500 mb-0.5">
-                <AlertCircle className="w-3 h-3 text-amber-500 shrink-0" />
-                <span className="truncate">Partial Match</span>
-              </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-sm font-bold text-slate-900">38</span>
-                <span className="text-[8.5px] font-bold text-amber-600 bg-amber-50 px-1 rounded">↑ 26%</span>
-              </div>
-            </div>
-
-            {/* Not Eligible */}
-            <div className="bg-white border border-slate-200 rounded-lg p-2 shadow-2xs">
-              <div className="flex items-center gap-1 text-[9.5px] font-semibold text-slate-500 mb-0.5">
-                <XCircle className="w-3 h-3 text-rose-500 shrink-0" />
-                <span className="truncate">Not Eligible</span>
-              </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-sm font-bold text-slate-900">25</span>
-                <span className="text-[8.5px] font-bold text-rose-600 bg-rose-50 px-1 rounded">↑ 17%</span>
-              </div>
-            </div>
-
-            {/* Incomplete */}
-            <div className="bg-white border border-slate-200 rounded-lg p-2 shadow-2xs">
-              <div className="flex items-center gap-1 text-[9.5px] font-semibold text-slate-500 mb-0.5">
-                <Clock3 className="w-3 h-3 text-slate-400 shrink-0" />
-                <span className="truncate">Incomplete</span>
-              </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-sm font-bold text-slate-900">23</span>
-                <span className="text-[8.5px] font-bold text-slate-500 bg-slate-100 px-1 rounded">↑ 16%</span>
-              </div>
-            </div>
-          </div>
-
           {/* FILTERS & SEARCH CARD (ALL FILTERS IN 1 SINGLE ROW) */}
           <div className="bg-white border border-slate-200 rounded-lg p-2.5 shadow-2xs space-y-2">
             {/* Filters Single Horizontal Row */}
@@ -744,13 +768,13 @@ export default function ApplicationsAiResponsePage() {
             </div>
           </div>
 
-          {/* TABLE CONTAINER */}
-          <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-2xs">
+          {/* TABLE CONTAINER — same look as the Testimonials table */}
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[7px] bg-white border border-[#e8e5df]">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[760px]">
+              <table className="w-full min-w-[920px] border-collapse text-left">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider h-8">
-                    <th className="py-1.5 px-2 w-6 text-center">
+                  <tr className="h-[32px] border-b border-[#e8e5df] bg-[#233D4D]">
+                    <th className="w-[42px] rounded-tl-[6px] px-[12px] py-[6px] text-center">
                       <input
                         type="checkbox"
                         checked={
@@ -758,27 +782,29 @@ export default function ApplicationsAiResponsePage() {
                           currentPaginatedRows.every((r) => selectedIds.includes(r.id))
                         }
                         onChange={(e) => handleSelectAll(e.target.checked)}
-                        className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer w-3 h-3"
+                        className="accent-[#233D4D] cursor-pointer"
                       />
                     </th>
-                    <th className="py-1.5 px-2 whitespace-nowrap">Candidate Name</th>
-                    <th className="py-1.5 px-2 whitespace-nowrap">Position</th>
-                    <th className="py-1.5 px-2 whitespace-nowrap">Contact</th>
-                    <th className="py-1.5 px-2 whitespace-nowrap">AI Score</th>
-                    <th className="py-1.5 px-2 whitespace-nowrap">AI Result</th>
-                    <th className="py-1.5 px-2 whitespace-nowrap">Application Stage</th>
-                    <th className="py-1.5 px-2 whitespace-nowrap">HR Status</th>
-                    <th className="py-1.5 px-2 whitespace-nowrap flex items-center gap-1">
-                      Applied On <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                    <th className={thClass}>Candidate Name</th>
+                    <th className={thClass}>Position</th>
+                    <th className={thClass}>Contact</th>
+                    <th className={thClass}>AI Score</th>
+                    <th className={thClass}>AI Result</th>
+                    <th className={thClass}>Application Stage</th>
+                    <th className={thClass}>HR Status</th>
+                    <th className={thClass}>
+                      <span className="inline-flex items-center gap-1">
+                        Applied On <ArrowUpDown className="h-3 w-3 text-white/60" />
+                      </span>
                     </th>
-                    <th className="py-1.5 px-2 text-center whitespace-nowrap">Action</th>
+                    <th className={`${thClass} rounded-tr-[6px] text-right`}>Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-[10.5px]">
+                <tbody className="divide-y divide-[#f0f0ec]">
                   {currentPaginatedRows.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="py-6 text-center text-slate-400">
-                        No applications found matching criteria.
+                      <td colSpan={10} className="py-12 text-center text-xs font-medium text-slate-500">
+                        No applications match your filter criteria.
                       </td>
                     </tr>
                   ) : (
@@ -788,119 +814,97 @@ export default function ApplicationsAiResponsePage() {
                         <tr
                           key={app.id}
                           onClick={() => setSelectedCandidate(app)}
-                          className={`cursor-pointer transition hover:bg-slate-50/90 h-11 ${
-                            isSelected ? "bg-[#f0fdf4]" : ""
-                          }`}
+                          className={`cursor-pointer transition hover:bg-slate-50/80 ${isSelected ? "bg-[#f4faf6]" : ""}`}
                         >
                           {/* Checkbox */}
-                          <td className="py-1.5 px-2 text-center" onClick={(e) => e.stopPropagation()}>
+                          <td className="px-[12px] py-[8px] text-center" onClick={(e) => e.stopPropagation()}>
                             <input
                               type="checkbox"
                               checked={selectedIds.includes(app.id)}
                               onChange={(e) => handleSelectOne(app.id, e.target.checked)}
-                              className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer w-3 h-3"
+                              className="accent-[#233D4D] cursor-pointer"
                             />
                           </td>
 
                           {/* Candidate Name */}
-                          <td className="py-1.5 px-2 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
+                          <td className="px-[12px] py-[8px]">
+                            <div className="flex items-center gap-[10px] min-w-[160px]">
                               <img
                                 src={app.avatar}
                                 alt={app.name}
-                                className="w-6 h-6 rounded-full object-cover border border-slate-200 shrink-0"
+                                className="h-[32px] w-[32px] shrink-0 rounded-full border-[2px] border-white object-cover"
+                                style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.08), 0 0 0 1.5px #e2e8f0" }}
                               />
-                              <div className="leading-tight">
-                                <div className="font-bold text-slate-900">{app.name}</div>
-                                <div className="text-[9.5px] text-slate-400 font-medium">{app.experienceYrs}</div>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-[10.5px] font-bold text-[#1b5e20]">{app.name}</p>
+                                <p className="truncate text-[8px] font-semibold text-[#4B1426]">{app.experienceYrs}</p>
                               </div>
                             </div>
                           </td>
 
                           {/* Position */}
-                          <td className="py-1.5 px-2 max-w-[170px]">
-                            <div className="font-semibold text-slate-800 truncate" title={app.position}>
-                              {app.position}
+                          <td className="px-[12px] py-[8px] max-w-[190px]">
+                            <div className="flex items-center gap-1 text-[9px] font-bold text-[#0f766e]">
+                              <Briefcase className="h-3 w-3 shrink-0 text-[#d26019]" />
+                              <span className="truncate" title={app.position}>{app.position}</span>
                             </div>
-                            <div className="text-[9.5px] text-slate-400 truncate">{app.department}</div>
+                            <p className="mt-0.5 truncate text-[8px] font-medium text-[#64748b]">{app.department}</p>
                           </td>
 
                           {/* Contact */}
-                          <td className="py-1.5 px-2 whitespace-nowrap">
-                            <div className="font-medium text-slate-800">{app.phone}</div>
-                            <div className="text-[9.5px] text-slate-400">{app.email}</div>
+                          <td className="px-[12px] py-[8px] whitespace-nowrap">
+                            <div className="flex flex-col items-start leading-tight">
+                              <span className="text-[9px] font-bold text-[#dc2626]">{app.phone}</span>
+                              <span className="mt-0.5 text-[8px] font-medium text-[#64748b]">{app.email}</span>
+                            </div>
                           </td>
 
                           {/* AI Score */}
-                          <td className="py-1.5 px-2 whitespace-nowrap">
-                            <span
-                              className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                                app.aiScore >= 80
-                                  ? "bg-emerald-100 text-emerald-800"
-                                  : app.aiScore >= 60
-                                  ? "bg-amber-100 text-amber-800"
-                                  : "bg-rose-100 text-rose-800"
-                              }`}
-                            >
-                              {app.aiScore}%
-                            </span>
+                          <td className="px-[12px] py-[8px] whitespace-nowrap">
+                            <span className={`${chipClass} ${getAiScoreBadge(app.aiScore)}`}>{app.aiScore}%</span>
                           </td>
 
                           {/* AI Result */}
-                          <td className="py-1.5 px-2 whitespace-nowrap">
-                            <span
-                              className={`inline-block px-2 py-0.5 rounded text-[9.5px] font-semibold ${getAiResultBadge(
-                                app.aiResult
-                              )}`}
-                            >
-                              {app.aiResult}
-                            </span>
+                          <td className="px-[12px] py-[8px] whitespace-nowrap">
+                            <span className={`${chipClass} ${getAiResultBadge(app.aiResult)}`}>{app.aiResult}</span>
                           </td>
 
                           {/* Application Stage */}
-                          <td className="py-1.5 px-2 whitespace-nowrap">
-                            <span
-                              className={`inline-block px-2 py-0.5 rounded text-[9.5px] font-semibold ${getStageBadge(
-                                app.stage
-                              )}`}
-                            >
-                              {app.stage}
-                            </span>
+                          <td className="px-[12px] py-[8px] whitespace-nowrap">
+                            <span className={`${chipClass} ${getStageBadge(app.stage)}`}>{app.stage}</span>
                           </td>
 
                           {/* HR Status */}
-                          <td className="py-1.5 px-2 whitespace-nowrap">
-                            <span
-                              className={`inline-block px-2 py-0.5 rounded text-[9.5px] font-semibold ${getHrStatusBadge(
-                                app.hrStatus
-                              )}`}
-                            >
-                              {app.hrStatus}
-                            </span>
+                          <td className="px-[12px] py-[8px] whitespace-nowrap">
+                            <span className={`${chipClass} ${getHrStatusBadge(app.hrStatus)}`}>{app.hrStatus}</span>
                           </td>
 
                           {/* Applied On */}
-                          <td className="py-1.5 px-2 text-slate-600 text-[10px] whitespace-nowrap leading-tight">
-                            <div>{app.appliedOn}</div>
-                            <div className="text-slate-400 text-[9px]">{app.appliedTime}</div>
+                          <td className="px-[12px] py-[8px] whitespace-nowrap">
+                            <div className="flex flex-col items-start leading-tight">
+                              <span className="text-[9px] font-bold text-[#293681]">{app.appliedOn}</span>
+                              <span className="mt-0.5 text-[8px] font-medium text-[#64748b]">{app.appliedTime}</span>
+                            </div>
                           </td>
 
-                          {/* Action */}
-                          <td className="py-1.5 px-2 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center justify-center gap-1">
+                          {/* Actions */}
+                          <td className="px-[12px] py-[8px] text-right" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-end gap-1.5">
                               <button
                                 type="button"
+                                title="View Details"
                                 onClick={() => setSelectedCandidate(app)}
-                                className="px-2.5 py-0.5 text-[10px] font-semibold text-blue-600 border border-blue-300 bg-blue-50/50 hover:bg-blue-100 rounded transition"
+                                className="flex h-[25px] w-[25px] items-center justify-center rounded-[6px] bg-orange-500/10 text-orange-600 backdrop-blur-md border border-orange-400/30 shadow-[0_2px_6px_rgba(249,115,22,0.12)] transition-all hover:bg-orange-500/20 hover:border-orange-400/50 hover:shadow-[0_3px_10px_rgba(249,115,22,0.25)] hover:scale-105 active:scale-95 cursor-pointer"
                               >
-                                View
+                                <Eye className="h-[12px] w-[12px] text-orange-600" />
                               </button>
                               <button
                                 type="button"
+                                title="More Options"
                                 onClick={() => showToast("info", `Options for ${app.name}`)}
-                                className="p-0.5 text-slate-400 hover:text-slate-700 rounded transition"
+                                className="flex h-[25px] w-[25px] items-center justify-center rounded-[6px] bg-blue-500/10 text-blue-600 backdrop-blur-md border border-blue-400/30 shadow-[0_2px_6px_rgba(37,99,235,0.12)] transition-all hover:bg-blue-500/20 hover:border-blue-400/50 hover:shadow-[0_3px_10px_rgba(37,99,235,0.25)] hover:scale-105 active:scale-95 cursor-pointer"
                               >
-                                <MoreVertical className="w-3.5 h-3.5" />
+                                <MoreVertical className="h-[12px] w-[12px] text-blue-600" />
                               </button>
                             </div>
                           </td>
@@ -912,48 +916,52 @@ export default function ApplicationsAiResponsePage() {
               </table>
             </div>
 
-            {/* PAGINATION FOOTER */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 p-2.5 bg-slate-50 border-t border-slate-200 text-[10px] font-medium text-slate-600">
-              <div>
-                Showing {filteredApplications.length > 0 ? startIndex + 1 : 0} to {endIndex} of{" "}
-                {filteredApplications.length} applications
+            {/* Table Footer Stats & Pagination */}
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#e8e5df] bg-[#fafafa] px-[12px] py-[6px] text-[8px]">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-[#2563eb]">
+                  Total Applications: <strong className="font-bold text-[#1d4ed8]">{filteredApplications.length}</strong>
+                </span>
+                <span className="text-[7.5px] text-[#8a92a0]">
+                  (Showing {filteredApplications.length > 0 ? startIndex + 1 : 0}–{endIndex} of {filteredApplications.length})
+                </span>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-0.5">
-                  <button
-                    type="button"
-                    disabled={currentPage <= 1}
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    className="p-1 border border-slate-300 rounded bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <ChevronLeft className="w-3 h-3" />
-                  </button>
+              <div className="flex items-center gap-[4px]">
+                <button
+                  type="button"
+                  disabled={currentPage <= 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className="flex h-[22px] w-[22px] items-center justify-center rounded-[4px] border border-[#d8dce2] bg-white text-[#334155] transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-30 cursor-pointer"
+                  title="Previous Page"
+                >
+                  <ChevronLeft className="h-3 w-3" />
+                </button>
 
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <button
-                      key={page}
-                      type="button"
-                      onClick={() => setCurrentPage(page)}
-                      className={`w-5 h-5 rounded text-[10px] font-semibold ${
-                        currentPage === page
-                          ? "bg-[#0f766e] text-white"
-                          : "bg-white border border-slate-300 hover:bg-slate-100 text-slate-700"
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                   <button
+                    key={page}
                     type="button"
-                    disabled={currentPage >= totalPages}
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    className="p-1 border border-slate-300 rounded bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                    onClick={() => setCurrentPage(page)}
+                    className={`flex h-[22px] min-w-[22px] px-1.5 items-center justify-center rounded-[4px] border text-[8px] font-bold transition cursor-pointer ${
+                      currentPage === page
+                        ? "border-[#233D4D] bg-[#233D4D] text-white shadow-xs"
+                        : "border-[#d8dce2] bg-white text-[#334155] hover:bg-slate-50"
+                    }`}
                   >
-                    <ChevronRight className="w-3 h-3" />
+                    {page}
                   </button>
-                </div>
+                ))}
+
+                <button
+                  type="button"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  className="flex h-[22px] w-[22px] items-center justify-center rounded-[4px] border border-[#d8dce2] bg-white text-[#334155] transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-30 cursor-pointer"
+                  title="Next Page"
+                >
+                  <ChevronRight className="h-3 w-3" />
+                </button>
 
                 <select
                   value={pageSize}
@@ -961,11 +969,11 @@ export default function ApplicationsAiResponsePage() {
                     setPageSize(Number(e.target.value));
                     setCurrentPage(1);
                   }}
-                  className="px-1.5 py-0.5 bg-white border border-slate-300 rounded text-[10px] text-slate-700 font-medium outline-none"
+                  className="ml-2 h-[22px] rounded-[4px] border border-[#d8dce2] bg-white px-[6px] text-[8px] font-semibold text-[#334155] outline-none"
                 >
-                  <option value={10}>10 per page</option>
-                  <option value={20}>20 per page</option>
-                  <option value={50}>50 per page</option>
+                  <option value={10}>10 / page</option>
+                  <option value={20}>20 / page</option>
+                  <option value={50}>50 / page</option>
                 </select>
               </div>
             </div>
@@ -979,7 +987,7 @@ export default function ApplicationsAiResponsePage() {
           <div className="w-full lg:w-[360px] xl:w-[380px] bg-white border border-slate-200 rounded-lg overflow-hidden shadow-2xs shrink-0 lg:sticky lg:top-3">
             {/* Header with Close X icon */}
             <div className="flex items-center justify-between px-3 py-2 border-b border-slate-200 bg-white">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">CANDIDATE DETAILS</span>
+              <span className="text-[10px] font-bold text-black uppercase tracking-wider">CANDIDATE DETAILS</span>
               <button
                 type="button"
                 onClick={() => setSelectedCandidate(null)}
@@ -1001,36 +1009,36 @@ export default function ApplicationsAiResponsePage() {
                   <div className="flex items-center justify-between gap-1">
                     <h2 className="text-xs font-bold text-slate-900 truncate">{selectedCandidate.name}</h2>
                     <span
-                      className={`px-2 py-0.5 rounded-full text-[9.5px] font-bold shrink-0 ${getAiResultBadge(
+                      className={`whitespace-nowrap rounded-full border px-1.5 py-[1px] text-[7.5px] font-bold shrink-0 ${getAiResultBadge(
                         selectedCandidate.aiResult
                       )}`}
                     >
-                      Eligible ({selectedCandidate.aiScore}%)
+                      {selectedCandidate.aiResult} ({selectedCandidate.aiScore}%)
                     </span>
                   </div>
-                  <p className="text-[10px] font-medium text-slate-800 leading-tight mt-0.5 truncate">
+                  <p className="text-[10px] font-semibold text-[#1d4ed8] leading-tight mt-0.5 truncate">
                     {selectedCandidate.position}
                   </p>
-                  <p className="text-[9.5px] text-slate-400 truncate">{selectedCandidate.department}</p>
+                  <p className="text-[9.5px] font-semibold text-[#dc2626] truncate">{selectedCandidate.department}</p>
                 </div>
               </div>
 
               {/* Contact Icons Table */}
-              <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 text-[10px] text-slate-600 bg-slate-50 p-2.5 rounded border border-slate-100">
+              <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[8.5px] text-slate-600 bg-slate-50 p-2 rounded border border-slate-100">
                 <div className="flex items-center gap-1.5 truncate">
-                  <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span className="truncate">{selectedCandidate.phone}</span>
+                  <Phone className="w-3 h-3 text-[#15803d] shrink-0" />
+                  <span className="truncate font-semibold text-[#15803d]">{selectedCandidate.phone}</span>
                 </div>
                 <div className="flex items-center gap-1.5 truncate">
-                  <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span className="truncate">{selectedCandidate.email}</span>
+                  <Mail className="w-3 h-3 text-[#7c3aed] shrink-0" />
+                  <span className="truncate font-semibold text-[#7c3aed]">{selectedCandidate.email}</span>
                 </div>
                 <div className="flex items-center gap-1.5 truncate">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span className="truncate">{selectedCandidate.location}</span>
+                  <MapPin className="w-3 h-3 text-[#ea580c] shrink-0" />
+                  <span className="truncate font-semibold text-[#ea580c]">{selectedCandidate.location}</span>
                 </div>
                 <div className="flex items-center gap-1.5 truncate">
-                  <Briefcase className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <Briefcase className="w-3 h-3 text-slate-400 shrink-0" />
                   <span className="truncate">{selectedCandidate.experienceYrs}</span>
                 </div>
               </div>
@@ -1040,17 +1048,17 @@ export default function ApplicationsAiResponsePage() {
                 <button
                   type="button"
                   onClick={() => handleForwardToHr(selectedCandidate)}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#0f766e] hover:bg-[#0d655e] text-white rounded text-[11px] font-bold transition active:scale-95"
+                  className="flex-1 flex items-center justify-center gap-1 px-2.5 py-1 bg-[#4B1426] hover:bg-[#3a0f1d] text-white rounded text-[9px] font-bold transition active:scale-95"
                 >
-                  <Send className="w-3.5 h-3.5" />
+                  <Send className="w-3 h-3" />
                   Forward to HR
                 </button>
                 <button
                   type="button"
                   onClick={() => showToast("success", "CV Download started")}
-                  className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded text-[11px] font-bold transition active:scale-95 whitespace-nowrap"
+                  className="flex items-center justify-center gap-1 px-2.5 py-1 bg-[#15803d] hover:bg-[#166534] text-white rounded text-[9px] font-bold transition active:scale-95 whitespace-nowrap"
                 >
-                  <Download className="w-3.5 h-3.5 text-slate-500" />
+                  <Download className="w-3 h-3 text-white" />
                   Download CV
                 </button>
               </div>
@@ -1076,37 +1084,56 @@ export default function ApplicationsAiResponsePage() {
 
             {/* Tab Body */}
             <div className="p-3 space-y-3.5 max-h-[460px] overflow-y-auto text-[10.5px]">
-              {activeDrawerTab === "Overview" && (
+              {activeDrawerTab === "Overview" && (() => {
+                const aiTone =
+                  selectedCandidate.aiResult === "Eligible"
+                    ? { box: "bg-[#f0fdf4] border-[#bbf7d0]", ring: "border-[#16a34a]", score: "text-[#15803d]", title: "text-[#166534]", text: "text-[#3f6212]" }
+                    : selectedCandidate.aiResult === "Partial Match"
+                    ? { box: "bg-[#fffbeb] border-[#fde68a]", ring: "border-[#d97706]", score: "text-[#b45309]", title: "text-[#92400e]", text: "text-[#78350f]" }
+                    : { box: "bg-[#fff1f2] border-[#fecdd3]", ring: "border-[#e11d48]", score: "text-[#be123c]", title: "text-[#9f1239]", text: "text-[#881337]" };
+                const labelClass = "text-[#64748b] font-medium";
+                const keyInfo = [
+                  { icon: Building2, iconColor: "text-[#0f766e]", label: "Current Company", value: selectedCandidate.currentCompany, valueColor: "text-[#0f766e]" },
+                  { icon: DollarSign, iconColor: "text-[#15803d]", label: "Current CTC", value: selectedCandidate.currentCtc, valueColor: "text-[#15803d]" },
+                  { icon: TrendingUp, iconColor: "text-[#c2410c]", label: "Expected CTC", value: selectedCandidate.expectedCtc, valueColor: "text-[#c2410c]" },
+                  { icon: Clock, iconColor: "text-[#7c3aed]", label: "Notice Period", value: selectedCandidate.noticePeriod, valueColor: "text-[#7c3aed]" },
+                  { icon: UserCheck, iconColor: "text-[#293681]", label: "Joining Availability", value: selectedCandidate.joiningAvailability, valueColor: "text-[#293681]" },
+                  {
+                    icon: MapPin,
+                    iconColor: "text-[#ea580c]",
+                    label: "Willing to Relocate",
+                    value: selectedCandidate.willingToRelocate,
+                    valueColor: /^yes/i.test(String(selectedCandidate.willingToRelocate)) ? "text-[#15803d]" : "text-[#dc2626]",
+                  },
+                ];
+
+                return (
                 <>
                   {/* Application Details */}
                   <div>
-                    <h3 className="font-bold text-slate-900 mb-1.5 text-[11px]">Application Details</h3>
-                    <div className="space-y-1.5 text-slate-600 bg-slate-50/70 p-2.5 rounded border border-slate-100">
+                    <h3 className="font-bold text-[#23471d] mb-1.5 text-[11px]">Application Details</h3>
+                    <div className="space-y-1.5 bg-[#f8fafc] p-2.5 rounded border border-[#e2e8f0]">
                       <div className="flex justify-between">
-                        <span className="text-slate-400">Applied On</span>
-                        <span className="font-semibold text-slate-800">
+                        <span className={labelClass}>Applied On</span>
+                        <span className="font-semibold text-[#293681]">
                           {selectedCandidate.appliedOn}, {selectedCandidate.appliedTime}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-400">Application Stage</span>
-                        <span
-                          className={`px-2 py-0.5 rounded text-[9.5px] font-semibold ${getStageBadge(
-                            selectedCandidate.stage
-                          )}`}
-                        >
+                        <span className={labelClass}>Application Stage</span>
+                        <span className={`${chipClass} ${getStageBadge(selectedCandidate.stage)}`}>
                           {selectedCandidate.stage}
                         </span>
                       </div>
                       <div className="flex justify-between items-start gap-2">
-                        <span className="text-slate-400 shrink-0">Job Position</span>
-                        <span className="font-semibold text-slate-800 text-right">
+                        <span className={`${labelClass} shrink-0`}>Job Position</span>
+                        <span className="font-semibold text-[#1d4ed8] text-right">
                           {selectedCandidate.position}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-400">Job Code</span>
-                        <span className="font-mono font-semibold text-slate-800">{selectedCandidate.jobCode}</span>
+                        <span className={labelClass}>Job Code</span>
+                        <span className="font-mono font-bold text-[#4B1426]">{selectedCandidate.jobCode}</span>
                       </div>
                     </div>
                   </div>
@@ -1114,26 +1141,26 @@ export default function ApplicationsAiResponsePage() {
                   {/* AI Analysis */}
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
-                      <h3 className="font-bold text-slate-900 text-[11px]">AI Analysis</h3>
+                      <h3 className="font-bold text-[#23471d] text-[11px]">AI Analysis</h3>
                       <button
                         type="button"
                         onClick={() => showToast("info", "Opening AI report")}
-                        className="text-[10px] font-semibold text-blue-600 hover:underline flex items-center gap-0.5"
+                        className="inline-flex items-center gap-0.5 rounded-[4px] border border-[#bfdbfe] bg-[#eff6ff] px-2 py-0.5 text-[8.5px] font-bold text-[#1d4ed8] transition hover:bg-[#dbeafe]"
                       >
                         View Full Analysis <ArrowUpRight className="w-3 h-3" />
                       </button>
                     </div>
 
-                    <div className="bg-emerald-50/60 border border-emerald-200/70 rounded-lg p-2.5 flex items-center gap-3">
-                      <div className="relative w-11 h-11 rounded-full border-4 border-emerald-600 flex items-center justify-center bg-white shrink-0">
-                        <span className="text-[11px] font-extrabold text-emerald-800">
+                    <div className={`border rounded-lg p-2.5 flex items-center gap-3 ${aiTone.box}`}>
+                      <div className={`relative w-11 h-11 rounded-full border-4 flex items-center justify-center bg-white shrink-0 ${aiTone.ring}`}>
+                        <span className={`text-[11px] font-extrabold ${aiTone.score}`}>
                           {selectedCandidate.aiScore}%
                         </span>
                       </div>
                       <div>
-                        <div className="font-bold text-emerald-900 text-xs">Eligible Match</div>
-                        <p className="text-[10px] text-emerald-700 leading-snug mt-0.5">
-                          "{selectedCandidate.aiAnalysisSummary}"
+                        <div className={`font-bold text-xs ${aiTone.title}`}>{selectedCandidate.aiResult}</div>
+                        <p className={`text-[10px] leading-snug mt-0.5 ${aiTone.text}`}>
+                          &ldquo;{selectedCandidate.aiAnalysisSummary}&rdquo;
                         </p>
                       </div>
                     </div>
@@ -1141,65 +1168,40 @@ export default function ApplicationsAiResponsePage() {
 
                   {/* HR Status */}
                   <div>
-                    <h3 className="font-bold text-slate-900 mb-1.5 text-[11px]">HR Status</h3>
-                    <div className="flex items-center justify-between bg-slate-50 p-2.5 rounded border border-slate-100">
-                      <span
-                        className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${getHrStatusBadge(
-                          selectedCandidate.hrStatus
-                        )}`}
-                      >
+                    <h3 className="font-bold text-[#23471d] mb-1.5 text-[11px]">HR Status</h3>
+                    <div className="flex items-center justify-between bg-[#f8fafc] p-2.5 rounded border border-[#e2e8f0]">
+                      <span className={`${chipClass} ${getHrStatusBadge(selectedCandidate.hrStatus)}`}>
                         {selectedCandidate.hrStatus}
                       </span>
-                      <span className="text-[9.5px] text-slate-400">
-                        Updated by HR • {selectedCandidate.updatedByHrOn || "18 Oct 2026, 02:10 PM"}
+                      <span className="text-[9px] text-[#64748b]">
+                        Updated by HR •{" "}
+                        <span className="font-semibold text-[#293681]">
+                          {selectedCandidate.updatedByHrOn || "18 Oct 2026, 02:10 PM"}
+                        </span>
                       </span>
                     </div>
                   </div>
 
                   {/* Key Information */}
                   <div>
-                    <h3 className="font-bold text-slate-900 mb-1.5 text-[11px]">Key Information</h3>
-                    <div className="space-y-2 text-slate-600">
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-1">
-                        <span className="flex items-center gap-1.5 text-slate-400">
-                          <Building2 className="w-3.5 h-3.5" /> Current Company
-                        </span>
-                        <span className="font-semibold text-slate-800">{selectedCandidate.currentCompany}</span>
-                      </div>
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-1">
-                        <span className="flex items-center gap-1.5 text-slate-400">
-                          <DollarSign className="w-3.5 h-3.5" /> Current CTC
-                        </span>
-                        <span className="font-semibold text-slate-800">{selectedCandidate.currentCtc}</span>
-                      </div>
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-1">
-                        <span className="flex items-center gap-1.5 text-slate-400">
-                          <TrendingUp className="w-3.5 h-3.5" /> Expected CTC
-                        </span>
-                        <span className="font-semibold text-slate-800">{selectedCandidate.expectedCtc}</span>
-                      </div>
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-1">
-                        <span className="flex items-center gap-1.5 text-slate-400">
-                          <Clock className="w-3.5 h-3.5" /> Notice Period
-                        </span>
-                        <span className="font-semibold text-slate-800">{selectedCandidate.noticePeriod}</span>
-                      </div>
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-1">
-                        <span className="flex items-center gap-1.5 text-slate-400">
-                          <UserCheck className="w-3.5 h-3.5" /> Joining Availability
-                        </span>
-                        <span className="font-semibold text-slate-800">{selectedCandidate.joiningAvailability}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1.5 text-slate-400">
-                          <MapPin className="w-3.5 h-3.5" /> Willing to Relocate
-                        </span>
-                        <span className="font-semibold text-slate-800">{selectedCandidate.willingToRelocate}</span>
-                      </div>
+                    <h3 className="font-bold text-[#23471d] mb-1.5 text-[11px]">Key Information</h3>
+                    <div className="space-y-2">
+                      {keyInfo.map(({ icon: Icon, iconColor, label, value, valueColor }, i) => (
+                        <div
+                          key={label}
+                          className={`flex items-center justify-between ${i < keyInfo.length - 1 ? "border-b border-[#f1f5f9] pb-1" : ""}`}
+                        >
+                          <span className={`flex items-center gap-1.5 ${labelClass}`}>
+                            <Icon className={`w-3.5 h-3.5 ${iconColor}`} /> {label}
+                          </span>
+                          <span className={`font-semibold ${valueColor}`}>{value}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </>
-              )}
+                );
+              })()}
 
               {activeDrawerTab === "Application" && (
                 <div className="space-y-2.5 text-slate-700">
@@ -1271,14 +1273,14 @@ export default function ApplicationsAiResponsePage() {
               <button
                 type="button"
                 onClick={() => showToast("info", "Opening full application detail view")}
-                className="flex-1 py-1.5 px-2 text-center text-[10.5px] font-bold text-slate-700 bg-white border border-slate-300 rounded hover:bg-slate-100 transition"
+                className="flex-1 py-1.5 px-2 text-center text-[10px] font-bold text-white bg-[#233D4D] rounded hover:bg-[#1a2e3a] transition active:scale-95"
               >
                 View Full Application
               </button>
               <button
                 type="button"
                 onClick={() => showToast("info", "Note added")}
-                className="flex-1 py-1.5 px-2 text-center text-[10.5px] font-bold text-slate-700 bg-white border border-slate-300 rounded hover:bg-slate-100 transition"
+                className="flex-1 py-1.5 px-2 text-center text-[10px] font-bold text-white bg-[#0f766e] rounded hover:bg-[#0d655e] transition active:scale-95"
               >
                 Add Note
               </button>
