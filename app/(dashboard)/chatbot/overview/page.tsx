@@ -1,381 +1,577 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
+  AlertTriangle,
   ArrowRight,
+  ArrowUpRight,
   Bot,
-  FileText,
+  CalendarDays,
+  Check,
+  ChevronRight,
+  Clock3,
+  Info,
+  Mail,
   MessageCircleQuestion,
   MessagesSquare,
   RefreshCw,
-  Send,
+  Settings,
+  ThumbsUp,
   TrendingUp,
-  UserCheck,
+  UserRound,
+  Users,
   type LucideIcon,
 } from "lucide-react";
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import typography from "../../pages/PagesTypography.module.css";
-import DateRangeFilter, { daysInRange, rangeLabel, resolveRange, type DateRange } from "@/components/chatbot/DateRangeFilter";
-import { avatarColor, initials, pagePath, timeAgo } from "@/components/chatbot/chatbotUtils";
-import { chatbotApi, type ChatStats, type ChatSummary } from "@/lib/chatbotApi";
+import { Area, AreaChart, CartesianGrid, LabelList, ResponsiveContainer, XAxis, YAxis } from "recharts";
 
-const toneClass = {
-  emerald: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  blue: "bg-sky-50 text-sky-700 ring-sky-200",
-  violet: "bg-violet-50 text-violet-700 ring-violet-200",
-  amber: "bg-amber-50 text-amber-700 ring-amber-200",
-  teal: "bg-teal-50 text-teal-700 ring-teal-200",
-  slate: "bg-slate-50 text-slate-700 ring-slate-200",
-} as const;
+/*
+ * Chatbot Overview — illustrative dashboard. Every number on this page is sample data
+ * (see the "Demo data" chip and the footer note); none of it comes from the API.
+ *
+ * Note: the dashboard layout's AdminContentScale remaps many text-[Npx] classes with
+ * !important, so this page sticks to sizes outside that list (e.g. 12.5px, 13.5px).
+ */
 
-interface StatCardItem {
+const PUBLIC_SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3002").replace(/\/$/, "");
+
+const RANGES = ["Today", "Yesterday", "Last 7 Days", "Last 30 Days", "All Time", "Custom"] as const;
+
+const WHATSAPP_PATH =
+  "M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z";
+
+const ExclamationIcon = ({ className = "" }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" className={className} aria-hidden="true">
+    <path d="M12 5v9M12 19h.01" />
+  </svg>
+);
+
+const WhatsAppIcon = ({ className = "" }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+    <path d={WHATSAPP_PATH} />
+  </svg>
+);
+
+// ─── Sample data ─────────────────────────────────────────────────────────────
+
+type StatCard = {
   title: string;
-  value: string | number;
-  icon: LucideIcon;
-  tone: keyof typeof toneClass;
-  gradient: string;
-  borderColor: string;
-  numColor: string;
+  value: string;
   footer: string;
   href: string;
-}
-
-const EMPTY_STATS: ChatStats = {
-  totals: { chats: 0, leads: 0, questions: 0, replies: 0, whatsappSent: 0, engaged: 0 },
-  daily: [],
-  topPages: [],
-  latestQuestions: [],
+  icon: LucideIcon | typeof WhatsAppIcon;
+  iconClass: string;
+  valueClass: string;
+  cardClass: string;
 };
 
+const STATS: StatCard[] = [
+  {
+    title: "TOTAL CHATS",
+    value: "128",
+    footer: "View chats",
+    href: "/chatbot/conversations",
+    icon: MessagesSquare,
+    iconClass: "border-[#bfe3c9] bg-white text-[#15803d]",
+    valueClass: "text-[#166534]",
+    cardClass: "border-[#cfe9d6] bg-gradient-to-br from-[#f3fbf5] via-[#f7fcf8] to-[#e3f5e8]",
+  },
+  {
+    title: "LEADS CAPTURED",
+    value: "32",
+    footer: "View leads",
+    href: "/chatbot/leads",
+    icon: UserRound,
+    iconClass: "border-[#c9daf5] bg-white text-[#2563eb]",
+    valueClass: "text-[#1d4ed8]",
+    cardClass: "border-[#d5e2f6] bg-gradient-to-br from-[#f4f8fe] via-[#f8fbff] to-[#e4eefc]",
+  },
+  {
+    title: "QUESTIONS ASKED",
+    value: "512",
+    footer: "Review questions",
+    href: "/chatbot/conversations",
+    icon: MessageCircleQuestion,
+    iconClass: "border-[#ddd0f7] bg-[#7c3aed] text-white",
+    valueClass: "text-[#6d28d9]",
+    cardClass: "border-[#e3d9f7] bg-gradient-to-br from-[#f8f5fe] via-[#fbf9ff] to-[#efe8fc]",
+  },
+  {
+    title: "BOT REPLIES",
+    value: "487",
+    footer: "View replies",
+    href: "/chatbot/conversations",
+    icon: Bot,
+    iconClass: "border-[#bfe4e0] bg-white text-[#0f766e]",
+    valueClass: "text-[#0f766e]",
+    cardClass: "border-[#cdeae6] bg-gradient-to-br from-[#f2fbfa] via-[#f7fdfc] to-[#dff4f1]",
+  },
+  {
+    title: "AVG. QUESTIONS / CHAT",
+    value: "4.0",
+    footer: "Chat engagement",
+    href: "/chatbot/conversations",
+    icon: TrendingUp,
+    iconClass: "border-[#f6dfb3] bg-white text-[#d97706]",
+    valueClass: "text-[#d97706]",
+    cardClass: "border-[#f5e3bf] bg-gradient-to-br from-[#fffaf0] via-[#fffcf5] to-[#fdf0d2]",
+  },
+  {
+    title: "WHATSAPP DELIVERED",
+    value: "18",
+    footer: "View delivery",
+    href: "/chatbot/leads",
+    icon: WhatsAppIcon,
+    iconClass: "border-[#cfe9d6] bg-white text-[#16a34a]",
+    valueClass: "text-[#14213d]",
+    cardClass: "border-[#e2e6ec] bg-gradient-to-br from-[#f8fafc] via-[#fbfcfd] to-[#eef1f5]",
+  },
+];
+
+const DAILY = [
+  { day: "26 Sep", Chats: 2, Questions: 3 },
+  { day: "27 Sep", Chats: 4, Questions: 8 },
+  { day: "28 Sep", Chats: 9, Questions: 15 },
+  { day: "29 Sep", Chats: 14, Questions: 22 },
+  { day: "30 Sep", Chats: 20, Questions: 32 },
+  { day: "01 Oct", Chats: 18, Questions: 28 },
+  { day: "02 Oct", Chats: 10, Questions: 18 },
+];
+
+const PERFORMANCE = [
+  {
+    label: "Answered questions",
+    value: "487 / 512",
+    icon: Check,
+    iconClass: "bg-[#22a447] text-white",
+    extra: <span className="text-[12.4px] font-medium text-[#475569]">95%</span>,
+  },
+  {
+    label: "Unanswered questions",
+    value: "25",
+    icon: ExclamationIcon,
+    iconClass: "bg-[#dc2626] text-white",
+    extra: (
+      <Link
+        href="/chatbot/conversations"
+        className="inline-flex items-center gap-1 rounded-[6px] bg-[#fdecec] px-[9px] py-[4px] text-[11.4px] font-semibold text-[#dc2626] transition hover:bg-[#fbd9d9]"
+      >
+        Review <ArrowRight className="h-[13px] w-[13px]" />
+      </Link>
+    ),
+  },
+  {
+    label: "Helpful ratings",
+    value: (
+      <>
+        92% <span className="ml-1 text-[12.4px] font-medium text-[#475569]">(46 / 50)</span>
+      </>
+    ),
+    icon: ThumbsUp,
+    iconClass: "bg-[#e3edfd] text-[#2563eb]",
+  },
+  { label: "Returning visitors", value: "18", icon: Users, iconClass: "bg-[#efe8fc] text-[#7c3aed]" },
+  { label: "Team handovers", value: "9", icon: UserRound, iconClass: "bg-[#fdf0d2] text-[#ea7a0c]" },
+];
+
+const TOP_PAGES = [
+  { page: "Home", chats: 54, bar: "bg-[#4cc35a]" },
+  { page: "Stall Booking", chats: 38, bar: "bg-[#2f9e44]" },
+  { page: "Visitor Registration", chats: 22, bar: "bg-[#4cc35a]" },
+  { page: "Buyer–Seller Meet", chats: 14, bar: "bg-[#8fd99a]" },
+];
+
+const POPULAR_QUESTIONS = [
+  { q: "What are the stall charges?", count: 86 },
+  { q: "How do I register as a visitor?", count: 72 },
+  { q: "Who can apply for PMS support?", count: 48 },
+];
+
+const FOLLOW_UPS = [
+  { label: "Unassigned chats", count: 4, icon: Mail, iconClass: "text-[#dc2626]", countClass: "bg-[#fde2e2] text-[#dc2626]" },
+  { label: "Overdue replies", count: 3, icon: Clock3, iconClass: "text-[#ea7a0c]", countClass: "bg-[#fde2e2] text-[#dc2626]" },
+  { label: "Follow-ups today", count: 8, icon: CalendarDays, iconClass: "text-[#dc2626]", countClass: "bg-[#fdf0d2] text-[#b45309]" },
+  { label: "Open complaints", count: 2, icon: AlertTriangle, iconClass: "text-[#dc2626]", countClass: "bg-[#fde2e2] text-[#dc2626]" },
+];
+
+type Conversation = {
+  name: string;
+  initials: string;
+  avatar: string;
+  returning: boolean;
+  topic: string;
+  outcome: { label: string; icon: LucideIcon };
+  status: { label: string; className: string };
+  lastActivity: string;
+  action: "View" | "Review";
+};
+
+const RECENT: Conversation[] = [
+  {
+    name: "Aarav Mehta",
+    initials: "AM",
+    avatar: "bg-[#2563eb]",
+    returning: true,
+    topic: "Stall Booking",
+    outcome: { label: "Team handover", icon: Bot },
+    status: { label: "Assigned", className: "bg-[#dcf3e1] text-[#15803d]" },
+    lastActivity: "10 min ago",
+    action: "View",
+  },
+  {
+    name: "Guest Visitor",
+    initials: "GV",
+    avatar: "bg-[#8b5cf6]",
+    returning: false,
+    topic: "Visitor Registration",
+    outcome: { label: "Answered", icon: MessagesSquare },
+    status: { label: "No action needed", className: "bg-[#e3edfd] text-[#1d4ed8]" },
+    lastActivity: "30 min ago",
+    action: "View",
+  },
+  {
+    name: "Neha Kapoor",
+    initials: "NK",
+    avatar: "bg-[#c2570c]",
+    returning: true,
+    topic: "Complaint",
+    outcome: { label: "Team handover", icon: Bot },
+    status: { label: "Response overdue", className: "bg-[#fde2e2] text-[#dc2626]" },
+    lastActivity: "45 min ago",
+    action: "Review",
+  },
+];
+
+// ─── Page ────────────────────────────────────────────────────────────────────
+
+const card = "rounded-[12px] border border-[#e3e8e4] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]";
+const cardTitle = "text-[15.6px] font-bold leading-tight tracking-[-0.01em] text-[#0f2a1c]";
+const cardSub = "mt-[2px] text-[11.6px] text-[#64748b]";
+const blueLink = "inline-flex items-center gap-1 whitespace-nowrap text-[11.4px] font-semibold text-[#1d4ed8] hover:underline";
+
 export default function ChatbotOverviewPage() {
-  const [range, setRange] = useState<DateRange>({ key: "7d" });
-  const [stats, setStats] = useState<ChatStats>(EMPTY_STATS);
-  const [recent, setRecent] = useState<ChatSummary[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [reloadKey, setReloadKey] = useState(0);
+  const [range, setRange] = useState<(typeof RANGES)[number]>("Last 7 Days");
+  const [spin, setSpin] = useState(false);
 
-  // Loading = the data on screen is not for the current filter yet
-  const queryKey = JSON.stringify([range, reloadKey]);
-  const [loadedKey, setLoadedKey] = useState<string | null>(null);
-  const loading = loadedKey !== queryKey;
-
-  useEffect(() => {
-    let cancelled = false;
-    const q = resolveRange(range);
-    Promise.all([chatbotApi.stats(q), chatbotApi.list({ ...q, limit: 6 })])
-      .then(([s, l]) => {
-        if (cancelled) return;
-        setStats(s ?? EMPTY_STATS);
-        setRecent(l?.chats ?? []);
-        setError(null);
-      })
-      .catch((e: Error) => !cancelled && setError(e.message || "Could not load chatbot data"))
-      .finally(() => !cancelled && setLoadedKey(queryKey));
-    return () => {
-      cancelled = true;
-    };
-  }, [range, queryKey]);
-
-  const { totals } = stats;
-  const avgQuestions = totals.engaged ? (totals.questions / totals.engaged).toFixed(1) : "0";
-  const conversion = totals.chats ? Math.round((totals.engaged / totals.chats) * 100) : 0;
-
-  // Fill empty days so the chart shows a continuous timeline
-  const chartData = useMemo(() => {
-    const byDay = new Map(stats.daily.map((d) => [d.date, d]));
-    return daysInRange(range, stats.daily[0]?.date).map((day) => {
-      const d = byDay.get(day);
-      const [, m, dd] = day.split("-");
-      return {
-        day: `${dd}/${m}`,
-        Chats: d?.chats ?? 0,
-        Questions: d?.questions ?? 0,
-      };
-    });
-  }, [stats.daily, range]);
-
-  const maxPage = Math.max(1, ...stats.topPages.map((p) => p.chats));
-
-  const statCards: StatCardItem[] = [
-    {
-      title: "TOTAL CHATS",
-      value: totals.chats,
-      icon: MessagesSquare,
-      tone: "emerald",
-      gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #bbf7d0 100%)",
-      borderColor: "#bbf7d0",
-      numColor: "#166b40",
-      footer: "View conversations",
-      href: "/chatbot/conversations",
-    },
-    {
-      title: "LEADS CAPTURED",
-      value: totals.leads,
-      icon: UserCheck,
-      tone: "blue",
-      gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #bae6fd 100%)",
-      borderColor: "#bae6fd",
-      numColor: "#0369a1",
-      footer: "View leads",
-      href: "/chatbot/leads",
-    },
-    {
-      title: "QUESTIONS ASKED",
-      value: totals.questions,
-      icon: MessageCircleQuestion,
-      tone: "violet",
-      gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #ddd6fe 100%)",
-      borderColor: "#ddd6fe",
-      numColor: "#6d28d9",
-      footer: "By visitors",
-      href: "/chatbot/conversations",
-    },
-    {
-      title: "BOT REPLIES",
-      value: totals.replies,
-      icon: Bot,
-      tone: "teal",
-      gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #99f6e4 100%)",
-      borderColor: "#99f6e4",
-      numColor: "#0f766e",
-      footer: "AI answered",
-      href: "/chatbot/conversations",
-    },
-    {
-      title: "AVG. QUESTIONS / CHAT",
-      value: avgQuestions,
-      icon: TrendingUp,
-      tone: "amber",
-      gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #fde68a 100%)",
-      borderColor: "#fde68a",
-      numColor: "#b45309",
-      footer: `${conversion}% asked a question`,
-      href: "/chatbot/conversations",
-    },
-    {
-      title: "WHATSAPP SENT",
-      value: totals.whatsappSent,
-      icon: Send,
-      tone: "slate",
-      gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #e2e8f0 100%)",
-      borderColor: "#e2e8f0",
-      numColor: "#334155",
-      footer: "Thank-you messages",
-      href: "/chatbot/leads",
-    },
-  ];
+  const refresh = () => {
+    setSpin(true);
+    window.setTimeout(() => setSpin(false), 700);
+  };
 
   return (
-    <div className={`${typography.pages} min-h-[calc(100vh-100px)] w-full bg-white text-[#18233b]`}>
-      <div className="flex min-h-full flex-col px-[18px] pb-[16px] pt-[14px]">
-        {/* HEADER */}
-        <div className="mb-[14px] flex flex-wrap items-end justify-between gap-[10px] border-b-[2px] border-[#293681] pb-[10px]">
-          <div className="flex items-center gap-[10px]">
-            <div className="grid h-[38px] w-[38px] place-items-center rounded-[10px] bg-gradient-to-br from-[#14532d] to-[#3b8c2a] text-white shadow-md">
-              <Bot className="h-[20px] w-[20px]" />
-            </div>
-            <div>
-              <h1 className="text-[19px] font-bold leading-[1.15] tracking-[-0.018em] text-[#23471d]">Chatbot Overview</h1>
-              <p className="mt-0.5 text-[9px] font-medium text-[#6c7587]">
-                Organic Mitra — AI assistant activity on the website · <span className="font-semibold text-[#166b40]">{rangeLabel(range)}</span>
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-[8px]">
-            <DateRangeFilter value={range} onChange={setRange} />
-            <button
-              type="button"
-              onClick={() => setReloadKey((k) => k + 1)}
-              aria-label="Refresh"
-              className="grid h-[28px] w-[28px] place-items-center rounded-[6px] border border-[#e5e6e2] text-[#4b5563] transition hover:border-[#166b40] hover:text-[#166b40]"
+    <div className="flex w-full flex-col bg-white px-[16px] pt-[10px] text-[#0f172a]">
+      {/* ── Header ── */}
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 pb-[10px]">
+        <div className="min-w-0">
+          <p className="text-[23px] font-bold leading-none tracking-[-0.02em] text-[#14532d]">Chatbot Overview</p>
+          <div className="mt-[6px] flex flex-wrap items-center gap-[10px]">
+            <p className="text-[13.2px] text-[#475569]">Organic Mitra — chatbot performance &amp; team follow-up</p>
+            <span
+              title="All numbers on this page are sample data"
+              className="inline-flex items-center gap-[5px] rounded-[6px] border border-[#cfe9d6] bg-[#eefaf1] px-[8px] py-[2px] text-[10.6px] font-medium text-[#15803d]"
             >
-              <RefreshCw className={`h-[13px] w-[13px] ${loading ? "animate-spin" : ""}`} />
-            </button>
+              Demo data <Info className="h-[12px] w-[12px]" />
+            </span>
           </div>
         </div>
 
-        {error && (
-          <div className="mb-[12px] rounded-[7px] border border-red-200 bg-red-50 px-[12px] py-[8px] text-[10px] font-medium text-red-700">{error}</div>
-        )}
-
-        {/* STAT CARDS */}
-        <div className="mb-[12px] grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
-          {statCards.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.title}
-                href={item.href}
-                className="relative flex h-[82px] flex-col overflow-hidden rounded-[10px] border bg-white p-1.5 !pb-4.5 transition-all hover:translate-y-[-1px]"
-                style={{
-                  background: item.gradient,
-                  borderColor: item.borderColor,
-                  boxShadow: "rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px",
-                }}
+        <div className="flex flex-wrap items-center gap-[8px]">
+          <div className="flex items-center gap-[2px] rounded-[8px] border border-[#e5e7eb] bg-[#f3f4f6] p-[3px]">
+            {RANGES.map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setRange(r)}
+                className={`rounded-[6px] px-[10px] py-[5px] text-[11.4px] font-semibold transition ${
+                  range === r ? "bg-[#15633a] text-white shadow-sm" : "text-[#334155] hover:bg-white"
+                }`}
               >
-                <div className="flex items-start gap-1.5">
-                  <div className={`grid h-[24px] w-[24px] shrink-0 place-items-center rounded-full bg-white/80 shadow-xs ring-1 ${toneClass[item.tone]}`}>
-                    <Icon className="h-3 w-3" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[7px] font-semibold tracking-[0.01em] text-slate-900">{item.title}</p>
-                    <span className="mt-1 block text-[16px] font-semibold leading-none tracking-[-0.04em]" style={{ color: item.numColor }}>
-                      {loading ? "…" : item.value}
-                    </span>
-                  </div>
-                </div>
-                <div className="absolute bottom-1 left-1.5 right-1.5 flex items-center justify-center gap-1 text-[7px] font-semibold text-[#293957]">
-                  {item.footer}
-                  <ArrowRight className="h-2.5 w-2.5" />
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-
-        {/* CHART + TOP PAGES */}
-        <div className="mb-[12px] grid gap-[12px] xl:grid-cols-3">
-          <div className="rounded-[10px] border border-[#e8e5df] bg-white p-[14px] xl:col-span-2">
-            <div className="mb-[10px] flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p className="text-[12px] font-bold text-[#18233b]">Day-wise Activity</p>
-                <p className="text-[9px] text-[#6c7587]">New chats and questions asked per day</p>
-              </div>
-              <div className="flex items-center gap-[12px] text-[9px] font-semibold text-[#4b5563]">
-                <span className="flex items-center gap-[5px]">
-                  <span className="h-[8px] w-[8px] rounded-full bg-[#3b8c2a]" /> Chats
-                </span>
-                <span className="flex items-center gap-[5px]">
-                  <span className="h-[8px] w-[8px] rounded-full bg-[#f59e0b]" /> Questions
-                </span>
-              </div>
-            </div>
-            <div className="h-[240px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData} margin={{ top: 5, right: 8, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="gChats" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#3b8c2a" stopOpacity={0.35} />
-                      <stop offset="100%" stopColor="#3b8c2a" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="gQuestions" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3} />
-                      <stop offset="100%" stopColor="#f59e0b" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#eef0ec" vertical={false} />
-                  <XAxis dataKey="day" tick={{ fontSize: 11, fill: "#6c7587" }} tickLine={false} axisLine={false} minTickGap={16} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#6c7587" }} tickLine={false} axisLine={false} />
-                  <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e5e7eb", fontSize: 12 }} />
-                  <Area type="monotone" dataKey="Questions" stroke="#f59e0b" strokeWidth={2} fill="url(#gQuestions)" />
-                  <Area type="monotone" dataKey="Chats" stroke="#3b8c2a" strokeWidth={2.5} fill="url(#gChats)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+                {r}
+              </button>
+            ))}
           </div>
+          <button
+            type="button"
+            onClick={refresh}
+            aria-label="Refresh"
+            className="grid h-[31px] w-[31px] place-items-center rounded-[8px] border border-[#e5e7eb] bg-white text-[#334155] transition hover:border-[#15633a] hover:text-[#15633a]"
+          >
+            <RefreshCw className={`h-[14px] w-[14px] ${spin ? "animate-spin" : ""}`} />
+          </button>
+          <Link
+            href="/chatbot/conversations"
+            className="inline-flex h-[31px] items-center gap-[6px] rounded-[8px] border border-[#93b4f0] bg-white px-[12px] text-[11.4px] font-semibold text-[#1d4ed8] transition hover:bg-[#f4f8fe]"
+          >
+            <Settings className="h-[14px] w-[14px]" /> Manage Chatbot
+          </Link>
+        </div>
+      </div>
 
-          <div className="rounded-[10px] border border-[#e8e5df] bg-white p-[14px]">
-            <p className="text-[12px] font-bold text-[#18233b]">Top Pages</p>
-            <p className="mb-[12px] text-[9px] text-[#6c7587]">Where visitors started chatting</p>
-            {stats.topPages.length === 0 ? (
-              <EmptyNote text="No chats in this period" />
-            ) : (
-              <div className="flex flex-col gap-[10px]">
-                {stats.topPages.map((p) => (
-                  <div key={p.pageUrl || "none"}>
-                    <div className="mb-[4px] flex items-center justify-between gap-2 text-[10px]">
-                      <span className="flex min-w-0 items-center gap-[5px] font-medium text-[#414b5e]">
-                        <FileText className="h-[11px] w-[11px] shrink-0 text-[#9aa0aa]" />
-                        <span className="truncate">{pagePath(p.pageUrl)}</span>
+      {/* ── Stat cards ── */}
+      <div className="grid shrink-0 grid-cols-2 gap-[12px] md:grid-cols-3 xl:grid-cols-6">
+        {STATS.map((s) => {
+          const Icon = s.icon;
+          const isWhatsApp = s.icon === WhatsAppIcon;
+          return (
+            <Link
+              key={s.title}
+              href={s.href}
+              className={`group flex h-[96px] min-w-0 flex-col rounded-[11px] border px-[11px] pb-[8px] pt-[10px] transition hover:-translate-y-px hover:shadow-md ${s.cardClass}`}
+            >
+              <div className="flex items-start gap-[9px]">
+                <span className={`grid h-[32px] w-[32px] shrink-0 place-items-center rounded-full border ${s.iconClass}`}>
+                  <Icon className={isWhatsApp ? "h-[17px] w-[17px]" : "h-[16px] w-[16px]"} />
+                </span>
+                <div className="min-w-0">
+                  <p className="whitespace-nowrap text-[10.6px] font-semibold text-[#0f172a]">{s.title}</p>
+                  <p className={`mt-[3px] text-[22px] font-bold leading-none tracking-[-0.02em] ${s.valueClass}`}>{s.value}</p>
+                  {isWhatsApp && (
+                    <p className="mt-[4px] flex items-center gap-[4px] whitespace-nowrap text-[10.2px] font-medium text-[#15803d]">
+                      <span className="grid h-[12px] w-[12px] place-items-center rounded-full bg-[#16a34a] text-white">
+                        <Check className="h-[8px] w-[8px]" strokeWidth={4} />
                       </span>
-                      <span className="font-bold text-[#166b40]">{p.chats}</span>
-                    </div>
-                    <div className="h-[6px] overflow-hidden rounded-full bg-[#f1f5f2]">
-                      <div className="h-full rounded-full bg-gradient-to-r from-[#3b8c2a] to-[#86c66f]" style={{ width: `${(p.chats / maxPage) * 100}%` }} />
-                    </div>
-                  </div>
-                ))}
+                      Integration verified
+                      <Info className="h-[11px] w-[11px] text-[#64748b]" />
+                    </p>
+                  )}
+                </div>
               </div>
-            )}
+              <span className="mt-auto flex items-center justify-center gap-[5px] text-[11.6px] font-semibold text-[#1e293b] group-hover:text-[#15633a]">
+                {s.footer} <ArrowRight className="h-[13px] w-[13px]" />
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* ── Chart + performance ── */}
+      <div className="mt-[12px] grid gap-[12px] xl:h-[272px] xl:grid-cols-[1.6fr_1fr]">
+        <div className={`${card} flex min-h-0 flex-col px-[20px] pb-[8px] pt-[14px]`}>
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <p className={cardTitle}>Day-wise Activity</p>
+              <p className={cardSub}>New chats and questions asked per day (all values are illustrative)</p>
+            </div>
+            <div className="flex items-center gap-[18px] pt-[4px] text-[12.4px] text-[#334155]">
+              <span className="flex items-center gap-[7px]">
+                <span className="h-[9px] w-[9px] rounded-full bg-[#22a447]" /> Chats
+              </span>
+              <span className="flex items-center gap-[7px]">
+                <span className="h-[9px] w-[9px] rounded-full bg-[#f59e0b]" /> Questions
+              </span>
+            </div>
+          </div>
+          <div className="relative mt-[4px] h-[200px] xl:h-auto xl:flex-1">
+            <div className="absolute inset-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={DAILY} margin={{ top: 16, right: 18, left: -14, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="ovQuestions" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.28} />
+                    <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.04} />
+                  </linearGradient>
+                  <linearGradient id="ovChats" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#22a447" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="#22a447" stopOpacity={0.04} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid stroke="#eef0f2" vertical={false} />
+                <XAxis dataKey="day" tick={{ fontSize: 11, fill: "#475569" }} tickLine={false} axisLine={{ stroke: "#e2e8f0" }} dy={6} padding={{ left: 4, right: 4 }} />
+                <YAxis domain={[0, 40]} ticks={[0, 10, 20, 30, 40]} tick={{ fontSize: 11, fill: "#475569" }} tickLine={false} axisLine={{ stroke: "#e2e8f0" }} />
+                <Area type="monotone" dataKey="Questions" stroke="#f59e0b" strokeWidth={2.2} fill="url(#ovQuestions)" dot={{ r: 4, fill: "#f59e0b", stroke: "#fff", strokeWidth: 1.5 }} isAnimationActive={false}>
+                  <LabelList dataKey="Questions" position="top" offset={9} style={{ fontSize: 10.5, fill: "#d97706" }} />
+                </Area>
+                <Area type="monotone" dataKey="Chats" stroke="#16843a" strokeWidth={2.2} fill="url(#ovChats)" dot={{ r: 4, fill: "#16843a", stroke: "#fff", strokeWidth: 1.5 }} isAnimationActive={false}>
+                  <LabelList dataKey="Chats" position="top" offset={9} style={{ fontSize: 10.5, fill: "#15803d" }} />
+                </Area>
+              </AreaChart>
+            </ResponsiveContainer>
+            </div>
           </div>
         </div>
 
-        {/* LATEST QUESTIONS + RECENT CHATS */}
-        <div className="grid gap-[12px] xl:grid-cols-2">
-          <div className="rounded-[10px] border border-[#e8e5df] bg-white p-[14px]">
-            <p className="text-[12px] font-bold text-[#18233b]">Latest Questions</p>
-            <p className="mb-[10px] text-[9px] text-[#6c7587]">What visitors are asking Organic Mitra</p>
-            {stats.latestQuestions.length === 0 ? (
-              <EmptyNote text="No questions in this period" />
-            ) : (
-              <div className="flex flex-col divide-y divide-[#f0f0ec]">
-                {stats.latestQuestions.map((q, i) => (
-                  <Link
-                    key={`${q.chatId}-${i}`}
-                    href={`/chatbot/conversations?id=${q.chatId}`}
-                    className="group flex items-start gap-[10px] py-[8px] transition hover:bg-[#f8faf7]"
-                  >
-                    <MessageCircleQuestion className="mt-[2px] h-[14px] w-[14px] shrink-0 text-[#3b8c2a]" />
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 text-[10px] font-medium text-[#18233b]">{q.content}</p>
-                      <p className="mt-[2px] text-[8px] text-[#9aa0aa]">
-                        {q.name || "Visitor"} · {timeAgo(q.createdAt)}
-                      </p>
-                    </div>
-                    <ArrowRight className="mt-[2px] h-[12px] w-[12px] shrink-0 text-[#cbd5e1] transition group-hover:text-[#166b40]" />
-                  </Link>
-                ))}
-              </div>
-            )}
+        <div className={`${card} flex flex-col px-[12px] pb-[8px] pt-[12px]`}>
+          <div className="flex items-center justify-between gap-2 px-[4px]">
+            <p className={`${cardTitle} flex items-center gap-[7px]`}>
+              Answer &amp; Feedback Performance <Info className="h-[15px] w-[15px] text-[#64748b]" />
+            </p>
+            <span className="text-[12.4px] font-medium text-[#0f172a]">{range}</span>
           </div>
-
-          <div className="rounded-[10px] border border-[#e8e5df] bg-white p-[14px]">
-            <div className="mb-[10px] flex items-start justify-between gap-2">
-              <div>
-                <p className="text-[12px] font-bold text-[#18233b]">Recent Conversations</p>
-                <p className="text-[9px] text-[#6c7587]">Latest visitors who chatted</p>
-              </div>
-              <Link href="/chatbot/conversations" className="flex items-center gap-1 text-[9px] font-bold text-[#166b40] hover:underline">
-                View all <ArrowRight className="h-[11px] w-[11px]" />
-              </Link>
-            </div>
-            {recent.length === 0 ? (
-              <EmptyNote text="No conversations in this period" />
-            ) : (
-              <div className="flex flex-col divide-y divide-[#f0f0ec]">
-                {recent.map((c) => (
-                  <Link key={c._id} href={`/chatbot/conversations?id=${c._id}`} className="flex items-center gap-[10px] py-[8px] transition hover:bg-[#f8faf7]">
-                    <span
-                      className="grid h-[32px] w-[32px] shrink-0 place-items-center rounded-full text-[10px] font-bold text-white"
-                      style={{ background: avatarColor(c.lead?.phone || c._id) }}
-                    >
-                      {initials(c.lead?.name)}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="truncate text-[10px] font-bold text-[#18233b]">{c.lead?.name || "Visitor"}</p>
-                        <span className="shrink-0 text-[8px] text-[#9aa0aa]">{timeAgo(c.updatedAt)}</span>
-                      </div>
-                      <p className="truncate text-[9px] text-[#6c7587]">{c.firstQuestion?.content || "Filled details, no question yet"}</p>
-                    </div>
-                    <span className="shrink-0 rounded-full bg-[#e8f5e9] px-[7px] py-[2px] text-[8px] font-bold text-[#166b40]">{c.questionCount} Q</span>
-                  </Link>
-                ))}
-              </div>
-            )}
+          <div className="mt-[10px] flex flex-1 flex-col justify-between gap-[6px]">
+            {PERFORMANCE.map((row) => {
+              const Icon = row.icon;
+              return (
+                <div key={row.label} className="flex min-h-[38px] flex-1 items-center gap-[10px] rounded-[9px] border border-[#eef0f2] px-[10px]">
+                  <span className={`grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full ${row.iconClass}`}>
+                    <Icon className="h-[16px] w-[16px]" strokeWidth={2.6} />
+                  </span>
+                  <span className="w-[150px] shrink-0 text-[12.4px] text-[#1e293b]">{row.label}</span>
+                  <span className="min-w-0 flex-1 text-[15.2px] font-bold text-[#0f172a]">{row.value}</span>
+                  {row.extra ?? <ChevronRight className="h-[16px] w-[16px] text-[#94a3b8]" />}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
-    </div>
-  );
-}
 
-function EmptyNote({ text }: { text: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center gap-[6px] rounded-[8px] border border-dashed border-[#e5e6e2] py-[24px] text-center">
-      <MessagesSquare className="h-[20px] w-[20px] text-[#cbd5e1]" />
-      <p className="text-[10px] font-medium text-[#9aa0aa]">{text}</p>
+      {/* ── Top pages · popular questions · team follow-up ── */}
+      <div className="mt-[12px] grid gap-[12px] lg:grid-cols-3">
+        <div className={`${card} flex flex-col px-[16px] pb-[12px] pt-[12px]`}>
+          <p className={cardTitle}>Top Pages</p>
+          <p className={cardSub}>Where visitors started chatting (total 128 chats)</p>
+          <div className="mt-[10px] flex flex-1 flex-col justify-around gap-[10px]">
+            {TOP_PAGES.map((p) => (
+              <div key={p.page} className="flex items-center gap-[12px]">
+                <span className="w-[124px] shrink-0 truncate text-[12.4px] text-[#0f172a]">{p.page}</span>
+                <span className="h-[9px] flex-1 overflow-hidden rounded-full bg-[#eef1f4]">
+                  <span className={`block h-full rounded-full ${p.bar}`} style={{ width: `${(p.chats / 54) * 78}%` }} />
+                </span>
+                <span className="w-[24px] text-right text-[12.4px] font-medium text-[#0f172a]">{p.chats}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className={`${card} flex flex-col px-[14px] pb-[4px] pt-[12px]`}>
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className={cardTitle}>Popular Questions</p>
+              <p className={cardSub}>Most common questions from visitors</p>
+            </div>
+            <Link href="/chatbot/conversations" className={blueLink}>
+              Review Answers <ArrowRight className="h-[13px] w-[13px]" />
+            </Link>
+          </div>
+          <div className="mt-[4px] flex flex-1 flex-col justify-around divide-y divide-[#eef0f2]">
+            {POPULAR_QUESTIONS.map((item, i) => (
+              <Link key={item.q} href="/chatbot/conversations" className="flex items-center gap-[10px] py-[8px] transition hover:bg-[#f8faf9]">
+                <span className="grid h-[24px] w-[24px] shrink-0 place-items-center rounded-full bg-[#eef3fb] text-[11.4px] font-semibold text-[#1d4ed8]">{i + 1}</span>
+                <span className="min-w-0 flex-1 truncate text-[12.4px] text-[#0f172a]">{item.q}</span>
+                <span className="rounded-full bg-[#e3f5e8] px-[9px] py-[1px] text-[11.6px] font-semibold text-[#15803d]">{item.count}</span>
+                <ChevronRight className="h-[16px] w-[16px] text-[#64748b]" />
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        <div className={`${card} flex flex-col px-[14px] pb-[4px] pt-[12px]`}>
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className={cardTitle}>Team Follow-up</p>
+              <p className={cardSub}>Chats that need human attention</p>
+            </div>
+            <Link href="/chatbot/leads" className={blueLink}>
+              Open Inbox <ArrowRight className="h-[13px] w-[13px]" />
+            </Link>
+          </div>
+          <div className="mt-[4px] flex flex-1 flex-col justify-around divide-y divide-[#eef0f2]">
+            {FOLLOW_UPS.map((f) => {
+              const Icon = f.icon;
+              return (
+                <Link key={f.label} href="/chatbot/leads" className="flex items-center gap-[10px] py-[7px] transition hover:bg-[#f8faf9]">
+                  <Icon className={`h-[16px] w-[16px] shrink-0 ${f.iconClass}`} />
+                  <span className="min-w-0 flex-1 text-[12.4px] text-[#0f172a]">{f.label}</span>
+                  <span className={`grid h-[22px] w-[22px] place-items-center rounded-full text-[11.2px] font-semibold ${f.countClass}`}>{f.count}</span>
+                  <ChevronRight className="h-[16px] w-[16px] text-[#94a3b8]" />
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Recent conversations ── */}
+      <div className={`${card} mt-[12px] shrink-0 px-[16px] pb-[6px] pt-[12px]`}>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className={cardTitle}>Recent Conversations</p>
+            <p className={cardSub}>Latest visitor conversations and their status (sample data)</p>
+          </div>
+          <Link href="/chatbot/conversations" className="inline-flex items-center gap-1 text-[12.4px] font-semibold text-[#15633a] hover:underline">
+            View all <ArrowRight className="h-[14px] w-[14px]" />
+          </Link>
+        </div>
+        <div className="mt-[8px] overflow-x-auto">
+          <div className="min-w-[900px] text-[12.4px]">
+            <div className="grid grid-cols-[1.45fr_0.85fr_1fr_1.4fr_1.4fr_1.1fr_0.7fr_20px] items-center rounded-[6px] bg-[#f7f8fa] px-[12px] py-[6px] text-[11.4px] font-semibold text-[#334155]">
+              <span>Visitor</span>
+              <span>Type</span>
+              <span>Topic</span>
+              <span>Bot Outcome</span>
+              <span>Team Status</span>
+              <span>Last Activity</span>
+              <span>Action</span>
+              <span />
+            </div>
+            {RECENT.map((c) => {
+              const Outcome = c.outcome.icon;
+              return (
+                <div
+                  key={c.name}
+                  className="grid grid-cols-[1.45fr_0.85fr_1fr_1.4fr_1.4fr_1.1fr_0.7fr_20px] items-center border-b border-[#f0f2f4] px-[12px] py-[4px] last:border-b-0"
+                >
+                  <span className="flex min-w-0 items-center gap-[12px]">
+                    <span className={`grid h-[28px] w-[28px] shrink-0 place-items-center rounded-full text-[11.2px] font-semibold text-white ${c.avatar}`}>{c.initials}</span>
+                    <span className="min-w-0 leading-tight">
+                      <span className="block truncate font-medium text-[#0f172a]">{c.name}</span>
+                      <span className="block truncate text-[10.8px] text-[#64748b]">{c.returning ? "Returning Visitor" : "New Visitor"}</span>
+                    </span>
+                  </span>
+                  <span>
+                    <span
+                      className={`rounded-[6px] px-[10px] py-[3px] text-[11.2px] font-medium ${
+                        c.returning ? "bg-[#e3f5e8] text-[#15803d]" : "bg-[#e3edfd] text-[#1d4ed8]"
+                      }`}
+                    >
+                      {c.returning ? "Returning" : "New"}
+                    </span>
+                  </span>
+                  <span className="text-[#0f172a]">{c.topic}</span>
+                  <span className="flex items-center gap-[10px] text-[#0f172a]">
+                    <Outcome className="h-[16px] w-[16px] text-[#15633a]" /> {c.outcome.label}
+                  </span>
+                  <span>
+                    <span className={`rounded-[6px] px-[10px] py-[3px] text-[11.2px] font-medium ${c.status.className}`}>{c.status.label}</span>
+                  </span>
+                  <span className="text-[#334155]">{c.lastActivity}</span>
+                  <span>
+                    <Link
+                      href="/chatbot/conversations"
+                      className={`inline-flex h-[26px] min-w-[50px] items-center justify-center rounded-[6px] border bg-white px-[10px] text-[11.4px] font-medium transition ${
+                        c.action === "Review"
+                          ? "border-[#f3a5a5] text-[#dc2626] hover:bg-[#fdf2f2]"
+                          : "border-[#93b4f0] text-[#1d4ed8] hover:bg-[#f4f8fe]"
+                      }`}
+                    >
+                      {c.action}
+                    </Link>
+                  </span>
+                  <ChevronRight className="h-[16px] w-[16px] text-[#94a3b8]" />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Status bar ── */}
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 pb-[8px] pt-[8px] text-[11.2px]">
+        <div className="flex flex-wrap items-center gap-[12px]">
+          <span className="flex items-center gap-[7px] font-semibold text-[#15803d]">
+            <span className="h-[9px] w-[9px] rounded-full bg-[#22a447]" /> Organic Mitra Active
+          </span>
+          <span className="h-[14px] w-px bg-[#cbd5e1]" />
+          <span className="text-[#64748b]">
+            Last content update: <span className="text-[#0f172a]">02 Oct 2026</span>
+          </span>
+          <span className="h-[14px] w-px bg-[#cbd5e1]" />
+          <a href={PUBLIC_SITE_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-[4px] font-medium text-[#1d4ed8] hover:underline">
+            Preview Chatbot <ArrowUpRight className="h-[13px] w-[13px]" />
+          </a>
+        </div>
+        <span className="text-[#64748b]">All data shown is sample and for illustrative purposes only.</span>
+      </div>
     </div>
   );
 }
