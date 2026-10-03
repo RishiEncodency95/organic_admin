@@ -336,7 +336,10 @@ export default function ApplicationsAiResponsePage() {
     const app = forwardTarget;
     if (!app) return;
     try {
-      await api.patch(`/careers/admin/applications/${encodeURIComponent(app.id)}/hr`, {
+      const result = await api.patch<{
+        email: { sent: boolean; skipped?: boolean; error?: string } | null;
+        recipients: { to: string[]; cc: string[]; bcc: string[] } | null;
+      }>(`/careers/admin/applications/${encodeURIComponent(app.id)}/hr`, {
         hrStatus: "Sent to HR",
         changedBy: adminName,
         note: `Forwarded to HR (${recipients.join(", ")}). Shared: ${share.join(", ")}${note ? `. Note: ${note}` : ""}`,
@@ -346,12 +349,23 @@ export default function ApplicationsAiResponsePage() {
       // (re-loading every candidate first is what made the alert feel late).
       setForwardTarget(null);
       void loadApplications();
+      const sentTo = result?.recipients || { to: recipients, cc: [], bcc: [] };
+      const line = (label: string, list: string[]) =>
+        list.length ? `<div><b>${label}:</b> ${escapeHtml(list.join(", "))}</div>` : "";
+      const email = result?.email;
+      const emailLine = email?.sent
+        ? `<p style="margin:8px 0 0;font-size:13px;color:#148943">Email sent to HR.</p>`
+        : email?.skipped
+        ? `<p style="margin:8px 0 0;font-size:13px;color:#B45309">Email notification is off in Career Settings, so no email was sent.</p>`
+        : `<p style="margin:8px 0 0;font-size:13px;color:#DC2626">Marked as Sent to HR, but the email could not be sent${email?.error ? `: ${escapeHtml(email.error)}` : ""}.</p>`;
       void Swal.fire({
-        icon: "success",
+        icon: email && !email.sent && !email.skipped ? "warning" : "success",
         title: "Forwarded to HR!",
         html:
-          `<p style="margin:0 0 8px">${escapeHtml(app.name)}'s application has been sent to <b>${escapeHtml(recipients.join(", "))}</b>.</p>` +
-          `<p style="margin:0;font-size:13px;color:#475569">Shared: ${escapeHtml(share.join(", "))}</p>`,
+          `<p style="margin:0 0 8px">${escapeHtml(app.name)}'s application has been forwarded.</p>` +
+          `<div style="font-size:13px;color:#334155;text-align:left;display:inline-block">${line("To", sentTo.to)}${line("CC", sentTo.cc)}${line("BCC", sentTo.bcc)}</div>` +
+          `<p style="margin:8px 0 0;font-size:13px;color:#475569">Shared: ${escapeHtml(share.join(", "))}</p>` +
+          emailLine,
         confirmButtonText: "OK",
         confirmButtonColor: "#148943",
       });

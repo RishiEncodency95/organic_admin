@@ -1,11 +1,16 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   X, Briefcase, Calendar, MapPin, HelpCircle,
-  FileText, Upload, PieChart, ClipboardList, Info, Send, ChevronDown
+  FileText, Upload, PieChart, ClipboardList, Info, Send
 } from "lucide-react";
+import { loadHrSettings, RECIPIENT_TYPE_LABEL, type HrRecipient, type HrSettings } from "@/lib/hrSettings";
 
-// People the application can be forwarded to.
-export const HR_RECIPIENTS = ["HR Team (General)", "Srujana Paidi (CHRO)", "Vijay Sharma (CHRO)"];
+// To / CC / BCC badge colours (same as Career Settings → HR & Workflow).
+const TYPE_BADGE = {
+  to: "bg-[#DCFCE7] text-[#148943]",
+  cc: "bg-[#DBEAFE] text-[#2563EB]",
+  bcc: "bg-[#EDE9FE] text-[#7C3AED]",
+} as const;
 
 // Parts of the application the admin can choose to share (names match the backend list).
 const SHARE_OPTIONS = [
@@ -35,6 +40,7 @@ interface ForwardToHRModalProps {
   onClose: () => void;
   // Without a candidate (e.g. opened from the sidebar shortcut) the form can't be submitted.
   candidate?: ForwardToHRCandidate | null;
+  // `recipients` are the chosen people's email IDs (from Career Settings → HR & Workflow).
   onSubmit?: (data: { recipients: string[]; note: string; share: string[] }) => Promise<void>;
 }
 
@@ -48,18 +54,42 @@ const resultTone = (result: string) =>
     : { ring: "border-[#DC2626]", text: "text-[#DC2626]", chip: "bg-[#FEE2E2] text-[#DC2626]" };
 
 export default function ForwardToHRModal({ isOpen, onClose, candidate, onSubmit }: ForwardToHRModalProps) {
-  const [recipients, setRecipients] = useState<string[]>(HR_RECIPIENTS);
+  const [hrSettings, setHrSettings] = useState<HrSettings | null>(null);
+  const [hrError, setHrError] = useState("");
+  const [recipients, setRecipients] = useState<string[]>([]);
   const [share, setShare] = useState<string[]>(ALL_SHARE);
   const [note, setNote] = useState("");
-  const [pickerOpen, setPickerOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [avatarFailed, setAvatarFailed] = useState(false);
 
+  // Recipients are managed in Career Settings → HR & Workflow; re-read them every time the
+  // popup opens so changes there show up straight away. All active people start selected.
+  useEffect(() => {
+    if (!isOpen) return;
+    let active = true;
+    loadHrSettings()
+      .then((data) => {
+        if (!active) return;
+        setHrSettings(data);
+        setHrError("");
+        setRecipients(data.recipients.filter((r) => r.active).map((r) => r.email));
+      })
+      .catch((err) => active && setHrError((err as Error)?.message || "Could not load HR recipients"));
+    return () => {
+      active = false;
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
+  const activeRecipients: HrRecipient[] = (hrSettings?.recipients || []).filter((r) => r.active);
+  const allEmails = activeRecipients.map((r) => r.email);
+  const byEmail = new Map(activeRecipients.map((r) => [r.email, r]));
+  const selected = recipients.filter((e) => byEmail.has(e));
+  const forwardOff = hrSettings?.manualForward === false;
+
   const tone = resultTone(candidate?.aiResult || "");
-  const remaining = HR_RECIPIENTS.filter((r) => !recipients.includes(r));
-  const canSubmit = !!candidate && !!onSubmit && recipients.length > 0 && share.length > 0 && !submitting;
+  const canSubmit = !!candidate && !!onSubmit && !forwardOff && selected.length > 0 && share.length > 0 && !submitting;
   const initials =
     (candidate?.name || "?")
       .split(/\s+/)
@@ -71,9 +101,8 @@ export default function ForwardToHRModal({ isOpen, onClose, candidate, onSubmit 
   const close = () => {
     if (submitting) return;
     setNote("");
-    setRecipients(HR_RECIPIENTS);
+    setRecipients(allEmails);
     setShare(ALL_SHARE);
-    setPickerOpen(false);
     setAvatarFailed(false);
     onClose();
   };
@@ -83,11 +112,10 @@ export default function ForwardToHRModal({ isOpen, onClose, candidate, onSubmit 
     setSubmitting(true);
     try {
       // Keep the option order stable regardless of the order they were ticked in.
-      await onSubmit({ recipients, note: note.trim(), share: ALL_SHARE.filter((x) => share.includes(x)) });
+      await onSubmit({ recipients: selected, note: note.trim(), share: ALL_SHARE.filter((x) => share.includes(x)) });
       setNote("");
-      setRecipients(HR_RECIPIENTS);
+      setRecipients(allEmails);
       setShare(ALL_SHARE);
-      setPickerOpen(false);
       setAvatarFailed(false);
     } finally {
       setSubmitting(false);
@@ -223,50 +251,87 @@ export default function ForwardToHRModal({ isOpen, onClose, candidate, onSubmit 
                   </div>
                 </div>
 
-                {/* Select Input */}
-                <div className="relative">
-                  <div
-                    onClick={() => remaining.length > 0 && setPickerOpen((v) => !v)}
-                    className={`border rounded-[6px] p-[4px] pr-[26px] flex flex-wrap items-center gap-[4px] bg-white cursor-pointer transition-colors min-h-[28px] ${
-                      recipients.length === 0 ? "border-[#DC2626]" : "border-[#2563EB] hover:border-[#1d4ed8]"
-                    }`}
-                  >
-                    {recipients.length === 0 && (
-                      <span className="text-[10px] font-medium text-[#94a3b8] px-[4px]">Select at least one HR recipient</span>
+                {/* Recipient list (from Career Settings → HR & Workflow): tick who gets the email */}
+                <div
+                  className={`border rounded-[6px] bg-white ${
+                    selected.length === 0 ? "border-[#DC2626]" : "border-[#E1E6EC]"
+                  }`}
+                >
+                  <div className="flex items-center justify-between px-[8px] py-[4px] border-b border-[#E1E6EC] bg-[#F8FAFC] rounded-t-[6px]">
+                    <span className="text-[9px] font-bold text-[#506083]">
+                      {selected.length} of {activeRecipients.length} selected
+                    </span>
+                    {activeRecipients.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setRecipients(selected.length === activeRecipients.length ? [] : allEmails)}
+                        className="text-[9px] font-bold text-[#2563EB] hover:underline"
+                      >
+                        {selected.length === activeRecipients.length ? "Clear all" : "Select all"}
+                      </button>
                     )}
-                    {recipients.map((r) => (
-                      <div key={r} className="flex items-center gap-[4px] bg-[#E8F1FF] text-[#2563EB] px-[6px] py-[2px] rounded-[4px] text-[10px] font-bold border border-[#D5E6FA]">
-                        {r}
-                        <X
-                          size={10}
-                          className="cursor-pointer hover:text-black"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setRecipients((prev) => prev.filter((x) => x !== r));
-                          }}
-                        />
-                      </div>
-                    ))}
-                    <ChevronDown size={14} className="text-[#506083] absolute right-[8px] top-1/2 -translate-y-1/2" />
                   </div>
-                  {pickerOpen && remaining.length > 0 && (
-                    <div className="absolute left-0 right-0 top-full mt-[2px] z-30 bg-white border border-[#E1E6EC] rounded-[6px] shadow-lg py-[2px]">
-                      {remaining.map((r) => (
-                        <button
-                          key={r}
-                          type="button"
-                          onClick={() => {
-                            setRecipients((prev) => [...prev, r]);
-                            setPickerOpen(false);
-                          }}
-                          className="block w-full text-left px-[8px] py-[4px] text-[10px] font-semibold text-[#172762] hover:bg-[#E8F1FF]"
-                        >
-                          {r}
-                        </button>
-                      ))}
+                  {activeRecipients.length === 0 ? (
+                    <div className="px-[8px] py-[8px] text-[10px] font-medium text-[#94a3b8]">
+                      {!hrSettings && !hrError
+                        ? "Loading HR recipients..."
+                        : "No active HR recipients. Add them in Career Settings → HR & Workflow."}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-[4px] p-[4px] max-h-[120px] overflow-y-auto">
+                      {activeRecipients.map((r) => {
+                        const checked = selected.includes(r.email);
+                        return (
+                          <button
+                            key={r.email}
+                            type="button"
+                            role="checkbox"
+                            aria-checked={checked}
+                            onClick={() =>
+                              setRecipients(checked ? selected.filter((x) => x !== r.email) : [...selected, r.email])
+                            }
+                            className={`flex items-center gap-[6px] text-left rounded-[5px] border px-[6px] py-[4px] transition-colors ${
+                              checked ? "border-[#16A34A] bg-[#F4FAF6]" : "border-[#E1E6EC] bg-white hover:bg-[#F8FAFC]"
+                            }`}
+                          >
+                            <span
+                              className={`w-[12px] h-[12px] rounded-[3px] flex items-center justify-center flex-shrink-0 ${
+                                checked ? "bg-[#16A34A]" : "border border-[#CBD5E1] bg-white"
+                              }`}
+                            >
+                              {checked && (
+                                <svg width="8" height="6" viewBox="0 0 8 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              )}
+                            </span>
+                            <span className={`px-[4px] rounded-[3px] text-[8px] font-bold flex-shrink-0 ${TYPE_BADGE[r.type]}`}>
+                              {RECIPIENT_TYPE_LABEL[r.type]}
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block text-[10px] font-bold text-[#172762] truncate">
+                                {r.name || r.email}
+                                {r.designation ? <span className="font-medium text-[#506083]"> ({r.designation})</span> : null}
+                              </span>
+                              <span className="block text-[8px] font-medium text-[#506083] truncate">{r.email}</span>
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
+                {hrError && <p className="text-[8px] font-semibold text-[#DC2626] mt-[2px]">{hrError}</p>}
+                {forwardOff && (
+                  <p className="text-[8px] font-semibold text-[#DC2626] mt-[2px]">
+                    Manual forward is turned off in Career Settings → HR &amp; Workflow.
+                  </p>
+                )}
+                {hrSettings && !forwardOff && !hrSettings.notifyHr && (
+                  <p className="text-[8px] font-semibold text-[#B45309] mt-[2px]">
+                    Email notification is off in Career Settings, so the candidate will only be marked &quot;Sent to HR&quot; (no email).
+                  </p>
+                )}
               </div>
             </div>
 

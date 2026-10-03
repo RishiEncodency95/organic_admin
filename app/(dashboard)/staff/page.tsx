@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Plus, Copy, Check, Pencil, Camera, Loader2, PowerOff, Power, Trash2, ExternalLink, User, ChevronLeft, ChevronRight } from "lucide-react";
 import Swal from "sweetalert2";
-import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import LottieAvatar from "@/components/LottieAvatar";
 import { showUploadError } from "@/lib/uploadLimit";
 import typography from "../pages/PagesTypography.module.css";
 import Button from "@/components/ui/Button";
@@ -370,12 +370,7 @@ export default function StaffPage() {
                                 className="h-full w-full object-cover"
                               />
                             ) : (
-                              <DotLottieReact
-                                src="/avatar-lottie.lottie"
-                                loop
-                                autoplay
-                                style={{ width: "100%", height: "100%", transform: "scale(1.2)" }}
-                              />
+                              <LottieAvatar style={{ width: "100%", height: "100%", transform: "scale(1.2)" }} />
                             )}
                           </div>
                         </td>

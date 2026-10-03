@@ -41,7 +41,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logout } from "@/store/slices/authSlice";
 
-import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import LottieAvatar from "@/components/LottieAvatar";
 import { authApi } from "@/lib/authApi";
 import Swal from "sweetalert2";
 import { casesApi, SlaBreach } from "@/lib/casesApi";
@@ -730,12 +730,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <DotLottieReact
-                      src="/avatar-lottie.lottie"
-                      loop
-                      autoplay
-                      style={{ width: "100%", height: "100%", transform: "scale(1.2)" }}
-                    />
+                    <LottieAvatar style={{ width: "100%", height: "100%", transform: "scale(1.2)" }} />
                   )}
                 </div>
 
