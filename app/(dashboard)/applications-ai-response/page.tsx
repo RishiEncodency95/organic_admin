@@ -1071,11 +1071,10 @@ export default function ApplicationsAiResponsePage() {
                   key={t}
                   type="button"
                   onClick={() => setActiveDrawerTab(t)}
-                  className={`py-2 px-2.5 border-b-2 transition whitespace-nowrap ${
-                    activeDrawerTab === t
+                  className={`py-2 px-2.5 border-b-2 transition whitespace-nowrap ${activeDrawerTab === t
                       ? "border-[#0f766e] text-[#0f766e] font-bold bg-white"
                       : "border-transparent text-slate-500 hover:text-slate-800"
-                  }`}
+                    }`}
                 >
                   {t}
                 </button>
