@@ -17,6 +17,7 @@ import {
   Gauge,
   Handshake,
   History,
+  Inbox,
   LayoutDashboard,
   LayoutGrid,
   Link2,
@@ -67,6 +68,7 @@ export const NAV_SECTIONS: NavSection[] = [
     title: "AI Chatbot",
     items: [
       { label: "Chatbot Overview", href: "/chatbot/overview", icon: Bot, badge: "NEW" },
+      { label: "Inbox & Leads", href: "/chatbot/inbox", icon: Inbox },
       { label: "Chat Conversations", href: "/chatbot/conversations", icon: MessagesSquare },
       { label: "Chatbot Leads", href: "/chatbot/leads", icon: UserCheck },
     ],
