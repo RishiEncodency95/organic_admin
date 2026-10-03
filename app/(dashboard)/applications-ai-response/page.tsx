@@ -788,9 +788,8 @@ export default function ApplicationsAiResponsePage() {
                         <tr
                           key={app.id}
                           onClick={() => setSelectedCandidate(app)}
-                          className={`cursor-pointer transition hover:bg-slate-50/90 h-11 ${
-                            isSelected ? "bg-[#f0fdf4]" : ""
-                          }`}
+                          className={`cursor-pointer transition hover:bg-slate-50/90 h-11 ${isSelected ? "bg-[#f0fdf4]" : ""
+                            }`}
                         >
                           {/* Checkbox */}
                           <td className="py-1.5 px-2 text-center" onClick={(e) => e.stopPropagation()}>
@@ -834,13 +833,12 @@ export default function ApplicationsAiResponsePage() {
                           {/* AI Score */}
                           <td className="py-1.5 px-2 whitespace-nowrap">
                             <span
-                              className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                                app.aiScore >= 80
+                              className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold ${app.aiScore >= 80
                                   ? "bg-emerald-100 text-emerald-800"
                                   : app.aiScore >= 60
-                                  ? "bg-amber-100 text-amber-800"
-                                  : "bg-rose-100 text-rose-800"
-                              }`}
+                                    ? "bg-amber-100 text-amber-800"
+                                    : "bg-rose-100 text-rose-800"
+                                }`}
                             >
                               {app.aiScore}%
                             </span>
@@ -935,11 +933,10 @@ export default function ApplicationsAiResponsePage() {
                       key={page}
                       type="button"
                       onClick={() => setCurrentPage(page)}
-                      className={`w-5 h-5 rounded text-[10px] font-semibold ${
-                        currentPage === page
+                      className={`w-5 h-5 rounded text-[10px] font-semibold ${currentPage === page
                           ? "bg-[#0f766e] text-white"
                           : "bg-white border border-slate-300 hover:bg-slate-100 text-slate-700"
-                      }`}
+                        }`}
                     >
                       {page}
                     </button>
@@ -1063,11 +1060,10 @@ export default function ApplicationsAiResponsePage() {
                   key={t}
                   type="button"
                   onClick={() => setActiveDrawerTab(t)}
-                  className={`py-2 px-2.5 border-b-2 transition whitespace-nowrap ${
-                    activeDrawerTab === t
+                  className={`py-2 px-2.5 border-b-2 transition whitespace-nowrap ${activeDrawerTab === t
                       ? "border-[#0f766e] text-[#0f766e] font-bold bg-white"
                       : "border-transparent text-slate-500 hover:text-slate-800"
-                  }`}
+                    }`}
                 >
                   {t}
                 </button>
