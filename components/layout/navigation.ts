@@ -69,6 +69,8 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: "Chatbot Overview", href: "/chatbot/overview", icon: Bot, badge: "NEW" },
       { label: "Inbox & Leads", href: "/chatbot/inbox", icon: Inbox },
+      { label: "Chatbot Manager", href: "/chatbot/manager", icon: UserCog },
+      { label: "Reports", href: "/chatbot/reports", icon: BarChart3 },
       { label: "Chat Conversations", href: "/chatbot/conversations", icon: MessagesSquare },
       { label: "Chatbot Leads", href: "/chatbot/leads", icon: UserCheck },
     ],

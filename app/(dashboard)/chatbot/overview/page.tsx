@@ -144,7 +144,7 @@ const PERFORMANCE = [
     value: "487 / 512",
     icon: Check,
     iconClass: "bg-[#22a447] text-white",
-    extra: <span className="text-[12.4px] font-medium text-[#475569]">95%</span>,
+    extra: <span className="text-[11.4px] font-medium text-[#475569]">95%</span>,
   },
   {
     label: "Unanswered questions",
@@ -154,7 +154,7 @@ const PERFORMANCE = [
     extra: (
       <Link
         href="/chatbot/conversations"
-        className="inline-flex items-center gap-1 rounded-[6px] bg-[#fdecec] px-[9px] py-[4px] text-[11.4px] font-semibold text-[#dc2626] transition hover:bg-[#fbd9d9]"
+        className="inline-flex items-center gap-1 rounded-[6px] bg-[#fdecec] px-[8px] py-[2px] text-[11.2px] font-semibold text-[#dc2626] transition hover:bg-[#fbd9d9]"
       >
         Review <ArrowRight className="h-[13px] w-[13px]" />
       </Link>
@@ -164,7 +164,7 @@ const PERFORMANCE = [
     label: "Helpful ratings",
     value: (
       <>
-        92% <span className="ml-1 text-[12.4px] font-medium text-[#475569]">(46 / 50)</span>
+        92% <span className="ml-1 text-[11.4px] font-medium text-[#475569]">(46 / 50)</span>
       </>
     ),
     icon: ThumbsUp,
@@ -247,6 +247,9 @@ const RECENT: Conversation[] = [
 const card = "rounded-[12px] border border-[#e3e8e4] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]";
 const cardTitle = "text-[15.6px] font-bold leading-tight tracking-[-0.01em] text-[#0f2a1c]";
 const cardSub = "mt-[2px] text-[11.6px] text-[#64748b]";
+/** Smaller heading for the compact cards (performance, top pages, questions, follow-up) */
+const smallTitle = "text-[13.6px] font-bold leading-tight text-[#0f2a1c]";
+const smallSub = "mt-[1px] text-[10.6px] text-[#64748b]";
 const blueLink = "inline-flex items-center gap-1 whitespace-nowrap text-[11.4px] font-semibold text-[#1d4ed8] hover:underline";
 
 export default function ChatbotOverviewPage() {
@@ -261,28 +264,29 @@ export default function ChatbotOverviewPage() {
   return (
     <div className="flex w-full flex-col bg-white px-[16px] pt-[10px] text-[#0f172a]">
       {/* ── Header ── */}
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 pb-[10px]">
+      {/* One row: subtitle + chip on the left, filters on the right (the subtitle truncates if space runs out) */}
+      <div className="flex shrink-0 items-center justify-between gap-x-3 pb-[10px]">
         <div className="min-w-0">
-          <p className="text-[23px] font-bold leading-none tracking-[-0.02em] text-[#14532d]">Chatbot Overview</p>
-          <div className="mt-[6px] flex flex-wrap items-center gap-[10px]">
-            <p className="text-[13.2px] text-[#475569]">Organic Mitra — chatbot performance &amp; team follow-up</p>
+          {/* The page name is already in the top bar, so only the subtitle is shown here */}
+          <div className="flex min-w-0 items-center gap-[10px]">
+            <p className="min-w-0 truncate text-[15.2px] font-medium text-[#334155]">Organic Mitra — chatbot performance &amp; team follow-up</p>
             <span
               title="All numbers on this page are sample data"
-              className="inline-flex items-center gap-[5px] rounded-[6px] border border-[#cfe9d6] bg-[#eefaf1] px-[8px] py-[2px] text-[10.6px] font-medium text-[#15803d]"
+              className="inline-flex shrink-0 items-center gap-[6px] whitespace-nowrap rounded-[6px] border border-[#cfe9d6] bg-[#eefaf1] px-[10px] py-[3px] text-[12.4px] font-medium text-[#15803d]"
             >
-              Demo data <Info className="h-[12px] w-[12px]" />
+              Demo data <Info className="h-[13px] w-[13px]" />
             </span>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-[8px]">
+        <div className="flex shrink-0 items-center gap-[8px]">
           <div className="flex items-center gap-[2px] rounded-[8px] border border-[#e5e7eb] bg-[#f3f4f6] p-[3px]">
             {RANGES.map((r) => (
               <button
                 key={r}
                 type="button"
                 onClick={() => setRange(r)}
-                className={`rounded-[6px] px-[10px] py-[5px] text-[11.4px] font-semibold transition ${
+                className={`whitespace-nowrap rounded-[6px] px-[8px] py-[5px] text-[11.4px] font-semibold transition ${
                   range === r ? "bg-[#15633a] text-white shadow-sm" : "text-[#334155] hover:bg-white"
                 }`}
               >
@@ -300,7 +304,7 @@ export default function ChatbotOverviewPage() {
           </button>
           <Link
             href="/chatbot/conversations"
-            className="inline-flex h-[31px] items-center gap-[6px] rounded-[8px] border border-[#93b4f0] bg-white px-[12px] text-[11.4px] font-semibold text-[#1d4ed8] transition hover:bg-[#f4f8fe]"
+            className="inline-flex h-[31px] shrink-0 items-center gap-[6px] whitespace-nowrap rounded-[8px] border border-[#93b4f0] bg-white px-[12px] text-[11.4px] font-semibold text-[#1d4ed8] transition hover:bg-[#f4f8fe]"
           >
             <Settings className="h-[14px] w-[14px]" /> Manage Chatbot
           </Link>
@@ -316,24 +320,26 @@ export default function ChatbotOverviewPage() {
             <Link
               key={s.title}
               href={s.href}
-              className={`group flex h-[96px] min-w-0 flex-col rounded-[11px] border px-[11px] pb-[8px] pt-[10px] transition hover:-translate-y-px hover:shadow-md ${s.cardClass}`}
+              className={`group flex h-[68px] min-w-0 flex-col rounded-[11px] border px-[11px] pb-[5px] pt-[7px] transition hover:-translate-y-px hover:shadow-md ${s.cardClass}`}
             >
               <div className="flex items-start gap-[9px]">
-                <span className={`grid h-[32px] w-[32px] shrink-0 place-items-center rounded-full border ${s.iconClass}`}>
-                  <Icon className={isWhatsApp ? "h-[17px] w-[17px]" : "h-[16px] w-[16px]"} />
+                <span className={`grid h-[28px] w-[28px] shrink-0 place-items-center rounded-full border ${s.iconClass}`}>
+                  <Icon className={isWhatsApp ? "h-[15px] w-[15px]" : "h-[14px] w-[14px]"} />
                 </span>
                 <div className="min-w-0">
                   <p className="whitespace-nowrap text-[10.6px] font-semibold text-[#0f172a]">{s.title}</p>
-                  <p className={`mt-[3px] text-[22px] font-bold leading-none tracking-[-0.02em] ${s.valueClass}`}>{s.value}</p>
-                  {isWhatsApp && (
-                    <p className="mt-[4px] flex items-center gap-[4px] whitespace-nowrap text-[10.2px] font-medium text-[#15803d]">
-                      <span className="grid h-[12px] w-[12px] place-items-center rounded-full bg-[#16a34a] text-white">
-                        <Check className="h-[8px] w-[8px]" strokeWidth={4} />
-                      </span>
-                      Integration verified
-                      <Info className="h-[11px] w-[11px] text-[#64748b]" />
-                    </p>
-                  )}
+                  <div className="mt-[2px] flex items-center gap-[8px]">
+                    <p className={`text-[15.6px] font-bold leading-none tracking-[-0.02em] ${s.valueClass}`}>{s.value}</p>
+                    {/* Beside the number so this card stays as short as the others */}
+                    {isWhatsApp && (
+                      <p className="flex items-center gap-[4px] whitespace-nowrap text-[10.2px] font-medium text-[#15803d]">
+                        <span className="grid h-[12px] w-[12px] place-items-center rounded-full bg-[#16a34a] text-white">
+                          <Check className="h-[8px] w-[8px]" strokeWidth={4} />
+                        </span>
+                        Verified
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
               <span className="mt-auto flex items-center justify-center gap-[5px] text-[11.6px] font-semibold text-[#1e293b] group-hover:text-[#15633a]">
@@ -345,8 +351,8 @@ export default function ChatbotOverviewPage() {
       </div>
 
       {/* ── Chart + performance ── */}
-      <div className="mt-[12px] grid gap-[12px] xl:h-[272px] xl:grid-cols-[1.6fr_1fr]">
-        <div className={`${card} flex min-h-0 flex-col px-[20px] pb-[8px] pt-[14px]`}>
+      <div className="mt-[12px] grid gap-[12px] xl:h-[204px] xl:grid-cols-[1.6fr_1fr]">
+        <div className={`${card} flex min-h-0 flex-col px-[20px] pb-[6px] pt-[10px]`}>
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
               <p className={cardTitle}>Day-wise Activity</p>
@@ -390,24 +396,24 @@ export default function ChatbotOverviewPage() {
           </div>
         </div>
 
-        <div className={`${card} flex flex-col px-[12px] pb-[8px] pt-[12px]`}>
+        <div className={`${card} flex min-h-0 flex-col px-[12px] pb-[8px] pt-[10px]`}>
           <div className="flex items-center justify-between gap-2 px-[4px]">
-            <p className={`${cardTitle} flex items-center gap-[7px]`}>
-              Answer &amp; Feedback Performance <Info className="h-[15px] w-[15px] text-[#64748b]" />
+            <p className="flex items-center gap-[6px] text-[13.6px] font-bold leading-tight text-[#0f2a1c]">
+              Answer &amp; Feedback Performance <Info className="h-[13px] w-[13px] text-[#64748b]" />
             </p>
-            <span className="text-[12.4px] font-medium text-[#0f172a]">{range}</span>
+            <span className="text-[11.4px] font-medium text-[#0f172a]">{range}</span>
           </div>
-          <div className="mt-[10px] flex flex-1 flex-col justify-between gap-[6px]">
+          <div className="mt-[7px] flex flex-1 flex-col justify-between gap-[4px]">
             {PERFORMANCE.map((row) => {
               const Icon = row.icon;
               return (
-                <div key={row.label} className="flex min-h-[38px] flex-1 items-center gap-[10px] rounded-[9px] border border-[#eef0f2] px-[10px]">
-                  <span className={`grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full ${row.iconClass}`}>
-                    <Icon className="h-[16px] w-[16px]" strokeWidth={2.6} />
+                <div key={row.label} className="flex min-h-[28px] flex-1 items-center gap-[9px] rounded-[8px] border border-[#eef0f2] px-[9px]">
+                  <span className={`grid h-[22px] w-[22px] shrink-0 place-items-center rounded-full ${row.iconClass}`}>
+                    <Icon className="h-[12.5px] w-[12.5px]" strokeWidth={2.6} />
                   </span>
-                  <span className="w-[150px] shrink-0 text-[12.4px] text-[#1e293b]">{row.label}</span>
-                  <span className="min-w-0 flex-1 text-[15.2px] font-bold text-[#0f172a]">{row.value}</span>
-                  {row.extra ?? <ChevronRight className="h-[16px] w-[16px] text-[#94a3b8]" />}
+                  <span className="w-[140px] shrink-0 text-[11.4px] text-[#1e293b]">{row.label}</span>
+                  <span className="min-w-0 flex-1 text-[12.6px] font-bold text-[#0f172a]">{row.value}</span>
+                  {row.extra ?? <ChevronRight className="h-[14px] w-[14px] text-[#94a3b8]" />}
                 </div>
               );
             })}
@@ -416,64 +422,64 @@ export default function ChatbotOverviewPage() {
       </div>
 
       {/* ── Top pages · popular questions · team follow-up ── */}
-      <div className="mt-[12px] grid gap-[12px] lg:grid-cols-3">
-        <div className={`${card} flex flex-col px-[16px] pb-[12px] pt-[12px]`}>
-          <p className={cardTitle}>Top Pages</p>
-          <p className={cardSub}>Where visitors started chatting (total 128 chats)</p>
-          <div className="mt-[10px] flex flex-1 flex-col justify-around gap-[10px]">
+      <div className="mt-[10px] grid gap-[10px] lg:grid-cols-3">
+        <div className={`${card} flex flex-col px-[14px] pb-[8px] pt-[8px]`}>
+          <p className={smallTitle}>Top Pages</p>
+          <p className={smallSub}>Where visitors started chatting (total 128 chats)</p>
+          <div className="mt-[6px] flex flex-1 flex-col justify-around gap-[6px]">
             {TOP_PAGES.map((p) => (
               <div key={p.page} className="flex items-center gap-[12px]">
-                <span className="w-[124px] shrink-0 truncate text-[12.4px] text-[#0f172a]">{p.page}</span>
-                <span className="h-[9px] flex-1 overflow-hidden rounded-full bg-[#eef1f4]">
+                <span className="w-[118px] shrink-0 truncate text-[11.4px] text-[#0f172a]">{p.page}</span>
+                <span className="h-[7px] flex-1 overflow-hidden rounded-full bg-[#eef1f4]">
                   <span className={`block h-full rounded-full ${p.bar}`} style={{ width: `${(p.chats / 54) * 78}%` }} />
                 </span>
-                <span className="w-[24px] text-right text-[12.4px] font-medium text-[#0f172a]">{p.chats}</span>
+                <span className="w-[22px] text-right text-[11.4px] font-medium text-[#0f172a]">{p.chats}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className={`${card} flex flex-col px-[14px] pb-[4px] pt-[12px]`}>
+        <div className={`${card} flex flex-col px-[12px] pb-[2px] pt-[8px]`}>
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className={cardTitle}>Popular Questions</p>
-              <p className={cardSub}>Most common questions from visitors</p>
+              <p className={smallTitle}>Popular Questions</p>
+              <p className={smallSub}>Most common questions from visitors</p>
             </div>
-            <Link href="/chatbot/conversations" className={blueLink}>
-              Review Answers <ArrowRight className="h-[13px] w-[13px]" />
+            <Link href="/chatbot/conversations" className={`${blueLink} !text-[10.6px]`}>
+              Review Answers <ArrowRight className="h-[12px] w-[12px]" />
             </Link>
           </div>
-          <div className="mt-[4px] flex flex-1 flex-col justify-around divide-y divide-[#eef0f2]">
+          <div className="mt-[2px] flex flex-1 flex-col justify-around divide-y divide-[#eef0f2]">
             {POPULAR_QUESTIONS.map((item, i) => (
-              <Link key={item.q} href="/chatbot/conversations" className="flex items-center gap-[10px] py-[8px] transition hover:bg-[#f8faf9]">
-                <span className="grid h-[24px] w-[24px] shrink-0 place-items-center rounded-full bg-[#eef3fb] text-[11.4px] font-semibold text-[#1d4ed8]">{i + 1}</span>
-                <span className="min-w-0 flex-1 truncate text-[12.4px] text-[#0f172a]">{item.q}</span>
-                <span className="rounded-full bg-[#e3f5e8] px-[9px] py-[1px] text-[11.6px] font-semibold text-[#15803d]">{item.count}</span>
-                <ChevronRight className="h-[16px] w-[16px] text-[#64748b]" />
+              <Link key={item.q} href="/chatbot/conversations" className="flex items-center gap-[8px] py-[4px] transition hover:bg-[#f8faf9]">
+                <span className="grid h-[19px] w-[19px] shrink-0 place-items-center rounded-full bg-[#eef3fb] text-[10.2px] font-semibold text-[#1d4ed8]">{i + 1}</span>
+                <span className="min-w-0 flex-1 truncate text-[11.4px] text-[#0f172a]">{item.q}</span>
+                <span className="rounded-full bg-[#e3f5e8] px-[7px] py-0 text-[10.6px] font-semibold text-[#15803d]">{item.count}</span>
+                <ChevronRight className="h-[14px] w-[14px] text-[#64748b]" />
               </Link>
             ))}
           </div>
         </div>
 
-        <div className={`${card} flex flex-col px-[14px] pb-[4px] pt-[12px]`}>
+        <div className={`${card} flex flex-col px-[12px] pb-[2px] pt-[8px]`}>
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className={cardTitle}>Team Follow-up</p>
-              <p className={cardSub}>Chats that need human attention</p>
+              <p className={smallTitle}>Team Follow-up</p>
+              <p className={smallSub}>Chats that need human attention</p>
             </div>
-            <Link href="/chatbot/leads" className={blueLink}>
-              Open Inbox <ArrowRight className="h-[13px] w-[13px]" />
+            <Link href="/chatbot/leads" className={`${blueLink} !text-[10.6px]`}>
+              Open Inbox <ArrowRight className="h-[12px] w-[12px]" />
             </Link>
           </div>
-          <div className="mt-[4px] flex flex-1 flex-col justify-around divide-y divide-[#eef0f2]">
+          <div className="mt-[2px] flex flex-1 flex-col justify-around divide-y divide-[#eef0f2]">
             {FOLLOW_UPS.map((f) => {
               const Icon = f.icon;
               return (
-                <Link key={f.label} href="/chatbot/leads" className="flex items-center gap-[10px] py-[7px] transition hover:bg-[#f8faf9]">
-                  <Icon className={`h-[16px] w-[16px] shrink-0 ${f.iconClass}`} />
-                  <span className="min-w-0 flex-1 text-[12.4px] text-[#0f172a]">{f.label}</span>
-                  <span className={`grid h-[22px] w-[22px] place-items-center rounded-full text-[11.2px] font-semibold ${f.countClass}`}>{f.count}</span>
-                  <ChevronRight className="h-[16px] w-[16px] text-[#94a3b8]" />
+                <Link key={f.label} href="/chatbot/leads" className="flex items-center gap-[8px] py-[4px] transition hover:bg-[#f8faf9]">
+                  <Icon className={`h-[14px] w-[14px] shrink-0 ${f.iconClass}`} />
+                  <span className="min-w-0 flex-1 text-[11.4px] text-[#0f172a]">{f.label}</span>
+                  <span className={`grid h-[18px] w-[18px] place-items-center rounded-full text-[10.2px] font-semibold ${f.countClass}`}>{f.count}</span>
+                  <ChevronRight className="h-[14px] w-[14px] text-[#94a3b8]" />
                 </Link>
               );
             })}
@@ -483,12 +489,13 @@ export default function ChatbotOverviewPage() {
 
       {/* ── Recent conversations ── */}
       <div className={`${card} mt-[12px] shrink-0 px-[16px] pb-[6px] pt-[12px]`}>
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <p className={cardTitle}>Recent Conversations</p>
-            <p className={cardSub}>Latest visitor conversations and their status (sample data)</p>
+        {/* Title, subtitle and "View all" on one row */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-baseline gap-[10px]">
+            <p className={`${cardTitle} shrink-0 whitespace-nowrap`}>Recent Conversations</p>
+            <p className="min-w-0 truncate text-[11.6px] text-[#64748b]">Latest visitor conversations and their status (sample data)</p>
           </div>
-          <Link href="/chatbot/conversations" className="inline-flex items-center gap-1 text-[12.4px] font-semibold text-[#15633a] hover:underline">
+          <Link href="/chatbot/conversations" className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[12.4px] font-semibold text-[#15633a] hover:underline">
             View all <ArrowRight className="h-[14px] w-[14px]" />
           </Link>
         </div>

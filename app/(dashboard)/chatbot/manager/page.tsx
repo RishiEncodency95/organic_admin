@@ -1,0 +1,525 @@
+"use client";
+
+import { useState } from "react";
+import Image from "next/image";
+import {
+  ChevronDown,
+  CloudUpload,
+  Eye,
+  FileText,
+  GripVertical,
+  History,
+  Info,
+  MessageSquareText,
+  Minus,
+  Paperclip,
+  Pencil,
+  Plus,
+  Send,
+  Settings,
+  Workflow,
+  X,
+  type LucideIcon,
+} from "lucide-react";
+import { DESIGN_WIDTH, useFitWidth } from "@/components/chatbot/useFitWidth";
+import { BotAvatar, LOGO, inputClass, labelClass, selectClass } from "./managerUi";
+import QuestionsAnswersTab from "./QuestionsAnswersTab";
+import FormsRoutingTab from "./FormsRoutingTab";
+import SettingsTab from "./SettingsTab";
+
+/*
+ * Chatbot Manager — design preview. The menu below is sample data kept in page state
+ * (see the "Design preview" chip); nothing is saved to or published on the website.
+ *
+ * Laid out at the design's width with the design's pixel sizes, then zoomed to the
+ * available width (see useFitWidth). The dashboard layout's AdminContentScale remaps many
+ * text-[Npx] classes with !important, so this page sticks to sizes outside that list.
+ */
+
+// ─── Sample data ─────────────────────────────────────────────────────────────
+
+const ACTIONS = ["Show Options", "Show Answer", "Open Form", "Open Link", "Talk to Team"] as const;
+type Action = (typeof ACTIONS)[number];
+
+type MenuButton = {
+  id: number;
+  label: string;
+  hindi: string;
+  action: Action;
+  nextStep: string;
+  active: boolean;
+  reply: string;
+  options: string[];
+};
+
+const INITIAL_BUTTONS: MenuButton[] = [
+  {
+    id: 1,
+    label: "Book a Stall",
+    hindi: "स्टॉल बुक करें",
+    action: "Show Options",
+    nextStep: "Stall Options",
+    active: true,
+    reply: "Happy to help! What would you like to explore?",
+    options: ["Stall Sizes", "Stall Pricing", "Get Brochure", "Talk to Sales"],
+  },
+  {
+    id: 2,
+    label: "Visit the Expo",
+    hindi: "एक्सपो देखने आएं",
+    action: "Show Answer",
+    nextStep: "Visitor Information",
+    active: true,
+    reply: "Visitor registration is free. Here is how to register.",
+    options: [],
+  },
+  {
+    id: 3,
+    label: "MSME / PMS Support",
+    hindi: "MSME / PMS सहायता",
+    action: "Show Options",
+    nextStep: "PMS Guidance",
+    active: true,
+    reply: "Here is the support available for eligible exhibitors.",
+    options: ["Eligibility", "Documents", "Talk to Team"],
+  },
+  {
+    id: 4,
+    label: "More Options",
+    hindi: "और विकल्प",
+    action: "Show Options",
+    nextStep: "Additional Topics",
+    active: true,
+    reply: "Here are some more topics I can help with.",
+    options: ["Buyer–Seller Meet", "Conference", "Sponsorship"],
+  },
+];
+
+/** Hindi preview text for the reply and next options of the sample buttons */
+const HINDI: Record<string, string> = {
+  "Happy to help! What would you like to explore?": "ज़रूर! आप क्या जानना चाहेंगे?",
+  "Stall Sizes": "स्टॉल साइज़",
+  "Stall Pricing": "स्टॉल की कीमत",
+  "Get Brochure": "ब्रोशर पाएं",
+  "Talk to Sales": "सेल्स टीम से बात करें",
+};
+
+const TABS: { label: string; icon: LucideIcon }[] = [
+  { label: "Buttons & Flows", icon: Workflow },
+  { label: "Questions & Answers", icon: MessageSquareText },
+  { label: "Forms & Routing", icon: FileText },
+  { label: "Settings", icon: Settings },
+];
+
+// ─── Small pieces ────────────────────────────────────────────────────────────
+
+function ActionSelect({ value, onChange, className = "" }: { value: Action; onChange: (a: Action) => void; className?: string }) {
+  return (
+    <label className={`relative block ${className}`}>
+      <select value={value} onChange={(e) => onChange(e.target.value as Action)} className={selectClass} aria-label="Action">
+        {ACTIONS.map((a) => (
+          <option key={a} value={a}>
+            {a}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-[13px] top-1/2 h-[16px] w-[16px] -translate-y-1/2 text-[#0f172a]" />
+    </label>
+  );
+}
+
+function Toggle({ on, onChange, label }: { on: boolean; onChange: () => void; label: string }) {
+  return (
+    <button type="button" role="switch" aria-checked={on} aria-label={label} onClick={onChange} className="flex items-center gap-[10px]">
+      <span className={`relative h-[21px] w-[36px] rounded-full transition ${on ? "bg-[#16a34a]" : "bg-[#cbd5e1]"}`}>
+        <span className={`absolute top-[2.5px] h-[16px] w-[16px] rounded-full bg-white shadow transition-all ${on ? "left-[17.5px]" : "left-[2.5px]"}`} />
+      </span>
+      <span className={`text-[13.6px] ${on ? "text-[#15803d]" : "text-[#64748b]"}`}>{on ? "Active" : "Inactive"}</span>
+    </button>
+  );
+}
+
+const Pill = ({ children }: { children: React.ReactNode }) => (
+  <span className="inline-flex h-[32px] items-center rounded-[8px] border border-[#2f8a4c] bg-white px-[12px] text-[13.6px] text-[#14532d]">{children}</span>
+);
+
+// ─── Page ────────────────────────────────────────────────────────────────────
+
+export default function ChatbotManagerPage() {
+  const { ref, zoom } = useFitWidth();
+  const [tab, setTab] = useState(TABS[0].label);
+  const [buttons, setButtons] = useState(INITIAL_BUTTONS);
+  const [selectedId, setSelectedId] = useState(1);
+  const [draft, setDraft] = useState<MenuButton>(INITIAL_BUTTONS[0]);
+  const [lang, setLang] = useState<"en" | "hi">("en");
+  const [published, setPublished] = useState({ version: 2, pending: true });
+
+  const select = (b: MenuButton) => {
+    setSelectedId(b.id);
+    setDraft(b);
+  };
+  const update = (id: number, patch: Partial<MenuButton>) => {
+    setButtons((prev) => prev.map((b) => (b.id === id ? { ...b, ...patch } : b)));
+    if (id === selectedId) setDraft((d) => ({ ...d, ...patch }));
+    setPublished((p) => ({ ...p, pending: true }));
+  };
+  const saveDraft = () => update(draft.id, draft);
+  const cancelDraft = () => setDraft(buttons.find((b) => b.id === selectedId) ?? buttons[0]);
+  const addButton = () => {
+    const id = Math.max(...buttons.map((b) => b.id)) + 1;
+    const b: MenuButton = { id, label: "New Button", hindi: "", action: "Show Answer", nextStep: "New Step", active: false, reply: "", options: [] };
+    setButtons((prev) => [...prev, b]);
+    select(b);
+    setPublished((p) => ({ ...p, pending: true }));
+  };
+
+  const markDraft = () => setPublished((p) => ({ ...p, pending: true }));
+  const panelClass = (name: string) => `[grid-area:1/1] ${tab === name ? "" : "invisible pointer-events-none"}`;
+  const panelProps = (name: string) => ({ "aria-hidden": tab !== name, inert: tab !== name });
+
+  const activeButtons = buttons.filter((b) => b.active);
+  const t = (text: string) => (lang === "hi" ? HINDI[text] ?? text : text);
+  const label = (b: MenuButton) => (lang === "hi" && b.hindi ? b.hindi : b.label);
+
+  return (
+    <div ref={ref} className="w-full overflow-x-hidden bg-white">
+      <div style={{ zoom, width: DESIGN_WIDTH }} className="flex flex-col px-[16px] pb-[5px] pt-[5px] text-[#0f172a]">
+        {/* ── Header (the page name is already in the top bar) ── */}
+        <div className="flex items-center justify-between gap-x-3">
+          <div className="flex min-w-0 items-center gap-[14px]">
+            <p className="min-w-0 truncate text-[17.5px] font-medium text-[#334155]">Control buttons, answers and the visitor journey</p>
+            <span
+              title="Changes on this page are not saved to the website"
+              className="inline-flex shrink-0 items-center gap-[7px] whitespace-nowrap rounded-[6px] border border-[#cfe9d6] bg-[#eefaf1] px-[11px] py-[4px] text-[13.4px] font-medium text-[#15803d]"
+            >
+              <Eye className="h-[15px] w-[15px]" /> Design preview
+            </span>
+          </div>
+          <div className="flex shrink-0 items-center gap-[12px]">
+            {published.pending && (
+              <span className="inline-flex h-[30px] items-center gap-[8px] whitespace-nowrap rounded-[6px] bg-[#fdf3e1] px-[12px] text-[13.4px] text-[#b45309]">
+                <span className="h-[8px] w-[8px] rounded-full bg-[#f59e0b]" /> Draft changes
+              </span>
+            )}
+            <button
+              type="button"
+              className="h-[37px] whitespace-nowrap rounded-[7px] border border-[#d6dae0] bg-white px-[20px] text-[14.6px] font-medium text-[#0f172a] transition hover:border-[#15633a]"
+            >
+              Preview
+            </button>
+            <button
+              type="button"
+              onClick={saveDraft}
+              className="h-[37px] whitespace-nowrap rounded-[7px] border border-[#d6dae0] bg-white px-[20px] text-[14.6px] font-medium text-[#0f172a] transition hover:border-[#15633a]"
+            >
+              Save Draft
+            </button>
+            <button
+              type="button"
+              onClick={() => setPublished((p) => ({ version: p.pending ? p.version + 1 : p.version, pending: false }))}
+              className="inline-flex h-[37px] items-center gap-[9px] whitespace-nowrap rounded-[7px] bg-[#15633a] px-[20px] text-[14.6px] font-medium text-white shadow-sm transition hover:bg-[#124f2f]"
+            >
+              <CloudUpload className="h-[18px] w-[18px]" /> Publish Changes
+            </button>
+          </div>
+        </div>
+
+        {/* ── Tabs ── */}
+        <div className="mt-[6px] flex items-end gap-[8px] border-b border-[#e5e7eb]">
+          {TABS.map(({ label: name, icon: Icon }) => (
+            <button
+              key={name}
+              type="button"
+              onClick={() => setTab(name)}
+              className={`-mb-px flex items-center gap-[12px] border-b-[3px] px-[18px] pb-[9px] pt-[2px] text-[15.6px] transition ${
+                tab === name ? "border-[#15633a] font-semibold text-[#15633a]" : "border-transparent text-[#475569] hover:text-[#15633a]"
+              }`}
+            >
+              <Icon className="h-[20px] w-[20px]" /> {name}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab panels share one grid cell: the hidden ones keep their space, so switching tabs
+            never changes the page height */}
+        <div className="mt-[8px] grid">
+          <div {...panelProps(TABS[0].label)} className={`${panelClass(TABS[0].label)} grid grid-cols-[822px_1fr] gap-[15px]`}>
+            {/* ── Left: menu + editor ── */}
+            <div className="rounded-[12px] border border-[#e3e8e4] bg-white px-[16px] pb-[10px] pt-[8px] shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[20.5px] font-bold leading-tight text-[#0f2a1c]">Welcome Menu</p>
+                  <p className="mt-[2px] text-[13.6px] text-[#64748b]">{activeButtons.length} active buttons</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={addButton}
+                  className="inline-flex h-[36px] items-center gap-[9px] rounded-[7px] border border-[#2f8a4c] bg-white px-[18px] text-[14.6px] font-medium text-[#14532d] transition hover:bg-[#f1f7ee]"
+                >
+                  <Plus className="h-[18px] w-[18px]" /> Add Button
+                </button>
+              </div>
+
+              {/* Buttons table */}
+              <div className="mt-[10px] overflow-hidden rounded-[8px] border border-[#eef0f2]">
+                <div className="grid grid-cols-[37px_55px_185px_158px_157px_125px_1fr] items-center bg-[#f7f8fa] px-[8px] py-[6px] text-[13.6px] text-[#475569]">
+                  <span />
+                  <span>Order</span>
+                  <span>Button Label</span>
+                  <span>Action</span>
+                  <span>Next Step</span>
+                  <span>Status</span>
+                  <span className="text-center">Edit</span>
+                </div>
+                {buttons.map((b, i) => (
+                  <div
+                    key={b.id}
+                    onClick={() => select(b)}
+                    className={`grid h-[45px] cursor-pointer grid-cols-[37px_55px_185px_158px_157px_125px_1fr] items-center border-t border-[#eef0f2] px-[8px] text-[14.6px] transition ${
+                      selectedId === b.id ? "bg-[#ebf6ee]" : "hover:bg-[#f8faf9]"
+                    }`}
+                  >
+                    <GripVertical className="h-[18px] w-[18px] text-[#64748b]" />
+                    <span className="text-[#0f172a]">{i + 1}</span>
+                    <span className="truncate pr-[10px] text-[#0f172a]">{b.label}</span>
+                    <span onClick={(e) => e.stopPropagation()} className="pr-[18px]">
+                      <ActionSelect value={b.action} onChange={(action) => update(b.id, { action })} />
+                    </span>
+                    <span className="truncate pr-[10px] text-[13.6px] text-[#0f172a]">{b.nextStep}</span>
+                    <span onClick={(e) => e.stopPropagation()}>
+                      <Toggle on={b.active} onChange={() => update(b.id, { active: !b.active })} label={`${b.label} status`} />
+                    </span>
+                    <span className="flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => select(b)}
+                        aria-label={`Edit ${b.label}`}
+                        className="grid h-[32px] w-[38px] place-items-center rounded-[7px] border border-[#dfe3e8] bg-white text-[#0f172a] transition hover:border-[#15633a] hover:text-[#15633a]"
+                      >
+                        <Pencil className="h-[16px] w-[16px]" />
+                      </button>
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Editor */}
+              <div className="mt-[10px] rounded-[10px] border border-[#eef0f2] px-[16px] pb-[10px] pt-[12px]">
+                <p className="text-[17.5px] font-bold text-[#0f2a1c]">Edit Button: {draft.label || "Untitled"}</p>
+                <div className="mt-[8px] grid grid-cols-2 gap-x-[24px] gap-y-[8px]">
+                  <label>
+                    <span className={labelClass}>
+                      Button Label <span className="text-[#dc2626]">*</span>
+                    </span>
+                    <input value={draft.label} onChange={(e) => setDraft({ ...draft, label: e.target.value })} maxLength={30} className={inputClass} />
+                  </label>
+                  <label>
+                    <span className={labelClass}>Hindi Label</span>
+                    <input value={draft.hindi} onChange={(e) => setDraft({ ...draft, hindi: e.target.value })} maxLength={30} className={inputClass} />
+                  </label>
+                  <div>
+                    <span className={labelClass}>
+                      Action <span className="text-[#dc2626]">*</span>
+                    </span>
+                    <ActionSelect value={draft.action} onChange={(action) => setDraft({ ...draft, action })} className="[&_select]:h-[38px] [&_select]:text-[14.6px]" />
+                  </div>
+                  <label className="row-span-1">
+                    <span className={labelClass}>
+                      Reply Message <span className="text-[#dc2626]">*</span>
+                    </span>
+                    <textarea
+                      value={draft.reply}
+                      onChange={(e) => setDraft({ ...draft, reply: e.target.value })}
+                      rows={2}
+                      maxLength={300}
+                      className="h-[54px] w-full resize-y rounded-[7px] border border-[#dfe3e8] bg-white px-[14px] py-[8px] text-[14.6px] text-[#0f172a] outline-none transition focus:border-[#15633a] focus:ring-2 focus:ring-[#15633a]/15"
+                    />
+                  </label>
+                </div>
+
+                <p className="mt-[8px] text-[14.6px] font-medium text-[#0f172a]">Next Options</p>
+                <div className="mt-[6px] flex items-center gap-[20px]">
+                  <GripVertical className="h-[18px] w-[18px] shrink-0 text-[#64748b]" />
+                  {draft.options.length === 0 && <span className="text-[13.6px] text-[#64748b]">No options — this button shows an answer.</span>}
+                  {draft.options.map((o, idx) => (
+                    <span key={idx} className="flex h-[35px] min-w-0 flex-1 items-center rounded-[7px] border border-[#dfe3e8] bg-white">
+                      <input
+                        value={o}
+                        onChange={(e) => setDraft({ ...draft, options: draft.options.map((x, j) => (j === idx ? e.target.value : x)) })}
+                        aria-label={`Option ${idx + 1}`}
+                        className="h-full min-w-0 flex-1 rounded-l-[7px] bg-transparent px-[12px] text-[14.1px] text-[#0f172a] outline-none"
+                      />
+                      <span className="grid h-full w-[40px] shrink-0 place-items-center border-l border-[#dfe3e8] text-[#0f172a]">
+                        <Pencil className="h-[16px] w-[16px]" />
+                      </span>
+                    </span>
+                  ))}
+                </div>
+
+                <div className="mt-[8px] flex items-end justify-between">
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setDraft({ ...draft, options: [...draft.options, "New Option"] })}
+                      disabled={draft.options.length >= 4}
+                      className="inline-flex h-[37px] items-center gap-[9px] rounded-[7px] border border-[#2f8a4c] bg-white px-[16px] text-[14.6px] font-medium text-[#14532d] transition hover:bg-[#f1f7ee] disabled:opacity-50"
+                    >
+                      <Plus className="h-[18px] w-[18px]" /> Add Option
+                    </button>
+                    <p className="mt-[6px] flex items-center gap-[12px] text-[13.4px] text-[#64748b]">
+                      <Info className="h-[18px] w-[18px]" /> Button changes go live only after publishing.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-[12px] pb-[8px]">
+                    <button
+                      type="button"
+                      onClick={cancelDraft}
+                      className="h-[37px] rounded-[7px] border border-[#d6dae0] bg-white px-[22px] text-[14.6px] font-medium text-[#0f172a] transition hover:border-[#15633a]"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={saveDraft}
+                      disabled={!draft.label.trim()}
+                      className="h-[37px] rounded-[7px] bg-[#15633a] px-[30px] text-[14.6px] font-medium text-white shadow-sm transition hover:bg-[#124f2f] disabled:opacity-60"
+                    >
+                      Save Button
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Right: visitor preview ── */}
+            <div className="flex flex-col rounded-[12px] border border-[#e3e8e4] bg-white px-[16px] pb-[10px] pt-[10px] shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[20.5px] font-bold leading-tight text-[#0f2a1c]">Visitor Preview</p>
+                  <p className="mt-[2px] text-[13.6px] text-[#64748b]">Preview of draft changes</p>
+                </div>
+                <div className="flex overflow-hidden rounded-[7px] border border-[#dfe3e8]">
+                  {(["en", "hi"] as const).map((l) => (
+                    <button
+                      key={l}
+                      type="button"
+                      onClick={() => setLang(l)}
+                      aria-pressed={lang === l}
+                      className={`h-[37px] px-[16px] text-[14.6px] transition ${
+                        lang === l ? "border border-[#2f8a4c] bg-[#ebf6ee] font-medium text-[#14532d]" : "text-[#334155] hover:bg-[#f8faf9]"
+                      }`}
+                    >
+                      {l === "en" ? "English" : "हिंदी"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-[10px] flex flex-1 flex-col overflow-hidden rounded-[14px] border border-[#e3e8e4] bg-[#f3f8f1]">
+                {/* Chat header */}
+                <div className="flex h-[66px] items-center gap-[12px] bg-gradient-to-br from-[#1f6b2a] to-[#14532d] px-[16px] text-white">
+                  <span className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-full bg-white shadow-md ring-[3px] ring-white/25">
+                    <Image src={LOGO} alt="Organic Mitra" width={64} height={64} className="h-[36px] w-[36px] object-contain" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[19.5px] font-semibold leading-tight">Organic Mitra</p>
+                    <p className="mt-[2px] text-[14.1px] text-white/90">Bharat Organic Expo Assistant</p>
+                  </div>
+                  <Minus className="h-[22px] w-[22px]" />
+                  <X className="ml-[16px] h-[22px] w-[22px]" />
+                </div>
+
+                {/* Messages */}
+                <div className="flex flex-1 flex-col gap-[4px] px-[12px] pb-[8px] pt-[12px]">
+                  <div className="flex items-start gap-[12px]">
+                    <BotAvatar />
+                    <div>
+                      <div className="rounded-[10px] bg-white px-[13px] py-[8px] text-[14.6px] leading-snug text-[#0f172a] shadow-sm">
+                        {lang === "hi" ? "नमो गंगे नमस्कार! 🙏" : "Namo Gange Namaskar! 🙏"}
+                        <br />
+                        {lang === "hi" ? "मैं आपकी क्या मदद कर सकता हूँ?" : "How can I help you today?"}
+                      </div>
+                      <p className="mt-[4px] text-[12.1px] text-[#64748b]">11:30 AM</p>
+                    </div>
+                  </div>
+                  <div className="ml-[46px] mt-[4px] flex flex-wrap gap-[6px]">
+                    {activeButtons.map((b) => (
+                      <Pill key={b.id}>{label(b)}</Pill>
+                    ))}
+                  </div>
+
+                  <div className="mt-[8px] flex flex-col items-end">
+                    <span className="rounded-[10px] rounded-br-[3px] bg-[#15633a] px-[16px] py-[8px] text-[14.6px] text-white">{label(draft)}</span>
+                    <span className="mt-[4px] flex items-center gap-[6px] pr-[18px] text-[12.1px] text-[#64748b]">
+                      11:31 AM
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#15633a" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" className="h-[15px] w-[15px]" aria-hidden="true">
+                        <path d="M2 12.5l4.5 4.5L15 8.5M10 16l1 1 8.5-8.5" />
+                      </svg>
+                    </span>
+                  </div>
+
+                  <div className="mt-[4px] flex items-start gap-[12px]">
+                    <BotAvatar />
+                    <div className="max-w-[290px]">
+                      <div className="rounded-[10px] bg-white px-[13px] py-[8px] text-[14.6px] leading-snug text-[#0f172a] shadow-sm">{t(draft.reply) || "…"}</div>
+                      <p className="mt-[4px] text-[12.1px] text-[#64748b]">11:31 AM</p>
+                    </div>
+                  </div>
+                  {draft.options.length > 0 && (
+                    <div className="ml-[46px] mt-[4px] flex flex-wrap gap-[6px]">
+                      {draft.options.map((o, idx) => (
+                        <Pill key={idx}>{t(o)}</Pill>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Input */}
+                <div className="flex items-center gap-[12px] border-t border-[#e3e8e4] bg-white px-[14px] py-[8px]">
+                  <Paperclip className="h-[19px] w-[19px] text-[#64748b]" />
+                  <span className="flex h-[36px] flex-1 items-center rounded-full border border-[#dfe3e8] px-[16px] text-[14.6px] text-[#94a3b8]">
+                    {lang === "hi" ? "अपना सवाल लिखें..." : "Type your question..."}
+                  </span>
+                  <span className="grid h-[36px] w-[36px] place-items-center rounded-full bg-[#15633a] text-white">
+                    <Send className="h-[18px] w-[18px]" />
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-[10px] flex items-center justify-between text-[13.4px]">
+                <div className="flex items-center gap-[12px]">
+                  <span className="text-[#64748b]">Published version: v1.{published.version}</span>
+                  <span className="h-[14px] w-px bg-[#cbd5e1]" />
+                  {published.pending ? (
+                    <span className="flex items-center gap-[7px] text-[#d97706]">
+                      <span className="h-[9px] w-[9px] rounded-full bg-[#f59e0b]" /> Draft not published
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-[7px] text-[#15803d]">
+                      <span className="h-[9px] w-[9px] rounded-full bg-[#16a34a]" /> All changes published
+                    </span>
+                  )}
+                </div>
+                <button type="button" className="flex items-center gap-[7px] text-[#1d4ed8] hover:underline">
+                  <History className="h-[17px] w-[17px]" /> Version History
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div {...panelProps(TABS[1].label)} className={panelClass(TABS[1].label)}>
+            <QuestionsAnswersTab onChange={markDraft} />
+          </div>
+
+          <div {...panelProps(TABS[2].label)} className={panelClass(TABS[2].label)}>
+            <FormsRoutingTab onChange={markDraft} />
+          </div>
+
+          <div {...panelProps(TABS[3].label)} className={panelClass(TABS[3].label)}>
+            <SettingsTab onChange={markDraft} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
