@@ -18,12 +18,7 @@ import {
   Sun,
   Moon,
   Sunrise,
-  AlertTriangle,
-  HeartHandshake,
   Mail,
-  FolderKanban,
-  HandHeart,
-  CheckCheck,
   CalendarDays,
   Check,
   ArrowUpRight,
@@ -53,8 +48,8 @@ import { casesApi, SlaBreach } from "@/lib/casesApi";
 import {
   adminNotificationsApi,
   AdminNotificationItem,
-  AdminNotificationType,
 } from "@/lib/adminNotificationsApi";
+import NotificationsModal, { DEMO_NOTIFICATIONS } from "./NotificationsModal";
 import { ApiRequestError } from "@/lib/api";
 import { externalServiceApi } from "@/lib/externalServiceApi";
 import { settingsApi } from "@/lib/settingsApi";
@@ -74,14 +69,6 @@ const EXPIRY_POPUP_DISMISS_KEY = "ms_admin_expiry_popup_dismissed_on";
 
 /** A service is "urgent" once it is expired or inside its last two weeks. */
 const URGENT_DAYS = 14;
-
-const NOTIFICATION_ICONS: Record<AdminNotificationType, typeof HeartHandshake> = {
-  DONATION: HeartHandshake,
-  ENQUIRY: Mail,
-  CASE: FolderKanban,
-  VOLUNTEER: HandHeart,
-  SYSTEM_EXPIRY: AlertTriangle,
-};
 
 type CategoryIcon = ComponentType<{ className?: string }>;
 
@@ -124,25 +111,14 @@ const FAR_FUTURE = "2099-01-01T00:00:00.000Z";
 
 type Countdown = ReturnType<typeof useCountdown>;
 
-function timeAgo(iso: string): string {
-  const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
 
-  if (minutes < 1) return "just now";
-
-  if (minutes < 60) {
-    return `${minutes}m ago`;
-  }
-
-  const hours = Math.floor(minutes / 60);
-
-  if (hours < 24) {
-    return `${hours}h ago`;
-  }
-
-  return `${Math.floor(hours / 24)}d ago`;
-}
+/** Pages reached from the profile menu rather than the sidebar */
+const MENU_PAGE_TITLES: Record<string, string> = {
+  "/notification-settings": "Notification Settings",
+};
 
 function currentPageTitle(pathname: string): string {
+  if (MENU_PAGE_TITLES[pathname]) return MENU_PAGE_TITLES[pathname];
   for (const section of NAV_SECTIONS) {
     for (const item of section.items) {
       if (
@@ -263,6 +239,8 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  // Sample notifications shown in the popup until the backend has a notifications feed
+  const [demoNotifications, setDemoNotifications] = useState(DEMO_NOTIFICATIONS);
 
   const [expiringOpen, setExpiringOpen] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
@@ -275,7 +253,8 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
   const [systemSettings, setSystemSettings] = useState<Settings | null>(null);
   const [expiryPopupOpen, setExpiryPopupOpen] = useState(false);
 
-  const [notifications, setNotifications] = useState<AdminNotificationItem[]>([]);
+  // Backend notifications only feed the unread count for now; the popup shows sample data
+  const [, setNotifications] = useState<AdminNotificationItem[]>([]);
 
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -491,30 +470,9 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
     setMenuOpen((value) => !value);
   };
 
-  const handleNotificationClick = async (notification: AdminNotificationItem) => {
-    setNotifOpen(false);
-
-    setNotifications((previous) =>
-      previous.filter((item) => item._id !== notification._id)
-    );
-
-    setUnreadCount((previous) => Math.max(0, previous - 1));
-
-    adminNotificationsApi.markRead(notification._id).catch(() => { });
-
-    if (notification.link) {
-      router.push(notification.link);
-    }
-  };
-
-  const handleMarkAllRead = async () => {
-    setNotifications([]);
-    setUnreadCount(0);
-
-    adminNotificationsApi.markAllRead().catch(() => { });
-  };
-
   const bellBadgeCount = breaches.length + unreadCount;
+  const bellCount = bellBadgeCount || demoNotifications.filter((n) => n.unread).length;
+  const closeNotifications = useCallback(() => setNotifOpen(false), []);
 
   const handleLogout = async () => {
     setMenuOpen(false);
@@ -737,112 +695,18 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
               title="Notifications"
             >
               <Bell size={18} className="text-[#23471d]" />
-              <motion.span
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-rose-600 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-semibold shadow-lg"
-              >
-                {bellBadgeCount > 9 ? "9+" : bellBadgeCount || 3}
-              </motion.span>
+              {bellCount > 0 && (
+                <motion.span
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-rose-600 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-semibold shadow-lg"
+                >
+                  {bellCount > 9 ? "9+" : bellCount}
+                </motion.span>
+              )}
             </button>
 
-            {notifOpen && (
-              <>
-                <button
-                  type="button"
-                  aria-label="Close notifications"
-                  className="fixed inset-0 z-10 cursor-default"
-                  onClick={() => setNotifOpen(false)}
-                />
-
-                <div className="absolute right-0 top-full z-20 mt-2 w-80 overflow-hidden rounded-[12px] border border-slate-200 bg-white shadow-2xl">
-                  <div className="max-h-[28rem] overflow-y-auto">
-                    {breaches.length > 0 && (
-                      <div className="border-b border-slate-200/70 pb-1">
-                        <p className="px-3 py-2 text-[11px] font-semibold text-slate-900">
-                          SLA breaches
-                        </p>
-
-                        {breaches.map((breach) => (
-                          <button
-                            type="button"
-                            key={`${breach._id}-${breach.breachReason}`}
-                            onClick={() => {
-                              setNotifOpen(false);
-                              router.push(`/cases/${breach._id}`);
-                            }}
-                            className="flex w-full items-start gap-2 px-3 py-2.5 text-left text-xs transition-colors hover:bg-slate-900/5"
-                          >
-                            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
-                            <span>
-                              <span className="font-semibold text-slate-900">
-                                {breach.caseId}
-                              </span>
-                              <span className="mt-0.5 block text-[11px] font-medium text-slate-500">
-                                {breach.breachReason}
-                              </span>
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="flex items-center justify-between px-3 py-2">
-                      <p className="text-[11px] font-semibold text-slate-900">
-                        Activity
-                      </p>
-
-                      {notifications.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={handleMarkAllRead}
-                          className="flex items-center gap-1 text-[10px] font-semibold text-accent hover:underline"
-                        >
-                          <CheckCheck className="h-3 w-3" />
-                          Mark all read
-                        </button>
-                      )}
-                    </div>
-
-                    {notifications.length === 0 ? (
-                      <p className="px-3 pb-3 text-xs font-medium text-slate-500">
-                        Nothing new right now.
-                      </p>
-                    ) : (
-                      notifications.map((notification) => {
-                        const Icon = NOTIFICATION_ICONS[notification.type];
-                        return (
-                          <button
-                            type="button"
-                            key={notification._id}
-                            onClick={() => handleNotificationClick(notification)}
-                            className="flex w-full items-start gap-2 bg-accent-soft/40 px-3 py-2.5 text-left text-xs transition-colors hover:bg-slate-900/5"
-                          >
-                            <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
-                              <Icon className="h-3 w-3" />
-                            </span>
-
-                            <span className="min-w-0 flex-1">
-                              <span className="block font-semibold text-slate-900">
-                                {notification.title}
-                              </span>
-                              <span className="block truncate text-[11px] font-medium text-slate-500">
-                                {notification.message}
-                              </span>
-                              <span className="mt-0.5 block text-[10px] text-slate-400">
-                                {timeAgo(notification.createdAt)}
-                              </span>
-                            </span>
-
-                            <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
-                          </button>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
+            <NotificationsModal open={notifOpen} onClose={closeNotifications} items={demoNotifications} onItemsChange={setDemoNotifications} />
           </div>
 
           {/* Profile */}
@@ -931,6 +795,19 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
                   >
                     <FaUserAstronaut size={14} className="text-blue-600" />
                     <span className="font-medium">Manage Admin Users</span>
+                  </button>
+
+                  {/* Notification Settings */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      router.push("/notification-settings");
+                      setMenuOpen(false);
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-xs text-slate-700 hover:bg-slate-50 transition-colors duration-150"
+                  >
+                    <Bell size={14} className="text-[#15633a]" />
+                    <span className="font-medium">Notification Settings</span>
                   </button>
 
                   {/* Change Password */}
