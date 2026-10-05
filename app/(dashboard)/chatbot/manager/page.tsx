@@ -10,6 +10,7 @@ import {
   GripVertical,
   History,
   Info,
+  MessageCircleMore,
   MessageSquareText,
   Minus,
   Paperclip,
@@ -22,10 +23,12 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { DESIGN_WIDTH, useFitWidth } from "@/components/chatbot/useFitWidth";
-import { BotAvatar, LOGO, inputClass, labelClass, selectClass } from "./managerUi";
+import { BotAvatar, LOGO, inputClass, selectClass } from "./managerUi";
 import QuestionsAnswersTab from "./QuestionsAnswersTab";
 import FormsRoutingTab from "./FormsRoutingTab";
 import SettingsTab from "./SettingsTab";
+import AIKnowledgeTab from "./AIKnowledgeTab";
+import PublishModal, { type PublishTab, type Version } from "./PublishModal";
 
 /*
  * Chatbot Manager — design preview. The menu below is sample data kept in page state
@@ -107,6 +110,7 @@ const HINDI: Record<string, string> = {
 const TABS: { label: string; icon: LucideIcon }[] = [
   { label: "Buttons & Flows", icon: Workflow },
   { label: "Questions & Answers", icon: MessageSquareText },
+  { label: "AI Knowledge & Answers", icon: MessageCircleMore },
   { label: "Forms & Routing", icon: FileText },
   { label: "Settings", icon: Settings },
 ];
@@ -139,6 +143,10 @@ function Toggle({ on, onChange, label }: { on: boolean; onChange: () => void; la
   );
 }
 
+/* Tighter fields for the "Edit Button" form */
+const editLabel = "mb-[2px] block text-[13.1px] text-[#334155]";
+const editInput = `${inputClass} !h-[32px] !text-[14.1px]`;
+
 const Pill = ({ children }: { children: React.ReactNode }) => (
   <span className="inline-flex h-[32px] items-center rounded-[8px] border border-[#2f8a4c] bg-white px-[12px] text-[13.6px] text-[#14532d]">{children}</span>
 );
@@ -153,6 +161,18 @@ export default function ChatbotManagerPage() {
   const [draft, setDraft] = useState<MenuButton>(INITIAL_BUTTONS[0]);
   const [lang, setLang] = useState<"en" | "hi">("en");
   const [published, setPublished] = useState({ version: 2, pending: true });
+  // Publish popup (null = closed) and the sample version list, newest (live) first
+  const [publishTab, setPublishTab] = useState<PublishTab | null>(null);
+  const [versions, setVersions] = useState<Version[]>([
+    { minor: 2, date: "02 Oct 2026, 10:15 AM", by: "Admin", note: "Added MSME / PMS support flow." },
+    { minor: 1, date: "01 Oct 2026, 4:30 PM", by: "Admin", note: "First published menu." },
+  ]);
+  const publish = (note: string) => {
+    const date = new Date().toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true }).replace(" am", " AM").replace(" pm", " PM");
+    setVersions((prev) => [{ minor: prev[0].minor + 1, date, by: "Admin", note }, ...prev]);
+    setPublished((p) => ({ version: p.version + 1, pending: false }));
+    setPublishTab(null);
+  };
 
   const select = (b: MenuButton) => {
     setSelectedId(b.id);
@@ -187,7 +207,9 @@ export default function ChatbotManagerPage() {
         {/* ── Header (the page name is already in the top bar) ── */}
         <div className="flex items-center justify-between gap-x-3">
           <div className="flex min-w-0 items-center gap-[14px]">
-            <p className="min-w-0 truncate text-[17.5px] font-medium text-[#334155]">Control buttons, answers and the visitor journey</p>
+            <p className="min-w-0 truncate text-[17.5px] font-medium text-[#334155]">
+              {tab === "AI Knowledge & Answers" ? "Control Organic Mitra’s knowledge and responses" : "Control buttons, answers and the visitor journey"}
+            </p>
             <span
               title="Changes on this page are not saved to the website"
               className="inline-flex shrink-0 items-center gap-[7px] whitespace-nowrap rounded-[6px] border border-[#cfe9d6] bg-[#eefaf1] px-[11px] py-[4px] text-[13.4px] font-medium text-[#15803d]"
@@ -216,13 +238,23 @@ export default function ChatbotManagerPage() {
             </button>
             <button
               type="button"
-              onClick={() => setPublished((p) => ({ version: p.pending ? p.version + 1 : p.version, pending: false }))}
+              onClick={() => setPublishTab("publish")}
               className="inline-flex h-[37px] items-center gap-[9px] whitespace-nowrap rounded-[7px] bg-[#15633a] px-[20px] text-[14.6px] font-medium text-white shadow-sm transition hover:bg-[#124f2f]"
             >
               <CloudUpload className="h-[18px] w-[18px]" /> Publish Changes
             </button>
           </div>
         </div>
+
+        <PublishModal
+          tab={publishTab}
+          onTabChange={setPublishTab}
+          onClose={() => setPublishTab(null)}
+          versions={versions}
+          hasDraft={published.pending}
+          onPublish={publish}
+          onRestore={markDraft}
+        />
 
         {/* ── Tabs ── */}
         <div className="mt-[6px] flex items-end gap-[8px] border-b border-[#e5e7eb]">
@@ -243,7 +275,7 @@ export default function ChatbotManagerPage() {
         {/* Tab panels share one grid cell: the hidden ones keep their space, so switching tabs
             never changes the page height */}
         <div className="mt-[8px] grid">
-          <div {...panelProps(TABS[0].label)} className={`${panelClass(TABS[0].label)} grid grid-cols-[822px_1fr] gap-[15px]`}>
+          <div {...panelProps("Buttons & Flows")} className={`${panelClass("Buttons & Flows")} grid grid-cols-[822px_1fr] gap-[15px]`}>
             {/* ── Left: menu + editor ── */}
             <div className="rounded-[12px] border border-[#e3e8e4] bg-white px-[16px] pb-[10px] pt-[8px] shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
               <div className="flex items-start justify-between">
@@ -304,27 +336,27 @@ export default function ChatbotManagerPage() {
               </div>
 
               {/* Editor */}
-              <div className="mt-[10px] rounded-[10px] border border-[#eef0f2] px-[16px] pb-[10px] pt-[12px]">
-                <p className="text-[17.5px] font-bold text-[#0f2a1c]">Edit Button: {draft.label || "Untitled"}</p>
-                <div className="mt-[8px] grid grid-cols-2 gap-x-[24px] gap-y-[8px]">
+              <div className="mt-[8px] rounded-[10px] border border-[#eef0f2] px-[14px] pb-[6px] pt-[7px]">
+                <p className="text-[16.5px] font-bold leading-tight text-[#0f2a1c]">Edit Button: {draft.label || "Untitled"}</p>
+                <div className="mt-[5px] grid grid-cols-2 gap-x-[24px] gap-y-[5px]">
                   <label>
-                    <span className={labelClass}>
+                    <span className={editLabel}>
                       Button Label <span className="text-[#dc2626]">*</span>
                     </span>
-                    <input value={draft.label} onChange={(e) => setDraft({ ...draft, label: e.target.value })} maxLength={30} className={inputClass} />
+                    <input value={draft.label} onChange={(e) => setDraft({ ...draft, label: e.target.value })} maxLength={30} className={editInput} />
                   </label>
                   <label>
-                    <span className={labelClass}>Hindi Label</span>
-                    <input value={draft.hindi} onChange={(e) => setDraft({ ...draft, hindi: e.target.value })} maxLength={30} className={inputClass} />
+                    <span className={editLabel}>Hindi Label</span>
+                    <input value={draft.hindi} onChange={(e) => setDraft({ ...draft, hindi: e.target.value })} maxLength={30} className={editInput} />
                   </label>
                   <div>
-                    <span className={labelClass}>
+                    <span className={editLabel}>
                       Action <span className="text-[#dc2626]">*</span>
                     </span>
-                    <ActionSelect value={draft.action} onChange={(action) => setDraft({ ...draft, action })} className="[&_select]:h-[38px] [&_select]:text-[14.6px]" />
+                    <ActionSelect value={draft.action} onChange={(action) => setDraft({ ...draft, action })} className="[&_select]:h-[32px] [&_select]:text-[14.1px]" />
                   </div>
                   <label className="row-span-1">
-                    <span className={labelClass}>
+                    <span className={editLabel}>
                       Reply Message <span className="text-[#dc2626]">*</span>
                     </span>
                     <textarea
@@ -332,49 +364,49 @@ export default function ChatbotManagerPage() {
                       onChange={(e) => setDraft({ ...draft, reply: e.target.value })}
                       rows={2}
                       maxLength={300}
-                      className="h-[54px] w-full resize-y rounded-[7px] border border-[#dfe3e8] bg-white px-[14px] py-[8px] text-[14.6px] text-[#0f172a] outline-none transition focus:border-[#15633a] focus:ring-2 focus:ring-[#15633a]/15"
+                      className="h-[40px] w-full resize-y rounded-[7px] border border-[#dfe3e8] bg-white px-[12px] py-[4px] text-[14.1px] leading-snug text-[#0f172a] outline-none transition focus:border-[#15633a] focus:ring-2 focus:ring-[#15633a]/15"
                     />
                   </label>
                 </div>
 
-                <p className="mt-[8px] text-[14.6px] font-medium text-[#0f172a]">Next Options</p>
-                <div className="mt-[6px] flex items-center gap-[20px]">
+                <p className="mt-[5px] text-[13.6px] font-medium text-[#0f172a]">Next Options</p>
+                <div className="mt-[3px] flex items-center gap-[16px]">
                   <GripVertical className="h-[18px] w-[18px] shrink-0 text-[#64748b]" />
                   {draft.options.length === 0 && <span className="text-[13.6px] text-[#64748b]">No options — this button shows an answer.</span>}
                   {draft.options.map((o, idx) => (
-                    <span key={idx} className="flex h-[35px] min-w-0 flex-1 items-center rounded-[7px] border border-[#dfe3e8] bg-white">
+                    <span key={idx} className="flex h-[30px] min-w-0 flex-1 items-center rounded-[7px] border border-[#dfe3e8] bg-white">
                       <input
                         value={o}
                         onChange={(e) => setDraft({ ...draft, options: draft.options.map((x, j) => (j === idx ? e.target.value : x)) })}
                         aria-label={`Option ${idx + 1}`}
                         className="h-full min-w-0 flex-1 rounded-l-[7px] bg-transparent px-[12px] text-[14.1px] text-[#0f172a] outline-none"
                       />
-                      <span className="grid h-full w-[40px] shrink-0 place-items-center border-l border-[#dfe3e8] text-[#0f172a]">
-                        <Pencil className="h-[16px] w-[16px]" />
+                      <span className="grid h-full w-[34px] shrink-0 place-items-center border-l border-[#dfe3e8] text-[#0f172a]">
+                        <Pencil className="h-[14px] w-[14px]" />
                       </span>
                     </span>
                   ))}
                 </div>
 
-                <div className="mt-[8px] flex items-end justify-between">
+                <div className="mt-[6px] flex items-end justify-between">
                   <div>
                     <button
                       type="button"
                       onClick={() => setDraft({ ...draft, options: [...draft.options, "New Option"] })}
                       disabled={draft.options.length >= 4}
-                      className="inline-flex h-[37px] items-center gap-[9px] rounded-[7px] border border-[#2f8a4c] bg-white px-[16px] text-[14.6px] font-medium text-[#14532d] transition hover:bg-[#f1f7ee] disabled:opacity-50"
+                      className="inline-flex h-[31px] items-center gap-[8px] rounded-[7px] border border-[#2f8a4c] bg-white px-[14px] text-[13.6px] font-medium text-[#14532d] transition hover:bg-[#f1f7ee] disabled:opacity-50"
                     >
-                      <Plus className="h-[18px] w-[18px]" /> Add Option
+                      <Plus className="h-[16px] w-[16px]" /> Add Option
                     </button>
-                    <p className="mt-[6px] flex items-center gap-[12px] text-[13.4px] text-[#64748b]">
-                      <Info className="h-[18px] w-[18px]" /> Button changes go live only after publishing.
+                    <p className="mt-[4px] flex items-center gap-[10px] text-[12.6px] text-[#64748b]">
+                      <Info className="h-[16px] w-[16px]" /> Button changes go live only after publishing.
                     </p>
                   </div>
-                  <div className="flex items-center gap-[12px] pb-[8px]">
+                  <div className="flex items-center gap-[12px] pb-[4px]">
                     <button
                       type="button"
                       onClick={cancelDraft}
-                      className="h-[37px] rounded-[7px] border border-[#d6dae0] bg-white px-[22px] text-[14.6px] font-medium text-[#0f172a] transition hover:border-[#15633a]"
+                      className="h-[32px] rounded-[7px] border border-[#d6dae0] bg-white px-[20px] text-[13.6px] font-medium text-[#0f172a] transition hover:border-[#15633a]"
                     >
                       Cancel
                     </button>
@@ -382,7 +414,7 @@ export default function ChatbotManagerPage() {
                       type="button"
                       onClick={saveDraft}
                       disabled={!draft.label.trim()}
-                      className="h-[37px] rounded-[7px] bg-[#15633a] px-[30px] text-[14.6px] font-medium text-white shadow-sm transition hover:bg-[#124f2f] disabled:opacity-60"
+                      className="h-[32px] rounded-[7px] bg-[#15633a] px-[26px] text-[13.6px] font-medium text-white shadow-sm transition hover:bg-[#124f2f] disabled:opacity-60"
                     >
                       Save Button
                     </button>
@@ -500,23 +532,27 @@ export default function ChatbotManagerPage() {
                     </span>
                   )}
                 </div>
-                <button type="button" className="flex items-center gap-[7px] text-[#1d4ed8] hover:underline">
+                <button type="button" onClick={() => setPublishTab("history")} className="flex items-center gap-[7px] text-[#1d4ed8] hover:underline">
                   <History className="h-[17px] w-[17px]" /> Version History
                 </button>
               </div>
             </div>
           </div>
 
-          <div {...panelProps(TABS[1].label)} className={panelClass(TABS[1].label)}>
-            <QuestionsAnswersTab onChange={markDraft} />
+          <div {...panelProps("Questions & Answers")} className={panelClass("Questions & Answers")}>
+            <QuestionsAnswersTab onChange={markDraft} onOpenHistory={() => setPublishTab("history")} />
           </div>
 
-          <div {...panelProps(TABS[2].label)} className={panelClass(TABS[2].label)}>
-            <FormsRoutingTab onChange={markDraft} />
+          <div {...panelProps("AI Knowledge & Answers")} className={panelClass("AI Knowledge & Answers")}>
+            <AIKnowledgeTab onChange={markDraft} onGoToTab={setTab} />
           </div>
 
-          <div {...panelProps(TABS[3].label)} className={panelClass(TABS[3].label)}>
-            <SettingsTab onChange={markDraft} />
+          <div {...panelProps("Forms & Routing")} className={panelClass("Forms & Routing")}>
+            <FormsRoutingTab onChange={markDraft} onOpenHistory={() => setPublishTab("history")} />
+          </div>
+
+          <div {...panelProps("Settings")} className={panelClass("Settings")}>
+            <SettingsTab onChange={markDraft} onOpenHistory={() => setPublishTab("history")} />
           </div>
         </div>
       </div>

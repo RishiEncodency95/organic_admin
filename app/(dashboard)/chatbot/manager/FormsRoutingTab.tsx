@@ -81,7 +81,7 @@ const VISIBLE_ROWS = 5;
 
 // ─── Tab ─────────────────────────────────────────────────────────────────────
 
-export default function FormsRoutingTab({ onChange }: { onChange: () => void }) {
+export default function FormsRoutingTab({ onChange, onOpenHistory }: { onChange: () => void; onOpenHistory: () => void }) {
   const [form, setForm] = useState<FormName>("Quotation Request");
   const [formActive, setFormActive] = useState(true);
   const [fields, setFields] = useState(INITIAL_FIELDS);
@@ -378,7 +378,7 @@ export default function FormsRoutingTab({ onChange }: { onChange: () => void }) 
             <span className="flex items-center gap-[12px] text-[#64748b]">
               <Info className="h-[18px] w-[18px]" /> Draft changes are not live until published.
             </span>
-            <button type="button" className="flex items-center gap-[8px] text-[14.1px] text-[#1d4ed8] hover:underline">
+            <button type="button" onClick={onOpenHistory} className="flex items-center gap-[8px] text-[14.1px] text-[#1d4ed8] hover:underline">
               <History className="h-[18px] w-[18px]" /> Version History
             </button>
           </div>
