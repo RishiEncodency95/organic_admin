@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import {
   AlertTriangle,
+  Check,
   ArrowRight,
   CalendarDays,
   ChevronDown,
@@ -23,6 +24,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { DESIGN_WIDTH, useFitWidth } from "@/components/chatbot/useFitWidth";
+import ReassignEnquiryModal from "./ReassignEnquiryModal";
+import ResolveEnquiryModal from "./ResolveEnquiryModal";
 
 /*
  * Inbox & Leads — illustrative page. Every record and count here is sample data
@@ -97,12 +100,13 @@ const TABS: { key: "all" | Category; label: string; count: number }[] = [
   { key: "complaint", label: "Complaints", count: 6 },
 ];
 
-type Status = "Follow-up" | "In Progress" | "New" | "Waiting for Visitor" | "Assigned";
+type Status = "Follow-up" | "In Progress" | "New" | "Waiting for Visitor" | "Assigned" | "Resolved";
 type FollowUp =
   | { kind: "date"; label: string }
   | { kind: "overdue" }
   | { kind: "review" }
-  | { kind: "assign" };
+  | { kind: "assign" }
+  | { kind: "none" };
 
 type Row = {
   id: number;
@@ -240,6 +244,7 @@ const STATUS_STYLE: Record<Status, { className: string; icon: React.ReactNode }>
   New: { className: "bg-[#e6f6ea] text-[#15803d]", icon: <span className="h-[11px] w-[11px] rounded-full bg-[#16a34a]" /> },
   "Waiting for Visitor": { className: "bg-[#f3ecfd] text-[#7c3aed] !text-[11.2px]", icon: <Hourglass className="h-[16px] w-[16px]" /> },
   Assigned: { className: "bg-[#e8f0fd] text-[#1d4ed8]", icon: <Users className="h-[17px] w-[17px]" /> },
+  Resolved: { className: "bg-[#e6f6ea] text-[#15803d]", icon: <Check className="h-[17px] w-[17px]" strokeWidth={2.6} /> },
 };
 
 const ACTION_CLASS: Record<Row["action"], string> = {
@@ -282,6 +287,8 @@ function FollowUpCell({ value }: { value: FollowUp }) {
           <UserPlus className="h-[18px] w-[18px]" /> Assign Team
         </span>
       );
+    case "none":
+      return <span className="text-[#94a3b8]">—</span>;
   }
 }
 
@@ -306,16 +313,23 @@ export default function ChatbotInboxPage() {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
+  const [records, setRecords] = useState(ROWS);
+  // Row whose (re)assignment popup is open, and row whose ⋮ menu is open
+  const [reassignId, setReassignId] = useState<number | null>(null);
+  const [menuId, setMenuId] = useState<number | null>(null);
+  const reassignRow = records.find((r) => r.id === reassignId) ?? null;
+  const [resolveId, setResolveId] = useState<number | null>(null);
+  const resolveRow = records.find((r) => r.id === resolveId) ?? null;
 
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return ROWS.filter(
+    return records.filter(
       (r) =>
         (tab === "all" || r.category === tab) &&
         (!q || [r.name, r.type, r.topic, r.detail, r.assignedTo].some((v) => v.toLowerCase().includes(q))) &&
         (Object.keys(filters) as FilterKey[]).every((k) => !filters[k] || r[k] === filters[k])
     );
-  }, [tab, search, filters]);
+  }, [records, tab, search, filters]);
 
   const allSelected = rows.length > 0 && rows.every((r) => selected.has(r.id));
   const toggleAll = () => setSelected(allSelected ? new Set() : new Set(rows.map((r) => r.id)));
@@ -383,12 +397,37 @@ export default function ChatbotInboxPage() {
           >
             <SquareArrowOutUpRight className="h-[16px] w-[16px]" /> Export
           </button>
+          {/* Creating an enquiry needs its own form (not designed yet) */}
           <button
             type="button"
             className="inline-flex h-[36px] items-center gap-[7px] rounded-[8px] bg-[#15633a] px-[14px] text-[13.4px] font-medium text-white shadow-sm transition hover:bg-[#124f2f]"
           >
             <Plus className="h-[17px] w-[17px]" /> New Enquiry
           </button>
+          <ReassignEnquiryModal
+            key={reassignId ?? "closed"}
+            enquiry={reassignRow}
+            onClose={() => setReassignId(null)}
+            onConfirm={({ owner }) => {
+              setRecords((prev) =>
+                prev.map((r) =>
+                  r.id === reassignId
+                    ? { ...r, assignedTo: owner, status: "Assigned", followUp: r.followUp.kind === "assign" ? { kind: "review" } : r.followUp, action: r.action === "Assign" ? "View" : r.action }
+                    : r
+                )
+              );
+              setReassignId(null);
+            }}
+          />
+          <ResolveEnquiryModal
+            key={`resolve-${resolveId ?? "closed"}`}
+            enquiry={resolveRow}
+            onClose={() => setResolveId(null)}
+            onResolve={() => {
+              setRecords((prev) => prev.map((r) => (r.id === resolveId ? { ...r, status: "Resolved", followUp: { kind: "none" }, action: "View", lastActivity: "Just now" } : r)));
+              setResolveId(null);
+            }}
+          />
         </div>
       </div>
 
@@ -544,13 +583,51 @@ export default function ChatbotInboxPage() {
                       <span className="flex items-center gap-[10px]">
                         <button
                           type="button"
+                          onClick={r.action === "Assign" ? () => setReassignId(r.id) : undefined}
                           className={`inline-flex h-[30px] w-[68px] items-center justify-center rounded-[6px] border bg-white text-[13.1px] font-medium transition ${ACTION_CLASS[r.action]}`}
                         >
                           {r.action}
                         </button>
-                        <button type="button" aria-label={`More actions for ${r.name}`} className="grid h-[28px] w-[18px] place-items-center text-[#334155] hover:text-[#0f172a]">
-                          <MoreVertical className="h-[19px] w-[19px]" />
-                        </button>
+                        <span className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setMenuId(menuId === r.id ? null : r.id)}
+                            aria-label={`More actions for ${r.name}`}
+                            aria-expanded={menuId === r.id}
+                            className="grid h-[28px] w-[18px] place-items-center text-[#334155] hover:text-[#0f172a]"
+                          >
+                            <MoreVertical className="h-[19px] w-[19px]" />
+                          </button>
+                          {menuId === r.id && (
+                            <>
+                              <button type="button" aria-label="Close menu" className="fixed inset-0 z-10 cursor-default" onClick={() => setMenuId(null)} />
+                              <span className="absolute right-0 top-full z-20 mt-[4px] block w-[150px] overflow-hidden rounded-[8px] border border-[#e5e7eb] bg-white py-[4px] text-[13.1px] shadow-lg">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setMenuId(null);
+                                    setReassignId(r.id);
+                                  }}
+                                  className="block w-full px-[12px] py-[7px] text-left text-[#0f172a] hover:bg-[#f1f7ee]"
+                                >
+                                  {r.assignedTo === "Unassigned" ? "Assign" : "Reassign"}
+                                </button>
+                                {r.status !== "Resolved" && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setMenuId(null);
+                                      setResolveId(r.id);
+                                    }}
+                                    className="block w-full px-[12px] py-[7px] text-left text-[#0f172a] hover:bg-[#f1f7ee]"
+                                  >
+                                    Close / Resolve
+                                  </button>
+                                )}
+                              </span>
+                            </>
+                          )}
+                        </span>
                       </span>
                     </div>
                   );

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { GripVertical, History, Info, Pencil, Plus, Search, Send, X } from "lucide-react";
 import { BotAvatar, Select, cardClass, cardTitleClass, inputClass as baseInput } from "./managerUi";
+import ReviewQuestionModal, { type ReviewItem } from "./ReviewQuestionModal";
 
 /*
  * "Questions & Answers" tab of the Chatbot Manager — design preview with sample answers
@@ -72,9 +73,30 @@ const INITIAL_ANSWERS: Answer[] = [
 
 const PAGES = ["Event Information", "Book a Stand", "Visitor Registration", "PMS Guidance", "Contact Us"];
 
-const REVIEW_QUEUE: { question: string; topic: Topic; action: "Add Answer" | "Review" }[] = [
-  { question: "Is parking available?", topic: "Venue", action: "Add Answer" },
-  { question: "Can I change my stall size?", topic: "Booking", action: "Review" },
+/** Questions the bot could not answer (sample). `awaiting` = sent to the team for confirmation */
+type QueueItem = Omit<ReviewItem, "topic"> & { topic: Topic; action: "Add Answer" | "Review"; awaiting?: boolean };
+
+const REVIEW_QUEUE: QueueItem[] = [
+  {
+    id: 1,
+    question: "Is parking available?",
+    topic: "Venue",
+    action: "Add Answer",
+    asked: 8,
+    owner: "Visitor Team",
+    visitorMessage: "Is there parking at Bharat Mandapam for visitors?",
+    botReply: "I don’t have verified parking details yet. Would you like me to connect you with our team?",
+  },
+  {
+    id: 2,
+    question: "Can I change my stall size?",
+    topic: "Booking",
+    action: "Review",
+    asked: 3,
+    owner: "Sales Team",
+    visitorMessage: "I requested a 12 sq.m stall. Can I change it to 18 sq.m?",
+    botReply: "I need our sales team to confirm this. Would you like me to connect you?",
+  },
 ];
 
 const STATUS_PILL: Record<Status, string> = {
@@ -99,7 +121,7 @@ const normalize = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N} ]/gu, "")
 
 // ─── Tab ─────────────────────────────────────────────────────────────────────
 
-export default function QuestionsAnswersTab({ onChange }: { onChange: () => void }) {
+export default function QuestionsAnswersTab({ onChange, onOpenHistory }: { onChange: () => void; onOpenHistory: () => void }) {
   const [answers, setAnswers] = useState(INITIAL_ANSWERS);
   const [selectedId, setSelectedId] = useState(1);
   const [draft, setDraft] = useState<Answer>(INITIAL_ANSWERS[0]);
@@ -110,6 +132,9 @@ export default function QuestionsAnswersTab({ onChange }: { onChange: () => void
   const [chip, setChip] = useState<Status>("Approved");
   const [newPhrase, setNewPhrase] = useState<string | null>(null);
   const [queue, setQueue] = useState(REVIEW_QUEUE);
+  // Queue item whose "Review Question" popup is open
+  const [reviewId, setReviewId] = useState<number | null>(null);
+  const reviewing = queue.find((x) => x.id === reviewId) ?? null;
   const [test, setTest] = useState({ question: "Expo kab hai?", language: "Hinglish" });
   const [result, setResult] = useState<{ text: string; source: string } | null>({
     text: INITIAL_ANSWERS[0].answer.hi,
@@ -165,6 +190,36 @@ export default function QuestionsAnswersTab({ onChange }: { onChange: () => void
 
   return (
     <div className="grid h-full grid-cols-[778px_1fr] gap-[15px]">
+      <ReviewQuestionModal
+        key={reviewId ?? "closed"}
+        item={reviewing}
+        onClose={() => setReviewId(null)}
+        onSave={({ en, hi }) => {
+          if (!reviewing) return;
+          // The verified answer becomes a draft entry in the knowledge list
+          const id = Math.max(0, ...answers.map((a) => a.id)) + 1;
+          const entry: Answer = {
+            id,
+            question: reviewing.question,
+            topic: reviewing.topic,
+            status: "Draft",
+            phrases: [],
+            answer: { en, hi },
+            nextAction: "None",
+            nextTarget: PAGES[0],
+          };
+          setAnswers((prev) => [...prev, entry]);
+          setSelectedId(id);
+          setDraft(entry);
+          setQueue((prev) => prev.filter((x) => x.id !== reviewing.id));
+          setReviewId(null);
+          onChange();
+        }}
+        onNeedsConfirmation={() => {
+          setQueue((prev) => prev.map((x) => (x.id === reviewId ? { ...x, awaiting: true } : x)));
+          setReviewId(null);
+        }}
+      />
       {/* ── Left: knowledge base + editor ── */}
       <div className={`${cardClass} flex flex-col px-[16px] pb-[10px] pt-[8px]`}>
         <div className="flex items-center justify-between">
@@ -389,21 +444,28 @@ export default function QuestionsAnswersTab({ onChange }: { onChange: () => void
             </div>
             {queue.length === 0 && <p className="border-t border-[#eef0f2] py-[14px] text-center text-[13.6px] text-[#64748b]">Nothing waiting for review.</p>}
             {queue.map((item) => (
-              <div key={item.question} className="grid h-[54px] grid-cols-[220px_1fr_130px] items-center border-t border-[#eef0f2] px-[14px] text-[14.6px] text-[#0f172a]">
+              <div key={item.id} className="grid h-[54px] grid-cols-[220px_1fr_130px] items-center border-t border-[#eef0f2] px-[14px] text-[14.6px] text-[#0f172a]">
                 <span className="truncate pr-[8px]">{item.question}</span>
                 <span className="truncate">{item.topic}</span>
                 <button
                   type="button"
-                  onClick={() => {
-                    startNew(item.question, item.topic, item.action === "Review" ? "Needs Review" : "Draft");
-                    setQueue((prev) => prev.filter((x) => x !== item));
-                  }}
+                  onClick={() => setReviewId(item.id)}
                   className={`inline-flex h-[38px] items-center justify-center gap-[7px] rounded-[7px] border bg-white text-[14.6px] font-medium transition ${
-                    item.action === "Add Answer" ? "border-[#2f8a4c] text-[#14532d] hover:bg-[#f1f7ee]" : "border-[#d6dae0] text-[#0f172a] hover:border-[#15633a]"
+                    item.awaiting
+                      ? "border-[#f5c27a] text-[#b45309] hover:bg-[#fffaf0]"
+                      : item.action === "Add Answer"
+                        ? "border-[#2f8a4c] text-[#14532d] hover:bg-[#f1f7ee]"
+                        : "border-[#d6dae0] text-[#0f172a] hover:border-[#15633a]"
                   }`}
                 >
-                  {item.action === "Add Answer" && <Plus className="h-[17px] w-[17px]" />}
-                  {item.action}
+                  {item.awaiting ? (
+                    "Awaiting Team"
+                  ) : (
+                    <>
+                      {item.action === "Add Answer" && <Plus className="h-[17px] w-[17px]" />}
+                      {item.action}
+                    </>
+                  )}
                 </button>
               </div>
             ))}
@@ -452,7 +514,7 @@ export default function QuestionsAnswersTab({ onChange }: { onChange: () => void
             <span className="flex items-center gap-[10px] text-[#64748b]">
               <Info className="h-[17px] w-[17px]" /> Answer quality feedback can be reviewed from Overview.
             </span>
-            <button type="button" className="flex items-center gap-[7px] text-[#1d4ed8] hover:underline">
+            <button type="button" onClick={onOpenHistory} className="flex items-center gap-[7px] text-[#1d4ed8] hover:underline">
               <History className="h-[17px] w-[17px]" /> Version History
             </button>
           </div>

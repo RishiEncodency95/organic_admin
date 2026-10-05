@@ -73,7 +73,7 @@ function ToggleRow({ title, note, on, onChange }: { title: string; note: string;
 
 // ─── Tab ─────────────────────────────────────────────────────────────────────
 
-export default function SettingsTab({ onChange }: { onChange: () => void }) {
+export default function SettingsTab({ onChange, onOpenHistory }: { onChange: () => void; onOpenHistory: () => void }) {
   const [identity, setIdentity] = useState({ name: "Organic Mitra", subtitle: "Bharat Organic Expo Assistant", launcher: "Ask Organic Mitra" });
   const [avatar, setAvatar] = useState(LOGO);
   const [languages, setLanguages] = useState<Language[]>([...LANGUAGES]);
@@ -358,7 +358,7 @@ export default function SettingsTab({ onChange }: { onChange: () => void }) {
             >
               <Save className="h-[16px] w-[16px]" /> Save Settings
             </button>
-            <button type="button" className="flex items-center gap-[7px] text-[13.1px] text-[#1d4ed8] hover:underline">
+            <button type="button" onClick={onOpenHistory} className="flex items-center gap-[7px] text-[13.1px] text-[#1d4ed8] hover:underline">
               <History className="h-[16px] w-[16px]" /> Version History
             </button>
           </div>
