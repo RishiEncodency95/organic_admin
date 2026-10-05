@@ -218,18 +218,18 @@ export default function PublishModal({ tab, onTabChange, onClose, versions, hasD
               href={PUBLIC_SITE_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex h-[35px] items-center rounded-[8px] border border-[#cbd5e1] bg-white px-[18px] text-[13.5px] font-semibold text-[#0f172a] transition hover:bg-slate-50"
+              className="inline-flex h-[30px] items-center rounded-[8px] border border-[#cbd5e1] bg-white px-[18px] text-[13.5px] font-semibold text-[#0f172a] transition hover:bg-slate-50"
             >
               Preview Draft
             </a>
-            <button type="button" onClick={onClose} className="ml-auto h-[35px] rounded-[8px] border border-[#cbd5e1] bg-white px-[22px] text-[13.5px] font-semibold text-[#0f172a] transition hover:bg-slate-50">
+            <button type="button" onClick={onClose} className="ml-auto h-[30px] rounded-[8px] border border-[#cbd5e1] bg-white px-[22px] text-[13.5px] font-semibold text-[#0f172a] transition hover:bg-slate-50">
               Cancel
             </button>
             <button
               type="button"
               onClick={() => onPublish(note.trim())}
               disabled={!hasDraft}
-              className="h-[35px] rounded-[8px] bg-[#15633a] px-[22px] text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#124f2f] disabled:opacity-50"
+              className="h-[30px] rounded-[8px] bg-[#15633a] px-[22px] text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#124f2f] disabled:opacity-50"
             >
               Publish {v(draftMinor)}
             </button>

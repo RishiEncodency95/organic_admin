@@ -186,11 +186,11 @@ export default function ReviewQuestionModal({ item, onClose, onSave, onNeedsConf
             <button
               type="button"
               onClick={onNeedsConfirmation}
-              className="inline-flex h-[38px] items-center gap-[10px] rounded-[7px] bg-[#fdf1d8] px-[14px] text-[14px] text-[#b45309] transition hover:bg-[#fbe6bb]"
+              className="inline-flex h-[30px] items-center gap-[10px] rounded-[7px] bg-[#fdf1d8] px-[14px] text-[14px] text-[#b45309] transition hover:bg-[#fbe6bb]"
             >
               <ExclamationDot /> Needs Team Confirmation
             </button>
-            <button type="button" onClick={onClose} className="ml-auto h-[38px] rounded-[7px] border border-[#cbd5e1] bg-white px-[24px] text-[14px] font-medium text-[#0f172a] transition hover:bg-slate-50">
+            <button type="button" onClick={onClose} className="ml-auto h-[30px] rounded-[7px] border border-[#cbd5e1] bg-white px-[24px] text-[14px] font-medium text-[#0f172a] transition hover:bg-slate-50">
               Cancel
             </button>
             <button
@@ -198,7 +198,7 @@ export default function ReviewQuestionModal({ item, onClose, onSave, onNeedsConf
               onClick={() => onSave({ en: answer.en.trim(), hi: answer.hi.trim(), reference: reference.trim() })}
               disabled={!canSave}
               title={canSave ? undefined : "Add a verified answer and a reference first"}
-              className="h-[38px] rounded-[7px] bg-[#15633a] px-[22px] text-[14px] font-semibold text-white shadow-sm transition hover:bg-[#124f2f] disabled:cursor-not-allowed disabled:bg-[#a7d5b6]"
+              className="h-[30px] rounded-[7px] bg-[#15633a] px-[22px] text-[14px] font-semibold text-white shadow-sm transition hover:bg-[#124f2f] disabled:cursor-not-allowed disabled:bg-[#a7d5b6]"
             >
               Save Answer Draft
             </button>

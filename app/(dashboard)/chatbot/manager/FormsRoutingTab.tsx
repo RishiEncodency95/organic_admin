@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { GripVertical, History, Info, Pencil, Plus, Save } from "lucide-react";
-import { Select, cardClass, inputClass as baseInput } from "./managerUi";
+import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
+import { createPortal } from "react-dom";
+import { History, Info, Pencil, Plus, Save, Trash2, X } from "lucide-react";
+import { ConfirmDialog, DragHandle, Select, cardClass, inputClass as baseInput, reorder, useReorder, type ConfirmOptions, type Notify, type TabHandle } from "./managerUi";
 
 /*
  * "Forms & Routing" tab of the Chatbot Manager — design preview with sample forms and
@@ -17,10 +18,7 @@ type FieldType = (typeof FIELD_TYPES)[number];
 
 type Field = { id: number; label: string; type: FieldType; required: boolean; show: boolean };
 
-const FORMS = ["Quotation Request", "Callback Request", "Visitor Registration"] as const;
-type FormName = (typeof FORMS)[number];
-
-const INITIAL_FIELDS: Field[] = [
+const QUOTATION_FIELDS: Field[] = [
   { id: 1, label: "Full Name", type: "Text", required: true, show: true },
   { id: 2, label: "Mobile / WhatsApp", type: "Phone", required: true, show: true },
   { id: 3, label: "Company Name", type: "Text", required: false, show: true },
@@ -34,6 +32,64 @@ const TEAMS = ["Sales Team", "Registration Team", "Buyer Team", "HR Team", "Team
 const METHODS = ["Round Robin", "Least Busy", "Fixed Person", "Manual"] as const;
 const PRIORITIES = ["Low", "Medium", "High", "Urgent"] as const;
 const RESPONSE_TARGETS = ["30 minutes", "1 working hour", "4 working hours", "1 working day"] as const;
+
+type Submission = { recordType: (typeof RECORD_TYPES)[number]; topic: (typeof TOPICS)[number]; submitLabel: string; consent: string; confirmation: string };
+type Routing = {
+  team: (typeof TEAMS)[number];
+  method: (typeof METHODS)[number];
+  priority: (typeof PRIORITIES)[number];
+  inApp: boolean;
+  email: boolean;
+  target: (typeof RESPONSE_TARGETS)[number];
+  escalate: (typeof TEAMS)[number];
+};
+/** Everything that belongs to one enquiry form */
+type FormData = { active: boolean; fields: Field[]; submission: Submission; routing: Routing };
+
+const CONSENT = "I agree to be contacted about this enquiry.";
+const ROUTING: Routing = { team: "Sales Team", method: "Round Robin", priority: "Medium", inApp: true, email: true, target: "1 working hour", escalate: "Team Lead" };
+
+const INITIAL_FORMS: Record<string, FormData> = {
+  "Quotation Request": {
+    active: true,
+    fields: QUOTATION_FIELDS,
+    submission: { recordType: "Lead", topic: "Stall Booking", submitLabel: "Submit Request", consent: CONSENT, confirmation: "Your quotation request has been received. Our sales team will contact you." },
+    routing: ROUTING,
+  },
+  "Callback Request": {
+    active: true,
+    fields: [
+      { id: 1, label: "Full Name", type: "Text", required: true, show: true },
+      { id: 2, label: "Mobile / WhatsApp", type: "Phone", required: true, show: true },
+      { id: 3, label: "Preferred Time", type: "Dropdown", required: false, show: true },
+      { id: 4, label: "Topic", type: "Session value", required: false, show: true },
+    ],
+    submission: { recordType: "Enquiry", topic: "Stall Booking", submitLabel: "Request Callback", consent: CONSENT, confirmation: "Thanks! Our team will call you back at your preferred time." },
+    routing: { ...ROUTING, priority: "High", target: "30 minutes" },
+  },
+  "Visitor Registration": {
+    active: true,
+    fields: [
+      { id: 1, label: "Full Name", type: "Text", required: true, show: true },
+      { id: 2, label: "Mobile / WhatsApp", type: "Phone", required: true, show: true },
+      { id: 3, label: "Email", type: "Email", required: true, show: true },
+      { id: 4, label: "City", type: "Text", required: false, show: true },
+      { id: 5, label: "Visit Date", type: "Date", required: false, show: true },
+    ],
+    submission: { recordType: "Enquiry", topic: "Visitor Registration", submitLabel: "Register", consent: CONSENT, confirmation: "You are registered! Show this confirmation at the entry." },
+    routing: { ...ROUTING, team: "Registration Team", method: "Least Busy", priority: "Low", target: "1 working day" },
+  },
+};
+
+const BLANK_FORM: FormData = {
+  active: false,
+  fields: [
+    { id: 1, label: "Full Name", type: "Text", required: true, show: true },
+    { id: 2, label: "Mobile / WhatsApp", type: "Phone", required: true, show: true },
+  ],
+  submission: { recordType: "Enquiry", topic: "Stall Booking", submitLabel: "Submit", consent: CONSENT, confirmation: "Thanks! Our team will get back to you." },
+  routing: ROUTING,
+};
 
 const INITIAL_RULES = [
   { topic: "Visitor Registration", team: "Registration Team" },
@@ -79,45 +135,195 @@ const solidButton =
 const ROW_HEIGHT = 40;
 const VISIBLE_ROWS = 5;
 
+/** "Add Form" popup: a name and whether to start blank or from a copy of the open form */
+function AddFormDialog({ open, current, taken, onClose, onCreate }: { open: boolean; current: string; taken: string[]; onClose: () => void; onCreate: (name: string, copy: boolean) => void }) {
+  const [name, setName] = useState("");
+  const [copy, setCopy] = useState(false);
+  const [error, setError] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    inputRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  if (!open || typeof document === "undefined") return null;
+  const submit = () => {
+    const n = name.trim();
+    if (!n) return setError("Please enter a form name.");
+    if (taken.some((t) => t.toLowerCase() === n.toLowerCase())) return setError("A form with this name already exists.");
+    onCreate(n, copy);
+  };
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 font-sans">
+      <div aria-hidden="true" className="absolute inset-0 bg-[#0b1f14]/55 backdrop-blur-[2px]" />
+      <div role="dialog" aria-modal="true" aria-labelledby="add-form-title" className="relative w-[420px] max-w-full rounded-[14px] bg-white px-[22px] pb-[16px] pt-[16px] text-[#0f172a] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.45)]">
+        <div className="flex items-start justify-between">
+          <h2 id="add-form-title" className="text-[18.5px] font-bold leading-tight text-[#0f2a1c]">
+            Add Form
+          </h2>
+          <button type="button" onClick={onClose} aria-label="Close" className="-mr-[6px] -mt-[4px] grid h-[30px] w-[30px] place-items-center rounded-full transition hover:bg-slate-100">
+            <X className="h-[19px] w-[19px]" />
+          </button>
+        </div>
+        <label className="mt-[10px] block">
+          <span className="mb-[3px] block text-[13.5px] font-semibold">
+            Form name <span className="text-[#dc2626]">*</span>
+          </span>
+          <input
+            ref={inputRef}
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              setError("");
+            }}
+            onKeyDown={(e) => e.key === "Enter" && submit()}
+            maxLength={40}
+            placeholder="e.g. Sponsorship Enquiry"
+            className={`h-[34px] w-full rounded-[7px] border px-[12px] text-[13.5px] outline-none focus:border-[#15633a] focus:ring-2 focus:ring-[#15633a]/15 ${error ? "border-[#dc2626]" : "border-[#cbd5e1]"}`}
+          />
+        </label>
+        {error && (
+          <p role="alert" className="mt-[3px] text-[12.5px] text-[#dc2626]">
+            {error}
+          </p>
+        )}
+        <fieldset className="mt-[10px] text-[13.5px]">
+          <legend className="mb-[4px] font-semibold">Start from</legend>
+          {[
+            [false, "Basic form (name and mobile)"],
+            [true, `Copy of “${current}”`],
+          ].map(([value, text]) => (
+            <label key={String(value)} className="flex cursor-pointer items-center gap-[10px] py-[2px]">
+              <input type="radio" name="start-from" checked={copy === value} onChange={() => setCopy(value as boolean)} className="h-[16px] w-[16px] accent-[#15633a]" />
+              {text}
+            </label>
+          ))}
+        </fieldset>
+        <p className="mt-[8px] text-[12.5px] text-[#64748b]">New forms start inactive — switch them on when ready.</p>
+        <div className="mt-[14px] flex justify-end gap-[10px]">
+          <button type="button" onClick={onClose} className="h-[30px] rounded-[8px] border border-[#cbd5e1] bg-white px-[18px] text-[13.5px] font-semibold transition hover:bg-slate-50">
+            Cancel
+          </button>
+          <button type="button" onClick={submit} className="h-[30px] rounded-[8px] bg-[#15633a] px-[18px] text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#124f2f]">
+            Create Form
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 // ─── Tab ─────────────────────────────────────────────────────────────────────
 
-export default function FormsRoutingTab({ onChange, onOpenHistory }: { onChange: () => void; onOpenHistory: () => void }) {
-  const [form, setForm] = useState<FormName>("Quotation Request");
-  const [formActive, setFormActive] = useState(true);
-  const [fields, setFields] = useState(INITIAL_FIELDS);
+type Props = { onChange: () => void; onOpenHistory: () => void; notify: Notify; ref?: Ref<TabHandle> };
+
+export default function FormsRoutingTab({ onChange, onOpenHistory, notify, ref }: Props) {
+  const [forms, setForms] = useState(INITIAL_FORMS);
+  const [form, setForm] = useState(Object.keys(INITIAL_FORMS)[0]);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [submission, setSubmission] = useState({
-    recordType: "Lead" as (typeof RECORD_TYPES)[number],
-    topic: "Stall Booking" as (typeof TOPICS)[number],
-    submitLabel: "Submit Request",
-    consent: "I agree to be contacted about this enquiry.",
-    confirmation: "Your quotation request has been received. Our sales team will contact you.",
-  });
-  const [routing, setRouting] = useState({
-    team: "Sales Team" as (typeof TEAMS)[number],
-    method: "Round Robin" as (typeof METHODS)[number],
-    priority: "Medium" as (typeof PRIORITIES)[number],
-    inApp: true,
-    email: true,
-    target: "1 working hour" as (typeof RESPONSE_TARGETS)[number],
-    escalate: "Team Lead" as (typeof TEAMS)[number],
-  });
   const [rules, setRules] = useState(INITIAL_RULES);
   const [editRules, setEditRules] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const closeAdd = useCallback(() => setAddOpen(false), []);
+  const [confirm, setConfirm] = useState<ConfirmOptions | null>(null);
+  const closeConfirm = useCallback(() => setConfirm(null), []);
+  const [showErrors, setShowErrors] = useState(false);
+
+  const current = forms[form];
+  const { fields, submission, routing } = current;
+  const formNames = Object.keys(forms);
+
+  /** Changes the open form */
+  const patchForm = (patch: Partial<FormData> | ((f: FormData) => Partial<FormData>)) =>
+    setForms((prev) => ({ ...prev, [form]: { ...prev[form], ...(typeof patch === "function" ? patch(prev[form]) : patch) } }));
+  const setSubmission = (submission: Submission) => patchForm({ submission });
+  const setRouting = (routing: Routing) => patchForm({ routing });
 
   const updateField = (id: number, patch: Partial<Field>) => {
-    setFields((prev) => prev.map((f) => (f.id === id ? { ...f, ...patch } : f)));
+    patchForm((f) => ({ fields: f.fields.map((x) => (x.id === id ? { ...x, ...patch } : x)) }));
     onChange();
   };
   const addField = () => {
     const id = Math.max(0, ...fields.map((f) => f.id)) + 1;
-    setFields((prev) => [...prev, { id, label: "New Field", type: "Text", required: false, show: true }]);
+    patchForm((f) => ({ fields: [...f.fields, { id, label: "New Field", type: "Text", required: false, show: true }] }));
     setEditingId(id);
     onChange();
+  };
+  const removeField = (field: Field) => {
+    if (fields.length === 1) return notify("A form needs at least one field", { tone: "error" });
+    const index = fields.findIndex((f) => f.id === field.id);
+    const owner = form;
+    patchForm((f) => ({ fields: f.fields.filter((x) => x.id !== field.id) }));
+    onChange();
+    notify(`“${field.label}” removed from ${owner}`, {
+      undo: () => setForms((prev) => ({ ...prev, [owner]: { ...prev[owner], fields: [...prev[owner].fields.slice(0, index), field, ...prev[owner].fields.slice(index)] } })),
+    });
+  };
+
+  const fieldIds = useMemo(() => fields.map((f) => f.id), [fields]);
+  const drag = useReorder(fieldIds, (from, to) => {
+    patchForm((f) => ({ fields: reorder(f.fields, from, to) }));
+    onChange();
+  });
+
+  const submissionProblem = !submission.submitLabel.trim()
+    ? "Add the submit button label."
+    : !submission.consent.trim()
+      ? "Add the consent text."
+      : !submission.confirmation.trim()
+        ? "Add the confirmation message."
+        : fields.some((f) => !f.label.trim())
+          ? "Every field needs a label."
+          : "";
+  const routingProblem = !routing.inApp && !routing.email ? "Choose at least one way to notify the assigned employee." : "";
+  const missing = (value: string) => (showErrors && !value.trim() ? "!border-[#dc2626]" : "");
+
+  const saveForm = () => {
+    if (submissionProblem) {
+      setShowErrors(true);
+      notify(submissionProblem, { tone: "error" });
+      return false;
+    }
+    setShowErrors(false);
+    onChange();
+    notify(`“${form}” form saved`);
+    return true;
+  };
+  const saveRouting = () => {
+    if (routingProblem) {
+      notify(routingProblem, { tone: "error" });
+      return false;
+    }
+    onChange();
+    notify(`Routing for “${form}” saved`);
+    return true;
+  };
+
+  useImperativeHandle(ref, () => ({ save: () => saveForm() && saveRouting() }));
+
+  const switchForm = (name: string) => {
+    setForm(name);
+    setEditingId(null);
+    setShowErrors(false);
+  };
+
+  const createForm = (name: string, copy: boolean) => {
+    const base = copy ? current : BLANK_FORM;
+    setForms((prev) => ({ ...prev, [name]: { ...structuredClone(base), active: false } }));
+    switchForm(name);
+    setAddOpen(false);
+    onChange();
+    notify(`“${name}” form created${copy ? ` from ${form}` : ""}`);
   };
 
   return (
     <div className="grid h-full grid-cols-[778px_1fr] gap-[15px]">
+      <ConfirmDialog confirm={confirm} onClose={closeConfirm} />
+      <AddFormDialog key={addOpen ? "open" : "closed"} open={addOpen} current={form} taken={formNames} onClose={closeAdd} onCreate={createForm} />
       {/* ── Left: form fields + submission ── */}
       <div className="flex min-h-0 flex-col gap-[12px]">
         <div className={`${cardClass} px-[16px] pb-[10px] pt-[8px]`}>
@@ -127,15 +333,20 @@ export default function FormsRoutingTab({ onChange, onOpenHistory }: { onChange:
               <p className="mt-[2px] text-[14.1px] text-[#64748b]">Choose what visitors submit and where it goes.</p>
             </div>
             <div className="flex shrink-0 items-center gap-[10px] pt-[2px]">
-              <Select value={form} options={FORMS} onChange={setForm} label="Form" className="w-[174px]" selectClassName="!text-[14.1px]" />
+              <Select value={form} options={formNames} onChange={switchForm} label="Form" className="w-[174px]" selectClassName="!text-[14.1px]" />
               <span className="inline-flex h-[36px] items-center gap-[12px] rounded-[7px] bg-[#f1f7f2] px-[12px] text-[14.1px] text-[#14532d]">
-                {formActive ? "Active" : "Inactive"}
-                <Switch on={formActive} onChange={() => {
-                    setFormActive((v) => !v);
+                {current.active ? "Active" : "Inactive"}
+                <Switch
+                  on={current.active}
+                  onChange={() => {
+                    patchForm({ active: !current.active });
                     onChange();
-                  }} label={`${form} active`} />
+                    notify(`“${form}” ${current.active ? "turned off" : "turned on"}`);
+                  }}
+                  label={`${form} active`}
+                />
               </span>
-              <button type="button" className={`${outlineButton} !h-[36px]`}>
+              <button type="button" onClick={() => setAddOpen(true)} className={`${outlineButton} !h-[36px]`}>
                 <Plus className="h-[18px] w-[18px]" /> Add Form
               </button>
             </div>
@@ -155,10 +366,11 @@ export default function FormsRoutingTab({ onChange, onOpenHistory }: { onChange:
               {fields.map((f) => (
                 <div
                   key={f.id}
+                  {...drag.row(f.id)}
                   style={{ height: ROW_HEIGHT }}
-                  className="grid grid-cols-[46px_216px_178px_116px_110px_1fr] items-center border-t border-[#eef0f2] px-[4px] text-[14.6px] text-[#0f172a]"
+                  className={`${drag.rowClass(f.id)} grid grid-cols-[46px_216px_178px_116px_110px_1fr] items-center border-t border-[#eef0f2] px-[4px] text-[14.6px] text-[#0f172a]`}
                 >
-                  <GripVertical className="mx-auto h-[18px] w-[18px] text-[#64748b]" />
+                  <DragHandle props={drag.handle(f.id, f.label)} className="mx-auto h-[28px] w-[24px]" />
                   {editingId === f.id ? (
                     <input
                       autoFocus
@@ -171,7 +383,7 @@ export default function FormsRoutingTab({ onChange, onOpenHistory }: { onChange:
                       className="mr-[14px] h-[30px] rounded-[6px] border border-[#2f8a4c] px-[10px] text-[14.6px] outline-none"
                     />
                   ) : (
-                    <span className="truncate pr-[10px]">{f.label}</span>
+                    <span className={`truncate pr-[10px] ${showErrors && !f.label.trim() ? "text-[#dc2626]" : ""}`}>{f.label || "Untitled field"}</span>
                   )}
                   <span className="pr-[34px]">
                     <Select value={f.type} options={FIELD_TYPES} onChange={(type) => updateField(f.id, { type })} label={`${f.label} type`} selectClassName="!h-[32px] !text-[14.1px]" />
@@ -182,14 +394,25 @@ export default function FormsRoutingTab({ onChange, onOpenHistory }: { onChange:
                   <span className="flex justify-center">
                     <Switch on={f.show} onChange={() => updateField(f.id, { show: !f.show })} label={`Show ${f.label}`} />
                   </span>
-                  <span className="flex justify-center">
+                  <span className="flex justify-center gap-[6px]">
                     <button
                       type="button"
                       onClick={() => setEditingId(f.id)}
                       aria-label={`Edit ${f.label}`}
-                      className="grid h-[30px] w-[38px] place-items-center rounded-[7px] border border-[#dfe3e8] bg-white text-[#0f172a] transition hover:border-[#15633a] hover:text-[#15633a]"
+                      title="Rename"
+                      className="grid h-[30px] w-[32px] place-items-center rounded-[7px] border border-[#dfe3e8] bg-white text-[#0f172a] transition hover:border-[#15633a] hover:text-[#15633a]"
                     >
                       <Pencil className="h-[16px] w-[16px]" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeField(f)}
+                      disabled={fields.length === 1}
+                      aria-label={`Remove ${f.label}`}
+                      title={fields.length === 1 ? "A form needs at least one field" : "Remove field"}
+                      className="grid h-[30px] w-[32px] place-items-center rounded-[7px] border border-[#dfe3e8] bg-white text-[#dc2626] transition hover:border-[#dc2626] hover:bg-[#fdf2f2] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <Trash2 className="h-[15px] w-[15px]" />
                     </button>
                   </span>
                 </div>
@@ -229,14 +452,14 @@ export default function FormsRoutingTab({ onChange, onOpenHistory }: { onChange:
                 Submit Button Label
                 <Req />
               </span>
-              <input value={submission.submitLabel} onChange={(e) => setSubmission({ ...submission, submitLabel: e.target.value })} maxLength={30} className={inputClass} />
+              <input value={submission.submitLabel} onChange={(e) => setSubmission({ ...submission, submitLabel: e.target.value })} maxLength={30} className={`${inputClass} ${missing(submission.submitLabel)}`} />
             </label>
             <label>
               <span className={labelClass}>
                 Consent Text
                 <Req />
               </span>
-              <input value={submission.consent} onChange={(e) => setSubmission({ ...submission, consent: e.target.value })} maxLength={120} className={inputClass} />
+              <input value={submission.consent} onChange={(e) => setSubmission({ ...submission, consent: e.target.value })} maxLength={120} className={`${inputClass} ${missing(submission.consent)}`} />
             </label>
           </div>
           <label className="mt-[6px] block">
@@ -249,11 +472,11 @@ export default function FormsRoutingTab({ onChange, onOpenHistory }: { onChange:
               onChange={(e) => setSubmission({ ...submission, confirmation: e.target.value })}
               rows={2}
               maxLength={300}
-              className="h-[50px] w-full resize-y rounded-[7px] border border-[#dfe3e8] bg-white px-[14px] py-[7px] text-[14.6px] text-[#0f172a] outline-none transition focus:border-[#15633a] focus:ring-2 focus:ring-[#15633a]/15"
+              className={`h-[50px] w-full resize-y rounded-[7px] border border-[#dfe3e8] bg-white px-[14px] py-[7px] text-[14.6px] text-[#0f172a] outline-none transition focus:border-[#15633a] focus:ring-2 focus:ring-[#15633a]/15 ${missing(submission.confirmation)}`}
             />
           </label>
           <div className="mt-auto flex justify-end pt-[8px]">
-            <button type="button" onClick={onChange} className={solidButton}>
+            <button type="button" onClick={saveForm} className={solidButton}>
               <Save className="h-[18px] w-[18px]" /> Save Form
             </button>
           </div>
@@ -332,7 +555,7 @@ export default function FormsRoutingTab({ onChange, onOpenHistory }: { onChange:
             <p className="flex items-center gap-[12px] text-[13.1px] text-[#64748b]">
               <Info className="h-[18px] w-[18px]" /> Targets follow configured working hours.
             </p>
-            <button type="button" onClick={onChange} className={solidButton}>
+            <button type="button" onClick={saveRouting} className={solidButton}>
               <Save className="h-[18px] w-[18px]" /> Save Routing
             </button>
           </div>
@@ -344,7 +567,10 @@ export default function FormsRoutingTab({ onChange, onOpenHistory }: { onChange:
             <button
               type="button"
               onClick={() => {
-                if (editRules) onChange();
+                if (editRules) {
+                  onChange();
+                  notify("Routing rules saved");
+                }
                 setEditRules((v) => !v);
               }}
               className="text-[14.6px] font-medium text-[#1d4ed8] underline underline-offset-2 hover:text-[#15633a]"

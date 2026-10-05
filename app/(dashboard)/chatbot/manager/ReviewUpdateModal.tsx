@@ -132,17 +132,17 @@ export default function ReviewUpdateModal({ source, onClose, onApprove, onKeep }
             <button
               type="button"
               onClick={() => onKeep(note.trim())}
-              className="h-[36px] rounded-[7px] border border-[#94a3b8] bg-white px-[18px] text-[14px] font-medium text-[#0f172a] transition hover:bg-slate-50"
+              className="h-[30px] rounded-[7px] border border-[#94a3b8] bg-white px-[18px] text-[14px] font-medium text-[#0f172a] transition hover:bg-slate-50"
             >
               Keep Current
             </button>
-            <button type="button" onClick={onClose} className="ml-auto h-[36px] px-[16px] text-[14px] font-medium text-[#0f172a] transition hover:text-[#15633a]">
+            <button type="button" onClick={onClose} className="ml-auto h-[30px] px-[16px] text-[14px] font-medium text-[#0f172a] transition hover:text-[#15633a]">
               Cancel
             </button>
             <button
               type="button"
               onClick={() => onApprove(note.trim())}
-              className="h-[36px] rounded-[7px] bg-[#15633a] px-[20px] text-[14px] font-semibold text-white shadow-sm transition hover:bg-[#124f2f]"
+              className="h-[30px] rounded-[7px] bg-[#15633a] px-[20px] text-[14px] font-semibold text-white shadow-sm transition hover:bg-[#124f2f]"
             >
               Approve Update
             </button>

@@ -221,13 +221,13 @@ export default function ReassignEnquiryModal({ enquiry, onClose, onConfirm }: Pr
 
           {/* Actions */}
           <div className="mt-[10px] flex justify-end gap-[12px]">
-            <button type="button" onClick={onClose} className="h-[35px] rounded-[8px] border border-[#cbd5e1] bg-white px-[22px] text-[13.5px] font-semibold text-[#0f172a] transition hover:bg-slate-50">
+            <button type="button" onClick={onClose} className="h-[30px] rounded-[8px] border border-[#cbd5e1] bg-white px-[22px] text-[13.5px] font-semibold text-[#0f172a] transition hover:bg-slate-50">
               Cancel
             </button>
             <button
               type="button"
               onClick={() => onConfirm({ team, owner: owner.name, reason, note: note.trim(), notify })}
-              className="h-[35px] rounded-[8px] bg-[#15803d] px-[20px] text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#166534]"
+              className="h-[30px] rounded-[8px] bg-[#15803d] px-[20px] text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#166534]"
             >
               {unassigned ? "Confirm Assignment" : "Confirm Reassignment"}
             </button>

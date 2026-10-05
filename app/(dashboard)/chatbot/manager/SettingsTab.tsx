@@ -1,10 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useImperativeHandle, useRef, useState, type Ref } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { History, Info, LockKeyhole, Save, Upload, UsersRound, X } from "lucide-react";
-import { LOGO, Select, cardClass, inputClass as baseInput } from "./managerUi";
+import { History, Info, LockKeyhole, Plus, Save, Upload, UsersRound, X } from "lucide-react";
+import { LOGO, Select, cardClass, inputClass as baseInput, type Notify, type TabHandle } from "./managerUi";
 
 /*
  * "Settings" tab of the Chatbot Manager — design preview with sample settings kept in
@@ -73,7 +73,16 @@ function ToggleRow({ title, note, on, onChange }: { title: string; note: string;
 
 // ─── Tab ─────────────────────────────────────────────────────────────────────
 
-export default function SettingsTab({ onChange, onOpenHistory }: { onChange: () => void; onOpenHistory: () => void }) {
+type Props = { onChange: () => void; onOpenHistory: () => void; notify: Notify; ref?: Ref<TabHandle> };
+
+const MESSAGE_LABELS: Record<keyof MessageSet, string> = {
+  welcomeGreeting: "Welcome Greeting",
+  welcomeMessage: "Welcome Message",
+  closingGreeting: "Closing Greeting",
+  unknownAnswer: "Unknown Answer Message",
+};
+
+export default function SettingsTab({ onChange, onOpenHistory, notify, ref }: Props) {
   const [identity, setIdentity] = useState({ name: "Organic Mitra", subtitle: "Bharat Organic Expo Assistant", launcher: "Ask Organic Mitra" });
   const [avatar, setAvatar] = useState(LOGO);
   const [languages, setLanguages] = useState<Language[]>([...LANGUAGES]);
@@ -91,6 +100,8 @@ export default function SettingsTab({ onChange, onOpenHistory }: { onChange: () 
   const [memory, setMemory] = useState({ remember: true, reuse: true, link: true });
   const [retention, setRetention] = useState<(typeof RETENTION)[number]>("Set retention period");
   const fileRef = useRef<HTMLInputElement>(null);
+  // Red borders on empty required fields after a failed save
+  const [showErrors, setShowErrors] = useState(false);
 
   const edit = <T,>(setter: (v: T) => void) => (v: T) => {
     setter(v);
@@ -107,7 +118,43 @@ export default function SettingsTab({ onChange, onOpenHistory }: { onChange: () 
     if (defaultLang === l) setDefaultLang(next[0]);
     onChange();
   };
+  const addLanguage = (l: Language) => {
+    setLanguages((prev) => LANGUAGES.filter((x) => x === l || prev.includes(x)));
+    onChange();
+  };
   const msg = messages[msgLang];
+  const missing = (value: string) => (showErrors && !value.trim() ? "!border-[#dc2626]" : "");
+
+  /** First empty required field, switching the message tab to it if needed */
+  const findProblem = () => {
+    if (!identity.name.trim()) return "Add the chatbot name.";
+    if (!identity.subtitle.trim()) return "Add the subtitle.";
+    if (!identity.launcher.trim()) return "Add the launcher label.";
+    for (const l of ["en", "hi"] as const) {
+      const key = (Object.keys(MESSAGE_LABELS) as (keyof MessageSet)[]).find((k) => !messages[l][k].trim());
+      if (key) {
+        setMsgLang(l);
+        return `Add the ${MESSAGE_LABELS[key]} (${l === "en" ? "English" : "हिंदी"}).`;
+      }
+    }
+    if (!team.outside.trim()) return "Add the outside hours message.";
+    if (TIMES.indexOf(team.from) >= TIMES.indexOf(team.to)) return "Working hours must end after they start.";
+    return "";
+  };
+
+  const save = () => {
+    const problem = findProblem();
+    if (problem) {
+      setShowErrors(true);
+      notify(problem, { tone: "error" });
+      return;
+    }
+    setShowErrors(false);
+    onChange();
+    notify("Settings saved to draft");
+  };
+
+  useImperativeHandle(ref, () => ({ save }));
 
   return (
     <div className="grid h-full grid-cols-[704px_1fr] gap-[15px]">
@@ -146,14 +193,14 @@ export default function SettingsTab({ onChange, onOpenHistory }: { onChange: () 
                     Chatbot Name
                     <Req />
                   </span>
-                  <input value={identity.name} onChange={(e) => edit(setIdentity)({ ...identity, name: e.target.value })} maxLength={30} className={inputClass} />
+                  <input value={identity.name} onChange={(e) => edit(setIdentity)({ ...identity, name: e.target.value })} maxLength={30} className={`${inputClass} ${missing(identity.name)}`} />
                 </label>
                 <label>
                   <span className={labelClass}>
                     Subtitle
                     <Req />
                   </span>
-                  <input value={identity.subtitle} onChange={(e) => edit(setIdentity)({ ...identity, subtitle: e.target.value })} maxLength={50} className={inputClass} />
+                  <input value={identity.subtitle} onChange={(e) => edit(setIdentity)({ ...identity, subtitle: e.target.value })} maxLength={50} className={`${inputClass} ${missing(identity.subtitle)}`} />
                 </label>
               </div>
               <label>
@@ -161,7 +208,7 @@ export default function SettingsTab({ onChange, onOpenHistory }: { onChange: () 
                   Launcher Label
                   <Req />
                 </span>
-                <input value={identity.launcher} onChange={(e) => edit(setIdentity)({ ...identity, launcher: e.target.value })} maxLength={30} className={inputClass} />
+                <input value={identity.launcher} onChange={(e) => edit(setIdentity)({ ...identity, launcher: e.target.value })} maxLength={30} className={`${inputClass} ${missing(identity.launcher)}`} />
               </label>
               <div className="grid grid-cols-[184px_1fr] gap-x-[18px]">
                 <div>
@@ -185,6 +232,27 @@ export default function SettingsTab({ onChange, onOpenHistory }: { onChange: () 
                         </button>
                       </span>
                     ))}
+                    {/* Shown only when a language was removed: pick it to enable it again */}
+                    {languages.length < LANGUAGES.length && (
+                      <label title="Add a language" className="relative ml-auto grid h-[24px] w-[24px] shrink-0 cursor-pointer place-items-center rounded-[5px] text-[#14532d] hover:bg-[#e8f5ec]">
+                        <Plus className="h-[15px] w-[15px]" />
+                        <select
+                          value=""
+                          onChange={(e) => addLanguage(e.target.value as Language)}
+                          aria-label="Add a language"
+                          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                        >
+                          <option value="" disabled>
+                            Add language…
+                          </option>
+                          {LANGUAGES.filter((l) => !languages.includes(l)).map((l) => (
+                            <option key={l} value={l}>
+                              {l}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
                   </div>
                 </div>
               </div>
@@ -226,28 +294,28 @@ export default function SettingsTab({ onChange, onOpenHistory }: { onChange: () 
                 Welcome Greeting
                 <Req />
               </span>
-              <input value={msg.welcomeGreeting} onChange={(e) => setMessage("welcomeGreeting", e.target.value)} maxLength={60} className={inputClass} />
+              <input value={msg.welcomeGreeting} onChange={(e) => setMessage("welcomeGreeting", e.target.value)} maxLength={60} className={`${inputClass} ${missing(msg.welcomeGreeting)}`} />
             </label>
             <label>
               <span className={labelClass}>
                 Welcome Message
                 <Req />
               </span>
-              <textarea value={msg.welcomeMessage} onChange={(e) => setMessage("welcomeMessage", e.target.value)} rows={2} maxLength={200} className={textareaClass} />
+              <textarea value={msg.welcomeMessage} onChange={(e) => setMessage("welcomeMessage", e.target.value)} rows={2} maxLength={200} className={`${textareaClass} ${missing(msg.welcomeMessage)}`} />
             </label>
             <label>
               <span className={labelClass}>
                 Closing Greeting
                 <Req />
               </span>
-              <input value={msg.closingGreeting} onChange={(e) => setMessage("closingGreeting", e.target.value)} maxLength={60} className={inputClass} />
+              <input value={msg.closingGreeting} onChange={(e) => setMessage("closingGreeting", e.target.value)} maxLength={60} className={`${inputClass} ${missing(msg.closingGreeting)}`} />
             </label>
             <label>
               <span className={labelClass}>
                 Unknown Answer Message
                 <Req />
               </span>
-              <textarea value={msg.unknownAnswer} onChange={(e) => setMessage("unknownAnswer", e.target.value)} rows={2} maxLength={200} className={textareaClass} />
+              <textarea value={msg.unknownAnswer} onChange={(e) => setMessage("unknownAnswer", e.target.value)} rows={2} maxLength={200} className={`${textareaClass} ${missing(msg.unknownAnswer)}`} />
             </label>
           </div>
 
@@ -295,7 +363,7 @@ export default function SettingsTab({ onChange, onOpenHistory }: { onChange: () 
               Outside Hours Message
               <Req />
             </span>
-            <textarea value={team.outside} onChange={(e) => edit(setTeam)({ ...team, outside: e.target.value })} rows={2} maxLength={250} className={textareaClass} />
+            <textarea value={team.outside} onChange={(e) => edit(setTeam)({ ...team, outside: e.target.value })} rows={2} maxLength={250} className={`${textareaClass} ${missing(team.outside)}`} />
           </label>
 
           <p className="mt-[4px] flex items-center gap-[12px] text-[12.4px] text-[#64748b]">
@@ -353,7 +421,7 @@ export default function SettingsTab({ onChange, onOpenHistory }: { onChange: () 
           <div className="flex items-center gap-[24px]">
             <button
               type="button"
-              onClick={onChange}
+              onClick={save}
               className="inline-flex h-[33px] items-center gap-[8px] rounded-[7px] bg-[#15633a] px-[18px] text-[13.4px] font-medium text-white shadow-sm transition hover:bg-[#124f2f]"
             >
               <Save className="h-[16px] w-[16px]" /> Save Settings

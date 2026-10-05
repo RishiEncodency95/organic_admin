@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useCallback, useState } from "react";
 import Image from "next/image";
 import {
   ArrowRight,
@@ -15,7 +15,6 @@ import {
   Globe,
   Info,
   Lock,
-  MoreVertical,
   Plus,
   RotateCw,
   Search,
@@ -26,7 +25,7 @@ import {
   UsersRound,
   ChevronRight,
 } from "lucide-react";
-import { BotAvatar, LOGO, Select, cardClass } from "./managerUi";
+import { BotAvatar, ConfirmDialog, LOGO, RowMenu, Select, cardClass, type ConfirmOptions, type Notify } from "./managerUi";
 import ReviewUpdateModal from "./ReviewUpdateModal";
 import AddSourceModal, { type NewSource, type SourceKind } from "./AddSourceModal";
 import ReviewQuestionModal, { type ReviewItem } from "./ReviewQuestionModal";
@@ -40,7 +39,7 @@ import ReviewQuestionModal, { type ReviewItem } from "./ReviewQuestionModal";
 // ─── Sample data ─────────────────────────────────────────────────────────────
 
 type SourceStatus = "Published" | "Update pending" | "Draft";
-type Source = { id: number; name: string; url?: string; kind: "web" | "pdf" | "manual"; topic: string; status: SourceStatus; checked: string };
+type Source = { id: number; name: string; url?: string; kind: "web" | "pdf" | "manual"; topic: string; status: SourceStatus; checked: string; owner?: string };
 
 const INITIAL_SOURCES: Source[] = [
   { id: 1, name: "Expo information", url: "bharatorganicexpo.com", kind: "web", topic: "General", status: "Published", checked: "Today, 10:20 AM" },
@@ -76,9 +75,6 @@ const INITIAL_REVIEW: QueueItem[] = [
   },
 ];
 
-/** Other open review items not shown in the short list (sample) */
-const OTHER_REVIEW_COUNT = 3;
-
 const APPROVED = [
   { question: "What are the expo dates?", topic: "Event Information", updated: "02 Oct 2026" },
   { question: "How do I book a stall?", topic: "Stall Booking", updated: "01 Oct 2026" },
@@ -93,32 +89,58 @@ const STATUS_PILL: Record<SourceStatus, string> = {
   Draft: "bg-[#f1f3f5] text-[#475569] [&>i]:bg-[#94a3b8]",
 };
 
-/** Very small stand-in for the model: matches the sample question about dates / venue */
-const answerFor = (question: string, language: string) => {
+/** Sample knowledge: which source answers which kind of question */
+const KNOWLEDGE = [
+  {
+    sourceId: 1,
+    match: /(kab|kahan|when|where|date|venue|expo)/,
+    detail: "Event dates & venue",
+    en: "Bharat Organic Expo will be held from 19–21 February 2027 at Bharat Mandapam, New Delhi.",
+    hi: "Bharat Organic Expo 19–21 February 2027 ko Bharat Mandapam, New Delhi mein hoga.",
+  },
+  {
+    sourceId: 2,
+    match: /(stall|booth|exhibit|brochure|price|pricing|sq\.?m)/,
+    detail: "Stall sizes & booking",
+    en: "Stalls are available in 9, 12 and 18 sq.m sizes. You can request a quotation from the Book a Stand page.",
+    hi: "Stall 9, 12 aur 18 sq.m size mein milte hain. Book a Stand page se quotation maang sakte hain.",
+  },
+  {
+    sourceId: 3,
+    match: /(visitor|register|registration|entry|ticket|pass)/,
+    detail: "Visitor registration",
+    en: "Visitor registration is free. Register online and show your confirmation at the entry.",
+    hi: "Visitor registration free hai. Online register karein aur entry par confirmation dikhayein.",
+  },
+];
+
+type TestResult = { found: boolean; text: string; source?: { name: string; detail: string; url?: string }; draftOnly?: boolean };
+
+/**
+ * Very small stand-in for the model: matches the question to a sample source. "Live" only
+ * uses published sources (an update waiting for review keeps its published content);
+ * "Draft" also uses draft sources.
+ */
+const answerFor = (question: string, language: string, sources: Source[], mode: "Live" | "Draft"): TestResult => {
   const q = question.toLowerCase();
-  if (/(kab|kahan|when|where|date|venue|expo)/.test(q)) {
-    return {
-      found: true,
-      text:
-        language === "English"
-          ? "Bharat Organic Expo will be held from 19–21 February 2027 at Bharat Mandapam, New Delhi."
-          : "Bharat Organic Expo 19–21 February 2027 ko Bharat Mandapam, New Delhi mein hoga.",
-    };
+  const english = language === "English";
+  const hit = KNOWLEDGE.find((k) => k.match.test(q));
+  const source = hit && sources.find((s) => s.id === hit.sourceId);
+  if (hit && source && (mode === "Draft" || source.status !== "Draft")) {
+    return { found: true, text: english ? hit.en : hit.hi, source: { name: source.name, detail: hit.detail, url: source.url } };
   }
   return {
     found: false,
-    text:
-      language === "English"
-        ? "I don’t have a verified answer yet. Would you like help from our team?"
-        : "Iska verified jawab abhi mere paas nahi hai. Kya aap hamari team se baat karna chahenge?",
+    draftOnly: !!hit && !!source,
+    text: english ? "I don’t have a verified answer yet. Would you like help from our team?" : "Iska verified jawab abhi mere paas nahi hai. Kya aap hamari team se baat karna chahenge?",
   };
 };
 
 // ─── Tab ─────────────────────────────────────────────────────────────────────
 
-type Props = { onChange: () => void; onGoToTab: (tab: string) => void };
+type Props = { onChange: () => void; onGoToTab: (tab: string) => void; notify: Notify };
 
-export default function AIKnowledgeTab({ onChange, onGoToTab }: Props) {
+export default function AIKnowledgeTab({ onChange, onGoToTab, notify }: Props) {
   const [sub, setSub] = useState<(typeof SUB_TABS)[number]>("Knowledge Sources");
   const [sources, setSources] = useState(INITIAL_SOURCES);
   const [search, setSearch] = useState("");
@@ -128,7 +150,9 @@ export default function AIKnowledgeTab({ onChange, onGoToTab }: Props) {
   const [mode, setMode] = useState<"Live" | "Draft">("Draft");
   const [question, setQuestion] = useState("Expo kab aur kahan hai?");
   const [language, setLanguage] = useState("Hinglish");
-  const [result, setResult] = useState(() => answerFor("Expo kab aur kahan hai?", "Hinglish"));
+  const [result, setResult] = useState(() => answerFor("Expo kab aur kahan hai?", "Hinglish", INITIAL_SOURCES, "Draft"));
+  const [confirm, setConfirm] = useState<ConfirmOptions | null>(null);
+  const closeConfirm = useCallback(() => setConfirm(null), []);
   const [rating, setRating] = useState<"correct" | "fix" | null>(null);
   // Unanswered questions and the one whose "Review Question" popup is open
   const [reviewItems, setReviewItems] = useState(INITIAL_REVIEW);
@@ -140,6 +164,59 @@ export default function AIKnowledgeTab({ onChange, onGoToTab }: Props) {
   const finishReview = () => {
     setSources((prev) => prev.map((x) => (x.id === reviewId ? { ...x, status: "Published", checked: "Just now" } : x)));
     setReviewId(null);
+  };
+
+  const viewSource = (s: Source) =>
+    setConfirm({
+      title: s.name,
+      hideCancel: true,
+      confirmLabel: "Done",
+      run: () => undefined,
+      body: (
+        <dl className="grid grid-cols-[110px_1fr] gap-y-[4px] text-[13.5px]">
+          <dt className="text-[#64748b]">Type</dt>
+          <dd className="text-[#0f172a]">{s.kind === "web" ? "Website page" : s.kind === "pdf" ? "PDF document" : "Manual answer"}</dd>
+          {s.url && (
+            <>
+              <dt className="text-[#64748b]">Address</dt>
+              <dd className="truncate text-[#0f172a]">{s.url}</dd>
+            </>
+          )}
+          <dt className="text-[#64748b]">Topic</dt>
+          <dd className="text-[#0f172a]">{s.topic}</dd>
+          <dt className="text-[#64748b]">Live status</dt>
+          <dd className="text-[#0f172a]">{s.status}</dd>
+          <dt className="text-[#64748b]">Last checked</dt>
+          <dd className="text-[#0f172a]">{s.checked}</dd>
+          {s.owner && (
+            <>
+              <dt className="text-[#64748b]">Review owner</dt>
+              <dd className="text-[#0f172a]">{s.owner}</dd>
+            </>
+          )}
+          <dt className="col-span-2 mt-[6px] text-[12.5px] text-[#64748b]">Demo data — the document content is not stored in this preview.</dt>
+        </dl>
+      ),
+    });
+
+  const deleteSource = (s: Source) =>
+    setConfirm({
+      title: `Delete “${s.name}”?`,
+      body: "Organic Mitra will stop using this source. Published answers from it stay live until you publish this change.",
+      confirmLabel: "Delete Source",
+      danger: true,
+      run: () => {
+        const index = sources.findIndex((x) => x.id === s.id);
+        setSources((prev) => prev.filter((x) => x.id !== s.id));
+        onChange();
+        notify(`“${s.name}” removed`, { undo: () => setSources((prev) => [...prev.slice(0, index), s, ...prev.slice(index)]) });
+      },
+    });
+
+  const dismissQuestion = (r: QueueItem) => {
+    const index = reviewItems.findIndex((x) => x.id === r.id);
+    setReviewItems((prev) => prev.filter((x) => x.id !== r.id));
+    notify("Question dismissed", { undo: () => setReviewItems((prev) => [...prev.slice(0, index), r, ...prev.slice(index)]) });
   };
 
   const q = search.trim().toLowerCase();
@@ -158,19 +235,21 @@ export default function AIKnowledgeTab({ onChange, onGoToTab }: Props) {
   const addSource = (src: NewSource) => {
     const id = Math.max(0, ...sources.map((s) => s.id)) + 1;
     const topicLabel = src.topic === "General Information" ? "General" : src.topic;
-    setSources((prev) => [...prev, { id, name: src.name, url: src.url, kind: src.kind, topic: topicLabel, status: "Draft", checked: "Just now" }]);
+    setSources((prev) => [...prev, { id, name: src.name, url: src.url, kind: src.kind, topic: topicLabel, status: "Draft", checked: "Just now", owner: src.owner }]);
     setAddKind(null);
     onChange();
+    notify(`“${src.name}” added as a draft source`);
   };
   const checkUpdates = () => {
     setChecking(true);
     window.setTimeout(() => {
       setSources((prev) => prev.map((s) => (s.kind === "web" ? { ...s, checked: "Just now" } : s)));
       setChecking(false);
+      notify("Website sources checked — no new changes found");
     }, 900);
   };
-  const runTest = (text = question) => {
-    setResult(answerFor(text, language));
+  const runTest = (text = question, testMode = mode) => {
+    setResult(answerFor(text, language, sources, testMode));
     setRating(null);
   };
 
@@ -183,12 +262,13 @@ export default function AIKnowledgeTab({ onChange, onGoToTab }: Props) {
         sub === t ? "border-[#cfe9d6] border-b-[3px] border-b-[#15633a] bg-[#eaf6ee] font-medium text-[#14532d]" : "border-[#dfe3e8] bg-white text-[#0f172a] hover:border-[#15633a]"
       }`}
     >
-      {t === "Review Queue" ? `Review Queue (${reviewItems.length + OTHER_REVIEW_COUNT})` : t}
+      {t === "Review Queue" ? `Review Queue (${reviewItems.length})` : t}
     </button>
   );
 
   return (
     <div className="flex h-full flex-col">
+      <ConfirmDialog confirm={confirm} onClose={closeConfirm} />
       <ReviewQuestionModal
         key={`question-${reviewQuestionId ?? "closed"}`}
         item={reviewQuestion}
@@ -197,10 +277,12 @@ export default function AIKnowledgeTab({ onChange, onGoToTab }: Props) {
           setReviewItems((prev) => prev.filter((r) => r.id !== reviewQuestionId));
           setReviewQuestionId(null);
           onChange();
+          notify("Answer saved as a draft");
         }}
         onNeedsConfirmation={() => {
           setReviewItems((prev) => prev.map((r) => (r.id === reviewQuestionId ? { ...r, awaiting: true } : r)));
           setReviewQuestionId(null);
+          notify("Sent to the team for confirmation");
         }}
       />
       <AddSourceModal key={addKey} kind={addKind} onClose={() => setAddKind(null)} onImport={addSource} />
@@ -211,8 +293,12 @@ export default function AIKnowledgeTab({ onChange, onGoToTab }: Props) {
         onApprove={() => {
           finishReview();
           onChange();
+          notify("Update approved — it goes live after publishing");
         }}
-        onKeep={finishReview}
+        onKeep={() => {
+          finishReview();
+          notify("Kept the current published content");
+        }}
       />
       {/* Sub-tabs + status strip */}
       <div className="flex items-center gap-[10px]">{SUB_TABS.map(subTabButton)}</div>
@@ -360,11 +446,33 @@ export default function AIKnowledgeTab({ onChange, onGoToTab }: Props) {
                               View
                             </a>
                           ) : (
-                            <button type="button" className="h-[27px] w-[80px] rounded-[7px] border border-[#2f8a4c] bg-white text-[13.6px] font-medium text-[#14532d] transition hover:bg-[#f1f7ee]">
+                            <button
+                              type="button"
+                              onClick={() => viewSource(s)}
+                              className="h-[27px] w-[80px] rounded-[7px] border border-[#2f8a4c] bg-white text-[13.6px] font-medium text-[#14532d] transition hover:bg-[#f1f7ee]"
+                            >
                               View
                             </button>
                           )}
-                          <MoreVertical className="h-[17px] w-[17px] text-[#334155]" />
+                          <RowMenu
+                            label={`More actions for ${s.name}`}
+                            items={[
+                              { label: "View details", onSelect: () => viewSource(s) },
+                              ...(s.url ? [{ label: "Open website page", onSelect: () => window.open(`https://${s.url}`, "_blank", "noopener,noreferrer") }] : []),
+                              ...(s.kind === "web"
+                                ? [
+                                    {
+                                      label: "Check this page now",
+                                      onSelect: () => {
+                                        setSources((prev) => prev.map((x) => (x.id === s.id ? { ...x, checked: "Just now" } : x)));
+                                        notify(`“${s.name}” checked — no new changes found`);
+                                      },
+                                    },
+                                  ]
+                                : []),
+                              { label: "Delete source", danger: true, onSelect: () => deleteSource(s) },
+                            ]}
+                          />
                         </span>
                       </div>
                       {s.status === "Update pending" && (
@@ -409,32 +517,40 @@ export default function AIKnowledgeTab({ onChange, onGoToTab }: Props) {
 
           {sub !== "Approved Answers" && (
             <div className={`${cardClass} flex h-[42px] shrink-0 items-center gap-[14px] px-[14px]`}>
-              <p className="mr-auto text-[16.6px] font-bold text-[#0f2a1c]">Answer Controls</p>
-              <span className="flex items-center gap-[6px] text-[11.6px] text-[#475569]">
-                <ShieldCheck className="h-[17px] w-[17px] fill-[#16a34a] text-white" /> Approved content only
-              </span>
-              <span className="h-[16px] w-px bg-[#cbd5e1]" />
-              <span className="flex items-center gap-[6px] text-[11.6px] text-[#475569]">
-                <Lock className="h-[16px] w-[16px] text-[#15803d]" /> Verified pricing &amp; status
-              </span>
-              <span className="h-[16px] w-px bg-[#cbd5e1]" />
-              <span className="flex items-center gap-[6px] text-[11.6px] text-[#475569]">
-                <UsersRound className="h-[17px] w-[17px] text-[#15803d]" /> Auto handover when unanswered
-              </span>
+              {/* One line at any width: the rules shrink and truncate (full text on hover), the
+                  title and button never wrap */}
+              <p className="shrink-0 whitespace-nowrap text-[16.6px] font-bold text-[#0f2a1c]">Answer Controls</p>
+              <div className="ml-auto flex min-w-0 items-center gap-[14px]">
+                {(
+                  [
+                    { icon: <ShieldCheck className="h-[17px] w-[17px] shrink-0 fill-[#16a34a] text-white" />, text: "Approved content only" },
+                    { icon: <Lock className="h-[16px] w-[16px] shrink-0 text-[#15803d]" />, text: "Verified pricing & status" },
+                    { icon: <UsersRound className="h-[17px] w-[17px] shrink-0 text-[#15803d]" />, text: "Auto handover when unanswered" },
+                  ] as const
+                ).map((rule, i) => (
+                  <Fragment key={rule.text}>
+                    {i > 0 && <span className="h-[16px] w-px shrink-0 bg-[#cbd5e1]" />}
+                    <span title={rule.text} className="flex min-w-0 items-center gap-[6px] text-[11.6px] text-[#475569]">
+                      {rule.icon}
+                      <span className="truncate">{rule.text}</span>
+                    </span>
+                  </Fragment>
+                ))}
+              </div>
               <button
                 type="button"
                 onClick={() => onGoToTab("Settings")}
-                className="inline-flex h-[27px] items-center gap-[7px] rounded-[7px] border border-[#cbd5e1] bg-white px-[10px] text-[12.1px] text-[#0f172a] transition hover:border-[#15633a]"
+                className="inline-flex h-[27px] shrink-0 items-center gap-[7px] whitespace-nowrap rounded-[7px] border border-[#cbd5e1] bg-white px-[10px] text-[12.1px] text-[#0f172a] transition hover:border-[#15633a]"
               >
-                <Settings className="h-[15px] w-[15px]" /> Edit Rules
+                <Settings className="h-[15px] w-[15px] shrink-0" /> Edit Rules
               </button>
             </div>
           )}
 
           <div className={`${cardClass} flex min-h-0 flex-1 flex-col px-[14px] pb-[8px] pt-[8px]`}>
             <div className="flex items-center justify-between">
-              <p className="text-[17.6px] font-bold text-[#0f2a1c]">Needs Your Review ({reviewItems.length + OTHER_REVIEW_COUNT})</p>
-              <button type="button" onClick={() => onGoToTab("Questions & Answers")} className="flex items-center gap-[8px] text-[13.6px] font-medium text-[#15633a] hover:underline">
+              <p className="text-[17.6px] font-bold text-[#0f2a1c]">Needs Your Review ({reviewItems.length})</p>
+              <button type="button" onClick={() => setSub("Review Queue")} className="flex items-center gap-[8px] text-[13.6px] font-medium text-[#15633a] hover:underline">
                 View All <ArrowRight className="h-[15px] w-[15px]" />
               </button>
             </div>
@@ -461,7 +577,20 @@ export default function AIKnowledgeTab({ onChange, onGoToTab }: Props) {
                     >
                       {r.awaiting ? "Awaiting Team" : r.action}
                     </button>
-                    <MoreVertical className="h-[17px] w-[17px] text-[#334155]" />
+                    <RowMenu
+                      label={`More actions for “${r.question}”`}
+                      items={[
+                        { label: r.awaiting ? "Open review" : r.action, onSelect: () => setReviewQuestionId(r.id) },
+                        {
+                          label: "Test this question",
+                          onSelect: () => {
+                            setQuestion(r.question);
+                            runTest(r.question);
+                          },
+                        },
+                        { label: "Dismiss", danger: true, onSelect: () => dismissQuestion(r) },
+                      ]}
+                    />
                   </span>
                 </div>
               ))}
@@ -481,7 +610,10 @@ export default function AIKnowledgeTab({ onChange, onGoToTab }: Props) {
                 <button
                   key={m}
                   type="button"
-                  onClick={() => setMode(m)}
+                  onClick={() => {
+                    setMode(m);
+                    runTest(question, m);
+                  }}
                   aria-pressed={mode === m}
                   className={`h-[29px] w-[80px] text-[13.1px] transition ${mode === m ? "bg-[#15633a] font-medium text-white" : "bg-white text-[#0f172a] hover:bg-slate-50"}`}
                 >
@@ -523,24 +655,40 @@ export default function AIKnowledgeTab({ onChange, onGoToTab }: Props) {
                     <div className="mt-[5px] flex items-center gap-[12px] rounded-[8px] bg-[#e9eef0] px-[12px] py-[4px]">
                       <FileText className="h-[19px] w-[19px] text-[#334155]" />
                       <span className="min-w-0 flex-1">
-                        <span className="block text-[13.6px] text-[#0f172a]">Expo information</span>
-                        <span className="block text-[12.1px] text-[#64748b]">Event dates &amp; venue</span>
+                        <span className="block text-[13.6px] text-[#0f172a]">{result.source?.name}</span>
+                        <span className="block text-[12.1px] text-[#64748b]">{result.source?.detail}</span>
                       </span>
-                      <a href="https://bharatorganicexpo.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-[6px] text-[13.1px] text-[#15633a] hover:underline">
-                        View source <ArrowUpRight className="h-[14px] w-[14px]" />
-                      </a>
+                      {result.source?.url ? (
+                        <a href={`https://${result.source.url}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-[6px] text-[13.1px] text-[#15633a] hover:underline">
+                          View source <ArrowUpRight className="h-[14px] w-[14px]" />
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const s = sources.find((x) => x.name === result.source?.name);
+                            if (s) viewSource(s);
+                          }}
+                          className="flex items-center gap-[6px] text-[13.1px] text-[#15633a] hover:underline"
+                        >
+                          View source <ArrowUpRight className="h-[14px] w-[14px]" />
+                        </button>
+                      )}
                     </div>
                   </>
                 ) : (
                   <span className="mt-[8px] inline-flex items-center gap-[8px] rounded-[6px] bg-[#fdf3e1] px-[10px] py-[3px] text-[13.1px] text-[#b45309]">
-                    <Info className="h-[15px] w-[15px]" /> No approved source — would hand over to the team
+                    <Info className="h-[15px] w-[15px]" /> {result.draftOnly ? "Only in draft knowledge — not live yet" : "No approved source — would hand over to the team"}
                   </span>
                 )}
                 <p className="mt-[4px] text-[12.1px] text-[#475569]">Knowledge version: {mode === "Draft" ? "Draft v1.3" : "Live v1.2"}</p>
                 <div className="mt-[4px] flex justify-end gap-[10px]">
                   <button
                     type="button"
-                    onClick={() => setRating("correct")}
+                    onClick={() => {
+                      setRating("correct");
+                      notify("Marked as correct — thanks for checking");
+                    }}
                     aria-pressed={rating === "correct"}
                     className={`inline-flex h-[27px] items-center gap-[8px] rounded-[7px] border px-[11px] text-[12.6px] transition ${rating === "correct" ? "border-[#15633a] bg-[#eaf6ee] text-[#14532d]" : "border-[#dfe3e8] bg-white text-[#334155] hover:border-[#15633a]"}`}
                   >
@@ -548,7 +696,27 @@ export default function AIKnowledgeTab({ onChange, onGoToTab }: Props) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setRating("fix")}
+                    onClick={() => {
+                      if (rating === "fix") return;
+                      setRating("fix");
+                      const text = question.trim() || "Untitled question";
+                      if (!reviewItems.some((r) => r.question.toLowerCase() === text.toLowerCase())) {
+                        setReviewItems((prev) => [
+                          ...prev,
+                          {
+                            id: Math.max(0, ...prev.map((r) => r.id)) + 1,
+                            question: text,
+                            asked: 1,
+                            topic: "General",
+                            owner: "Admin",
+                            action: "Review",
+                            visitorMessage: text,
+                            botReply: result.text,
+                          },
+                        ]);
+                      }
+                      notify("Added to Needs Your Review for correction");
+                    }}
                     aria-pressed={rating === "fix"}
                     className={`inline-flex h-[27px] items-center gap-[8px] rounded-[7px] border px-[11px] text-[12.6px] transition ${rating === "fix" ? "border-[#d97706] bg-[#fdf3e1] text-[#b45309]" : "border-[#dfe3e8] bg-white text-[#334155] hover:border-[#d97706]"}`}
                   >

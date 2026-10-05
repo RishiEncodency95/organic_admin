@@ -505,10 +505,10 @@ export default function AddSourceModal({ kind, onClose, onImport }: Props) {
 
           {/* Actions */}
           <div className="mt-[12px] flex justify-end gap-[12px]">
-            <button type="button" onClick={onClose} className="h-[36px] rounded-[7px] border border-[#cbd5e1] bg-white px-[22px] text-[14px] font-medium text-[#0f172a] transition hover:bg-slate-50">
+            <button type="button" onClick={onClose} className="h-[30px] rounded-[7px] border border-[#cbd5e1] bg-white px-[22px] text-[14px] font-medium text-[#0f172a] transition hover:bg-slate-50">
               Cancel
             </button>
-            <button type="button" onClick={submit} className="h-[36px] rounded-[7px] bg-[#15633a] px-[20px] text-[14px] font-semibold text-white shadow-sm transition hover:bg-[#124f2f]">
+            <button type="button" onClick={submit} className="h-[30px] rounded-[7px] bg-[#15633a] px-[20px] text-[14px] font-semibold text-white shadow-sm transition hover:bg-[#124f2f]">
               {tab === "manual" ? "Save to Draft" : "Import to Draft"}
             </button>
           </div>
