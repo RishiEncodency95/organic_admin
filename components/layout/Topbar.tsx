@@ -120,7 +120,7 @@ const MENU_PAGE_TITLES: Record<string, string> = {
 function currentPageTitle(pathname: string): string {
   if (MENU_PAGE_TITLES[pathname]) return MENU_PAGE_TITLES[pathname];
   for (const section of NAV_SECTIONS) {
-    for (const item of section.items) {
+    for (const item of section.items.flatMap((i) => [i, ...(i.children ?? [])])) {
       if (
         item.href === "/"
           ? pathname === "/"

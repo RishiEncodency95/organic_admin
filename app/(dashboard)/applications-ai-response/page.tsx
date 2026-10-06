@@ -344,7 +344,7 @@ export default function ApplicationsAiResponsePage() {
         changedBy: adminName,
         note: `Forwarded to HR (${recipients.join(", ")}). Shared: ${share.join(", ")}${note ? `. Note: ${note}` : ""}`,
         forward: { recipients, share, note },
-      });
+      }, { timeoutMs: 90_000 }); // attaches the CV and sends the email, which can take well over 10s
       // Close the form and confirm straight away; the list refreshes in the background
       // (re-loading every candidate first is what made the alert feel late).
       setForwardTarget(null);
@@ -354,17 +354,17 @@ export default function ApplicationsAiResponsePage() {
         list.length ? `<div><b>${label}:</b> ${escapeHtml(list.join(", "))}</div>` : "";
       const email = result?.email;
       const emailLine = email?.sent
-        ? `<p style="margin:8px 0 0;font-size:13px;color:#148943">Email sent to HR.</p>`
+        ? `<p style="margin:8px 0 0;font-size:13px;color:#4ADE80;font-weight:600">Email sent to HR.</p>`
         : email?.skipped
-        ? `<p style="margin:8px 0 0;font-size:13px;color:#B45309">Email notification is off in Career Settings, so no email was sent.</p>`
-        : `<p style="margin:8px 0 0;font-size:13px;color:#DC2626">Marked as Sent to HR, but the email could not be sent${email?.error ? `: ${escapeHtml(email.error)}` : ""}.</p>`;
+        ? `<p style="margin:8px 0 0;font-size:13px;color:#FBBF24;font-weight:600">Email notification is off in Career Settings, so no email was sent.</p>`
+        : `<p style="margin:8px 0 0;font-size:13px;color:#F87171;font-weight:600">Marked as Sent to HR, but the email could not be sent${email?.error ? `: ${escapeHtml(email.error)}` : ""}.</p>`;
       void Swal.fire({
         icon: email && !email.sent && !email.skipped ? "warning" : "success",
         title: "Forwarded to HR!",
         html:
           `<p style="margin:0 0 8px">${escapeHtml(app.name)}'s application has been forwarded.</p>` +
-          `<div style="font-size:13px;color:#334155;text-align:left;display:inline-block">${line("To", sentTo.to)}${line("CC", sentTo.cc)}${line("BCC", sentTo.bcc)}</div>` +
-          `<p style="margin:8px 0 0;font-size:13px;color:#475569">Shared: ${escapeHtml(share.join(", "))}</p>` +
+          `<div style="font-size:13px;color:#E2E8F0;text-align:left;display:inline-block">${line("To", sentTo.to)}${line("CC", sentTo.cc)}${line("BCC", sentTo.bcc)}</div>` +
+          `<p style="margin:8px 0 0;font-size:13px;color:#CBD5E1">Shared: ${escapeHtml(share.join(", "))}</p>` +
           emailLine,
         confirmButtonText: "OK",
         confirmButtonColor: "#148943",

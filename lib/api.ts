@@ -644,6 +644,9 @@ async function request<T>(path: string, options?: ApiRequestOptions, isRetry = f
     path.includes("/msme") ||
     path.includes("/awards/nominations") ||
     path.includes("/contact-enquiry") ||
+    path.startsWith("/buyer-enquiries") ||
+    path.startsWith("/visitor-registrations") ||
+    path.startsWith("/exhibitor-registrations") ||
     path.startsWith("/admin/chats") ||
     path.startsWith("/dropdowns") ||
     path.startsWith("/locations") ||
@@ -762,8 +765,8 @@ export const api = {
     }),
   put: <T>(path: string, payload?: unknown) =>
     request<T>(path, { method: "PUT", body: payload !== undefined ? JSON.stringify(payload) : undefined }),
-  patch: <T>(path: string, payload?: unknown) =>
-    request<T>(path, { method: "PATCH", body: payload !== undefined ? JSON.stringify(payload) : undefined }),
+  patch: <T>(path: string, payload?: unknown, options?: Pick<ApiRequestOptions, "timeoutMs">) =>
+    request<T>(path, { method: "PATCH", body: payload !== undefined ? JSON.stringify(payload) : undefined, ...options }),
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
   postForm: <T>(path: string, formData: FormData) => request<T>(path, { method: "POST", body: formData }),
   putForm: <T>(path: string, formData: FormData) => request<T>(path, { method: "PUT", body: formData }),

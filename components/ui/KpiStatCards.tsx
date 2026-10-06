@@ -121,10 +121,12 @@ export default function KpiStatCards({
 }: {
   items: KpiStatCardItem[];
   gridClassName?: string;
-  // Smaller text and icon, for pages that fit more cards in a row.
-  compact?: boolean;
+  // Smaller text and icon, for pages that fit more cards in a row ("xs" = smallest, e.g. 9 in a row).
+  compact?: boolean | "xs";
 }) {
-  const sz = compact
+  const sz = compact === "xs"
+    ? { card: "h-[74px]", icon: "h-[22px] w-[22px]", iconSvg: "h-3 w-3", title: "text-[7px]", value: "text-[14px]", small: "text-[7px]", footer: "text-[7px]", arrow: "h-2 w-2" }
+    : compact
     ? { card: "h-[82px]", icon: "h-[26px] w-[26px]", iconSvg: "h-3.5 w-3.5", title: "text-[7.5px]", value: "text-[17px]", small: "text-[8px]", footer: "text-[7.5px]", arrow: "h-2.5 w-2.5" }
     : { card: "h-[98px]", icon: "h-[30px] w-[30px]", iconSvg: "h-4 w-4", title: "text-[8.5px]", value: "text-[21px]", small: "text-[9.5px]", footer: "text-[8px]", arrow: "h-3 w-3" };
   return (
@@ -156,7 +158,7 @@ export default function KpiStatCards({
                   {item.title}
                 </p>
 
-                <div className="mt-1.5 flex items-end gap-1">
+                <div className="mt-1.5 flex items-end gap-1 whitespace-nowrap">
                   <span
                     className={`${sz.value} !font-semibold leading-none tracking-[-0.04em]`}
                     style={{ color: item.numColor, fontWeight: 600 }}
@@ -181,10 +183,11 @@ export default function KpiStatCards({
 
             <div
               onClick={item.onClick}
-              className={`absolute bottom-1 left-2 right-2 flex cursor-pointer items-center justify-center gap-1 ${sz.footer} font-semibold text-[#293957] transition hover:text-blue-600`}
+              className={`absolute bottom-1 left-2 right-2 flex cursor-pointer items-center justify-center gap-1 whitespace-nowrap ${sz.footer} font-semibold text-[#293957] transition hover:text-blue-600`}
             >
-              {item.footer}
-              <ArrowRight className={sz.arrow} />
+              {/* One line only, so it never runs into the number above */}
+              <span className="min-w-0 truncate">{item.footer}</span>
+              <ArrowRight className={`${sz.arrow} shrink-0`} />
             </div>
           </div>
         );

@@ -450,6 +450,7 @@ export default function CareerDashboardPage() {
         <KpiStatCards
           items={STAT_CARDS}
           gridClassName="mb-[12px] mt-[12px] grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-9"
+          compact="xs"
         />
 
         {/* =================================================

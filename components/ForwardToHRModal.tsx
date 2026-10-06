@@ -251,34 +251,20 @@ export default function ForwardToHRModal({ isOpen, onClose, candidate, onSubmit 
                   </div>
                 </div>
 
-                {/* Recipient list (from Career Settings → HR & Workflow): tick who gets the email */}
+                {/* Recipients (from Career Settings → HR & Workflow): small chips, click to tick / untick */}
                 <div
-                  className={`border rounded-[6px] bg-white ${
-                    selected.length === 0 ? "border-[#DC2626]" : "border-[#E1E6EC]"
+                  className={`border rounded-[6px] p-[4px] flex flex-wrap items-center gap-[4px] bg-white min-h-[28px] ${
+                    selected.length === 0 ? "border-[#DC2626]" : "border-[#2563EB]"
                   }`}
                 >
-                  <div className="flex items-center justify-between px-[8px] py-[4px] border-b border-[#E1E6EC] bg-[#F8FAFC] rounded-t-[6px]">
-                    <span className="text-[9px] font-bold text-[#506083]">
-                      {selected.length} of {activeRecipients.length} selected
-                    </span>
-                    {activeRecipients.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setRecipients(selected.length === activeRecipients.length ? [] : allEmails)}
-                        className="text-[9px] font-bold text-[#2563EB] hover:underline"
-                      >
-                        {selected.length === activeRecipients.length ? "Clear all" : "Select all"}
-                      </button>
-                    )}
-                  </div>
                   {activeRecipients.length === 0 ? (
-                    <div className="px-[8px] py-[8px] text-[10px] font-medium text-[#94a3b8]">
+                    <span className="text-[10px] font-medium text-[#94a3b8] px-[4px]">
                       {!hrSettings && !hrError
                         ? "Loading HR recipients..."
                         : "No active HR recipients. Add them in Career Settings → HR & Workflow."}
-                    </div>
+                    </span>
                   ) : (
-                    <div className="grid grid-cols-2 gap-[4px] p-[4px] max-h-[120px] overflow-y-auto">
+                    <>
                       {activeRecipients.map((r) => {
                         const checked = selected.includes(r.email);
                         return (
@@ -287,38 +273,41 @@ export default function ForwardToHRModal({ isOpen, onClose, candidate, onSubmit 
                             type="button"
                             role="checkbox"
                             aria-checked={checked}
+                            title={r.email}
                             onClick={() =>
                               setRecipients(checked ? selected.filter((x) => x !== r.email) : [...selected, r.email])
                             }
-                            className={`flex items-center gap-[6px] text-left rounded-[5px] border px-[6px] py-[4px] transition-colors ${
-                              checked ? "border-[#16A34A] bg-[#F4FAF6]" : "border-[#E1E6EC] bg-white hover:bg-[#F8FAFC]"
+                            className={`flex items-center gap-[4px] px-[5px] py-[2px] rounded-[4px] text-[10px] font-bold border transition-colors ${
+                              checked
+                                ? "bg-[#E8F1FF] text-[#2563EB] border-[#D5E6FA]"
+                                : "bg-white text-[#94a3b8] border-[#E1E6EC] hover:text-[#506083]"
                             }`}
                           >
                             <span
-                              className={`w-[12px] h-[12px] rounded-[3px] flex items-center justify-center flex-shrink-0 ${
-                                checked ? "bg-[#16A34A]" : "border border-[#CBD5E1] bg-white"
+                              className={`w-[10px] h-[10px] rounded-[2px] flex items-center justify-center flex-shrink-0 ${
+                                checked ? "bg-[#2563EB]" : "border border-[#CBD5E1] bg-white"
                               }`}
                             >
                               {checked && (
-                                <svg width="8" height="6" viewBox="0 0 8 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <svg width="7" height="5" viewBox="0 0 8 6" fill="none" xmlns="http://www.w3.org/2000/svg">
                                   <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                                 </svg>
                               )}
                             </span>
-                            <span className={`px-[4px] rounded-[3px] text-[8px] font-bold flex-shrink-0 ${TYPE_BADGE[r.type]}`}>
-                              {RECIPIENT_TYPE_LABEL[r.type]}
-                            </span>
-                            <span className="min-w-0">
-                              <span className="block text-[10px] font-bold text-[#172762] truncate">
-                                {r.name || r.email}
-                                {r.designation ? <span className="font-medium text-[#506083]"> ({r.designation})</span> : null}
-                              </span>
-                              <span className="block text-[8px] font-medium text-[#506083] truncate">{r.email}</span>
-                            </span>
+                            <span className={`px-[3px] rounded-[3px] text-[8px] font-bold ${TYPE_BADGE[r.type]}`}>{RECIPIENT_TYPE_LABEL[r.type]}</span>
+                            {r.name || r.email}
+                            {r.designation ? <span className="font-medium text-[#506083]">({r.designation})</span> : null}
                           </button>
                         );
                       })}
-                    </div>
+                      <button
+                        type="button"
+                        onClick={() => setRecipients(selected.length === activeRecipients.length ? [] : allEmails)}
+                        className="ml-auto px-[4px] text-[8px] font-bold text-[#2563EB] hover:underline"
+                      >
+                        {selected.length}/{activeRecipients.length} · {selected.length === activeRecipients.length ? "Clear all" : "Select all"}
+                      </button>
+                    </>
                   )}
                 </div>
                 {hrError && <p className="text-[8px] font-semibold text-[#DC2626] mt-[2px]">{hrError}</p>}

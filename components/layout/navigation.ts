@@ -14,6 +14,7 @@ import {
   FileSearch,
   FileText,
   GalleryHorizontalEnd,
+  Globe2,
   Gauge,
   Handshake,
   History,
@@ -32,11 +33,13 @@ import {
   SearchCheck,
   Settings,
   Settings2,
+  Store,
   ShieldCheck,
   Star,
   UserCheck,
   UserCog,
   Users,
+  UsersRound,
   Video,
   type LucideIcon,
 } from "lucide-react";
@@ -47,6 +50,8 @@ export interface NavItem {
   icon: LucideIcon;
   disabled?: boolean;
   badge?: string;
+  // Shown as a dropdown under this item (the item itself then has no href)
+  children?: NavItem[];
 }
 
 export interface NavSection {
@@ -79,8 +84,25 @@ export const NAV_SECTIONS: NavSection[] = [
     title: "Expo Registrations & Leads",
     items: [
       { label: "Exhibitors & Stand Bookings", href: "/engagement-leads", icon: Building2, badge: "48" },
+      {
+        label: "Book a Stand",
+        icon: Store,
+        children: [
+          { label: "Domestic Exhibitors", href: "/book-a-stand/domestic", icon: Building2 },
+          { label: "International Exhibitors", href: "/book-a-stand/international", icon: Globe2 },
+        ],
+      },
       { label: "Buyer Registrations", href: "/forms-submissions", icon: BriefcaseBusiness, badge: "125" },
-      { label: "Visitor Registrations", href: "/requests", icon: Users, badge: "210" },
+      { label: "Buyer Enquiries", href: "/buyer-enquiries", icon: MessageSquareText, badge: "NEW" },
+      {
+        label: "Visitor Registrations",
+        icon: Users,
+        children: [
+          { label: "Domestic Visitors", href: "/visitor-registrations/domestic", icon: Users },
+          { label: "International Visitors", href: "/visitor-registrations/international", icon: Globe2 },
+          { label: "Group Registrations", href: "/visitor-registrations/group", icon: UsersRound },
+        ],
+      },
       { label: "Sponsorships & Partners", href: "/enquiries?category=csr", icon: Handshake, badge: "36" },
       { label: "Partnership Enquiries", href: "/partnership-enquiries", icon: Handshake },
       { label: "Newsletter Subscribers", href: "/newsletter", icon: Mail, badge: "342" },
