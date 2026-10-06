@@ -1,8 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import { GripVertical, History, Info, Pencil, Plus, Search, Send, X } from "lucide-react";
-import { BotAvatar, Select, cardClass, cardTitleClass, inputClass as baseInput } from "./managerUi";
+import { useCallback, useImperativeHandle, useMemo, useState, type Ref } from "react";
+import { History, Info, Pencil, Plus, Search, Send, Trash2, X } from "lucide-react";
+import {
+  BotAvatar,
+  ConfirmDialog,
+  DragHandle,
+  Select,
+  cardClass,
+  cardTitleClass,
+  inputClass as baseInput,
+  reorder,
+  useReorder,
+  type ConfirmOptions,
+  type Notify,
+  type TabHandle,
+} from "./managerUi";
+import ReviewQuestionModal, { type ReviewItem } from "./ReviewQuestionModal";
 
 /*
  * "Questions & Answers" tab of the Chatbot Manager — design preview with sample answers
@@ -66,15 +80,48 @@ const INITIAL_ANSWERS: Answer[] = [
     phrases: ["PMS documents"],
     answer: { en: "", hi: "" },
     nextAction: "Talk to Team",
-    nextTarget: "PMS Guidance",
+    nextTarget: "PMS Support Team",
   },
 ];
 
 const PAGES = ["Event Information", "Book a Stand", "Visitor Registration", "PMS Guidance", "Contact Us"];
 
-const REVIEW_QUEUE: { question: string; topic: Topic; action: "Add Answer" | "Review" }[] = [
-  { question: "Is parking available?", topic: "Venue", action: "Add Answer" },
-  { question: "Can I change my stall size?", topic: "Booking", action: "Review" },
+/** Choices for the second "Optional Next Action" dropdown, per action (sample lists) */
+const TARGETS: Record<NextAction, string[]> = {
+  None: ["—"],
+  "Open Website Page": PAGES,
+  "Show Options": ["Stall Options", "Visitor Information", "PMS Guidance", "Additional Topics"],
+  "Open Form": ["Quotation Request", "Callback Request", "Visitor Registration"],
+  "Talk to Team": ["Sales Team", "Registration Team", "PMS Support Team", "Team Lead"],
+};
+
+/** What an answer needs before it can be saved; returns the first problem or "" */
+const problemWith = (a: Answer) => (!a.question.trim() ? "Add the question." : !a.answer.en.trim() ? "Write the approved answer in English." : "");
+
+/** Questions the bot could not answer (sample). `awaiting` = sent to the team for confirmation */
+type QueueItem = Omit<ReviewItem, "topic"> & { topic: Topic; action: "Add Answer" | "Review"; awaiting?: boolean };
+
+const REVIEW_QUEUE: QueueItem[] = [
+  {
+    id: 1,
+    question: "Is parking available?",
+    topic: "Venue",
+    action: "Add Answer",
+    asked: 8,
+    owner: "Visitor Team",
+    visitorMessage: "Is there parking at Bharat Mandapam for visitors?",
+    botReply: "I don’t have verified parking details yet. Would you like me to connect you with our team?",
+  },
+  {
+    id: 2,
+    question: "Can I change my stall size?",
+    topic: "Booking",
+    action: "Review",
+    asked: 3,
+    owner: "Sales Team",
+    visitorMessage: "I requested a 12 sq.m stall. Can I change it to 18 sq.m?",
+    botReply: "I need our sales team to confirm this. Would you like me to connect you?",
+  },
 ];
 
 const STATUS_PILL: Record<Status, string> = {
@@ -99,7 +146,9 @@ const normalize = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N} ]/gu, "")
 
 // ─── Tab ─────────────────────────────────────────────────────────────────────
 
-export default function QuestionsAnswersTab({ onChange }: { onChange: () => void }) {
+type Props = { onChange: () => void; onOpenHistory: () => void; notify: Notify; ref?: Ref<TabHandle> };
+
+export default function QuestionsAnswersTab({ onChange, onOpenHistory, notify, ref }: Props) {
   const [answers, setAnswers] = useState(INITIAL_ANSWERS);
   const [selectedId, setSelectedId] = useState(1);
   const [draft, setDraft] = useState<Answer>(INITIAL_ANSWERS[0]);
@@ -107,9 +156,14 @@ export default function QuestionsAnswersTab({ onChange }: { onChange: () => void
   const [search, setSearch] = useState("");
   const [topicFilter, setTopicFilter] = useState<"All Topics" | Topic>("All Topics");
   const [statusFilter, setStatusFilter] = useState<"All Status" | Status>("All Status");
-  const [chip, setChip] = useState<Status>("Approved");
+  const [showErrors, setShowErrors] = useState(false);
+  const [confirm, setConfirm] = useState<ConfirmOptions | null>(null);
+  const closeConfirm = useCallback(() => setConfirm(null), []);
   const [newPhrase, setNewPhrase] = useState<string | null>(null);
   const [queue, setQueue] = useState(REVIEW_QUEUE);
+  // Queue item whose "Review Question" popup is open
+  const [reviewId, setReviewId] = useState<number | null>(null);
+  const reviewing = queue.find((x) => x.id === reviewId) ?? null;
   const [test, setTest] = useState({ question: "Expo kab hai?", language: "Hinglish" });
   const [result, setResult] = useState<{ text: string; source: string } | null>({
     text: INITIAL_ANSWERS[0].answer.hi,
@@ -124,24 +178,95 @@ export default function QuestionsAnswersTab({ onChange }: { onChange: () => void
       (statusFilter === "All Status" || a.status === statusFilter)
   );
 
-  const select = (a: Answer) => {
-    setSelectedId(a.id);
-    setDraft(a);
-    setNewPhrase(null);
-  };
+  const saved = answers.find((a) => a.id === draft.id);
+  const dirty = !saved || JSON.stringify(saved) !== JSON.stringify(draft);
+  const problem = problemWith(draft);
+  const counts = (status: Status) => answers.filter((a) => a.status === status).length;
 
+  /** Saves the open answer; returns false (and points at the problem) if it is incomplete */
   const save = () => {
-    setAnswers((prev) => (prev.some((a) => a.id === draft.id) ? prev.map((a) => (a.id === draft.id ? draft : a)) : [...prev, draft]));
-    setSelectedId(draft.id);
+    if (problem) {
+      setShowErrors(true);
+      notify(problem, { tone: "error" });
+      return false;
+    }
+    const clean = { ...draft, question: draft.question.trim() };
+    setAnswers((prev) => (prev.some((a) => a.id === clean.id) ? prev.map((a) => (a.id === clean.id ? clean : a)) : [...prev, clean]));
+    setDraft(clean);
+    setSelectedId(clean.id);
+    setShowErrors(false);
     onChange();
+    notify(`Answer saved — “${clean.question}”`);
+    return true;
   };
 
-  const startNew = (question = "", topic: Topic = "Event Information", status: Status = "Draft") => {
-    const id = Math.max(0, ...answers.map((a) => a.id)) + 1;
-    setSelectedId(id);
-    setDraft({ id, question, topic, status, phrases: [], answer: { en: "", hi: "" }, nextAction: "None", nextTarget: PAGES[0] });
-    setNewPhrase(null);
+  useImperativeHandle(ref, () => ({ save: () => (dirty ? save() : notify("Draft saved — no new answer changes")) }));
+
+  /** Runs `next` now, or after asking what to do with unsaved edits */
+  const guard = (next: () => void) => {
+    if (!dirty || (!saved && !draft.question.trim() && !draft.answer.en.trim())) return next();
+    setConfirm({
+      title: "Save changes to this answer?",
+      body: `“${draft.question || "New answer"}” has unsaved changes.`,
+      confirmLabel: "Save & continue",
+      run: () => {
+        if (save()) next();
+      },
+      secondary: { label: "Discard", run: next },
+    });
   };
+
+  const select = (a: Answer) => {
+    if (a.id === draft.id) return;
+    guard(() => {
+      setSelectedId(a.id);
+      setDraft(a);
+      setNewPhrase(null);
+      setShowErrors(false);
+    });
+  };
+
+  const startNew = (question = "", topic: Topic = "Event Information", status: Status = "Draft") =>
+    guard(() => {
+      const id = Math.max(0, ...answers.map((a) => a.id)) + 1;
+      setSelectedId(id);
+      setDraft({ id, question, topic, status, phrases: [], answer: { en: "", hi: "" }, nextAction: "None", nextTarget: TARGETS.None[0] });
+      setNewPhrase(null);
+      setShowErrors(false);
+    });
+
+  const remove = () => {
+    if (!saved) return;
+    setConfirm({
+      title: "Delete this answer?",
+      body: `“${saved.question}” will no longer be used by Organic Mitra. The change goes live only after publishing.`,
+      confirmLabel: "Delete Answer",
+      danger: true,
+      run: () => {
+        const index = answers.findIndex((a) => a.id === saved.id);
+        const rest = answers.filter((a) => a.id !== saved.id);
+        setAnswers(rest);
+        const next = rest[Math.min(index, rest.length - 1)];
+        if (next) {
+          setSelectedId(next.id);
+          setDraft(next);
+        } else {
+          const id = saved.id + 1;
+          setSelectedId(id);
+          setDraft({ id, question: "", topic: "Event Information", status: "Draft", phrases: [], answer: { en: "", hi: "" }, nextAction: "None", nextTarget: TARGETS.None[0] });
+        }
+        setShowErrors(false);
+        onChange();
+        notify("Answer deleted", { undo: () => setAnswers((prev) => [...prev.slice(0, index), saved, ...prev.slice(index)]) });
+      },
+    });
+  };
+
+  const rowIds = useMemo(() => answers.map((a) => a.id), [answers]);
+  const drag = useReorder(rowIds, (from, to) => {
+    setAnswers((prev) => reorder(prev, from, to));
+    onChange();
+  });
 
   const addPhrase = () => {
     const phrase = newPhrase?.trim();
@@ -165,6 +290,40 @@ export default function QuestionsAnswersTab({ onChange }: { onChange: () => void
 
   return (
     <div className="grid h-full grid-cols-[778px_1fr] gap-[15px]">
+      <ConfirmDialog confirm={confirm} onClose={closeConfirm} />
+      <ReviewQuestionModal
+        key={reviewId ?? "closed"}
+        item={reviewing}
+        onClose={() => setReviewId(null)}
+        onSave={({ en, hi }) => {
+          if (!reviewing) return;
+          // The verified answer becomes a draft entry in the knowledge list
+          const id = Math.max(0, ...answers.map((a) => a.id)) + 1;
+          const entry: Answer = {
+            id,
+            question: reviewing.question,
+            topic: reviewing.topic,
+            status: "Draft",
+            phrases: [],
+            answer: { en, hi },
+            nextAction: "None",
+            nextTarget: PAGES[0],
+          };
+          setAnswers((prev) => [...prev, entry]);
+          setSelectedId(id);
+          setDraft(entry);
+          setShowErrors(false);
+          setQueue((prev) => prev.filter((x) => x.id !== reviewing.id));
+          setReviewId(null);
+          onChange();
+          notify("Answer added as a draft — review and approve it below");
+        }}
+        onNeedsConfirmation={() => {
+          setQueue((prev) => prev.map((x) => (x.id === reviewId ? { ...x, awaiting: true } : x)));
+          setReviewId(null);
+          notify("Sent to the team for confirmation");
+        }}
+      />
       {/* ── Left: knowledge base + editor ── */}
       <div className={`${cardClass} flex flex-col px-[16px] pb-[10px] pt-[8px]`}>
         <div className="flex items-center justify-between">
@@ -188,22 +347,18 @@ export default function QuestionsAnswersTab({ onChange }: { onChange: () => void
         </div>
 
         <div className="mt-[6px] flex items-center gap-[10px]">
-          {(
-            [
-              ["Approved", 24],
-              ["Draft", 3],
-              ["Needs Review", 5],
-            ] as const
-          ).map(([name, count]) => (
+          {STATUSES.map((name) => (
             <button
               key={name}
               type="button"
-              onClick={() => setChip(name)}
+              onClick={() => setStatusFilter(statusFilter === name ? "All Status" : name)}
+              aria-pressed={statusFilter === name}
+              title={statusFilter === name ? "Show all statuses" : `Show only ${name}`}
               className={`h-[28px] rounded-[6px] border px-[14px] text-[13.6px] transition ${
-                chip === name ? "border-[#15633a] bg-[#15633a] font-medium text-white" : "border-[#d6dae0] bg-white text-[#0f172a] hover:border-[#15633a]"
+                statusFilter === name ? "border-[#15633a] bg-[#15633a] font-medium text-white" : "border-[#d6dae0] bg-white text-[#0f172a] hover:border-[#15633a]"
               }`}
             >
-              {name} ({count})
+              {name} ({counts(name)})
             </button>
           ))}
         </div>
@@ -221,12 +376,13 @@ export default function QuestionsAnswersTab({ onChange }: { onChange: () => void
           {rows.map((a) => (
             <div
               key={a.id}
+              {...drag.row(a.id)}
               onClick={() => select(a)}
-              className={`grid h-[40px] cursor-pointer grid-cols-[52px_323px_155px_160px_1fr] items-center border-t border-[#eef0f2] px-[2px] text-[14.6px] transition ${
+              className={`${drag.rowClass(a.id)} grid h-[40px] cursor-pointer grid-cols-[52px_323px_155px_160px_1fr] items-center border-t border-[#eef0f2] px-[2px] text-[14.6px] transition ${
                 selectedId === a.id ? "bg-[#ebf6ee]" : "hover:bg-[#f8faf9]"
               }`}
             >
-              <GripVertical className="mx-auto h-[18px] w-[18px] text-[#64748b]" />
+              <DragHandle props={drag.handle(a.id, a.question)} className="mx-auto h-[28px] w-[24px]" />
               <span className="truncate pr-[10px] text-[#0f172a]">{a.question}</span>
               <span className="truncate pr-[10px] text-[#0f172a]">{a.topic}</span>
               <span>
@@ -249,7 +405,17 @@ export default function QuestionsAnswersTab({ onChange }: { onChange: () => void
         {/* Editor */}
         <div className="mt-[8px] flex flex-1 flex-col rounded-[10px] border border-[#eef0f2] px-[16px] pb-[8px] pt-[8px]">
           <div className="flex items-center justify-between">
-            <p className="text-[17.5px] font-bold text-[#0f2a1c]">Edit Answer</p>
+            <p className="text-[17.5px] font-bold text-[#0f2a1c]">{saved ? "Edit Answer" : "New Answer"}</p>
+            <div className="flex items-center gap-[12px]">
+            <button
+              type="button"
+              onClick={remove}
+              disabled={!saved}
+              title={saved ? "Delete this answer" : "Not saved yet"}
+              className="inline-flex h-[30px] items-center gap-[7px] rounded-[7px] border border-[#f3a5a5] bg-white px-[12px] text-[13.6px] font-medium text-[#dc2626] transition hover:bg-[#fdf2f2] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white"
+            >
+              <Trash2 className="h-[15px] w-[15px]" /> Delete
+            </button>
             <div className="flex overflow-hidden rounded-[7px] border border-[#dfe3e8]">
               {(["en", "hi"] as const).map((l) => (
                 <button
@@ -265,6 +431,7 @@ export default function QuestionsAnswersTab({ onChange }: { onChange: () => void
                 </button>
               ))}
             </div>
+            </div>
           </div>
 
           <div className="mt-[4px] grid grid-cols-2 gap-x-[18px]">
@@ -272,7 +439,13 @@ export default function QuestionsAnswersTab({ onChange }: { onChange: () => void
               <span className={labelClass}>
                 Question <span className="text-[#dc2626]">*</span>
               </span>
-              <input value={draft.question} onChange={(e) => setDraft({ ...draft, question: e.target.value })} maxLength={150} className={inputClass} />
+              <input
+                value={draft.question}
+                onChange={(e) => setDraft({ ...draft, question: e.target.value })}
+                maxLength={150}
+                aria-invalid={showErrors && !draft.question.trim()}
+                className={`${inputClass} ${showErrors && !draft.question.trim() ? "!border-[#dc2626]" : ""}`}
+              />
             </label>
             <div>
               <span className={labelClass}>
@@ -329,7 +502,8 @@ export default function QuestionsAnswersTab({ onChange }: { onChange: () => void
               rows={2}
               maxLength={600}
               placeholder={lang === "en" ? "Write the answer in English" : "हिंदी / Hinglish में जवाब लिखें"}
-              className="h-[50px] w-full resize-y rounded-[7px] border border-[#dfe3e8] bg-white px-[14px] py-[7px] text-[14.6px] leading-snug text-[#0f172a] outline-none transition focus:border-[#15633a] focus:ring-2 focus:ring-[#15633a]/15"
+              aria-invalid={showErrors && lang === "en" && !draft.answer.en.trim()}
+              className={`h-[50px] w-full resize-y rounded-[7px] border ${showErrors && !draft.answer.en.trim() ? "border-[#dc2626]" : "border-[#dfe3e8]"} bg-white px-[14px] py-[7px] text-[14.6px] leading-snug text-[#0f172a] outline-none transition focus:border-[#15633a] focus:ring-2 focus:ring-[#15633a]/15`}
             />
           </label>
 
@@ -337,14 +511,22 @@ export default function QuestionsAnswersTab({ onChange }: { onChange: () => void
             Optional Next Action <Info className="h-[15px] w-[15px]" aria-label="What the chatbot offers after this answer" />
           </p>
           <div className="grid grid-cols-[282px_1fr] gap-x-[18px]">
-            <Select value={draft.nextAction} options={NEXT_ACTIONS} onChange={(nextAction) => setDraft({ ...draft, nextAction })} label="Next action" selectClassName={fieldSelect} />
             <Select
-              value={draft.nextTarget}
-              options={PAGES}
-              onChange={(nextTarget) => setDraft({ ...draft, nextTarget })}
-              label="Next action target"
+              value={draft.nextAction}
+              options={NEXT_ACTIONS}
+              onChange={(nextAction) => setDraft({ ...draft, nextAction, nextTarget: TARGETS[nextAction][0] })}
+              label="Next action"
               selectClassName={fieldSelect}
             />
+            <fieldset disabled={draft.nextAction === "None"} className="min-w-0 disabled:opacity-50" title={draft.nextAction === "None" ? "Choose a next action first" : undefined}>
+              <Select
+                value={draft.nextTarget}
+                options={[...new Set([draft.nextTarget, ...TARGETS[draft.nextAction]])]}
+                onChange={(nextTarget) => setDraft({ ...draft, nextTarget })}
+                label="Next action target"
+                selectClassName={`${fieldSelect} disabled:cursor-not-allowed`}
+              />
+            </fieldset>
           </div>
 
           <div className="mt-auto flex items-center justify-between pt-[8px]">
@@ -364,7 +546,6 @@ export default function QuestionsAnswersTab({ onChange }: { onChange: () => void
               <button
                 type="button"
                 onClick={save}
-                disabled={!draft.question.trim()}
                 className="h-[34px] rounded-[7px] bg-[#15633a] px-[16px] text-[14.6px] font-medium text-white shadow-sm transition hover:bg-[#124f2f] disabled:opacity-60"
               >
                 Save Answer
@@ -379,7 +560,7 @@ export default function QuestionsAnswersTab({ onChange }: { onChange: () => void
         <div className={`${cardClass} px-[16px] pb-[12px] pt-[10px]`}>
           <p className={`${cardTitleClass} flex items-center gap-[12px]`}>
             Questions Needing Review
-            <span className="grid h-[26px] w-[26px] place-items-center rounded-full bg-[#fde7b0] text-[13.6px] font-semibold text-[#92400e]">{queue.length + 3}</span>
+            <span className="grid h-[26px] w-[26px] place-items-center rounded-full bg-[#fde7b0] text-[13.6px] font-semibold text-[#92400e]">{queue.length}</span>
           </p>
           <div className="mt-[10px] overflow-hidden rounded-[8px] border border-[#eef0f2]">
             <div className="grid grid-cols-[220px_1fr_130px] items-center bg-[#f7f8fa] px-[14px] py-[6px] text-[13.6px] text-[#475569]">
@@ -389,21 +570,28 @@ export default function QuestionsAnswersTab({ onChange }: { onChange: () => void
             </div>
             {queue.length === 0 && <p className="border-t border-[#eef0f2] py-[14px] text-center text-[13.6px] text-[#64748b]">Nothing waiting for review.</p>}
             {queue.map((item) => (
-              <div key={item.question} className="grid h-[54px] grid-cols-[220px_1fr_130px] items-center border-t border-[#eef0f2] px-[14px] text-[14.6px] text-[#0f172a]">
+              <div key={item.id} className="grid h-[54px] grid-cols-[220px_1fr_130px] items-center border-t border-[#eef0f2] px-[14px] text-[14.6px] text-[#0f172a]">
                 <span className="truncate pr-[8px]">{item.question}</span>
                 <span className="truncate">{item.topic}</span>
                 <button
                   type="button"
-                  onClick={() => {
-                    startNew(item.question, item.topic, item.action === "Review" ? "Needs Review" : "Draft");
-                    setQueue((prev) => prev.filter((x) => x !== item));
-                  }}
+                  onClick={() => setReviewId(item.id)}
                   className={`inline-flex h-[38px] items-center justify-center gap-[7px] rounded-[7px] border bg-white text-[14.6px] font-medium transition ${
-                    item.action === "Add Answer" ? "border-[#2f8a4c] text-[#14532d] hover:bg-[#f1f7ee]" : "border-[#d6dae0] text-[#0f172a] hover:border-[#15633a]"
+                    item.awaiting
+                      ? "border-[#f5c27a] text-[#b45309] hover:bg-[#fffaf0]"
+                      : item.action === "Add Answer"
+                        ? "border-[#2f8a4c] text-[#14532d] hover:bg-[#f1f7ee]"
+                        : "border-[#d6dae0] text-[#0f172a] hover:border-[#15633a]"
                   }`}
                 >
-                  {item.action === "Add Answer" && <Plus className="h-[17px] w-[17px]" />}
-                  {item.action}
+                  {item.awaiting ? (
+                    "Awaiting Team"
+                  ) : (
+                    <>
+                      {item.action === "Add Answer" && <Plus className="h-[17px] w-[17px]" />}
+                      {item.action}
+                    </>
+                  )}
                 </button>
               </div>
             ))}
@@ -452,7 +640,7 @@ export default function QuestionsAnswersTab({ onChange }: { onChange: () => void
             <span className="flex items-center gap-[10px] text-[#64748b]">
               <Info className="h-[17px] w-[17px]" /> Answer quality feedback can be reviewed from Overview.
             </span>
-            <button type="button" className="flex items-center gap-[7px] text-[#1d4ed8] hover:underline">
+            <button type="button" onClick={onOpenHistory} className="flex items-center gap-[7px] text-[#1d4ed8] hover:underline">
               <History className="h-[17px] w-[17px]" /> Version History
             </button>
           </div>
