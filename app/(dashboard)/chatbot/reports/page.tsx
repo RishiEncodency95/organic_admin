@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -19,10 +19,13 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { DESIGN_WIDTH, useFitWidth } from "@/components/chatbot/useFitWidth";
+import { chatbotApi, type ChatStats, type ChatSummary } from "@/lib/chatbotApi";
+import { resolveRange, type RangeKey } from "@/components/chatbot/DateRangeFilter";
 
 /*
- * Chatbot Reports — illustrative page. Every number here is sample data (see the
- * "Demo data" chips); none of it comes from the API.
+ * Chatbot Reports — leads, quotations, WhatsApp follow-ups and visitor feedback are live
+ * (/admin/chats). Bookings, resolved / overdue requests, complaints and the team table are
+ * still sample data: there are no booking links, assignments or complaints behind them yet.
  *
  * Laid out at the design's width with the design's pixel sizes, then zoomed to the
  * available width (see useFitWidth). The dashboard layout's AdminContentScale remaps many
@@ -35,6 +38,25 @@ const DATE_RANGES = ["Today", "Last 7 Days", "Last 30 Days", "This Month", "All 
 const TEAMS = ["All Teams", "Sales Team", "Registration Team", "Buyer Team"] as const;
 const TOPICS = ["All Topics", "Stall Booking", "Sponsorship", "Partnership", "Other"] as const;
 const TABS = ["Enquiry Outcomes", "Team Performance", "Feedback & Complaints"] as const;
+const RANGE_KEY: Record<(typeof DATE_RANGES)[number], RangeKey> = {
+  Today: "today",
+  "Last 7 Days": "7d",
+  "Last 30 Days": "30d",
+  "This Month": "month",
+  "All Time": "all",
+};
+
+type Topic = Exclude<(typeof TOPICS)[number], "All Topics">;
+
+/** Topic of a chat from its quotation / callback requests, else from the first question */
+const topicOf = (c: ChatSummary): Topic => {
+  if (c.requests?.length) return "Stall Booking";
+  const q = (c.firstQuestion?.content || "").toLowerCase();
+  if (/sponsor/.test(q)) return "Sponsorship";
+  if (/partner/.test(q)) return "Partnership";
+  if (/stall|booth|book|space|exhibit|स्टॉल/.test(q)) return "Stall Booking";
+  return "Other";
+};
 
 const ExclamationIcon = ({ className = "" }: { className?: string }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3.2} strokeLinecap="round" className={className} aria-hidden="true">
@@ -79,12 +101,20 @@ const SUMMARY: { title: string; value: number; icon: LucideIcon | typeof Exclama
 
 type OutcomeRow = { topic: string; leads: number; contacted: number; quotations: number | null; bookings: number | null };
 
-const OUTCOMES: OutcomeRow[] = [
-  { topic: "Stall Booking", leads: 50, contacted: 38, quotations: 24, bookings: 10 },
-  { topic: "Sponsorship", leads: 15, contacted: 10, quotations: 7, bookings: 2 },
-  { topic: "Partnership", leads: 10, contacted: 7, quotations: null, bookings: null },
-  { topic: "Other", leads: 5, contacted: 3, quotations: null, bookings: null },
-];
+/** Leads = verified chat leads, Contacted = WhatsApp follow-up sent, Quotations = stall quotation requests */
+const liveOutcomes = (chats: ChatSummary[]): OutcomeRow[] =>
+  (["Stall Booking", "Sponsorship", "Partnership", "Other"] as Topic[]).map((topic) => {
+    const leads = chats.filter((c) => c.lead?.phone && topicOf(c) === topic);
+    const quotations = leads.reduce((n, c) => n + (c.requests || []).filter((r) => r.type === "stall-quotation").length, 0);
+    return {
+      topic,
+      leads: leads.length,
+      contacted: leads.filter((c) => c.whatsappSentAt).length,
+      quotations: topic === "Stall Booking" ? quotations : null,
+      // No booking records are linked to chats yet
+      bookings: null,
+    };
+  });
 
 const TEAM_ROWS = [
   { team: "Sales Team", color: "bg-[#2563eb]", assigned: 40, withinTarget: 85, avgReply: "22 min", resolved: 24, overdue: 3 },
@@ -101,10 +131,10 @@ const greenLink = "inline-flex items-center gap-[8px] text-[13.1px] font-medium 
 
 const DemoChip = () => (
   <span
-    title="All numbers on this page are sample data"
+    title="Leads, quotations, WhatsApp follow-ups and feedback are live. Bookings, resolved / overdue requests, complaints and team figures are sample data."
     className="inline-flex shrink-0 items-center gap-[6px] whitespace-nowrap rounded-[6px] border border-[#cfe9d6] bg-[#eefaf1] px-[10px] py-[3px] text-[12.4px] font-medium text-[#15803d]"
   >
-    Demo data <Info className="h-[13px] w-[13px]" />
+    Live data <Info className="h-[13px] w-[13px]" />
   </span>
 );
 
@@ -152,7 +182,37 @@ export default function ChatbotReportsPage() {
   const [topic, setTopic] = useState<(typeof TOPICS)[number]>("All Topics");
   const [tab, setTab] = useState<(typeof TABS)[number]>("Enquiry Outcomes");
 
-  const rows = topic === "All Topics" ? OUTCOMES : OUTCOMES.filter((r) => r.topic === topic);
+  const [chats, setChats] = useState<ChatSummary[] | null>(null);
+  const [stats, setStats] = useState<ChatStats | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const q = resolveRange({ key: RANGE_KEY[range] });
+    Promise.all([chatbotApi.list({ ...q, limit: 1000 }), chatbotApi.stats(q)])
+      .then(([list, st]) => {
+        if (cancelled) return;
+        setChats(list.chats);
+        setStats(st);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setChats(null);
+        setStats(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [range]);
+
+  // Zeros (not sample numbers) if the API cannot be reached
+  const outcomes = liveOutcomes(chats || []);
+  const rows = topic === "All Topics" ? outcomes : outcomes.filter((r) => r.topic === topic);
+  const totals = stats?.totals;
+  const helpful = totals?.feedbackYes ?? 0;
+  const notHelpful = totals?.feedbackNo ?? 0;
+  const ratings = helpful + notHelpful;
+  const helpfulPct = ratings ? Math.round((helpful / ratings) * 100) : 0;
+  const summaryValue = (title: string, sample: number) => (title === "LEADS CAPTURED" ? rows.reduce((n, r) => n + r.leads, 0) : sample);
   const sum = (key: "leads" | "contacted" | "quotations" | "bookings") => rows.reduce((t, r) => t + (r[key] ?? 0), 0);
   const teams = team === "All Teams" ? TEAM_ROWS : TEAM_ROWS.filter((r) => r.team === team);
 
@@ -228,7 +288,7 @@ export default function ChatbotReportsPage() {
                       </span>
                       <span>
                         <span className="block text-[12.6px] font-semibold text-[#0f172a]">{s.title}</span>
-                        <span className={`mt-[3px] block text-[24.5px] font-bold leading-none ${s.valueClass}`}>{s.value}</span>
+                        <span className={`mt-[3px] block text-[24.5px] font-bold leading-none ${s.valueClass}`}>{summaryValue(s.title, s.value)}</span>
                       </span>
                     </div>
                     {i === 1 && (
@@ -279,24 +339,24 @@ export default function ChatbotReportsPage() {
                 <p className={cardTitle}>Visitor Feedback</p>
                 <p className={cardSub}>Ratings submitted by visitors (selected period)</p>
                 <div className="mt-[6px] grid grid-cols-3 gap-[12px]">
-                  <MiniStat label="Helpful" value={46} icon={<ThumbsUp className="h-[16px] w-[16px] fill-[#16a34a] text-[#16a34a]" />} iconClass="bg-[#e6f6ea]" valueClass="text-[#15803d]" />
-                  <MiniStat label="Not Helpful" value={4} icon={<ThumbsDown className="h-[16px] w-[16px] fill-[#dc2626] text-[#dc2626]" />} iconClass="bg-[#fde8e8]" valueClass="text-[#dc2626]" />
-                  <MiniStat label="Total Ratings" value={50} icon={<Star className="h-[16px] w-[16px] fill-[#f59e0b] text-[#f59e0b]" />} iconClass="bg-[#fdf3e1]" valueClass="text-[#1d4ed8]" />
+                  <MiniStat label="Helpful" value={helpful} icon={<ThumbsUp className="h-[16px] w-[16px] fill-[#16a34a] text-[#16a34a]" />} iconClass="bg-[#e6f6ea]" valueClass="text-[#15803d]" />
+                  <MiniStat label="Not Helpful" value={notHelpful} icon={<ThumbsDown className="h-[16px] w-[16px] fill-[#dc2626] text-[#dc2626]" />} iconClass="bg-[#fde8e8]" valueClass="text-[#dc2626]" />
+                  <MiniStat label="Total Ratings" value={ratings} icon={<Star className="h-[16px] w-[16px] fill-[#f59e0b] text-[#f59e0b]" />} iconClass="bg-[#fdf3e1]" valueClass="text-[#1d4ed8]" />
                 </div>
 
                 <div className="mt-[8px] flex items-center justify-between text-[13.6px]">
                   <span className="font-medium text-[#0f172a]">Feedback Composition</span>
-                  <span className="font-medium text-[#15803d]">92% Helpful</span>
+                  <span className="font-medium text-[#15803d]">{helpfulPct}% Helpful</span>
                 </div>
                 <div className="mt-[4px] h-[11px] overflow-hidden rounded-full bg-[#e5e7eb]">
-                  <div className="h-full rounded-full bg-[#2f9e44]" style={{ width: "92%" }} />
+                  <div className="h-full rounded-full bg-[#2f9e44]" style={{ width: `${helpfulPct}%` }} />
                 </div>
                 <div className="mt-[4px] flex items-center justify-between text-[12.6px] text-[#334155]">
                   <span className="flex items-center gap-[10px]">
-                    <span className="h-[11px] w-[11px] rounded-full bg-[#2f9e44]" /> 92% Helpful (46)
+                    <span className="h-[11px] w-[11px] rounded-full bg-[#2f9e44]" /> {helpfulPct}% Helpful ({helpful})
                   </span>
                   <span className="flex items-center gap-[10px] text-[12.6px]">
-                    <span className="h-[11px] w-[11px] rounded-full bg-[#cbd5e1]" /> 8% Not Helpful (4)
+                    <span className="h-[11px] w-[11px] rounded-full bg-[#cbd5e1]" /> {ratings ? 100 - helpfulPct : 0}% Not Helpful ({notHelpful})
                   </span>
                 </div>
 

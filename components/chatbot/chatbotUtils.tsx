@@ -37,6 +37,11 @@ export function dayLabel(value: string): string {
   return d.toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
 }
 
+/** Verified name, else the IP-based "Visitor 103.x.x.x" the chat was saved under */
+export function visitorLabel(chat?: { lead?: { name?: string }; visitorName?: string }): string {
+  return chat?.lead?.name || chat?.visitorName || "Visitor";
+}
+
 export function initials(name?: string): string {
   const parts = (name || "?").trim().split(/\s+/);
   return ((parts[0]?.[0] || "?") + (parts[1]?.[0] || "")).toUpperCase();

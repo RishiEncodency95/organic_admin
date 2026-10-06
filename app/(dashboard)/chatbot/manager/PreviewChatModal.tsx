@@ -5,11 +5,12 @@ import { createPortal } from "react-dom";
 import Image from "next/image";
 import { ExternalLink, RotateCcw, Send, X } from "lucide-react";
 import { BotAvatar, LOGO } from "./managerUi";
+import { chatbotManagerApi } from "@/lib/chatbotManagerApi";
 
 /*
  * Clickable preview of the draft Welcome Menu, opened from the manager header's "Preview".
- * Visitors' clicks are simulated from the draft buttons in page state; nothing is sent or
- * saved. Mount it only while open, so every opening starts a fresh conversation. Closes from ✕ or Escape. Rendered into document.body so the page zoom does not
+ * Menu clicks follow the draft buttons; typed questions and next options are answered by the
+ * real bot with the draft (unpublished) answers and knowledge. Nothing is saved as a chat. Mount it only while open, so every opening starts a fresh conversation. Closes from ✕ or Escape. Rendered into document.body so the page zoom does not
  * shrink it.
  */
 
@@ -38,6 +39,8 @@ export default function PreviewChatModal({ open, buttons, hindi, onClose }: Prop
   const [lang, setLang] = useState<"en" | "hi">("en");
   // null = fresh conversation (just the welcome message)
   const [messages, setMessages] = useState<Message[] | null>(null);
+  const [input, setInput] = useState("");
+  const [thinking, setThinking] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const t = (text: string) => (lang === "hi" ? hindi[text] ?? text : text);
   const active = buttons.filter((b) => b.active);
@@ -68,7 +71,7 @@ export default function PreviewChatModal({ open, buttons, hindi, onClose }: Prop
           pills: [
             ...b.options.filter((o) => o.trim()).map((o) => ({
               label: t(o),
-              run: () => say(t(o), { from: "bot", text: lang === "hi" ? `${t(o)} की जानकारी यहाँ दिखेगी।` : `Details for “${o}” would appear here.`, note: "Sample reply in preview", pills: [backToMenu] }),
+              run: () => ask(t(o)),
             })),
             backToMenu,
           ],
@@ -82,6 +85,25 @@ export default function PreviewChatModal({ open, buttons, hindi, onClose }: Prop
       default:
         return say(labelOf(b), { from: "bot", text: reply, pills: [backToMenu] });
     }
+  };
+
+  /** Sends a question to the real bot (draft knowledge) and shows its reply */
+  const ask = (question: string) => {
+    const q = question.trim();
+    if (!q || thinking) return;
+    const history = (messages ?? [])
+      .filter((m) => m.text && m.text !== "…")
+      .map((m) => ({ role: m.from === "user" ? ("user" as const) : ("assistant" as const), content: m.text }))
+      .slice(-10);
+    setInput("");
+    setThinking(true);
+    setMessages((prev) => [...(prev ?? [welcome()]).map((m) => ({ ...m, pills: undefined })), { from: "user", text: q }, { from: "bot", text: "…" }]);
+    chatbotManagerApi
+      .test({ question: q, mode: "draft", language: lang === "hi" ? "हिंदी" : "Auto", history })
+      .then((r): Message => ({ from: "bot", text: r.text, note: r.found ? undefined : lang === "hi" ? "पक्का जवाब नहीं — Review Queue में जाएगा" : "No verified answer — goes to the Review Queue", pills: [backToMenu] }))
+      .catch((e: Error): Message => ({ from: "bot", text: e.message || "The AI could not reply.", note: "Error", pills: [backToMenu] }))
+      .then((reply) => setMessages((prev) => [...(prev ?? []).slice(0, -1), reply]))
+      .finally(() => setThinking(false));
   };
 
   useEffect(() => {
@@ -176,13 +198,31 @@ export default function PreviewChatModal({ open, buttons, hindi, onClose }: Prop
           {active.length === 0 && <p className="text-center text-[13px] text-[#b45309]">No active buttons — turn at least one button on to show the menu.</p>}
         </div>
 
-        {/* Input (disabled in preview) */}
-        <div className="flex shrink-0 items-center gap-[10px] border-t border-[#e3e8e4] bg-white px-[14px] py-[8px]">
-          <span className="flex h-[36px] flex-1 items-center rounded-full border border-[#dfe3e8] px-[16px] text-[14px] text-[#94a3b8]">{lang === "hi" ? "बटन से जवाब आज़माएँ" : "Try the buttons above"}</span>
-          <span className="grid h-[36px] w-[36px] place-items-center rounded-full bg-[#15633a]/40 text-white">
+        {/* Input: typed questions go to the real bot */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            ask(input);
+          }}
+          className="flex shrink-0 items-center gap-[10px] border-t border-[#e3e8e4] bg-white px-[14px] py-[8px]"
+        >
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            maxLength={500}
+            placeholder={lang === "hi" ? "सवाल लिखें…" : "Type a question…"}
+            aria-label="Preview question"
+            className="h-[36px] min-w-0 flex-1 rounded-full border border-[#dfe3e8] px-[16px] text-[14px] text-[#0f172a] outline-none placeholder:text-[#94a3b8] focus:border-[#15633a]"
+          />
+          <button
+            type="submit"
+            disabled={!input.trim() || thinking}
+            aria-label="Send"
+            className="grid h-[36px] w-[36px] place-items-center rounded-full bg-[#15633a] text-white transition hover:bg-[#124f2f] disabled:bg-[#15633a]/40"
+          >
             <Send className="h-[17px] w-[17px]" />
-          </span>
-        </div>
+          </button>
+        </form>
       </div>
     </div>,
     document.body

@@ -39,6 +39,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { DESIGN_WIDTH, useFitWidth } from "@/components/chatbot/useFitWidth";
+import { chatbotApi, type ChatSummary } from "@/lib/chatbotApi";
+import { visitorLabel } from "@/components/chatbot/chatbotUtils";
 import DateRangeCalendar, { isoDate } from "./DateRangeCalendar";
 import EnquiryDetailModal, { type Activity, type ComposeMode } from "./EnquiryDetailModal";
 import NewEnquiryModal, { type NewEnquiry } from "./NewEnquiryModal";
@@ -46,9 +48,10 @@ import ReassignEnquiryModal from "./ReassignEnquiryModal";
 import ResolveEnquiryModal from "./ResolveEnquiryModal";
 
 /*
- * Inbox & Leads — illustrative page. Every record here is sample data (see the "Demo data"
- * chip); none of it comes from the API, and changes last until the page is reloaded. All
- * counts, filters, sorting and pagination are worked out from the sample records.
+ * Inbox & Leads — one record per website chat (/admin/chats): saved under the visitor's IP
+ * until the mobile number is verified, then under their name and number. Assignment, status,
+ * priority and follow-ups have no backend yet, so they start as "Unassigned" / "New" and
+ * changes last until the page is reloaded. The sample records below are kept for reference.
  *
  * Laid out at the design's width (DESIGN_WIDTH) with the design's pixel sizes, then zoomed
  * to the available width, so it keeps the same proportions on every screen.
@@ -78,6 +81,8 @@ type FollowUp =
 
 type Row = {
   id: number;
+  /** The saved chat this record comes from */
+  chatId?: string;
   name: string;
   initials: string;
   avatar: string;
@@ -173,6 +178,62 @@ const ROWS: Row[] = SEEDS.map(([name, tag, category, topic, detail, assignedTo, 
 }));
 
 const OWNERS = [...new Set(ROWS.map((r) => r.assignedTo))].filter((o) => o !== "Unassigned");
+
+/** Topic of a chat from its quotation / callback request, else from the first question */
+const chatTopic = (c: ChatSummary) => {
+  const request = c.requests?.[c.requests.length - 1];
+  if (request) return request.type === "sales-callback" ? "Callback Request" : "Stall Booking";
+  const q = (c.firstQuestion?.content || "").toLowerCase();
+  if (/sponsor/.test(q)) return "Sponsorship";
+  if (/partner/.test(q)) return "Partnership";
+  if (/stall|booth|space|exhibit|स्टॉल/.test(q)) return "Stall Booking";
+  if (/regist/.test(q)) return "Registration";
+  if (/buyer|seller/.test(q)) return "Buyer–Seller Meet";
+  return q ? "General Enquiry" : "Chatbot Visit";
+};
+
+/** One inbox record per saved chat */
+const chatsToRows = (chats: ChatSummary[]): Row[] => {
+  const now = Date.now();
+  const phoneCounts = new Map<string, number>();
+  chats.forEach((c) => {
+    if (c.lead?.phone) phoneCounts.set(c.lead.phone, (phoneCounts.get(c.lead.phone) || 0) + 1);
+  });
+  return chats.map((c, i) => {
+    const name = visitorLabel(c);
+    const request = c.requests?.[c.requests.length - 1];
+    const phone = c.lead?.phone;
+    const category: Category = request || phone ? "lead" : c.feedback && !c.questionCount ? "feedback" : "enquiry";
+    const tag: Tag = !phone ? "Anonymous" : (phoneCounts.get(phone) || 0) > 1 ? "Returning" : c.phoneVerifiedAt ? "Verified" : "New";
+    const detail = request
+      ? request.type === "sales-callback"
+        ? `Callback request${request.preferredTime ? `, ${request.preferredTime}` : ""}`
+        : `${request.stallSize ? `${request.stallSize} ` : ""}quotation request${request.company ? ` (${request.company})` : ""}`
+      : c.firstQuestion?.content || (c.feedback ? `Rated the chat ${c.feedback === "yes" ? "helpful" : "not helpful"}` : "Browsed the chatbot menu");
+    return {
+      id: i + 1,
+      chatId: c._id,
+      name,
+      initials: initialsOf(name.replace(/^Visitor\s+/, "V ")),
+      avatar: AVATARS[i % AVATARS.length],
+      tag,
+      category,
+      type: TYPE_LABEL[category],
+      topic: chatTopic(c),
+      detail,
+      assignedTo: "Unassigned",
+      status: "New",
+      priority: request ? "High" : phone ? "Medium" : "Low",
+      followUp: { kind: "assign" },
+      minutesAgo: Math.max(0, Math.floor((now - new Date(c.updatedAt).getTime()) / 60_000)),
+      channel: "Website chat",
+      // The visitor's last question has no reply yet
+      unread: c.questionCount > 0 && c.lastMessage?.role === "user",
+      mobile: phone,
+      email: c.lead?.email,
+    };
+  });
+};
 
 // ─── Display helpers ─────────────────────────────────────────────────────────
 
@@ -450,7 +511,7 @@ function ConfirmDialog({ confirm, onClose }: { confirm: Confirm | null; onClose:
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function ChatbotInboxPage() {
-  const [records, setRecords] = useState(ROWS);
+  const [records, setRecords] = useState<Row[]>([]);
   const [activity, setActivity] = useState<Record<number, Activity[]>>({});
 
   // Range, tab and filters
@@ -471,8 +532,6 @@ export default function ChatbotInboxPage() {
   const [perPage, setPerPage] = useState(10);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const loadingTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const failedOnce = useRef(false);
 
   // Popups: row ⋮ menu, assign, resolve, detail, new enquiry
   const [menuId, setMenuId] = useState<number | null>(null);
@@ -493,26 +552,26 @@ export default function ChatbotInboxPage() {
 
   const { ref, zoom } = useFitWidth();
 
-  /*
-   * Sample data has nothing to wait for; a short skeleton stands in for the API round trip.
-   * Add ?demo-error to the URL to preview the error state (the first load fails, Retry works).
-   */
-  const finishLoad = () => {
-    const fail = !failedOnce.current && new URLSearchParams(window.location.search).has("demo-error");
-    failedOnce.current = true;
-    setLoadError(fail);
-    setLoading(false);
+  // Every saved chat (the date range is applied on this page); reloaded on range change and Retry
+  const loadSeq = useRef(0);
+  const fetchRecords = () => {
+    const seq = ++loadSeq.current;
+    chatbotApi
+      .list({ limit: 1000 })
+      .then((res) => {
+        if (seq !== loadSeq.current) return;
+        setRecords(chatsToRows(res.chats));
+      })
+      .catch(() => seq === loadSeq.current && setLoadError(true))
+      .finally(() => seq === loadSeq.current && setLoading(false));
   };
   const showLoading = () => {
     setLoading(true);
     setLoadError(false);
-    clearTimeout(loadingTimer.current);
-    loadingTimer.current = setTimeout(finishLoad, 450);
+    fetchRecords();
   };
-  useEffect(() => {
-    loadingTimer.current = setTimeout(finishLoad, 450);
-    return () => clearTimeout(loadingTimer.current);
-  }, []);
+  // `loading` starts true, so the first load only needs the fetch
+  useEffect(fetchRecords, []);
 
   // Escape closes whichever dropdown is open (the popups handle their own buttons)
   const anyDropdown = menuId !== null || moreOpen || customOpen;
@@ -813,10 +872,10 @@ export default function ChatbotInboxPage() {
           <div className="flex min-w-0 items-center gap-[12px]">
             <p className="min-w-0 truncate text-[17.5px] font-medium text-[#334155]">Organic Mitra — conversations, enquiries &amp; team follow-ups</p>
             <span
-              title="All records on this page are sample data"
+              title="Records are live website chats. Assignment, status and follow-ups are kept on this page only."
               className="inline-flex shrink-0 items-center gap-[6px] whitespace-nowrap rounded-[6px] border border-[#cfe9d6] bg-[#eefaf1] px-[11px] py-[4px] text-[13.4px] font-medium text-[#15803d]"
             >
-              Demo data <Info className="h-[14px] w-[14px]" />
+              Live data <Info className="h-[14px] w-[14px]" />
             </span>
           </div>
         </div>

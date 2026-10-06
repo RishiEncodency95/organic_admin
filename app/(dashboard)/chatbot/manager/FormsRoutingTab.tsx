@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
 import { createPortal } from "react-dom";
 import { History, Info, Pencil, Plus, Save, Trash2, X } from "lucide-react";
-import { ConfirmDialog, DragHandle, Select, cardClass, inputClass as baseInput, reorder, useReorder, type ConfirmOptions, type Notify, type TabHandle } from "./managerUi";
+import { ConfirmDialog, DragHandle, Select, cardClass, inputClass as baseInput, reorder, useDraftSection, useReorder, useSyncSection, type ConfirmOptions, type Notify, type TabHandle } from "./managerUi";
 
 /*
- * "Forms & Routing" tab of the Chatbot Manager — design preview with sample forms and
- * routing kept in component state; nothing is saved to or used by the website chatbot.
+ * "Forms & Routing" tab of the Chatbot Manager. Forms and routing rules are saved to the
+ * draft on the server and published with the rest; the website's quotation / callback forms
+ * and team assignment do not read them yet.
  * Sized so both columns fit in the Buttons & Flows tab's height (the tabs share one cell).
  */
 
@@ -222,10 +223,14 @@ function AddFormDialog({ open, current, taken, onClose, onCreate }: { open: bool
 type Props = { onChange: () => void; onOpenHistory: () => void; notify: Notify; ref?: Ref<TabHandle> };
 
 export default function FormsRoutingTab({ onChange, onOpenHistory, notify, ref }: Props) {
-  const [forms, setForms] = useState(INITIAL_FORMS);
-  const [form, setForm] = useState(Object.keys(INITIAL_FORMS)[0]);
+  const savedForms = useDraftSection<typeof INITIAL_FORMS>("forms");
+  const savedRules = useDraftSection<typeof INITIAL_RULES>("rules");
+  const [forms, setForms] = useState(savedForms && Object.keys(savedForms).length ? savedForms : INITIAL_FORMS);
+  const [form, setForm] = useState(() => Object.keys(savedForms && Object.keys(savedForms).length ? savedForms : INITIAL_FORMS)[0]);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [rules, setRules] = useState(INITIAL_RULES);
+  const [rules, setRules] = useState(savedRules ?? INITIAL_RULES);
+  useSyncSection("forms", forms);
+  useSyncSection("rules", rules);
   const [editRules, setEditRules] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const closeAdd = useCallback(() => setAddOpen(false), []);

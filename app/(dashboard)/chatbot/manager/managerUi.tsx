@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { ChevronDown, CircleAlert, CircleCheck, GripVertical, MoreVertical, X } from "lucide-react";
+import type { ManagerSection } from "@/lib/chatbotManagerApi";
 
 /*
  * Pieces shared by the Chatbot Manager tabs. Sizes avoid the text-[Npx] values that the
@@ -354,4 +355,39 @@ export function DragHandle({ props, className = "" }: { props: ReturnType<Return
       <GripVertical className="h-[18px] w-[18px]" />
     </button>
   );
+}
+
+// ─── Saved draft (shared by every tab) ────────────────────────────────────────
+
+/** The draft loaded from the server, and a saver that writes one section back */
+export type ManagerStore = {
+  draft: Partial<Record<ManagerSection, unknown>>;
+  save: (section: ManagerSection, data: unknown) => void;
+  /** Version number now live on the website (0 = nothing published yet) */
+  liveMinor: number;
+};
+
+export const ManagerStoreContext = createContext<ManagerStore | null>(null);
+
+/** The section as last saved, or undefined when it was never saved (the tab keeps its defaults) */
+export function useDraftSection<T>(section: ManagerSection): T | undefined {
+  return useContext(ManagerStoreContext)?.draft[section] as T | undefined;
+}
+
+/**
+ * Saves `value` as the section's draft whenever it changes (not on the first render),
+ * shortly after the last change so quick edits become one request.
+ */
+export function useSyncSection(section: ManagerSection, value: unknown) {
+  const store = useContext(ManagerStoreContext);
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    if (!store) return;
+    const id = setTimeout(() => store.save(section, value), 500);
+    return () => clearTimeout(id);
+  }, [section, value, store]);
 }

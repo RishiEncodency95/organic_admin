@@ -32,8 +32,7 @@ import {
   MessageText,
   pagePath,
   timeAgo,
-  whatsappLink,
-} from "@/components/chatbot/chatbotUtils";
+  whatsappLink, visitorLabel } from "@/components/chatbot/chatbotUtils";
 import { chatbotApi, type ChatDetail, type ChatSummary } from "@/lib/chatbotApi";
 
 const PAGE_SIZE = 30;
@@ -216,11 +215,11 @@ function Conversations() {
                         className="grid h-[36px] w-[36px] shrink-0 place-items-center rounded-full text-[10px] font-bold text-white"
                         style={{ background: avatarColor(c.lead?.phone || c._id) }}
                       >
-                        {initials(c.lead?.name)}
+                        {initials(visitorLabel(c))}
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="flex items-center justify-between gap-2">
-                          <span className="truncate text-[10px] font-bold text-[#18233b]">{c.lead?.name || "Visitor"}</span>
+                          <span className="truncate text-[10px] font-bold text-[#18233b]">{visitorLabel(c)}</span>
                           <span className="shrink-0 text-[8px] text-[#9aa0aa]">{timeAgo(c.updatedAt)}</span>
                         </span>
                         <span className="block truncate text-[8px] text-[#6c7587]">{c.lead?.phone || c.lead?.email || "—"}</span>
@@ -293,10 +292,10 @@ function Conversations() {
                       className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-full text-[12px] font-bold text-white"
                       style={{ background: avatarColor(detail.lead?.phone || detail._id) }}
                     >
-                      {initials(detail.lead?.name)}
+                      {initials(visitorLabel(detail))}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[12px] font-bold text-[#18233b]">{detail.lead?.name || "Visitor"}</p>
+                      <p className="truncate text-[12px] font-bold text-[#18233b]">{visitorLabel(detail)}</p>
                       <div className="mt-[2px] flex flex-wrap items-center gap-x-[12px] gap-y-[2px] text-[9px] text-[#4b5563]">
                         {detail.lead?.phone && (
                           <button type="button" onClick={() => copy("phone", detail.lead?.phone)} className="flex items-center gap-[4px] hover:text-[#166b40]">
@@ -390,7 +389,7 @@ function Conversations() {
                                 className="grid h-[24px] w-[24px] shrink-0 place-items-center rounded-full text-[8px] font-bold text-white"
                                 style={{ background: avatarColor(detail.lead?.phone || detail._id) }}
                               >
-                                {initials(detail.lead?.name)}
+                                {initials(visitorLabel(detail))}
                               </span>
                               <div className="max-w-[72%] rounded-[12px] rounded-bl-[3px] bg-white px-[11px] py-[7px] shadow-sm ring-1 ring-black/5">
                                 <p className="whitespace-pre-wrap break-words text-[10px] text-[#18233b]">{m.content}</p>

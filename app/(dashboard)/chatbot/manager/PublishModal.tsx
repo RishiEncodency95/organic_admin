@@ -2,11 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, ChevronRight, FileText, MessageSquareText, Waypoints, X, type LucideIcon } from "lucide-react";
+import { Check, ChevronRight, Database, FileText, MessageSquareText, Settings, Waypoints, X, type LucideIcon } from "lucide-react";
 
 /*
- * "Publish & Version History" popup of the Chatbot Manager — design preview; publishing
- * only updates page state. It closes only from the ✕, Cancel or after publishing — not on
+ * "Publish & Version History" popup of the Chatbot Manager. Publishing makes the saved draft
+ * live on the website chatbot; "Restore to Draft" brings an earlier version back as the draft. It closes only from the ✕, Cancel or after publishing — not on
  * outside clicks or Escape. Rendered into document.body so the page's zoom does not shrink it.
  */
 
@@ -16,12 +16,19 @@ export type PublishTab = "publish" | "history";
 
 const PUBLIC_SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3002").replace(/\/$/, "");
 
-/** Sample counts of unpublished edits per area (shown while there is a draft) */
-const CHANGES: { label: string; count: number; icon: LucideIcon }[] = [
-  { label: "Buttons & Flows", count: 2, icon: Waypoints },
-  { label: "Questions & Answers", count: 4, icon: MessageSquareText },
-  { label: "Forms & Routing", count: 1, icon: FileText },
+/** Unpublished edits per area, counted by the server (shown while there is a draft) */
+export type DraftChanges = { buttons: number; answers: number; sources: number; forms: number; settings: number };
+
+const CHANGE_ROWS: { key: keyof DraftChanges; label: string; icon: LucideIcon }[] = [
+  { key: "buttons", label: "Buttons & Flows", icon: Waypoints },
+  { key: "answers", label: "Questions & Answers", icon: MessageSquareText },
+  { key: "sources", label: "AI Knowledge", icon: Database },
+  { key: "forms", label: "Forms & Routing", icon: FileText },
+  { key: "settings", label: "Settings", icon: Settings },
 ];
+
+/** Before anything is published */
+const NOTHING_LIVE: Version = { minor: 0, date: "Not published yet", by: "—", note: "" };
 
 type Props = {
   /** null keeps the popup closed */
@@ -31,13 +38,16 @@ type Props = {
   /** Newest first; the first entry is live */
   versions: Version[];
   hasDraft: boolean;
+  changes?: DraftChanges;
+  /** True while the publish request is running */
+  publishing?: boolean;
   onPublish: (note: string) => void;
   onRestore: (version: Version) => void;
 };
 
 const v = (minor: number) => `v1.${minor}`;
 
-export default function PublishModal({ tab, onTabChange, onClose, versions, hasDraft, onPublish, onRestore }: Props) {
+export default function PublishModal({ tab, onTabChange, onClose, versions, hasDraft, changes, publishing = false, onPublish, onRestore }: Props) {
   const [note, setNote] = useState("Updated stall options and visitor answers.");
   const [restored, setRestored] = useState<string | null>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -56,9 +66,10 @@ export default function PublishModal({ tab, onTabChange, onClose, versions, hasD
 
   if (!tab || typeof document === "undefined") return null;
 
-  const live = versions[0];
+  const live = versions[0] ?? NOTHING_LIVE;
   const draftMinor = live.minor + 1;
   const list = tab === "publish" ? versions.slice(0, 2) : versions;
+  const changeRows = CHANGE_ROWS.map((r) => ({ ...r, count: changes?.[r.key] ?? 0 })).filter((r) => r.count > 0);
 
   const versionRows = (
     <div className="flex flex-col">
@@ -125,9 +136,6 @@ export default function PublishModal({ tab, onTabChange, onClose, versions, hasD
                   <span className="h-[8px] w-[8px] rounded-full bg-[#f59e0b]" /> Draft: {v(draftMinor)}
                 </span>
               )}
-              <span title="Versions here are sample data" className="rounded-[6px] border border-[#e5e7eb] px-[7px] py-[3px] text-[11px] text-[#475569]">
-                Demo data
-              </span>
             </div>
             <button ref={closeRef} type="button" onClick={onClose} aria-label="Close" className="-mr-[6px] grid h-[28px] w-[28px] shrink-0 place-items-center rounded-full text-[#0f172a] transition hover:bg-slate-100">
               <X className="h-[18px] w-[18px]" />
@@ -162,7 +170,8 @@ export default function PublishModal({ tab, onTabChange, onClose, versions, hasD
                 <p className="text-[16.5px] font-bold text-[#0f2a1c]">Changes ready to publish</p>
                 {hasDraft ? (
                   <div className="mt-[4px] flex flex-col">
-                    {CHANGES.map(({ label, count, icon: Icon }, i) => (
+                    {changeRows.length === 0 && <p className="py-[7px] text-[13.5px] text-[#334155]">Draft changes are saved and ready to publish.</p>}
+                    {changeRows.map(({ label, count, icon: Icon }, i) => (
                       <div key={label} className={`flex items-center gap-[14px] py-[7px] ${i > 0 ? "border-t border-[#eef0f2]" : ""}`}>
                         <Icon className="h-[20px] w-[20px] text-[#0f172a]" />
                         <span className="flex-1 text-[13.5px] text-[#0f172a]">{label}</span>
@@ -228,7 +237,7 @@ export default function PublishModal({ tab, onTabChange, onClose, versions, hasD
             <button
               type="button"
               onClick={() => onPublish(note.trim())}
-              disabled={!hasDraft}
+              disabled={!hasDraft || publishing}
               className="h-[30px] rounded-[8px] bg-[#15633a] px-[22px] text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#124f2f] disabled:opacity-50"
             >
               Publish {v(draftMinor)}

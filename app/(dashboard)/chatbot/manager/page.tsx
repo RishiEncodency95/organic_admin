@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import {
   ChevronDown,
@@ -23,17 +23,20 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { DESIGN_WIDTH, useFitWidth } from "@/components/chatbot/useFitWidth";
+import { chatbotManagerApi, type ManagerData, type ManagerVersion } from "@/lib/chatbotManagerApi";
 import {
   BotAvatar,
   ConfirmDialog,
   DragHandle,
   LOGO,
+  ManagerStoreContext,
   ToastBar,
   inputClass,
   reorder,
   selectClass,
   useReorder,
   type ConfirmOptions,
+  type ManagerStore,
   type Notify,
   type TabHandle,
   type Toast,
@@ -47,8 +50,9 @@ import DeleteButtonModal from "./DeleteButtonModal";
 import PreviewChatModal from "./PreviewChatModal";
 
 /*
- * Chatbot Manager — design preview. The menu below is sample data kept in page state
- * (see the "Design preview" chip); nothing is saved to or published on the website.
+ * Chatbot Manager. Every tab's edits are saved as a draft on the server (see
+ * lib/chatbotManagerApi); "Publish Changes" makes the draft live on the website chatbot.
+ * The sample data below is only the starting point for a section that was never saved.
  *
  * Laid out at the design's width with the design's pixel sizes, then zoomed to the
  * available width (see useFitWidth). The dashboard layout's AdminContentScale remaps many
@@ -186,32 +190,53 @@ function Toggle({ on, onChange, label }: { on: boolean; onChange: () => void; la
 const editLabel = "mb-[2px] block text-[13.1px] text-[#334155]";
 const editInput = `${inputClass} !h-[32px] !text-[14.1px]`;
 
-const Pill = ({ children }: { children: React.ReactNode }) => (
-  <span className="inline-flex h-[32px] items-center rounded-[8px] border border-[#2f8a4c] bg-white px-[12px] text-[13.6px] text-[#14532d]">{children}</span>
+const Pill = ({ children, onClick, disabled }: { children: React.ReactNode; onClick?: () => void; disabled?: boolean }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={disabled}
+    className="inline-flex h-[32px] items-center rounded-[8px] border border-[#2f8a4c] bg-white px-[12px] text-[13.6px] text-[#14532d] transition hover:bg-[#ebf6ee] disabled:opacity-60"
+  >
+    {children}
+  </button>
 );
+
+/** One message in the Visitor Preview conversation */
+type PreviewMessage = {
+  from: "bot" | "user";
+  text: string;
+  at: string;
+  pills?: { label: string; run: () => void }[];
+  note?: string;
+  link?: string;
+};
+
+const timeNow = () => new Date().toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true }).toUpperCase();
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
-export default function ChatbotManagerPage() {
+/** "02 Oct 2026, 10:15 AM" */
+const versionDate = (iso: string) =>
+  new Date(iso).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true }).replace(" am", " AM").replace(" pm", " PM");
+const toVersion = (v: ManagerVersion): Version => ({ minor: v.minor, date: versionDate(v.date), by: v.by, note: v.note });
+
+function ManagerEditor({ initial, onReload }: { initial: ManagerData; onReload: () => void }) {
   const { ref, zoom } = useFitWidth();
   const [tab, setTab] = useState(TABS[0].label);
-  const [buttons, setButtons] = useState(INITIAL_BUTTONS);
-  const [selectedId, setSelectedId] = useState(1);
-  const [draft, setDraft] = useState<MenuButton>(INITIAL_BUTTONS[0]);
+  const [initialButtons] = useState<MenuButton[]>(() => {
+    const saved = initial.draft.buttons as MenuButton[] | undefined;
+    return saved?.length ? saved : INITIAL_BUTTONS;
+  });
+  const [buttons, setButtons] = useState(initialButtons);
+  const [selectedId, setSelectedId] = useState(initialButtons[0].id);
+  const [draft, setDraft] = useState<MenuButton>(initialButtons[0]);
   const [lang, setLang] = useState<"en" | "hi">("en");
-  const [published, setPublished] = useState({ version: 2, pending: true });
+  const [published, setPublished] = useState({ version: initial.versions[0]?.minor ?? 0, pending: initial.pending });
+  const [changes, setChanges] = useState(initial.changes);
+  const [publishing, setPublishing] = useState(false);
   // Publish popup (null = closed) and the sample version list, newest (live) first
   const [publishTab, setPublishTab] = useState<PublishTab | null>(null);
-  const [versions, setVersions] = useState<Version[]>([
-    { minor: 2, date: "02 Oct 2026, 10:15 AM", by: "Admin", note: "Added MSME / PMS support flow." },
-    { minor: 1, date: "01 Oct 2026, 4:30 PM", by: "Admin", note: "First published menu." },
-  ]);
-  const publish = (note: string) => {
-    const date = new Date().toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true }).replace(" am", " AM").replace(" pm", " PM");
-    setVersions((prev) => [{ minor: prev[0].minor + 1, date, by: "Admin", note }, ...prev]);
-    setPublished((p) => ({ version: p.version + 1, pending: false }));
-    setPublishTab(null);
-  };
+  const [versions, setVersions] = useState<Version[]>(() => initial.versions.map(toVersion));
 
   // Toasts and confirm popups shared by every tab
   const [toast, setToast] = useState<Toast | null>(null);
@@ -219,6 +244,65 @@ export default function ChatbotManagerPage() {
   const closeToast = useCallback(() => setToast(null), []);
   const [confirm, setConfirm] = useState<ConfirmOptions | null>(null);
   const closeConfirm = useCallback(() => setConfirm(null), []);
+  const publish = (note: string) => {
+    setPublishing(true);
+    chatbotManagerApi
+      .publish(note)
+      .then((res) => {
+        setVersions(res.versions.map(toVersion));
+        setPublished({ version: res.versions[0]?.minor ?? 0, pending: false });
+        setPublishTab(null);
+        notify("Changes published to the chatbot");
+      })
+      .catch((e: Error) => notify(e.message || "Could not publish. Please try again.", { tone: "error" }))
+      .finally(() => setPublishing(false));
+  };
+
+  // Draft saving shared by the tabs (see useSyncSection in managerUi)
+  const store = useMemo<ManagerStore>(
+    () => ({
+      draft: initial.draft,
+      liveMinor: published.version,
+      save: (section, data) => {
+        chatbotManagerApi
+          .saveDraft(section, data)
+          .then(() => setPublished((p) => ({ ...p, pending: true })))
+          .catch((e: Error) => notify(e.message || "Could not save the draft. Check your connection.", { tone: "error" }));
+      },
+    }),
+    [initial.draft, notify, published.version]
+  );
+  // The menu buttons are this page's own section
+  const buttonsLoaded = useRef(false);
+  useEffect(() => {
+    if (!buttonsLoaded.current) {
+      buttonsLoaded.current = true;
+      return;
+    }
+    const id = setTimeout(() => store.save("buttons", buttons), 500);
+    return () => clearTimeout(id);
+  }, [buttons, store]);
+  // Fresh "changes ready to publish" counts each time the Publish popup opens
+  useEffect(() => {
+    if (publishTab !== "publish") return;
+    let alive = true;
+    // Give a just-made edit time to be saved first
+    const id = setTimeout(() => {
+      chatbotManagerApi
+        .get()
+        .then((res) => {
+          if (!alive) return;
+          setChanges(res.changes);
+          setPublished((p) => ({ ...p, pending: res.pending }));
+        })
+        .catch(() => undefined);
+    }, 700);
+    return () => {
+      alive = false;
+      clearTimeout(id);
+    };
+  }, [publishTab]);
+
   const [previewOpen, setPreviewOpen] = useState(false);
   const closePreview = useCallback(() => setPreviewOpen(false), []);
   // Header "Save Draft" saves whatever the open tab is editing
@@ -254,6 +338,8 @@ export default function ChatbotManagerPage() {
       setSelectedId(b.id);
       setDraft(b);
       setShowErrors(false);
+      // The preview opens on the newly selected button's reply
+      setPreview(null);
     });
   };
   const update = (id: number, patch: Partial<MenuButton>) => {
@@ -339,7 +425,77 @@ export default function ChatbotManagerPage() {
   const t = (text: string) => (lang === "hi" ? HINDI[text] ?? text : text);
   const label = (b: MenuButton) => (lang === "hi" && b.hindi ? b.hindi : b.label);
 
+  // ── Visitor Preview: null = the opening view (welcome, menu and the selected button's reply) ──
+  const [preview, setPreview] = useState<PreviewMessage[] | null>(null);
+  const [previewInput, setPreviewInput] = useState("");
+  const [previewBusy, setPreviewBusy] = useState(false);
+  const previewListRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    previewListRef.current?.scrollTo({ top: previewListRef.current.scrollHeight, behavior: "smooth" });
+  }, [preview]);
+
+  const welcomeText = lang === "hi" ? "नमो गंगे नमस्कार! 🙏\nमैं आपकी क्या मदद कर सकता हूँ?" : "Namo Gange Namaskar! 🙏\nHow can I help you today?";
+  const menuPills = () => activeButtons.map((b) => ({ label: label(b), run: () => pressPreview(b) }));
+  const backToMenu = () => ({
+    label: lang === "hi" ? "↩ मुख्य मेनू" : "↩ Main menu",
+    run: () =>
+      addPreview(lang === "hi" ? "मुख्य मेनू" : "Main menu", {
+        from: "bot",
+        text: lang === "hi" ? "और किसमें मदद करूँ?" : "What else can I help with?",
+        at: timeNow(),
+        pills: menuPills(),
+      }),
+  });
+
+  /** Adds the visitor's message and the bot's reply; older buttons stop being clickable */
+  const addPreview = (userText: string, reply: PreviewMessage) =>
+    setPreview((prev) => [
+      ...(prev ?? [{ from: "bot", text: welcomeText, at: timeNow() }]).map((m) => ({ ...m, pills: undefined })),
+      { from: "user", text: userText, at: timeNow() },
+      reply,
+    ]);
+
+  /** A menu button, as the website does it with the draft settings */
+  const pressPreview = (b: MenuButton) => {
+    const reply = t(b.reply) || "…";
+    const base: PreviewMessage = { from: "bot", text: reply, at: timeNow() };
+    if (b.action === "Show Options")
+      return addPreview(label(b), { ...base, pills: [...b.options.filter((o) => o.trim()).map((o) => ({ label: t(o), run: () => askPreview(t(o)) })), backToMenu()] });
+    if (b.action === "Open Link") return addPreview(label(b), { ...base, link: b.target, pills: [backToMenu()] });
+    if (b.action === "Open Form") return addPreview(label(b), { ...base, note: `“${b.target || "Form"}” form opens here`, pills: [backToMenu()] });
+    if (b.action === "Talk to Team") return addPreview(label(b), { ...base, note: `Hands over to ${b.target || "the team"}`, pills: [backToMenu()] });
+    return addPreview(label(b), { ...base, pills: [backToMenu()] });
+  };
+
+  /** A typed question or a next option: the real bot answers with the draft knowledge */
+  const askPreview = (question: string) => {
+    const q = question.trim();
+    if (!q || previewBusy) return;
+    const history = (preview ?? [])
+      .filter((m) => m.text && m.text !== "…")
+      .map((m) => ({ role: m.from === "user" ? ("user" as const) : ("assistant" as const), content: m.text }))
+      .slice(-10);
+    setPreviewInput("");
+    setPreviewBusy(true);
+    addPreview(q, { from: "bot", text: "…", at: timeNow() });
+    chatbotManagerApi
+      .test({ question: q, mode: "draft", language: lang === "hi" ? "हिंदी" : "Auto", history })
+      .then(
+        (r): PreviewMessage => ({
+          from: "bot",
+          text: r.text,
+          at: timeNow(),
+          note: r.found ? undefined : lang === "hi" ? "पक्का जवाब नहीं — Review Queue में जाएगा" : "No verified answer — goes to the Review Queue",
+          pills: [backToMenu()],
+        })
+      )
+      .catch((e: Error): PreviewMessage => ({ from: "bot", text: e.message || "The AI could not reply.", at: timeNow(), note: "Error", pills: [backToMenu()] }))
+      .then((reply) => setPreview((prev) => [...(prev ?? []).slice(0, -1), reply]))
+      .finally(() => setPreviewBusy(false));
+  };
+
   return (
+    <ManagerStoreContext.Provider value={store}>
     <div ref={ref} className="w-full overflow-x-hidden bg-white">
       <div style={{ zoom, width: DESIGN_WIDTH }} className="flex flex-col px-[16px] pb-[5px] pt-[5px] text-[#0f172a]">
         {/* ── Header (the page name is already in the top bar) ── */}
@@ -349,10 +505,12 @@ export default function ChatbotManagerPage() {
               {tab === "AI Knowledge & Answers" ? "Control Organic Mitra’s knowledge and responses" : "Control buttons, answers and the visitor journey"}
             </p>
             <span
-              title="Changes on this page are not saved to the website"
-              className="inline-flex shrink-0 items-center gap-[7px] whitespace-nowrap rounded-[6px] border border-[#cfe9d6] bg-[#eefaf1] px-[11px] py-[4px] text-[13.4px] font-medium text-[#15803d]"
+              title={initial.ai.configured ? `Replies come from OpenAI (${initial.ai.model}); the key is set in the backend .env` : "OPENAI_API_KEY is missing in the backend .env — the chatbot cannot reply"}
+              className={`inline-flex shrink-0 items-center gap-[7px] whitespace-nowrap rounded-[6px] border px-[11px] py-[4px] text-[13.4px] font-medium ${
+                initial.ai.configured ? "border-[#cfe9d6] bg-[#eefaf1] text-[#15803d]" : "border-[#f3c2c2] bg-[#fdf2f2] text-[#dc2626]"
+              }`}
             >
-              <Eye className="h-[15px] w-[15px]" /> Design preview
+              <Eye className="h-[15px] w-[15px]" /> {initial.ai.configured ? `AI connected • ${initial.ai.model}` : "AI key missing"}
             </span>
           </div>
           <div className="flex shrink-0 items-center gap-[12px]">
@@ -396,11 +554,19 @@ export default function ChatbotManagerPage() {
           onClose={() => setPublishTab(null)}
           versions={versions}
           hasDraft={published.pending}
-          onPublish={(note) => {
-            publish(note);
-            notify("Changes published to the chatbot");
-          }}
-          onRestore={markDraft}
+          changes={changes}
+          publishing={publishing}
+          onPublish={publish}
+          onRestore={(version) =>
+            chatbotManagerApi
+              .restore(version.minor)
+              .then(() => {
+                notify(`v1.${version.minor} restored as the draft`);
+                // Every tab starts again from the restored draft
+                onReload();
+              })
+              .catch((e: Error) => notify(e.message || "Could not restore this version.", { tone: "error" }))
+          }
         />
 
         {/* ── Tabs ── */}
@@ -682,8 +848,10 @@ export default function ChatbotManagerPage() {
               </div>
             </div>
 
-            {/* ── Right: visitor preview ── */}
-            <div className="flex flex-col rounded-[12px] border border-[#e3e8e4] bg-white px-[16px] pb-[10px] pt-[10px] shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+            {/* ── Right: visitor preview ──
+                h-0 + min-h-full: as tall as the row (set by the editor on the left), never taller —
+                a long conversation scrolls inside the chat instead of stretching the page */}
+            <div className="flex h-0 min-h-full flex-col rounded-[12px] border border-[#e3e8e4] bg-white px-[16px] pb-[10px] pt-[10px] shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-[20.5px] font-bold leading-tight text-[#0f2a1c]">Visitor Preview</p>
@@ -694,7 +862,10 @@ export default function ChatbotManagerPage() {
                     <button
                       key={l}
                       type="button"
-                      onClick={() => setLang(l)}
+                      onClick={() => {
+                        setLang(l);
+                        setPreview(null);
+                      }}
                       aria-pressed={lang === l}
                       className={`h-[37px] px-[16px] text-[14.6px] transition ${
                         lang === l ? "border border-[#2f8a4c] bg-[#ebf6ee] font-medium text-[#14532d]" : "text-[#334155] hover:bg-[#f8faf9]"
@@ -706,9 +877,9 @@ export default function ChatbotManagerPage() {
                 </div>
               </div>
 
-              <div className="mt-[10px] flex flex-1 flex-col overflow-hidden rounded-[14px] border border-[#e3e8e4] bg-[#f3f8f1]">
+              <div className="mt-[10px] flex min-h-0 flex-1 flex-col overflow-hidden rounded-[14px] border border-[#e3e8e4] bg-[#f3f8f1]">
                 {/* Chat header */}
-                <div className="flex h-[66px] items-center gap-[12px] bg-gradient-to-br from-[#1f6b2a] to-[#14532d] px-[16px] text-white">
+                <div className="flex h-[66px] shrink-0 items-center gap-[12px] bg-gradient-to-br from-[#1f6b2a] to-[#14532d] px-[16px] text-white">
                   <span className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-full bg-white shadow-md ring-[3px] ring-white/25">
                     <Image src={LOGO} alt="Organic Mitra" width={64} height={64} className="h-[36px] w-[36px] object-contain" />
                   </span>
@@ -717,11 +888,15 @@ export default function ChatbotManagerPage() {
                     <p className="mt-[2px] text-[14.1px] text-white/90">Bharat Organic Expo Assistant</p>
                   </div>
                   <Minus className="h-[22px] w-[22px]" />
-                  <X className="ml-[16px] h-[22px] w-[22px]" />
+                  <button type="button" onClick={() => setPreview(null)} aria-label="Restart preview" title="Restart preview" className="ml-[16px] rounded-full transition hover:bg-white/10">
+                    <X className="h-[22px] w-[22px]" />
+                  </button>
                 </div>
 
-                {/* Messages */}
-                <div className="flex flex-1 flex-col gap-[4px] px-[12px] pb-[8px] pt-[12px]">
+                {/* Messages: the opening view until the visitor clicks or types, then the conversation */}
+                <div ref={previewListRef} className="flex min-h-0 flex-1 flex-col gap-[4px] overflow-y-auto px-[12px] pb-[8px] pt-[12px]">
+                  {preview === null ? (
+                  <>
                   <div className="flex items-start gap-[12px]">
                     <BotAvatar />
                     <div>
@@ -735,7 +910,9 @@ export default function ChatbotManagerPage() {
                   </div>
                   <div className="ml-[46px] mt-[4px] flex flex-wrap gap-[6px]">
                     {activeButtons.map((b) => (
-                      <Pill key={b.id}>{label(b)}</Pill>
+                      <Pill key={b.id} onClick={() => pressPreview(b)}>
+                        {label(b)}
+                      </Pill>
                     ))}
                   </div>
 
@@ -759,22 +936,95 @@ export default function ChatbotManagerPage() {
                   {draft.options.length > 0 && (
                     <div className="ml-[46px] mt-[4px] flex flex-wrap gap-[6px]">
                       {draft.options.map((o, idx) => (
-                        <Pill key={idx}>{t(o)}</Pill>
+                        <Pill
+                          key={idx}
+                          disabled={previewBusy}
+                          onClick={() => {
+                            // Continue from the shown exchange, then ask the bot
+                            setPreview([
+                              { from: "bot", text: welcomeText, at: timeNow() },
+                              { from: "user", text: label(draft), at: timeNow() },
+                              { from: "bot", text: t(draft.reply) || "…", at: timeNow() },
+                            ]);
+                            askPreview(t(o));
+                          }}
+                        >
+                          {t(o)}
+                        </Pill>
                       ))}
                     </div>
                   )}
+                  </>
+                  ) : (
+                    preview.map((m, idx) =>
+                      m.from === "user" ? (
+                        <div key={idx} className="mt-[8px] flex flex-col items-end">
+                          <span className="max-w-[85%] rounded-[10px] rounded-br-[3px] bg-[#15633a] px-[16px] py-[8px] text-[14.6px] text-white">{m.text}</span>
+                          <span className="mt-[4px] pr-[18px] text-[12.1px] text-[#64748b]">{m.at}</span>
+                        </div>
+                      ) : (
+                        <div key={idx} className="mt-[4px]">
+                          <div className="flex items-start gap-[12px]">
+                            <BotAvatar />
+                            <div className="max-w-[290px]">
+                              <div className="whitespace-pre-line rounded-[10px] bg-white px-[13px] py-[8px] text-[14.6px] leading-snug text-[#0f172a] shadow-sm">
+                                {m.text === "…" ? <span className="animate-pulse">{lang === "hi" ? "लिख रहा है…" : "Typing…"}</span> : m.text}
+                              </div>
+                              {m.link && (
+                                <a
+                                  href={/^https?:\/\//.test(m.link) ? m.link : `https://${m.link}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="mt-[6px] inline-flex max-w-full items-center rounded-[7px] border border-[#2f8a4c] bg-white px-[10px] py-[4px] text-[13px] text-[#14532d] hover:bg-[#f1f7ee]"
+                                >
+                                  <span className="truncate">{m.link}</span>
+                                </a>
+                              )}
+                              {m.note && <p className="mt-[4px] text-[12.1px] italic text-[#64748b]">{m.note}</p>}
+                              <p className="mt-[4px] text-[12.1px] text-[#64748b]">{m.at}</p>
+                            </div>
+                          </div>
+                          {m.pills && m.pills.length > 0 && (
+                            <div className="ml-[46px] mt-[4px] flex flex-wrap gap-[6px]">
+                              {m.pills.map((pill) => (
+                                <Pill key={pill.label} onClick={pill.run} disabled={previewBusy}>
+                                  {pill.label}
+                                </Pill>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    )
+                  )}
                 </div>
 
-                {/* Input */}
-                <div className="flex items-center gap-[12px] border-t border-[#e3e8e4] bg-white px-[14px] py-[8px]">
+                {/* Input: typed questions go to the real bot (draft knowledge) */}
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    askPreview(previewInput);
+                  }}
+                  className="flex shrink-0 items-center gap-[12px] border-t border-[#e3e8e4] bg-white px-[14px] py-[8px]"
+                >
                   <Paperclip className="h-[19px] w-[19px] text-[#64748b]" />
-                  <span className="flex h-[36px] flex-1 items-center rounded-full border border-[#dfe3e8] px-[16px] text-[14.6px] text-[#94a3b8]">
-                    {lang === "hi" ? "अपना सवाल लिखें..." : "Type your question..."}
-                  </span>
-                  <span className="grid h-[36px] w-[36px] place-items-center rounded-full bg-[#15633a] text-white">
+                  <input
+                    value={previewInput}
+                    onChange={(e) => setPreviewInput(e.target.value)}
+                    maxLength={500}
+                    placeholder={lang === "hi" ? "अपना सवाल लिखें..." : "Type your question..."}
+                    aria-label="Preview question"
+                    className="h-[36px] min-w-0 flex-1 rounded-full border border-[#dfe3e8] px-[16px] text-[14.6px] text-[#0f172a] outline-none placeholder:text-[#94a3b8] focus:border-[#15633a]"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!previewInput.trim() || previewBusy}
+                    aria-label="Send"
+                    className="grid h-[36px] w-[36px] place-items-center rounded-full bg-[#15633a] text-white transition hover:bg-[#124f2f] disabled:bg-[#15633a]/50"
+                  >
                     <Send className="h-[18px] w-[18px]" />
-                  </span>
-                </div>
+                  </button>
+                </form>
               </div>
 
               <div className="mt-[10px] flex items-center justify-between text-[13.4px]">
@@ -816,5 +1066,67 @@ export default function ChatbotManagerPage() {
         </div>
       </div>
     </div>
+    </ManagerStoreContext.Provider>
+  );
+}
+
+/** Loads the saved draft first, so every tab starts from what was saved */
+export default function ChatbotManagerPage() {
+  const [data, setData] = useState<ManagerData | null>(null);
+  const [error, setError] = useState("");
+  // Bumped to load again (Retry, or after "Restore to Draft")
+  const [loadKey, setLoadKey] = useState(0);
+
+  useEffect(() => {
+    let alive = true;
+    chatbotManagerApi
+      .get()
+      .then((res) => {
+        if (!alive) return;
+        setData(res);
+        setError("");
+      })
+      .catch((e: Error) => alive && setError(e.message || "Could not load the chatbot settings."));
+    return () => {
+      alive = false;
+    };
+  }, [loadKey]);
+
+  if (!data) {
+    return (
+      <div className="flex min-h-[60vh] w-full flex-col items-center justify-center gap-[10px] bg-white text-[14px] text-[#475569]">
+        {error ? (
+          <>
+            <p className="text-[#dc2626]">{error}</p>
+            <button
+              type="button"
+              onClick={() => {
+                setError("");
+                setLoadKey((k) => k + 1);
+              }}
+              className="h-[34px] rounded-[7px] border border-[#d6dae0] bg-white px-[18px] font-medium text-[#0f172a] transition hover:border-[#15633a]"
+            >
+              Retry
+            </button>
+          </>
+        ) : (
+          <>
+            <span className="h-[26px] w-[26px] animate-spin rounded-full border-[3px] border-[#cfe9d6] border-t-[#15633a]" aria-hidden="true" />
+            Loading chatbot settings…
+          </>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <ManagerEditor
+      key={loadKey}
+      initial={data}
+      onReload={() => {
+        setData(null);
+        setLoadKey((k) => k + 1);
+      }}
+    />
   );
 }
