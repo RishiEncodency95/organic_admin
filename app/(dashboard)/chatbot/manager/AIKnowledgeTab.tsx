@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useCallback, useState } from "react";
+import { Fragment, useCallback, useState, useContext, useEffect } from "react";
 import Image from "next/image";
 import {
   ArrowRight,
@@ -25,61 +25,77 @@ import {
   UsersRound,
   ChevronRight,
 } from "lucide-react";
-import { BotAvatar, ConfirmDialog, LOGO, RowMenu, Select, cardClass, type ConfirmOptions, type Notify } from "./managerUi";
+import { BotAvatar, ConfirmDialog, LOGO, ManagerStoreContext, RowMenu, Select, cardClass, useDraftSection, type ConfirmOptions, type Notify } from "./managerUi";
+import { chatbotManagerApi, type KnowledgeSourceRow, type NewKnowledgeSource } from "@/lib/chatbotManagerApi";
 import ReviewUpdateModal from "./ReviewUpdateModal";
 import AddSourceModal, { type NewSource, type SourceKind } from "./AddSourceModal";
 import ReviewQuestionModal, { type ReviewItem } from "./ReviewQuestionModal";
 
 /*
- * "AI Knowledge & Answers" tab of the Chatbot Manager — design preview. Sources, review
- * items and test replies are sample data kept in component state (nothing is crawled,
- * indexed or answered by a real model). Sized to fit the shared Buttons & Flows height.
+ * "AI Knowledge & Answers" tab of the Chatbot Manager. Sources are fetched / read / stored
+ * on the server (website pages, PDF / DOCX / TXT documents, typed text); published sources
+ * are what Organic Mitra answers from. Test replies come from the real bot, and the review
+ * queue lists real visitor questions it could not answer. Sized to fit the shared Buttons & Flows height.
  */
 
 // ─── Sample data ─────────────────────────────────────────────────────────────
 
 type SourceStatus = "Published" | "Update pending" | "Draft";
-type Source = { id: number; name: string; url?: string; kind: "web" | "pdf" | "manual"; topic: string; status: SourceStatus; checked: string; owner?: string };
+type Source = {
+  id: number;
+  name: string;
+  url?: string;
+  kind: "web" | "pdf" | "manual";
+  topic: string;
+  status: SourceStatus;
+  checked: string;
+  owner?: string;
+  /** Server id, characters of text the bot reads, a short preview and the last fetch error */
+  sid?: string;
+  chars?: number;
+  preview?: string;
+  error?: string;
+};
 
-const INITIAL_SOURCES: Source[] = [
-  { id: 1, name: "Expo information", url: "bharatorganicexpo.com", kind: "web", topic: "General", status: "Published", checked: "Today, 10:20 AM" },
-  { id: 2, name: "Exhibitor brochure.pdf", kind: "pdf", topic: "Exhibitors", status: "Published", checked: "01 Oct 2026" },
-  { id: 3, name: "Visitor information", kind: "web", topic: "Visitors", status: "Update pending", checked: "Today, 10:20 AM" },
-];
+/** "Today, 10:20 AM" / "01 Oct 2026" */
+const checkedLabel = (iso?: string) => {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  const time = d.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true }).toUpperCase();
+  if (d.toDateString() === new Date().toDateString()) return `Today, ${time}`;
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+};
+
+/** Host + path, as the table shows website addresses */
+const shortUrl = (url?: string) => {
+  if (!url) return undefined;
+  try {
+    const u = new URL(/^https?:\/\//.test(url) ? url : `https://${url}`);
+    return `${u.hostname}${u.pathname === "/" ? "" : u.pathname}`;
+  } catch {
+    return url;
+  }
+};
+
+const toSource = (r: KnowledgeSourceRow, i: number): Source => ({
+  id: i + 1,
+  sid: r._id,
+  name: r.name,
+  url: shortUrl(r.url),
+  kind: r.kind,
+  topic: r.topic,
+  status: r.status,
+  checked: checkedLabel(r.checkedAt),
+  owner: r.owner,
+  chars: r.pendingChars ?? r.chars,
+  preview: r.preview,
+  error: r.error,
+});
 
 const TOPICS = ["All topics", "General", "Exhibitors", "Visitors"] as const;
 
 /** Questions the bot could not answer (sample). `awaiting` = sent to the team for confirmation */
-type QueueItem = ReviewItem & { action: "Add Answer" | "Review"; awaiting?: boolean };
-
-const INITIAL_REVIEW: QueueItem[] = [
-  {
-    id: 1,
-    question: "Is parking available?",
-    asked: 8,
-    topic: "Venue",
-    owner: "Visitor Team",
-    action: "Add Answer",
-    visitorMessage: "Is there parking at Bharat Mandapam for visitors?",
-    botReply: "I don’t have verified parking details yet. Would you like me to connect you with our team?",
-  },
-  {
-    id: 2,
-    question: "Can I change my stall size?",
-    asked: 3,
-    topic: "Stall Booking",
-    owner: "Sales Team",
-    action: "Review",
-    visitorMessage: "I requested a 12 sq.m stall. Can I change it to 18 sq.m?",
-    botReply: "I need our sales team to confirm this. Would you like me to connect you?",
-  },
-];
-
-const APPROVED = [
-  { question: "What are the expo dates?", topic: "Event Information", updated: "02 Oct 2026" },
-  { question: "How do I book a stall?", topic: "Stall Booking", updated: "01 Oct 2026" },
-  { question: "Is visitor registration free?", topic: "Visitors", updated: "30 Sep 2026" },
-];
+type QueueItem = ReviewItem & { action: "Add Answer" | "Review"; awaiting?: boolean; /** server key of the question */ key?: string };
 
 const SUB_TABS = ["Knowledge Sources", "Approved Answers", "Review Queue"] as const;
 
@@ -89,52 +105,18 @@ const STATUS_PILL: Record<SourceStatus, string> = {
   Draft: "bg-[#f1f3f5] text-[#475569] [&>i]:bg-[#94a3b8]",
 };
 
-/** Sample knowledge: which source answers which kind of question */
-const KNOWLEDGE = [
-  {
-    sourceId: 1,
-    match: /(kab|kahan|when|where|date|venue|expo)/,
-    detail: "Event dates & venue",
-    en: "Bharat Organic Expo will be held from 19–21 February 2027 at Bharat Mandapam, New Delhi.",
-    hi: "Bharat Organic Expo 19–21 February 2027 ko Bharat Mandapam, New Delhi mein hoga.",
-  },
-  {
-    sourceId: 2,
-    match: /(stall|booth|exhibit|brochure|price|pricing|sq\.?m)/,
-    detail: "Stall sizes & booking",
-    en: "Stalls are available in 9, 12 and 18 sq.m sizes. You can request a quotation from the Book a Stand page.",
-    hi: "Stall 9, 12 aur 18 sq.m size mein milte hain. Book a Stand page se quotation maang sakte hain.",
-  },
-  {
-    sourceId: 3,
-    match: /(visitor|register|registration|entry|ticket|pass)/,
-    detail: "Visitor registration",
-    en: "Visitor registration is free. Register online and show your confirmation at the entry.",
-    hi: "Visitor registration free hai. Online register karein aur entry par confirmation dikhayein.",
-  },
-];
-
 type TestResult = { found: boolean; text: string; source?: { name: string; detail: string; url?: string }; draftOnly?: boolean };
 
-/**
- * Very small stand-in for the model: matches the question to a sample source. "Live" only
- * uses published sources (an update waiting for review keeps its published content);
- * "Draft" also uses draft sources.
- */
-const answerFor = (question: string, language: string, sources: Source[], mode: "Live" | "Draft"): TestResult => {
-  const q = question.toLowerCase();
-  const english = language === "English";
-  const hit = KNOWLEDGE.find((k) => k.match.test(q));
-  const source = hit && sources.find((s) => s.id === hit.sourceId);
-  if (hit && source && (mode === "Draft" || source.status !== "Draft")) {
-    return { found: true, text: english ? hit.en : hit.hi, source: { name: source.name, detail: hit.detail, url: source.url } };
-  }
-  return {
-    found: false,
-    draftOnly: !!hit && !!source,
-    text: english ? "I don’t have a verified answer yet. Would you like help from our team?" : "Iska verified jawab abhi mere paas nahi hai. Kya aap hamari team se baat karna chahenge?",
-  };
-};
+/** Real reply from the bot: "Live" = published knowledge, "Draft" = with unpublished changes */
+const askBot = (question: string, language: string, mode: "Live" | "Draft"): Promise<TestResult> =>
+  chatbotManagerApi
+    .test({ question, language: language === "Hindi" ? "हिंदी" : language, mode: mode === "Live" ? "live" : "draft" })
+    .then((r) => ({
+      found: r.found,
+      text: r.text,
+      source: r.found ? { name: "Organic Mitra knowledge", detail: mode === "Live" ? "Published answers & sources" : "Draft answers & sources" } : undefined,
+    }))
+    .catch((e: Error) => ({ found: false, text: e.message || "The AI could not reply. Please try again." }));
 
 // ─── Tab ─────────────────────────────────────────────────────────────────────
 
@@ -142,7 +124,16 @@ type Props = { onChange: () => void; onGoToTab: (tab: string) => void; notify: N
 
 export default function AIKnowledgeTab({ onChange, onGoToTab, notify }: Props) {
   const [sub, setSub] = useState<(typeof SUB_TABS)[number]>("Knowledge Sources");
-  const [sources, setSources] = useState(INITIAL_SOURCES);
+  const [sources, setSources] = useState<Source[]>([]);
+  const liveMinor = useContext(ManagerStoreContext)?.liveMinor ?? 0;
+  // Approved answers saved in the Questions & Answers tab (as last saved)
+  const savedAnswers = useDraftSection<{ question: string; topic: string; status: string }[]>("answers");
+  const approved = savedAnswers ? savedAnswers.filter((a) => a.status === "Approved").map((a) => ({ question: a.question, topic: a.topic, updated: "Saved draft" })) : [];
+  const loadSources = () =>
+    chatbotManagerApi
+      .sources()
+      .then((rows) => setSources(rows.map(toSource)))
+      .catch((e: Error) => notify(e.message || "Could not load the knowledge sources.", { tone: "error" }));
   const [search, setSearch] = useState("");
   const [topic, setTopic] = useState<(typeof TOPICS)[number]>("All topics");
   const [addOpen, setAddOpen] = useState(false);
@@ -150,20 +141,57 @@ export default function AIKnowledgeTab({ onChange, onGoToTab, notify }: Props) {
   const [mode, setMode] = useState<"Live" | "Draft">("Draft");
   const [question, setQuestion] = useState("Expo kab aur kahan hai?");
   const [language, setLanguage] = useState("Hinglish");
-  const [result, setResult] = useState(() => answerFor("Expo kab aur kahan hai?", "Hinglish", INITIAL_SOURCES, "Draft"));
+  const [result, setResult] = useState<TestResult>({ found: true, text: "Ask a question and press Test to see Organic Mitra’s real reply." });
+  const [testing, setTesting] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmOptions | null>(null);
   const closeConfirm = useCallback(() => setConfirm(null), []);
   const [rating, setRating] = useState<"correct" | "fix" | null>(null);
   // Unanswered questions and the one whose "Review Question" popup is open
-  const [reviewItems, setReviewItems] = useState(INITIAL_REVIEW);
+  const [reviewItems, setReviewItems] = useState<QueueItem[]>([]);
+  // Sources and real unanswered questions, once
+  useEffect(() => {
+    let alive = true;
+    chatbotManagerApi
+      .sources()
+      .then((rows) => alive && setSources(rows.map(toSource)))
+      .catch(() => undefined);
+    chatbotManagerApi
+      .review()
+      .then(
+        (items) =>
+          alive &&
+          setReviewItems(
+            items.map((r, i) => ({
+              id: i + 1,
+              key: r.key,
+              question: r.question,
+              asked: r.asked,
+              topic: "General",
+              owner: "Expo Team",
+              action: "Add Answer" as const,
+              visitorMessage: r.visitorMessage,
+              botReply: r.botReply,
+            }))
+          )
+      )
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, []);
   const [reviewQuestionId, setReviewQuestionId] = useState<number | null>(null);
   const reviewQuestion = reviewItems.find((r) => r.id === reviewQuestionId) ?? null;
   // Source whose "Review Content Update" popup is open
   const [reviewId, setReviewId] = useState<number | null>(null);
   const reviewSource = sources.find((x) => x.id === reviewId) ?? null;
-  const finishReview = () => {
-    setSources((prev) => prev.map((x) => (x.id === reviewId ? { ...x, status: "Published", checked: "Just now" } : x)));
+  const finishReview = (action: "approve" | "keep") => {
+    const s = sources.find((x) => x.id === reviewId);
     setReviewId(null);
+    if (!s?.sid) return;
+    chatbotManagerApi
+      .updateSource(s.sid, { action })
+      .then(() => loadSources())
+      .catch((e: Error) => notify(e.message || "Could not update the source.", { tone: "error" }));
   };
 
   const viewSource = (s: Source) =>
@@ -194,7 +222,14 @@ export default function AIKnowledgeTab({ onChange, onGoToTab, notify }: Props) {
               <dd className="text-[#0f172a]">{s.owner}</dd>
             </>
           )}
-          <dt className="col-span-2 mt-[6px] text-[12.5px] text-[#64748b]">Demo data — the document content is not stored in this preview.</dt>
+          {s.error && (
+            <>
+              <dt className="text-[#dc2626]">Last check</dt>
+              <dd className="text-[#dc2626]">{s.error}</dd>
+            </>
+          )}
+          <dt className="col-span-2 mt-[6px] text-[12.5px] text-[#64748b]">Text Organic Mitra reads ({(s.chars ?? 0).toLocaleString("en-IN")} characters):</dt>
+          <dd className="col-span-2 max-h-[160px] overflow-y-auto whitespace-pre-line rounded-[6px] bg-[#f7f8fa] px-[10px] py-[6px] text-[12.5px] text-[#334155]">{s.preview || "—"}</dd>
         </dl>
       ),
     });
@@ -206,17 +241,28 @@ export default function AIKnowledgeTab({ onChange, onGoToTab, notify }: Props) {
       confirmLabel: "Delete Source",
       danger: true,
       run: () => {
-        const index = sources.findIndex((x) => x.id === s.id);
-        setSources((prev) => prev.filter((x) => x.id !== s.id));
-        onChange();
-        notify(`“${s.name}” removed`, { undo: () => setSources((prev) => [...prev.slice(0, index), s, ...prev.slice(index)]) });
+        if (!s.sid) return;
+        chatbotManagerApi
+          .deleteSource(s.sid)
+          .then(() => {
+            setSources((prev) => prev.filter((x) => x.id !== s.id));
+            onChange();
+            notify(`“${s.name}” removed`);
+          })
+          .catch((e: Error) => notify(e.message || "Could not delete the source.", { tone: "error" }));
       },
     });
 
   const dismissQuestion = (r: QueueItem) => {
     const index = reviewItems.findIndex((x) => x.id === r.id);
     setReviewItems((prev) => prev.filter((x) => x.id !== r.id));
-    notify("Question dismissed", { undo: () => setReviewItems((prev) => [...prev.slice(0, index), r, ...prev.slice(index)]) });
+    if (r.key) chatbotManagerApi.dismissReview(r.key).catch(() => undefined);
+    notify("Question dismissed", {
+      undo: () => {
+        setReviewItems((prev) => [...prev.slice(0, index), r, ...prev.slice(index)]);
+        if (r.key) chatbotManagerApi.dismissReview(r.key, true).catch(() => undefined);
+      },
+    });
   };
 
   const q = search.trim().toLowerCase();
@@ -233,24 +279,48 @@ export default function AIKnowledgeTab({ onChange, onGoToTab, notify }: Props) {
     setAddKind(kind);
   };
   const addSource = (src: NewSource) => {
-    const id = Math.max(0, ...sources.map((s) => s.id)) + 1;
     const topicLabel = src.topic === "General Information" ? "General" : src.topic;
-    setSources((prev) => [...prev, { id, name: src.name, url: src.url, kind: src.kind, topic: topicLabel, status: "Draft", checked: "Just now", owner: src.owner }]);
+    const body: NewKnowledgeSource | null =
+      src.kind === "web"
+        ? { kind: "web", name: src.name, url: src.fullUrl || src.url || "", includeLinked: !!src.includeLinked, frequency: src.frequency || "Manually", topic: topicLabel, owner: src.owner }
+        : src.kind === "pdf"
+          ? src.file
+            ? { kind: "pdf", name: src.name, file: src.file, topic: topicLabel, owner: src.owner }
+            : null
+          : src.textMode === "text"
+            ? { kind: "manual", name: src.name, text: src.text, topic: topicLabel, owner: src.owner }
+            : { kind: "manual", name: src.name, question: src.question, answerEn: src.answer?.en, answerHi: src.answer?.hi, phrases: src.phrases, topic: topicLabel, owner: src.owner };
     setAddKind(null);
-    onChange();
-    notify(`“${src.name}” added as a draft source`);
+    if (!body) return;
+    notify(src.kind === "web" ? `Reading “${src.url}”…` : src.kind === "pdf" ? `Reading “${src.file?.name}”…` : `Saving “${src.name}”…`);
+    chatbotManagerApi
+      .addSource(body)
+      .then((row) => {
+        setSources((prev) => [...prev, toSource(row, prev.length)].map((x, i) => ({ ...x, id: i + 1 })));
+        onChange();
+        notify(`“${row.name}” added as a draft source (${row.chars.toLocaleString("en-IN")} characters read)`);
+      })
+      .catch((e: Error) => notify(e.message || "Could not import this source.", { tone: "error" }));
   };
   const checkUpdates = () => {
     setChecking(true);
-    window.setTimeout(() => {
-      setSources((prev) => prev.map((s) => (s.kind === "web" ? { ...s, checked: "Just now" } : s)));
-      setChecking(false);
-      notify("Website sources checked — no new changes found");
-    }, 900);
+    chatbotManagerApi
+      .checkSources()
+      .then((res) => {
+        setSources(res.sources.map(toSource));
+        notify(res.changed ? `${res.changed} website source${res.changed === 1 ? "" : "s"} changed — review the update` : "Website sources checked — no new changes found");
+      })
+      .catch((e: Error) => notify(e.message || "Could not check the website sources.", { tone: "error" }))
+      .finally(() => setChecking(false));
   };
   const runTest = (text = question, testMode = mode) => {
-    setResult(answerFor(text, language, sources, testMode));
+    if (!text.trim() || testing) return;
+    setTesting(true);
     setRating(null);
+    setResult({ found: true, text: "Organic Mitra is thinking…" });
+    askBot(text.trim(), language, testMode)
+      .then(setResult)
+      .finally(() => setTesting(false));
   };
 
   const subTabButton = (t: (typeof SUB_TABS)[number]) => (
@@ -291,12 +361,12 @@ export default function AIKnowledgeTab({ onChange, onGoToTab, notify }: Props) {
         source={reviewSource}
         onClose={() => setReviewId(null)}
         onApprove={() => {
-          finishReview();
+          finishReview("approve");
           onChange();
           notify("Update approved — it goes live after publishing");
         }}
         onKeep={() => {
-          finishReview();
+          finishReview("keep");
           notify("Kept the current published content");
         }}
       />
@@ -310,7 +380,7 @@ export default function AIKnowledgeTab({ onChange, onGoToTab, notify }: Props) {
           Hybrid AI
         </span>
         <span className="h-[16px] w-px bg-[#cbd5e1]" />
-        <span>Live knowledge: v1.2</span>
+        <span>Live knowledge: {liveMinor ? `v1.${liveMinor}` : "not published"}</span>
         <span className="h-[16px] w-px bg-[#cbd5e1]" />
         <span className="flex items-center gap-[8px]">
           <Database className="h-[16px] w-[16px]" /> {published} published sources
@@ -321,7 +391,7 @@ export default function AIKnowledgeTab({ onChange, onGoToTab, notify }: Props) {
         </span>
         <span className="h-[16px] w-px bg-[#cbd5e1]" />
         <span className="flex items-center gap-[8px]">
-          <FlaskConical className="h-[16px] w-[16px]" /> Demo data (not actual crawl)
+          <FlaskConical className="h-[16px] w-[16px]" /> Real AI replies
         </span>
       </div>
 
@@ -464,8 +534,15 @@ export default function AIKnowledgeTab({ onChange, onGoToTab, notify }: Props) {
                                     {
                                       label: "Check this page now",
                                       onSelect: () => {
-                                        setSources((prev) => prev.map((x) => (x.id === s.id ? { ...x, checked: "Just now" } : x)));
-                                        notify(`“${s.name}” checked — no new changes found`);
+                                        if (!s.sid) return;
+                                        notify(`Checking “${s.name}”…`);
+                                        chatbotManagerApi
+                                          .refreshSource(s.sid)
+                                          .then((res) => {
+                                            loadSources();
+                                            notify(res.changed ? `“${s.name}” changed — review the update` : res.source.error ? `“${s.name}”: ${res.source.error}` : `“${s.name}” checked — no new changes found`, res.source.error ? { tone: "error" } : undefined);
+                                          })
+                                          .catch((e: Error) => notify(e.message || "Could not check this page.", { tone: "error" }));
                                       },
                                     },
                                   ]
@@ -502,7 +579,8 @@ export default function AIKnowledgeTab({ onChange, onGoToTab, notify }: Props) {
                   <span>Topic</span>
                   <span>Last updated</span>
                 </div>
-                {APPROVED.map((a) => (
+                {approved.length === 0 && <p className="border-t border-[#eef0f2] px-[14px] py-[10px] text-[#64748b]">No approved answers yet — approve them in Questions &amp; Answers.</p>}
+                {approved.map((a) => (
                   <div key={a.question} className="grid h-[38px] grid-cols-[1fr_180px_140px] items-center border-t border-[#eef0f2] px-[14px]">
                     <span className="flex items-center gap-[10px]">
                       <Check className="h-[15px] w-[15px] text-[#15803d]" /> {a.question}
@@ -681,7 +759,7 @@ export default function AIKnowledgeTab({ onChange, onGoToTab, notify }: Props) {
                     <Info className="h-[15px] w-[15px]" /> {result.draftOnly ? "Only in draft knowledge — not live yet" : "No approved source — would hand over to the team"}
                   </span>
                 )}
-                <p className="mt-[4px] text-[12.1px] text-[#475569]">Knowledge version: {mode === "Draft" ? "Draft v1.3" : "Live v1.2"}</p>
+                <p className="mt-[4px] text-[12.1px] text-[#475569]">Knowledge version: {mode === "Draft" ? `Draft v1.${liveMinor + 1}` : liveMinor ? `Live v1.${liveMinor}` : "Live (not published yet)"}</p>
                 <div className="mt-[4px] flex justify-end gap-[10px]">
                   <button
                     type="button"

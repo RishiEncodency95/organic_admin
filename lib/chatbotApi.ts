@@ -12,10 +12,25 @@ export interface ChatMessage {
   createdAt: string;
 }
 
+export interface ChatRequest {
+  type: "stall-quotation" | "sales-callback";
+  stallSize?: string;
+  company?: string;
+  preferredTime?: string;
+  createdAt?: string;
+}
+
 export interface ChatSummary {
   _id: string;
   sessionId: string;
   lead?: ChatLead;
+  /** "Visitor 103.x.x.x" — the chat's name until the mobile number is verified */
+  visitorName?: string;
+  visitor?: { ip?: string; userAgent?: string };
+  /** When the mobile number in `lead` was verified with the WhatsApp OTP */
+  phoneVerifiedAt?: string;
+  feedback?: "yes" | "no";
+  requests?: ChatRequest[];
   pageUrl?: string;
   enquiryId?: string;
   whatsappSentAt?: string;
@@ -40,7 +55,21 @@ export interface ChatListResponse {
 }
 
 export interface ChatStats {
-  totals: { chats: number; leads: number; questions: number; replies: number; whatsappSent: number; engaged: number };
+  totals: {
+    chats: number;
+    leads: number;
+    questions: number;
+    replies: number;
+    whatsappSent: number;
+    engaged: number;
+    verifiedLeads: number;
+    handovers: number;
+    feedbackYes: number;
+    feedbackNo: number;
+    unanswered: number;
+    returningVisitors: number;
+  };
+  popularQuestions: { question: string; count: number }[];
   daily: { date: string; chats: number; questions: number }[];
   topPages: { pageUrl: string; chats: number }[];
   latestQuestions: { _id: string; chatId: string; name?: string; content: string; createdAt: string }[];

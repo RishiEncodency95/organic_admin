@@ -765,7 +765,8 @@ export const api = {
   patch: <T>(path: string, payload?: unknown) =>
     request<T>(path, { method: "PATCH", body: payload !== undefined ? JSON.stringify(payload) : undefined }),
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
-  postForm: <T>(path: string, formData: FormData) => request<T>(path, { method: "POST", body: formData }),
+  postForm: <T>(path: string, formData: FormData, options?: Pick<ApiRequestOptions, "timeoutMs">) =>
+    request<T>(path, { method: "POST", body: formData, ...options }),
   putForm: <T>(path: string, formData: FormData) => request<T>(path, { method: "PUT", body: formData }),
   getHtml: requestHtml,
   getBlob: requestBlob,

@@ -1,14 +1,15 @@
 "use client";
 
-import { useImperativeHandle, useRef, useState, type Ref } from "react";
+import { useContext, useImperativeHandle, useRef, useState, type Ref } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { History, Info, LockKeyhole, Plus, Save, Upload, UsersRound, X } from "lucide-react";
-import { LOGO, Select, cardClass, inputClass as baseInput, type Notify, type TabHandle } from "./managerUi";
+import { LOGO, ManagerStoreContext, Select, cardClass, inputClass as baseInput, useDraftSection, type Notify, type TabHandle } from "./managerUi";
 
 /*
- * "Settings" tab of the Chatbot Manager — design preview with sample settings kept in
- * component state; nothing is saved to or used by the website chatbot.
+ * "Settings" tab of the Chatbot Manager. "Save Draft" stores the settings on the server;
+ * once published, the website chat uses the name, subtitle, launcher label, greetings,
+ * on/off switch and the unknown-answer message. (The avatar is not uploaded yet.)
  * Sized so both columns fit in the Buttons & Flows tab's height (the tabs share one cell).
  */
 
@@ -82,23 +83,39 @@ const MESSAGE_LABELS: Record<keyof MessageSet, string> = {
   unknownAnswer: "Unknown Answer Message",
 };
 
+/** What "Save Draft" stores (the server reads identity, enabled, messages and team) */
+type SavedSettings = {
+  identity: { name: string; subtitle: string; launcher: string };
+  languages: Language[];
+  defaultLang: Language;
+  enabled: boolean;
+  messages: typeof MESSAGES;
+  team: { timezone: (typeof TIMEZONES)[number]; days: (typeof WORKING_DAYS)[number]; from: (typeof TIMES)[number]; to: (typeof TIMES)[number]; outside: string };
+  memory: { remember: boolean; reuse: boolean; link: boolean };
+  retention: (typeof RETENTION)[number];
+};
+
 export default function SettingsTab({ onChange, onOpenHistory, notify, ref }: Props) {
-  const [identity, setIdentity] = useState({ name: "Organic Mitra", subtitle: "Bharat Organic Expo Assistant", launcher: "Ask Organic Mitra" });
+  const saved = useDraftSection<SavedSettings>("settings");
+  const store = useContext(ManagerStoreContext);
+  const [identity, setIdentity] = useState(saved?.identity ?? { name: "Organic Mitra", subtitle: "Bharat Organic Expo Assistant", launcher: "Ask Organic Mitra" });
   const [avatar, setAvatar] = useState(LOGO);
-  const [languages, setLanguages] = useState<Language[]>([...LANGUAGES]);
-  const [defaultLang, setDefaultLang] = useState<Language>("English");
-  const [enabled, setEnabled] = useState(true);
+  const [languages, setLanguages] = useState<Language[]>(saved?.languages ?? [...LANGUAGES]);
+  const [defaultLang, setDefaultLang] = useState<Language>(saved?.defaultLang ?? "English");
+  const [enabled, setEnabled] = useState(saved?.enabled ?? true);
   const [msgLang, setMsgLang] = useState<"en" | "hi">("en");
-  const [messages, setMessages] = useState(MESSAGES);
-  const [team, setTeam] = useState({
-    timezone: "Asia/Kolkata" as (typeof TIMEZONES)[number],
-    days: "Mon – Sat" as (typeof WORKING_DAYS)[number],
-    from: "10:00 AM" as (typeof TIMES)[number],
-    to: "6:00 PM" as (typeof TIMES)[number],
-    outside: "Our team is currently unavailable. Leave your enquiry and we’ll follow up during working hours.",
-  });
-  const [memory, setMemory] = useState({ remember: true, reuse: true, link: true });
-  const [retention, setRetention] = useState<(typeof RETENTION)[number]>("Set retention period");
+  const [messages, setMessages] = useState(saved?.messages ?? MESSAGES);
+  const [team, setTeam] = useState<SavedSettings["team"]>(
+    saved?.team ?? {
+      timezone: "Asia/Kolkata",
+      days: "Mon – Sat",
+      from: "10:00 AM",
+      to: "6:00 PM",
+      outside: "Our team is currently unavailable. Leave your enquiry and we’ll follow up during working hours.",
+    }
+  );
+  const [memory, setMemory] = useState(saved?.memory ?? { remember: true, reuse: true, link: true });
+  const [retention, setRetention] = useState<(typeof RETENTION)[number]>(saved?.retention ?? "Set retention period");
   const fileRef = useRef<HTMLInputElement>(null);
   // Red borders on empty required fields after a failed save
   const [showErrors, setShowErrors] = useState(false);
@@ -150,8 +167,10 @@ export default function SettingsTab({ onChange, onOpenHistory, notify, ref }: Pr
       return;
     }
     setShowErrors(false);
+    const data: SavedSettings = { identity, languages, defaultLang, enabled, messages, team, memory, retention };
+    store?.save("settings", data);
     onChange();
-    notify("Settings saved to draft");
+    notify("Settings saved to draft — publish to update the website chat");
   };
 
   useImperativeHandle(ref, () => ({ save }));

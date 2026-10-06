@@ -53,12 +53,14 @@ export default function ChatbotLeadsPage() {
 
   const exportCsv = () => {
     downloadCsv(`chatbot-leads-${new Date().toISOString().slice(0, 10)}.csv`, [
-      ["Date", "Name", "Email", "Phone", "Page", "Questions", "First Question", "WhatsApp Sent"],
+      ["Date", "Name", "Email", "Phone", "Mobile Verified", "Visitor IP", "Page", "Questions", "First Question", "WhatsApp Sent"],
       ...rows.map((r) => [
         toCsvDate(r.createdAt),
         r.lead?.name || "",
         r.lead?.email || "",
         r.lead?.phone || "",
+        r.phoneVerifiedAt ? "Yes" : "No",
+        r.visitor?.ip || "",
         pagePath(r.pageUrl),
         r.questionCount,
         r.firstQuestion?.content || "",

@@ -6,14 +6,31 @@ import { ChevronDown, CircleHelp, CloudUpload, Eye, FileText, Globe, Info, Messa
 
 /*
  * "Add Knowledge Source" popup — opened from "Add Source" in the AI Knowledge & Answers tab.
- * Design preview: nothing is fetched, uploaded or indexed; the source is added to the
- * table as a draft. Closes only from the ✕, Cancel or after importing — not on outside
+ * The server fetches the page / reads the document / stores the text, and the source is
+ * added as a draft (it goes live with the next publish). Closes only from the ✕, Cancel or after importing — not on outside
  * clicks or Escape. Rendered into document.body so the page's zoom does not shrink it.
  */
 
 export type SourceKind = "web" | "pdf" | "manual";
 
-export type NewSource = { kind: SourceKind; name: string; url?: string; topic: string; owner: string };
+export type NewSource = {
+  kind: SourceKind;
+  name: string;
+  /** Host + path, for display */
+  url?: string;
+  topic: string;
+  owner: string;
+  /** What the server imports: the full address, the document, or the typed text / FAQ */
+  fullUrl?: string;
+  includeLinked?: boolean;
+  frequency?: string;
+  file?: File;
+  textMode?: "faq" | "text";
+  question?: string;
+  answer?: { en: string; hi: string };
+  phrases?: string[];
+  text?: string;
+};
 
 const TOPICS = ["General Information", "Exhibitors", "Visitors", "Buyer–Seller Meet", "Conference & Awards"] as const;
 const OWNERS = ["Content Team", "Sales Team", "Visitor Team", "Admin"] as const;
@@ -167,7 +184,22 @@ export default function AddSourceModal({ kind, onClose, onImport }: Props) {
     }
     setErrors(next);
     if (Object.keys(next).length) return;
-    onImport({ kind: tab, name: sourceName, url: host, topic, owner });
+    onImport({
+      kind: tab,
+      name: sourceName,
+      url: host,
+      topic,
+      owner,
+      fullUrl: url.trim(),
+      includeLinked,
+      frequency,
+      file: file ?? undefined,
+      textMode,
+      question: question.trim(),
+      answer: { en: answer.en.trim(), hi: answer.hi.trim() },
+      phrases,
+      text: text.trim(),
+    });
   };
 
   const fieldError = (key: ErrorKey) =>

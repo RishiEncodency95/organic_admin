@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useImperativeHandle, useMemo, useState, type Ref } from "react";
+import { useCallback, useContext, useEffect, useImperativeHandle, useMemo, useState, type Ref } from "react";
+import { chatbotManagerApi } from "@/lib/chatbotManagerApi";
 import { History, Info, Pencil, Plus, Search, Send, Trash2, X } from "lucide-react";
 import {
   BotAvatar,
@@ -14,13 +15,13 @@ import {
   useReorder,
   type ConfirmOptions,
   type Notify,
-  type TabHandle,
-} from "./managerUi";
+  type TabHandle, ManagerStoreContext, useDraftSection, useSyncSection } from "./managerUi";
 import ReviewQuestionModal, { type ReviewItem } from "./ReviewQuestionModal";
 
 /*
- * "Questions & Answers" tab of the Chatbot Manager — design preview with sample answers
- * kept in component state; nothing is saved to or used by the website chatbot.
+ * "Questions & Answers" tab of the Chatbot Manager. Answers are saved to the draft on the
+ * server; once published, "Approved" answers are what Organic Mitra answers with. The review
+ * queue lists real questions the bot could not answer, and "Test Reply" asks the real bot.
  */
 
 // ─── Sample data ─────────────────────────────────────────────────────────────
@@ -99,30 +100,18 @@ const TARGETS: Record<NextAction, string[]> = {
 const problemWith = (a: Answer) => (!a.question.trim() ? "Add the question." : !a.answer.en.trim() ? "Write the approved answer in English." : "");
 
 /** Questions the bot could not answer (sample). `awaiting` = sent to the team for confirmation */
-type QueueItem = Omit<ReviewItem, "topic"> & { topic: Topic; action: "Add Answer" | "Review"; awaiting?: boolean };
+type QueueItem = Omit<ReviewItem, "topic"> & { topic: Topic; action: "Add Answer" | "Review"; awaiting?: boolean; /** server key of the question */ key?: string };
 
-const REVIEW_QUEUE: QueueItem[] = [
-  {
-    id: 1,
-    question: "Is parking available?",
-    topic: "Venue",
-    action: "Add Answer",
-    asked: 8,
-    owner: "Visitor Team",
-    visitorMessage: "Is there parking at Bharat Mandapam for visitors?",
-    botReply: "I don’t have verified parking details yet. Would you like me to connect you with our team?",
-  },
-  {
-    id: 2,
-    question: "Can I change my stall size?",
-    topic: "Booking",
-    action: "Review",
-    asked: 3,
-    owner: "Sales Team",
-    visitorMessage: "I requested a 12 sq.m stall. Can I change it to 18 sq.m?",
-    botReply: "I need our sales team to confirm this. Would you like me to connect you?",
-  },
-];
+/** Best-guess topic for a visitor's question */
+const guessTopic = (q: string): Topic => {
+  const t = q.toLowerCase();
+  if (/stall|booth|space|sq/.test(t)) return "Stall Booking";
+  if (/pms|msme|subsid/.test(t)) return "PMS Support";
+  if (/venue|parking|hall|mandapam|hotel|metro/.test(t)) return "Venue";
+  if (/regist|visitor|pass|ticket|entry/.test(t)) return "Visitor Registration";
+  if (/book|pay|refund|invoice/.test(t)) return "Booking";
+  return "Event Information";
+};
 
 const STATUS_PILL: Record<Status, string> = {
   Approved: "bg-[#e6f6ea] text-[#15803d] [&>i]:bg-[#16a34a]",
@@ -142,16 +131,35 @@ const inputClass = `${baseInput} !h-[34px]`;
 const labelClass = "mb-[4px] block text-[13.6px] text-[#334155]";
 const fieldSelect = "!h-[34px] !text-[14.6px]";
 
-const normalize = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N} ]/gu, "").trim();
-
 // ─── Tab ─────────────────────────────────────────────────────────────────────
 
 type Props = { onChange: () => void; onOpenHistory: () => void; notify: Notify; ref?: Ref<TabHandle> };
 
 export default function QuestionsAnswersTab({ onChange, onOpenHistory, notify, ref }: Props) {
-  const [answers, setAnswers] = useState(INITIAL_ANSWERS);
-  const [selectedId, setSelectedId] = useState(1);
-  const [draft, setDraft] = useState<Answer>(INITIAL_ANSWERS[0]);
+  // Saved draft from the server; the sample answers only until this section is first saved
+  const savedAnswers = useDraftSection<Answer[]>("answers");
+  const [answers, setAnswers] = useState<Answer[]>(savedAnswers ?? INITIAL_ANSWERS);
+  useSyncSection("answers", answers);
+  // Never saved yet: store the starting answers so the bot knows the approved ones too
+  const store = useContext(ManagerStoreContext);
+  useEffect(() => {
+    if (savedAnswers === undefined) store?.save("answers", INITIAL_ANSWERS);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const [selectedId, setSelectedId] = useState(() => (savedAnswers ?? INITIAL_ANSWERS)[0]?.id ?? 1);
+  const [draft, setDraft] = useState<Answer>(
+    () =>
+      (savedAnswers ?? INITIAL_ANSWERS)[0] ?? {
+        id: 1,
+        question: "",
+        topic: "Event Information",
+        status: "Draft",
+        phrases: [],
+        answer: { en: "", hi: "" },
+        nextAction: "None",
+        nextTarget: "—",
+      }
+  );
   const [lang, setLang] = useState<"en" | "hi">("en");
   const [search, setSearch] = useState("");
   const [topicFilter, setTopicFilter] = useState<"All Topics" | Topic>("All Topics");
@@ -160,15 +168,39 @@ export default function QuestionsAnswersTab({ onChange, onOpenHistory, notify, r
   const [confirm, setConfirm] = useState<ConfirmOptions | null>(null);
   const closeConfirm = useCallback(() => setConfirm(null), []);
   const [newPhrase, setNewPhrase] = useState<string | null>(null);
-  const [queue, setQueue] = useState(REVIEW_QUEUE);
+  // Questions the live bot could not answer (from saved chats)
+  const [queue, setQueue] = useState<QueueItem[]>([]);
+  useEffect(() => {
+    let alive = true;
+    chatbotManagerApi
+      .review()
+      .then((items) => {
+        if (!alive) return;
+        setQueue(
+          items.map((r, i) => ({
+            id: i + 1,
+            key: r.key,
+            question: r.question,
+            topic: guessTopic(r.question),
+            action: "Add Answer",
+            asked: r.asked,
+            owner: "Expo Team",
+            visitorMessage: r.visitorMessage,
+            botReply: r.botReply,
+          }))
+        );
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, []);
   // Queue item whose "Review Question" popup is open
   const [reviewId, setReviewId] = useState<number | null>(null);
   const reviewing = queue.find((x) => x.id === reviewId) ?? null;
   const [test, setTest] = useState({ question: "Expo kab hai?", language: "Hinglish" });
-  const [result, setResult] = useState<{ text: string; source: string } | null>({
-    text: INITIAL_ANSWERS[0].answer.hi,
-    source: "Approved answer — Event dates",
-  });
+  const [result, setResult] = useState<{ text: string; source: string } | null>(null);
+  const [testing, setTesting] = useState(false);
 
   const q = search.trim().toLowerCase();
   const rows = answers.filter(
@@ -274,18 +306,22 @@ export default function QuestionsAnswersTab({ onChange, onOpenHistory, notify, r
     setNewPhrase(null);
   };
 
-  /** Matches the test question against approved questions and their similar phrases */
+  /** Asks the real bot with the draft (saved, unpublished) answers and knowledge */
   const runTest = () => {
-    const text = normalize(test.question);
-    if (!text) return setResult(null);
-    const hit = answers.find(
-      (a) => a.status === "Approved" && [a.question, ...a.phrases].some((p) => normalize(p) === text || normalize(p).includes(text) || text.includes(normalize(p)))
-    );
-    setResult(
-      hit
-        ? { text: test.language === "English" ? hit.answer.en : hit.answer.hi || hit.answer.en, source: `Approved answer — ${hit.question.replace(/\?$/, "")}` }
-        : { text: "No approved answer found. This question will go to Questions Needing Review.", source: "No match" }
-    );
+    const question = test.question.trim();
+    if (!question || testing) return;
+    setTesting(true);
+    setResult({ text: "Organic Mitra is thinking…", source: "Draft (saved, not yet published)" });
+    chatbotManagerApi
+      .test({ question, language: test.language === "Hindi" ? "हिंदी" : test.language, mode: "draft" })
+      .then((r) =>
+        setResult({
+          text: r.text,
+          source: r.found ? "AI reply from approved answers & knowledge (draft)" : "No verified answer — this question will appear in Questions Needing Review",
+        })
+      )
+      .catch((e: Error) => setResult({ text: e.message || "The AI could not reply. Please try again.", source: "Error" }))
+      .finally(() => setTesting(false));
   };
 
   return (
@@ -314,6 +350,8 @@ export default function QuestionsAnswersTab({ onChange, onOpenHistory, notify, r
           setDraft(entry);
           setShowErrors(false);
           setQueue((prev) => prev.filter((x) => x.id !== reviewing.id));
+          // Answered: it no longer comes back in the queue
+          if (reviewing.key) chatbotManagerApi.dismissReview(reviewing.key).catch(() => undefined);
           setReviewId(null);
           onChange();
           notify("Answer added as a draft — review and approve it below");
