@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Swal from "sweetalert2";
 import typography from "./PagesTypography.module.css";
 import SeoPagesTable from "@/components/seo/SeoPagesTable";
 import SeoPageDetail from "@/components/seo/SeoPageDetail";
@@ -38,6 +39,7 @@ import {
 import {
   cmsPages,
   cmsPagesFromSettings,
+  formatPublishDate,
   getCmsPageRouteKey,
   PUBLIC_SITE_URL,
   type CmsPage,
@@ -262,23 +264,68 @@ export default function PagesCmsPage() {
 
   const [toastMessage, setToastMessage] = useState<{ title: string; type: "success" | "error" } | null>(null);
 
-  const handleToggleStatus = (isActive: boolean) => {
-    const newStatus = isActive ? "Published" : "Draft";
-    setPages((prev) => prev.map((p) => (p.id === selectedPage.id ? { ...p, status: newStatus } : p)));
-    setSelectedPage((prev: CmsPage | null) => prev ? { ...prev, status: newStatus } : { ...selectedPage, status: newStatus });
+  const [isSavingStatus, setIsSavingStatus] = useState(false);
 
-    if (isActive) {
-      setToastMessage({
-        title: "Success! The page has been published and is now live.",
-        type: "success"
+  const applyPageStatus = (pageId: number, status: PageStatus, extra: Partial<CmsPage> = {}) => {
+    setPages((prev) => prev.map((p) => (p.id === pageId ? { ...p, status, ...extra } : p)));
+    setSelectedPage((prev: CmsPage | null) => (prev && prev.id === pageId ? { ...prev, status, ...extra } : prev));
+  };
+
+  const handleToggleStatus = async (isActive: boolean) => {
+    const page = selectedPage;
+    if (!page.configKey || isSavingStatus) return;
+    const previousStatus = page.status;
+    const newStatus: PageStatus = isActive ? "Published" : "Draft";
+
+    if (!isActive) {
+      const confirm = await Swal.fire({
+        title: "Unpublish this page?",
+        html: `<b>${page.title}</b> will be removed from the website navbar and menus, and its URL will show a 404 until you publish it again.`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#dc2626",
+        cancelButtonColor: "#64748b",
+        confirmButtonText: "Yes, Unpublish",
+        cancelButtonText: "Cancel",
+        reverseButtons: true,
       });
-    } else {
-      setToastMessage({
-        title: "Notice: The page has been unpublished and moved to drafts.",
-        type: "error"
-      });
+      if (!confirm.isConfirmed) return;
     }
-    setTimeout(() => setToastMessage(null), 4000);
+
+    applyPageStatus(page.id, newStatus);
+    setIsSavingStatus(true);
+    try {
+      const saved = await settingsApi.setPageStatus(page.configKey, newStatus, loggedInAdminName);
+      const lastUpdated = typeof saved.lastUpdated === "string" ? saved.lastUpdated : new Date().toISOString();
+      applyPageStatus(page.id, newStatus, {
+        lastUpdated,
+        updated: formatPublishDate(lastUpdated),
+        author: saved.updatedBy || page.author,
+        updatedBy: saved.updatedBy || page.updatedBy,
+      });
+      setRawSettings((prev) =>
+        prev ? { ...prev, [page.configKey!]: { ...(prev[page.configKey!] || {}), ...saved, status: newStatus } } : prev,
+      );
+      Swal.fire({
+        icon: "success",
+        title: isActive ? "Published!" : "Unpublished!",
+        text: isActive
+          ? `${page.title} is now live on the website.`
+          : `${page.title} has been removed from the website.`,
+        timer: 1800,
+        showConfirmButton: false,
+      });
+    } catch (err: any) {
+      applyPageStatus(page.id, previousStatus);
+      Swal.fire({
+        icon: "error",
+        title: "Update failed",
+        text: err?.message || "Could not update the page status. Please try again.",
+        confirmButtonColor: "#dc2626",
+      });
+    } finally {
+      setIsSavingStatus(false);
+    }
   };
 
   useEffect(() => {
@@ -1075,11 +1122,15 @@ export default function PagesCmsPage() {
                     {selectedPageIsPublished ? "Published" : "Not Published"}
                   </span>
 
-                  <label className="relative ml-[2px] inline-block h-[24px] w-[42px] cursor-pointer">
+                  <label
+                    title={selectedPage.type === "home" ? "The homepage is always published" : undefined}
+                    className={`relative ml-[2px] inline-block h-[24px] w-[42px] ${selectedPage.type === "home" || isSavingStatus ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+                  >
                     <input
                       type="checkbox"
                       className="peer sr-only"
                       checked={selectedPageIsPublished}
+                      disabled={selectedPage.type === "home" || isSavingStatus}
                       onChange={(e) => handleToggleStatus(e.target.checked)}
                     />
                     <span className="absolute inset-0 rounded-[30px] border border-[#ccc] bg-red-500 transition-all duration-300 peer-checked:border-transparent peer-checked:bg-[#5fdd54] before:absolute before:left-[1px] before:top-[1px] before:h-[20px] before:w-[20px] before:rounded-full before:bg-white before:shadow-[0_2px_5px_#999999] before:content-[''] before:transition-all before:duration-300 peer-checked:before:translate-x-[18px]" />

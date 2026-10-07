@@ -39,6 +39,28 @@ export const settingsApi = {
     return defaultMockSettings;
   },
   getSystemAlerts: async (): Promise<any> => ({ alerts: [] }),
+  // Pages & CMS "Published" toggle. Patches only data.<configKey>.status on the server.
+  setPageStatus: async (
+    configKey: string,
+    status: "Published" | "Draft",
+    updatedBy?: string,
+  ): Promise<Record<string, any>> => {
+    const res: any = await api.patch("/settings/page-status?website=Organicexpo", { configKey, status, updatedBy });
+    const pageConfig = res?.data || {};
+    // Keep the cached settings in sync: settingsApi.update() PUTs this whole object,
+    // so a stale status here would silently revert the toggle on the next save elsewhere.
+    if (typeof window !== "undefined") {
+      try {
+        const stored = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
+        const { configKey: _key, ...fields } = pageConfig;
+        stored[configKey] = { ...(stored[configKey] || {}), ...fields, status };
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(stored));
+      } catch {
+        // ignore
+      }
+    }
+    return pageConfig;
+  },
   update: async (payload: Partial<Settings>): Promise<Settings> => {
     let current = defaultMockSettings;
     if (typeof window !== "undefined") {
