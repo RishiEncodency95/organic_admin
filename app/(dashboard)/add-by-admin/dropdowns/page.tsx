@@ -2,7 +2,7 @@
 
 import { Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Briefcase, CalendarClock, IndianRupee, ListChecks, MapPin, Store } from "lucide-react";
+import { ArrowLeft, CalendarClock, IndianRupee, MapPin, Store } from "lucide-react";
 import DropdownListsManager from "@/components/add-by-admin/DropdownListsManager";
 import CustomCitiesManager from "@/components/add-by-admin/CustomCitiesManager";
 import CareerOptionManager from "@/components/add-by-admin/CareerOptionManager";
@@ -14,17 +14,17 @@ const PERIOD_TYPES = [
 ];
 const CTC_TYPES = [{ value: "expected_ctc" as const, label: "Expected CTC (Annual)" }];
 
-const TABS = [
-  { key: "lists", label: "Dropdown Lists", icon: ListChecks },
-  { key: "cities", label: "Cities", icon: MapPin },
-  { key: "periods", label: "Notice & Joining Period", icon: CalendarClock },
-  { key: "ctc", label: "Expected CTC", icon: IndianRupee },
-  { key: "stalls", label: "Events & Stalls", icon: Store },
+/** Managers with their own screens, opened from the dashboard's "More Managers" tiles */
+const MANAGERS = [
+  { key: "cities", label: "Cities", description: "Custom cities by state", icon: MapPin },
+  { key: "periods", label: "Notice & Joining Period", description: "Careers application form", icon: CalendarClock },
+  { key: "ctc", label: "Expected CTC", description: "Annual salary ranges", icon: IndianRupee },
+  { key: "stalls", label: "Events & Stalls", description: "Expo events and stall setup", icon: Store },
 ] as const;
 
-type TabKey = (typeof TABS)[number]["key"];
+type TabKey = "lists" | (typeof MANAGERS)[number]["key"];
 
-const isTab = (value: string | null): value is TabKey => TABS.some((t) => t.key === value);
+const isTab = (value: string | null): value is TabKey => value === "lists" || MANAGERS.some((m) => m.key === value);
 
 // The open tab lives in the URL (?tab=periods) so a refresh or a shared link opens it again,
 // and the old Day Period / Expected CTC pages can redirect straight to their tab.
@@ -36,38 +36,22 @@ function DropdownManager() {
   const tab: TabKey = isTab(requested) ? requested : "lists";
   const setTab = (key: TabKey) => router.replace(key === "lists" ? pathname : `${pathname}?tab=${key}`, { scroll: false });
 
+  const back = (
+    <button
+      type="button"
+      onClick={() => setTab("lists")}
+      className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[13px] font-medium text-text-secondary transition-colors hover:bg-surface-sunken hover:text-accent"
+    >
+      <ArrowLeft className="h-3.5 w-3.5" /> All dropdowns
+    </button>
+  );
+
+  // No page header: the dashboard opens straight away, and the other managers open from its
+  // "More Managers" tiles (with a link back).
   return (
-    <div className="space-y-2 p-3">
-      {/* Title and tabs share one row to leave the screen to the content. */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-lg border border-surface-border bg-surface-card px-3 py-1.5 shadow-sm">
-        <h1
-          className="flex items-center gap-1.5 text-sm font-semibold text-text-primary"
-          title="Every dropdown on the website in one place. Add, edit, reorder, hide or delete options."
-        >
-          <Briefcase className="h-4 w-4 text-accent" /> Dropdown Manager
-        </h1>
-
-        <div role="tablist" className="flex flex-wrap gap-1">
-          {TABS.map(({ key, label, icon: Icon }) => (
-            <button
-              key={key}
-              type="button"
-              role="tab"
-              aria-selected={tab === key}
-              onClick={() => setTab(key)}
-              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[13px] font-medium transition-colors ${
-                tab === key
-                  ? "bg-accent text-white shadow-sm"
-                  : "text-text-secondary hover:bg-surface-sunken hover:text-text-primary"
-              }`}
-            >
-              <Icon className="h-3.5 w-3.5" /> {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {tab === "lists" && <DropdownListsManager />}
+    <div className="min-h-[calc(100vh-100px)] w-full space-y-2 bg-white px-[18px] pb-[16px] pt-[14px]">
+      {tab === "lists" && <DropdownListsManager managers={MANAGERS} onOpenManager={setTab} />}
+      {tab !== "lists" && back}
       {tab === "cities" && <CustomCitiesManager />}
       {tab === "periods" && (
         <CareerOptionManager
