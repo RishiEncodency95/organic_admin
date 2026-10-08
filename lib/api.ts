@@ -654,6 +654,7 @@ async function request<T>(path: string, options?: ApiRequestOptions, isRetry = f
     path.startsWith("/admin/chats") ||
     path.startsWith("/dropdowns") ||
     path.startsWith("/activity-logs") ||
+    path.startsWith("/api-limits") ||
     path.startsWith("/locations") ||
     path.startsWith("/crm-") ||
     path.startsWith("/events/") ||

@@ -138,6 +138,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "↳ Candidate Details", href: "/applications-ai-response?modal=candidatedetails", icon: FileText },
       { label: "↳ Forward to HR", href: "/applications-ai-response?modal=forwardtohr", icon: FileText },
       { label: "Career Settings", href: "/career-settings", icon: Settings2 },
+      { label: "IP Block Limits", href: "/ip-block-limits", icon: LockKeyhole, badge: "NEW" },
     ],
   },
   {
