@@ -8,6 +8,10 @@ import Topbar from "@/components/layout/Topbar";
 import AdminFooter from "@/components/layout/AdminFooter";
 import AdminSocialRail from "@/components/layout/AdminSocialRail";
 import contentScale from "./AdminContentScale.module.css";
+import { installAdminFetch } from "@/lib/adminFetch";
+
+// Every backend call from the dashboard carries the admin token + page, for the Activity Log
+installAdminFetch();
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
