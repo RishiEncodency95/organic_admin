@@ -1,3 +1,5 @@
+import { adminPageHeaders } from "./adminPage";
+
 export const getApiBaseUrl = (): string => {
   // If running in browser on production domain
   if (typeof window !== "undefined") {
@@ -619,6 +621,8 @@ async function request<T>(path: string, options?: ApiRequestOptions, isRetry = f
   const isFormData = options?.body instanceof FormData;
   const headers: Record<string, string> = {
     ...(isFormData ? {} : { "Content-Type": "application/json" }),
+    // Page and menu name, for the Activity Log
+    ...adminPageHeaders(),
     ...(options?.headers as Record<string, string> | undefined),
   };
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
@@ -649,6 +653,7 @@ async function request<T>(path: string, options?: ApiRequestOptions, isRetry = f
     path.startsWith("/exhibitor-registrations") ||
     path.startsWith("/admin/chats") ||
     path.startsWith("/dropdowns") ||
+    path.startsWith("/activity-logs") ||
     path.startsWith("/locations") ||
     path.startsWith("/crm-") ||
     path.startsWith("/events/") ||

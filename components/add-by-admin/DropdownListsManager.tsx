@@ -5,14 +5,12 @@ import {
   ArrowDown,
   ArrowUp,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
-  EyeOff,
+  AlertTriangle,
+  Eye,
   FileStack,
-  Info,
   Layers,
   ListChecks,
-  ListX,
   Pencil,
   Plus,
   RefreshCw,
@@ -24,6 +22,7 @@ import {
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { kpiToneClass, type KpiStatCardItem } from "@/components/ui/KpiStatCards";
 import Modal from "@/components/ui/Modal";
+import Pager from "@/components/ui/Pager";
 import { ApiRequestError } from "@/lib/api";
 import { dropdownsApi, type DropdownListInfo, type DropdownOption } from "@/lib/dropdownsApi";
 import typography from "@/app/(dashboard)/pages/PagesTypography.module.css";
@@ -40,18 +39,37 @@ const OPTION_PAGE_SIZE = 8;
 type FormState = { label: string; value: string; parentValue: string; isActive: boolean };
 const EMPTY_FORM: FormState = { label: "", value: "", parentValue: "", isActive: true };
 
-type StatusFilter = "all" | "hidden" | "empty";
+type StatusFilter = "all" | "hidden" | "attention";
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
-  { value: "all", label: "All statuses" },
+  { value: "all", label: "All dropdowns" },
   { value: "hidden", label: "Has hidden options" },
-  { value: "empty", label: "Empty dropdowns" },
+  { value: "attention", label: "Needs attention" },
 ];
-const matchesStatus = (l: DropdownListInfo, f: StatusFilter) => f === "all" || (f === "hidden" ? l.active < l.total : l.total === 0);
+/** No option shown on the website (empty, or every option hidden) leaves the visitor nothing to pick */
+const needsAttention = (l: DropdownListInfo) => l.active === 0;
+const matchesStatus = (l: DropdownListInfo, f: StatusFilter) =>
+  f === "all" || (f === "hidden" ? l.active < l.total : needsAttention(l));
+
+const updatedDate = (iso: string) =>
+  new Date(iso).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
 const errorText = (err: unknown, fallback: string) => (err instanceof ApiRequestError ? err.message : fallback);
 
-/** Other managers on the Dropdown Manager page, listed in the "Other Settings" card */
-export type ManagerTile<K extends string = string> = { key: K; label: string; description: string; icon: LucideIcon };
+/**
+ * Other managers on the Dropdown Manager page (Cities, Expected CTC…). They keep their
+ * own screens, but also show in the table under their website page (`page`) with an Open button.
+ */
+export type ManagerTile<K extends string = string> = {
+  key: K;
+  label: string;
+  description: string;
+  icon: LucideIcon;
+  page: string;
+  usedIn: readonly string[];
+};
+
+type TableRow<K extends string> = { kind: "list"; list: DropdownListInfo } | { kind: "manager"; tile: ManagerTile<K> };
+const rowGroup = <K extends string>(r: TableRow<K>) => (r.kind === "list" ? r.list.group : r.tile.page);
 
 /* Same control styles as the Job Postings page */
 const inputClass =
@@ -67,31 +85,6 @@ const iconButton = (tone: "blue" | "red" | "slate") =>
         ? "border-red-400/30 bg-red-500/10 text-red-600 shadow-[0_2px_6px_rgba(220,38,38,0.12)] hover:bg-red-500/20"
         : "border-slate-300 bg-white text-[#334155] hover:bg-slate-50"
   }`;
-
-function Pager({ page, pages, onPage }: { page: number; pages: number; onPage: (p: number) => void }) {
-  const box = "flex h-[22px] min-w-[22px] items-center justify-center rounded-[4px] border px-1.5 text-[8px] font-bold transition";
-  return (
-    <div className="flex items-center gap-[4px]">
-      <button type="button" disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Previous page" className={`${box} border-[#d8dce2] bg-white text-[#334155] hover:bg-slate-50 disabled:opacity-30`}>
-        <ChevronLeft className="h-3 w-3" />
-      </button>
-      {Array.from({ length: pages }, (_, i) => i + 1).map((n) => (
-        <button
-          key={n}
-          type="button"
-          onClick={() => onPage(n)}
-          aria-current={n === page ? "page" : undefined}
-          className={`${box} ${n === page ? "border-[#233D4D] bg-[#233D4D] text-white shadow-xs" : "border-[#d8dce2] bg-white text-[#334155] hover:bg-slate-50"}`}
-        >
-          {n}
-        </button>
-      ))}
-      <button type="button" disabled={page >= pages} onClick={() => onPage(page + 1)} aria-label="Next page" className={`${box} border-[#d8dce2] bg-white text-[#334155] hover:bg-slate-50 disabled:opacity-30`}>
-        <ChevronRight className="h-3 w-3" />
-      </button>
-    </div>
-  );
-}
 
 export default function DropdownListsManager<K extends string>({
   managers = [],
@@ -189,18 +182,32 @@ export default function DropdownListsManager<K extends string>({
 
   /* ---------- derived ---------- */
 
+  // Every table row: the dropdowns, then the managers with their own screens (under their page)
+  const allRows = useMemo<TableRow<K>[]>(
+    () => [
+      ...lists.map((list) => ({ kind: "list" as const, list })),
+      ...(onOpenManager ? managers.map((tile) => ({ kind: "manager" as const, tile })) : []),
+    ],
+    [lists, managers, onOpenManager]
+  );
+
   // Website pages in API order, for the tabs
-  const pageNames = useMemo(() => [...new Set(lists.map((l) => l.group))], [lists]);
+  const pageNames = useMemo(() => [...new Set(allRows.map(rowGroup))], [allRows]);
+  const pageCount = (name: string) => (name ? allRows.filter((r) => rowGroup(r) === name).length : allRows.length);
 
   const filteredLists = useMemo(() => {
     const term = search.trim().toLowerCase();
-    return lists.filter(
-      (l) =>
-        (!pageTab || l.group === pageTab) &&
-        matchesStatus(l, statusFilter) &&
-        (!term || [l.name, l.key, l.group, ...l.usedIn].join(" ").toLowerCase().includes(term))
-    );
-  }, [lists, pageTab, statusFilter, search]);
+    return allRows.filter((r) => {
+      if (pageTab && rowGroup(r) !== pageTab) return false;
+      // The stat-card filters are about dropdown options, which the other managers do not have
+      if (r.kind === "manager") {
+        const text = [r.tile.label, r.tile.description, r.tile.page, ...r.tile.usedIn].join(" ").toLowerCase();
+        return statusFilter === "all" && (!term || text.includes(term));
+      }
+      const l = r.list;
+      return matchesStatus(l, statusFilter) && (!term || [l.name, l.key, l.group, ...l.usedIn].join(" ").toLowerCase().includes(term));
+    });
+  }, [allRows, pageTab, statusFilter, search]);
 
   const listPages = Math.max(1, Math.ceil(filteredLists.length / LIST_PAGE_SIZE));
   const safeListPage = Math.min(listPage, listPages);
@@ -211,7 +218,7 @@ export default function DropdownListsManager<K extends string>({
     () => ({
       options: lists.reduce((n, l) => n + l.total, 0),
       shown: lists.reduce((n, l) => n + l.active, 0),
-      empty: lists.filter((l) => l.total === 0).length,
+      attention: lists.filter(needsAttention).length,
     }),
     [lists]
   );
@@ -317,6 +324,7 @@ export default function DropdownListsManager<K extends string>({
     setBusyId(option._id);
     try {
       setOptions(await dropdownsApi.reorder(selected.key, ids));
+      refreshCounts();
     } catch (err) {
       setError(errorText(err, "Could not save the new order."));
     } finally {
@@ -356,16 +364,23 @@ export default function DropdownListsManager<K extends string>({
     setListPage(1);
   };
 
+  const hiddenCount = totals.options - totals.shown;
+  const screenCount = allRows.length - lists.length; // managers with their own screens
+  const biggestPage = pageNames.reduce<{ name: string; count: number } | null>((best, name) => {
+    const count = pageCount(name);
+    return !best || count > best.count ? { name, count } : best;
+  }, null);
+
   const stats: KpiStatCardItem[] = [
     {
       title: "Total Dropdowns",
-      value: lists.length,
+      value: allRows.length,
       icon: ListChecks,
       tone: "emerald",
       gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #bbf7d0 100%)",
       borderColor: "#bbf7d0",
       numColor: "#15803d",
-      footer: "View all",
+      footer: screenCount ? `${lists.length} lists + ${screenCount} screens` : "View all",
       onClick: () => setFilter(""),
     },
     {
@@ -376,8 +391,8 @@ export default function DropdownListsManager<K extends string>({
       gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #c7d2fe 100%)",
       borderColor: "#c7d2fe",
       numColor: "#4338ca",
-      footer: "Use the page tabs",
-      onClick: () => setFilter(""),
+      footer: biggestPage ? `Most: ${biggestPage.name} (${biggestPage.count})` : "No pages yet",
+      onClick: () => setFilter(biggestPage?.name ?? ""),
     },
     {
       title: "Total Options",
@@ -387,30 +402,30 @@ export default function DropdownListsManager<K extends string>({
       gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #bae6fd 100%)",
       borderColor: "#bae6fd",
       numColor: "#0284c7",
-      footer: "In every dropdown",
+      footer: lists.length ? `Avg ${Math.round(totals.options / lists.length)} per dropdown` : "In every dropdown",
       onClick: () => setFilter(""),
     },
     {
-      title: "Hidden Options",
-      value: totals.options - totals.shown,
-      icon: EyeOff,
+      title: "Live on Website",
+      value: totals.shown,
+      icon: Eye,
       tone: "amber",
       gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #fed7aa 100%)",
       borderColor: "#fed7aa",
       numColor: "#c2410c",
-      footer: "Show these dropdowns",
-      onClick: () => setFilter("", "hidden"),
+      footer: hiddenCount ? `${hiddenCount} hidden — view` : "All options visible",
+      onClick: () => setFilter("", hiddenCount ? "hidden" : "all"),
     },
     {
-      title: "Empty Dropdowns",
-      value: totals.empty,
-      icon: ListX,
+      title: "Needs Attention",
+      value: totals.attention,
+      icon: AlertTriangle,
       tone: "rose",
       gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #fecdd3 100%)",
       borderColor: "#fecdd3",
       numColor: "#be123c",
-      footer: totals.empty ? "Show them" : "None — all good",
-      onClick: () => setFilter("", "empty"),
+      footer: totals.attention ? "Nothing to pick — fix" : "All good",
+      onClick: () => setFilter("", "attention"),
     },
   ];
 
@@ -447,7 +462,7 @@ export default function DropdownListsManager<K extends string>({
         })}
       </div>
 
-      <div className="grid grid-cols-1 items-start gap-[10px] xl:grid-cols-[minmax(0,2.6fr)_minmax(240px,1fr)]">
+      <div className="grid grid-cols-1 items-start gap-[10px]">
         {/* =============================================
             LEFT: ALL DROPDOWNS
         ============================================= */}
@@ -455,7 +470,7 @@ export default function DropdownListsManager<K extends string>({
           {/* PAGE TABS */}
           <div className="flex flex-wrap items-center gap-x-[18px] gap-y-[4px] border-b border-[#e8e5df] px-[16px] pt-[11px]">
             {["", ...pageNames].map((name) => {
-              const count = name ? lists.filter((l) => l.group === name).length : lists.length;
+              const count = pageCount(name);
               const active = pageTab === name;
               return (
                 <button
@@ -489,24 +504,40 @@ export default function DropdownListsManager<K extends string>({
                 className={`${inputClass} pl-[26px]`}
               />
             </div>
+            {/* Website page: shows only that page's dropdowns (same filter as the page tabs above) */}
             <div className="relative">
               <select
-                value={statusFilter}
+                value={pageTab}
                 onChange={(e) => {
-                  setStatusFilter(e.target.value as StatusFilter);
+                  setPageTab(e.target.value);
                   setListPage(1);
                 }}
-                aria-label="Status"
+                aria-label="Website page"
                 className={selectClass}
               >
-                {STATUS_FILTERS.map((f) => (
-                  <option key={f.value} value={f.value}>
-                    {f.label}
+                <option value="">All pages ({pageCount("")})</option>
+                {pageNames.map((name) => (
+                  <option key={name} value={name}>
+                    {name} ({pageCount(name)})
                   </option>
                 ))}
               </select>
               <ChevronDown className="pointer-events-none absolute right-[7px] top-1/2 h-[11px] w-[11px] -translate-y-1/2 text-[#64748b]" />
             </div>
+            {/* Set from the "Live on Website" / "Needs Attention" stat cards; shown so it can be cleared */}
+            {statusFilter !== "all" && (
+              <button
+                type="button"
+                onClick={() => {
+                  setStatusFilter("all");
+                  setListPage(1);
+                }}
+                className="flex h-[30px] items-center gap-[5px] rounded-[5px] border border-[#cfe3d6] bg-[#eef7f1] px-[10px] text-[9.5px] font-semibold text-[#166b40] hover:bg-[#e3f1e8]"
+                title="Clear this filter"
+              >
+                {STATUS_FILTERS.find((f) => f.value === statusFilter)?.label} ✕
+              </button>
+            )}
             <button
               type="button"
               onClick={() => {
@@ -521,7 +552,7 @@ export default function DropdownListsManager<K extends string>({
 
           {/* TABLE */}
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] table-fixed border-collapse text-left">
+            <table className="w-full min-w-[880px] table-fixed border-collapse text-left">
               <thead>
                 <tr className="h-[28px] border-b border-[#e8e5df] bg-[#233D4D]">
                   <th className={`${th} w-[34px] pl-[12px]`}>#</th>
@@ -530,25 +561,26 @@ export default function DropdownListsManager<K extends string>({
                   <th className={th}>Used In</th>
                   <th className={`${th} w-[120px]`}>Options</th>
                   <th className={`${th} w-[96px]`}>Status</th>
+                  <th className={`${th} w-[120px]`}>Updated By</th>
                   <th className={`${th} w-[90px] pr-[12px] text-right`}>Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#f0f0ec]">
                 {listsLoading ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-[10px] text-[#6c7587]">
+                    <td colSpan={8} className="py-12 text-center text-[10px] text-[#6c7587]">
                       Loading dropdowns…
                     </td>
                   </tr>
                 ) : listsError ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-[10px] font-semibold text-red-600">
+                    <td colSpan={8} className="py-12 text-center text-[10px] font-semibold text-red-600">
                       {listsError}
                     </td>
                   </tr>
                 ) : listRows.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-[10px] text-[#6c7587]">
+                    <td colSpan={8} className="py-12 text-center text-[10px] text-[#6c7587]">
                       No dropdown matches your filters.{" "}
                       <button type="button" onClick={() => setFilter("")} className="font-bold text-[#166b40] hover:underline">
                         Clear filters
@@ -556,7 +588,44 @@ export default function DropdownListsManager<K extends string>({
                     </td>
                   </tr>
                 ) : (
-                  listRows.map((list, i) => {
+                  listRows.map((row, i) => {
+                    if (row.kind === "manager") {
+                      const { tile } = row;
+                      const open = () => onOpenManager?.(tile.key);
+                      return (
+                        <tr key={`manager-${tile.key}`} className="cursor-pointer transition hover:bg-slate-50/80" onClick={open}>
+                          <td className="py-[7px] pl-[12px] pr-[6px] text-[7px] font-semibold text-[#6c7587]">{listStart + i + 1}</td>
+                          <td className="px-[6px] py-[7px]">
+                            <span className="block truncate text-[8.5px] font-bold text-[#4B1426]">{tile.label}</span>
+                            <span className="block truncate text-[7px] font-medium text-[#9aa0aa]">{tile.description}</span>
+                          </td>
+                          <td className="truncate px-[6px] py-[7px] text-[7px] font-bold text-[#166534]">{tile.page}</td>
+                          <td className="truncate px-[6px] py-[7px] text-[7px] font-medium text-[#334155]" title={tile.usedIn.join(" · ")}>
+                            {tile.usedIn.join(" · ") || "—"}
+                          </td>
+                          <td className="px-[6px] py-[7px] text-[7.5px] font-medium text-[#9aa0aa]">Managed on its own screen</td>
+                          <td className="px-[6px] py-[7px]">
+                            <span className="inline-flex h-[20px] items-center rounded-[4px] bg-sky-50 px-[6px] text-[7px] font-bold text-sky-700">Own screen</span>
+                          </td>
+                          <td className="px-[6px] py-[7px] text-[7px] font-medium text-[#9aa0aa]">—</td>
+                          <td className="py-[7px] pl-[6px] pr-[12px]">
+                            <div className="flex justify-end">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  open();
+                                }}
+                                className="flex h-[25px] items-center gap-[4px] rounded-[6px] border border-blue-400/30 bg-blue-500/10 px-[8px] text-[8px] font-bold text-blue-600 shadow-[0_2px_6px_rgba(37,99,235,0.12)] transition-all hover:bg-blue-500/20 active:scale-95"
+                              >
+                                <ChevronRight className="h-[11px] w-[11px]" /> Open
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    }
+                    const { list } = row;
                     const hidden = list.total - list.active;
                     const pct = list.total ? Math.round((list.active / list.total) * 100) : 0;
                     return (
@@ -583,11 +652,25 @@ export default function DropdownListsManager<K extends string>({
                         <td className="px-[6px] py-[7px]">
                           <span
                             className={`inline-flex h-[20px] items-center rounded-[4px] px-[6px] text-[7px] font-bold ${
-                              list.total === 0 ? "bg-rose-50 text-rose-700" : hidden ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"
+                              needsAttention(list) ? "bg-rose-50 text-rose-700" : hidden ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"
                             }`}
                           >
-                            {list.total === 0 ? "Empty" : hidden ? `${hidden} hidden` : "All shown"}
+                            {list.total === 0 ? "Empty" : list.active === 0 ? "All hidden" : list.active === 1 ? "Only 1 shown" : hidden ? `${hidden} hidden` : "All shown"}
                           </span>
+                        </td>
+                        <td className="px-[6px] py-[7px]">
+                          {list.updatedBy ? (
+                            <>
+                              <span className="block truncate text-[8px] font-bold text-[#334155]" title={list.updatedBy}>
+                                {list.updatedBy}
+                              </span>
+                              {list.updatedAt && <span className="block truncate text-[7px] font-medium text-[#9aa0aa]">{updatedDate(list.updatedAt)}</span>}
+                            </>
+                          ) : (
+                            <span className="text-[7px] font-medium text-[#9aa0aa]" title="Not changed from the admin panel yet">
+                              —
+                            </span>
+                          )}
                         </td>
                         <td className="py-[7px] pl-[6px] pr-[12px]">
                           <div className="flex justify-end">
@@ -620,59 +703,6 @@ export default function DropdownListsManager<K extends string>({
               <Pager page={safeListPage} pages={listPages} onPage={setListPage} />
             </div>
           )}
-        </div>
-
-        {/* =============================================
-            RIGHT: SIDEBAR
-        ============================================= */}
-        <div className="flex flex-col gap-[10px]">
-          {managers.length > 0 && onOpenManager && (
-            <div className="border border-[#e7e7e3] bg-white p-[12px]">
-              <h2 className="mb-[8px] text-[11px] font-bold text-[#263148]">Other Settings</h2>
-              <div className="flex flex-col gap-[2px]">
-                {managers.map(({ key, label, description, icon: Icon }) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => onOpenManager(key)}
-                    className="flex items-center gap-[8px] rounded-[4px] px-[6px] py-[7px] text-left transition hover:bg-slate-50"
-                  >
-                    <Icon className="h-[13px] w-[13px] shrink-0 text-[#218DAE]" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[9.5px] font-semibold text-[#334155]">{label}</span>
-                      <span className="block truncate text-[7px] font-medium text-[#9aa0aa]">{description}</span>
-                    </span>
-                    <ChevronRight className="h-[12px] w-[12px] shrink-0 text-[#9aa0aa]" />
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="border border-[#e7e7e3] bg-white p-[12px]">
-            <h2 className="mb-[8px] text-[11px] font-bold text-[#263148]">How to use</h2>
-            <ol className="flex flex-col gap-[6px] text-[8px] font-medium leading-snug text-[#414b5e]">
-              {[
-                "Pick a website page tab, or search the dropdown by name.",
-                "Click Manage on the dropdown you want to change.",
-                "Add, rename, reorder, show / hide or delete its options in the popup.",
-              ].map((step, i) => (
-                <li key={step} className="flex gap-[8px]">
-                  <span className="grid h-[16px] w-[16px] shrink-0 place-items-center rounded-full bg-[#eef6f1] text-[7px] font-bold text-[#166b40]">{i + 1}</span>
-                  {step}
-                </li>
-              ))}
-            </ol>
-          </div>
-
-          <div className="flex items-start gap-[9px] rounded-[6px] bg-[#eef6f1] p-[11px]">
-            <span className="grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full bg-white text-[#23714a] shadow-2xs">
-              <Info className="h-[13px] w-[13px]" />
-            </span>
-            <p className="text-[8px] font-medium leading-snug text-[#3f5a4a]">
-              <span className="font-bold text-[#23471d]">Hide instead of delete.</span> Hidden options disappear from the website but old submissions keep their value.
-            </p>
-          </div>
         </div>
       </div>
 

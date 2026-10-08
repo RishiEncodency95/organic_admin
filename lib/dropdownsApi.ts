@@ -9,6 +9,9 @@ export interface DropdownListInfo {
   parentName?: string;
   total: number;
   active: number;
+  /** Admin who last changed this list's options, and when (null until someone does) */
+  updatedBy?: string | null;
+  updatedAt?: string | null;
 }
 
 export interface DropdownOption {

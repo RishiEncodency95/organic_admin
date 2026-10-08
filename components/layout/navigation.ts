@@ -185,6 +185,12 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    title: "Activity Log",
+    items: [
+      { label: "All Activity", href: "/activity-log", icon: History, badge: "NEW" },
+    ],
+  },
+  {
     title: "Add by Admin",
     items: [
       { label: "Dropdown Manager", href: "/add-by-admin/dropdowns", icon: ListChecks, badge: "NEW" },

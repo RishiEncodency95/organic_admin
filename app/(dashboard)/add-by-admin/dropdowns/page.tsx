@@ -15,11 +15,26 @@ const PERIOD_TYPES = [
 const CTC_TYPES = [{ value: "expected_ctc" as const, label: "Expected CTC (Annual)" }];
 
 /** Managers with their own screens, opened from the dashboard's "More Managers" tiles */
+// `page` puts each one in the table under the website page whose form uses it
 const MANAGERS = [
-  { key: "cities", label: "Cities", description: "Custom cities by state", icon: MapPin },
-  { key: "periods", label: "Notice & Joining Period", description: "Careers application form", icon: CalendarClock },
-  { key: "ctc", label: "Expected CTC", description: "Annual salary ranges", icon: IndianRupee },
-  { key: "stalls", label: "Events & Stalls", description: "Expo events and stall setup", icon: Store },
+  {
+    key: "cities",
+    label: "Cities",
+    description: "Custom cities by state",
+    icon: MapPin,
+    page: "Shared",
+    usedIn: ["Visitor Registration", "Buyer Registration", "Book a Stand", "Careers"],
+  },
+  {
+    key: "periods",
+    label: "Notice & Joining Period",
+    description: "Careers application form",
+    icon: CalendarClock,
+    page: "Careers",
+    usedIn: ["Careers application form"],
+  },
+  { key: "ctc", label: "Expected CTC", description: "Annual salary ranges", icon: IndianRupee, page: "Careers", usedIn: ["Careers application form"] },
+  { key: "stalls", label: "Events & Stalls", description: "Expo events and stall setup", icon: Store, page: "Book a Stand", usedIn: ["Book a Stand"] },
 ] as const;
 
 type TabKey = "lists" | (typeof MANAGERS)[number]["key"];
