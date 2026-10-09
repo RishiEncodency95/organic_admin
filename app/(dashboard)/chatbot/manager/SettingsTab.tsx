@@ -4,12 +4,13 @@ import { useContext, useImperativeHandle, useRef, useState, type Ref } from "rea
 import Image from "next/image";
 import Link from "next/link";
 import { History, Info, LockKeyhole, Plus, Save, Upload, UsersRound, X } from "lucide-react";
+import { uploadApi } from "@/lib/uploadApi";
 import { LOGO, ManagerStoreContext, Select, cardClass, inputClass as baseInput, useDraftSection, type Notify, type TabHandle } from "./managerUi";
 
 /*
  * "Settings" tab of the Chatbot Manager. "Save Draft" stores the settings on the server;
  * once published, the website chat uses the name, subtitle, launcher label, greetings,
- * on/off switch and the unknown-answer message. (The avatar is not uploaded yet.)
+ * on/off switch and the unknown-answer message. The avatar is uploaded right away and saved with the identity.
  * Sized so both columns fit in the Buttons & Flows tab's height (the tabs share one cell).
  */
 
@@ -85,7 +86,8 @@ const MESSAGE_LABELS: Record<keyof MessageSet, string> = {
 
 /** What "Save Draft" stores (the server reads identity, enabled, messages and team) */
 type SavedSettings = {
-  identity: { name: string; subtitle: string; launcher: string };
+  /** avatar: uploaded image URL (the Organic Mitra logo when empty) */
+  identity: { name: string; subtitle: string; launcher: string; avatar?: string };
   languages: Language[];
   defaultLang: Language;
   enabled: boolean;
@@ -99,7 +101,8 @@ export default function SettingsTab({ onChange, onOpenHistory, notify, ref }: Pr
   const saved = useDraftSection<SavedSettings>("settings");
   const store = useContext(ManagerStoreContext);
   const [identity, setIdentity] = useState(saved?.identity ?? { name: "Organic Mitra", subtitle: "Bharat Organic Expo Assistant", launcher: "Ask Organic Mitra" });
-  const [avatar, setAvatar] = useState(LOGO);
+  const [avatar, setAvatar] = useState(saved?.identity?.avatar || LOGO);
+  const [uploading, setUploading] = useState(false);
   const [languages, setLanguages] = useState<Language[]>(saved?.languages ?? [...LANGUAGES]);
   const [defaultLang, setDefaultLang] = useState<Language>(saved?.defaultLang ?? "English");
   const [enabled, setEnabled] = useState(saved?.enabled ?? true);
@@ -167,7 +170,7 @@ export default function SettingsTab({ onChange, onOpenHistory, notify, ref }: Pr
       return;
     }
     setShowErrors(false);
-    const data: SavedSettings = { identity, languages, defaultLang, enabled, messages, team, memory, retention };
+    const data: SavedSettings = { identity: { ...identity, avatar: avatar === LOGO ? undefined : avatar }, languages, defaultLang, enabled, messages, team, memory, retention };
     store?.save("settings", data);
     onChange();
     notify("Settings saved to draft — publish to update the website chat");
@@ -187,20 +190,36 @@ export default function SettingsTab({ onChange, onOpenHistory, notify, ref }: Pr
             <div className="flex flex-col items-center gap-[6px]">
               <div className="grid h-[104px] w-[132px] place-items-center rounded-[10px] bg-[#eef6ef]">
                 <span className="grid h-[84px] w-[84px] place-items-center rounded-full bg-white shadow-sm">
-                  <Image src={avatar} alt="Chatbot avatar" width={160} height={160} unoptimized={avatar.startsWith("blob:")} className="h-[60px] w-[60px] object-contain" />
+                  <Image src={avatar} alt="Chatbot avatar" width={160} height={160} unoptimized={avatar !== LOGO} className="h-[60px] w-[60px] object-contain" />
                 </span>
               </div>
-              <button type="button" onClick={() => fileRef.current?.click()} className="flex items-center gap-[8px] text-[13.4px] text-[#1d4ed8] hover:underline">
-                <Upload className="h-[16px] w-[16px]" /> Change Avatar
+              <button type="button" disabled={uploading} onClick={() => fileRef.current?.click()} className="flex items-center gap-[8px] text-[13.4px] text-[#1d4ed8] hover:underline disabled:opacity-60">
+                <Upload className="h-[16px] w-[16px]" /> {uploading ? "Uploading…" : "Change Avatar"}
               </button>
+              {avatar !== LOGO && !uploading && (
+                <button type="button" onClick={() => edit(setAvatar)(LOGO)} className="-mt-[4px] text-[12.1px] text-[#64748b] hover:text-[#dc2626] hover:underline">
+                  Use default logo
+                </button>
+              )}
               <input
                 ref={fileRef}
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
                 className="hidden"
-                onChange={(e) => {
+                onChange={async (e) => {
                   const file = e.target.files?.[0];
-                  if (file) edit(setAvatar)(URL.createObjectURL(file));
+                  e.target.value = "";
+                  if (!file) return;
+                  setUploading(true);
+                  try {
+                    const { url } = await uploadApi.file(file, "bharat-organic/chatbot");
+                    edit(setAvatar)(url);
+                    notify("Avatar uploaded — save and publish to show it on the website chat");
+                  } catch (err) {
+                    notify(err instanceof Error && err.message ? err.message : "Could not upload the avatar.", { tone: "error" });
+                  } finally {
+                    setUploading(false);
+                  }
                 }}
               />
             </div>

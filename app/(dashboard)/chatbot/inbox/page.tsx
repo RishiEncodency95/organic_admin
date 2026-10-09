@@ -39,19 +39,21 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { DESIGN_WIDTH, useFitWidth } from "@/components/chatbot/useFitWidth";
-import { chatbotApi, type ChatSummary } from "@/lib/chatbotApi";
+import { chatbotApi, type ChatSummary, type ChatWorkflow, type WorkflowUpdate } from "@/lib/chatbotApi";
+import { staffApi } from "@/lib/staffApi";
+import { useAppSelector } from "@/store/hooks";
 import { visitorLabel } from "@/components/chatbot/chatbotUtils";
 import DateRangeCalendar, { isoDate } from "./DateRangeCalendar";
 import EnquiryDetailModal, { type Activity, type ComposeMode } from "./EnquiryDetailModal";
 import NewEnquiryModal, { type NewEnquiry } from "./NewEnquiryModal";
-import ReassignEnquiryModal from "./ReassignEnquiryModal";
+import ReassignEnquiryModal, { type OwnerInfo } from "./ReassignEnquiryModal";
 import ResolveEnquiryModal from "./ResolveEnquiryModal";
 
 /*
  * Inbox & Leads — one record per website chat (/admin/chats): saved under the visitor's IP
- * until the mobile number is verified, then under their name and number. Assignment, status,
- * priority and follow-ups have no backend yet, so they start as "Unassigned" / "New" and
- * changes last until the page is reloaded. The sample records below are kept for reference.
+ * until the mobile number is verified, then under their name and number — plus enquiries the
+ * team adds by hand. Assignment, status, priority, follow-ups, spam and the activity history
+ * are saved on the chat (PUT /admin/chats/workflow) shortly after each change.
  *
  * Laid out at the design's width (DESIGN_WIDTH) with the design's pixel sizes, then zoomed
  * to the available width, so it keeps the same proportions on every screen.
@@ -65,7 +67,7 @@ type Range = (typeof RANGES)[number];
 
 const DAY = 1440;
 
-// ─── Sample data ─────────────────────────────────────────────────────────────
+// ─── Records ─────────────────────────────────────────────────────────────────
 
 type Category = "lead" | "enquiry" | "support" | "feedback" | "complaint";
 type Status = "Follow-up" | "In Progress" | "New" | "Waiting for Visitor" | "Assigned" | "Resolved";
@@ -73,8 +75,8 @@ type Priority = "High" | "Medium" | "Low";
 type Channel = "Website chat" | "WhatsApp" | "Phone call" | "Email" | "Walk-in";
 type Tag = "Returning" | "New" | "Anonymous" | "Verified";
 type FollowUp =
-  | { kind: "date"; label: string }
-  | { kind: "overdue" }
+  | { kind: "date"; label: string; at: string }
+  | { kind: "overdue"; at?: string }
   | { kind: "review" }
   | { kind: "assign" }
   | { kind: "none" };
@@ -102,6 +104,13 @@ type Row = {
   unread: boolean;
   mobile?: string;
   email?: string;
+  /** Team the record is routed to (Forms & Routing, or set when assigning) */
+  team?: string;
+  /** When the visitor's messages were last read here */
+  seenAt?: string;
+  createdAt?: string;
+  /** Added by hand in this inbox, not a website chat */
+  manual?: boolean;
 };
 
 const TABS: { key: "all" | Category; label: string }[] = [
@@ -125,60 +134,6 @@ const initialsOf = (name: string) =>
     .map((w) => w[0].toUpperCase())
     .join("");
 
-/** [name, tag, category, topic, detail, assignedTo, status, priority, followUp, minutesAgo, channel, unread] */
-type Seed = [string, Tag, Category, string, string, string, Status, Priority, FollowUp, number, Channel, boolean];
-
-const SEEDS: Seed[] = [
-  ["Aarav Mehta", "Returning", "lead", "Stall Booking", "12 sq.m quotation request", "Sales Executive 01", "Follow-up", "High", { kind: "date", label: "Today, 3:00 PM" }, 10, "Website chat", true],
-  ["Neha Kapoor", "New", "complaint", "Response Delay", "No reply to stall enquiry", "Team Lead", "In Progress", "High", { kind: "overdue" }, 25, "WhatsApp", true],
-  ["Guest Visitor", "Anonymous", "feedback", "Website Experience", "Suggestion for registration page", "Admin", "New", "Low", { kind: "review" }, 40, "Website chat", false],
-  ["Kavya Jain", "Verified", "support", "Registration", "Assistance with visitor registration", "Registration Executive", "Waiting for Visitor", "Medium", { kind: "date", label: "Tomorrow, 11:00 AM" }, 60, "Website chat", false],
-  ["Rohit Bansal", "Returning", "enquiry", "Buyer–Seller Meet", "Participation information requested", "Buyer Coordinator", "Assigned", "Medium", { kind: "date", label: "Today, 4:00 PM" }, 120, "Email", false],
-  ["Ananya Rao", "New", "lead", "Sponsorship", "Partnership opportunities", "Unassigned", "New", "Medium", { kind: "assign" }, 180, "Website chat", true],
-  ["Vihaan Shah", "New", "lead", "Stall Booking", "Corner stall, 18 sq.m", "Unassigned", "New", "High", { kind: "assign" }, 210, "WhatsApp", true],
-  ["Meera Iyer", "Verified", "enquiry", "Registration", "Group registration for 15 visitors", "Registration Executive", "In Progress", "Medium", { kind: "date", label: "Today, 5:30 PM" }, 260, "Phone call", false],
-  ["Sanjay Patel", "Returning", "complaint", "Stall Allocation", "Stall location changed without notice", "Team Lead", "In Progress", "High", { kind: "overdue" }, 320, "Email", false],
-  ["Pooja Nair", "New", "support", "Payment", "Payment deducted, booking not confirmed", "Unassigned", "New", "High", { kind: "assign" }, 400, "Website chat", true],
-  ["Arjun Reddy", "Verified", "lead", "Stall Booking", "Quotation for 2 stalls", "Sales Executive 02", "Follow-up", "Medium", { kind: "date", label: "Tomorrow, 10:00 AM" }, 1500, "Phone call", false],
-  ["Divya Menon", "Returning", "feedback", "Event Schedule", "Asked for a printable schedule", "Admin", "Resolved", "Low", { kind: "none" }, 1620, "Website chat", false],
-  ["Karthik Iyer", "New", "enquiry", "Buyer–Seller Meet", "Eligibility for international buyers", "Buyer Coordinator", "Waiting for Visitor", "Medium", { kind: "date", label: "8 Oct, 12:00 PM" }, 1800, "Email", false],
-  ["Simran Kaur", "Anonymous", "support", "Registration", "OTP not received", "Registration Executive", "Resolved", "Medium", { kind: "none" }, 2100, "Website chat", false],
-  ["Harsh Vardhan", "Returning", "lead", "Sponsorship", "Title sponsorship deck requested", "Sponsorship Manager", "Assigned", "High", { kind: "date", label: "9 Oct, 3:00 PM" }, 2900, "Phone call", false],
-  ["Fatima Sheikh", "New", "complaint", "Response Delay", "Callback promised, not received", "Unassigned", "New", "High", { kind: "overdue" }, 3300, "WhatsApp", true],
-  ["Rahul Joshi", "Verified", "enquiry", "Travel & Stay", "Hotel partners near the venue", "Admin", "Resolved", "Low", { kind: "none" }, 4200, "Website chat", false],
-  ["Nisha Agarwal", "Returning", "support", "Badge Printing", "Name misspelt on visitor badge", "Registration Executive", "In Progress", "Medium", { kind: "review" }, 5000, "Walk-in", false],
-  ["Aditya Kulkarni", "New", "lead", "Stall Booking", "Shell scheme vs raw space pricing", "Sales Executive 01", "Waiting for Visitor", "Medium", { kind: "date", label: "10 Oct, 11:30 AM" }, 6200, "Website chat", false],
-  ["Sneha Pillai", "Verified", "feedback", "Website Experience", "Exhibitor list hard to search", "Admin", "New", "Low", { kind: "review" }, 7400, "Website chat", false],
-  ["Manish Tiwari", "Returning", "enquiry", "Conference", "Speaker slot availability", "Unassigned", "New", "Medium", { kind: "assign" }, 9800, "Email", false],
-  ["Ritu Saxena", "New", "complaint", "Payment", "Refund pending for 3 weeks", "Team Lead", "Follow-up", "High", { kind: "date", label: "Today, 6:00 PM" }, 12500, "Phone call", false],
-  ["Gaurav Malhotra", "Returning", "lead", "Sponsorship", "Co-branding options", "Sponsorship Manager", "Resolved", "Medium", { kind: "none" }, 16000, "Email", false],
-  ["Lakshmi Krishnan", "Verified", "support", "Registration", "Change registered email", "Registration Executive", "Resolved", "Low", { kind: "none" }, 21000, "Website chat", false],
-  ["Yash Chauhan", "New", "enquiry", "Buyer–Seller Meet", "Meeting slots for organic spices", "Buyer Coordinator", "Assigned", "Medium", { kind: "date", label: "12 Oct, 2:00 PM" }, 26000, "WhatsApp", false],
-  ["Priyanka Das", "Anonymous", "feedback", "Venue", "More seating near food court", "Admin", "Resolved", "Low", { kind: "none" }, 38000, "Website chat", false],
-  ["Tarun Bhatia", "Returning", "lead", "Stall Booking", "Repeat exhibitor discount", "Sales Executive 02", "Resolved", "Medium", { kind: "none" }, 52000, "Phone call", false],
-];
-
-const ROWS: Row[] = SEEDS.map(([name, tag, category, topic, detail, assignedTo, status, priority, followUp, minutesAgo, channel, unread], i) => ({
-  id: i + 1,
-  name,
-  initials: initialsOf(name),
-  avatar: AVATARS[i % AVATARS.length],
-  tag,
-  category,
-  type: TYPE_LABEL[category],
-  topic,
-  detail,
-  assignedTo,
-  status,
-  priority,
-  followUp,
-  minutesAgo,
-  channel,
-  unread,
-}));
-
-const OWNERS = [...new Set(ROWS.map((r) => r.assignedTo))].filter((o) => o !== "Unassigned");
-
 /** Topic of a chat from its quotation / callback request, else from the first question */
 const chatTopic = (c: ChatSummary) => {
   const request = c.requests?.[c.requests.length - 1];
@@ -192,20 +147,72 @@ const chatTopic = (c: ChatSummary) => {
   return q ? "General Enquiry" : "Chatbot Visit";
 };
 
-/** One inbox record per saved chat */
-const chatsToRows = (chats: ChatSummary[]): Row[] => {
+const CHANNELS: Channel[] = ["Website chat", "WhatsApp", "Phone call", "Email", "Walk-in"];
+
+/** The saved next follow-up; a dated one turns "Overdue" once its time has passed */
+const followUpOf = (w: ChatWorkflow | undefined, assignedTo: string, now: number): FollowUp => {
+  if (w?.followUpKind === "date" && w.followUpAt) {
+    return new Date(w.followUpAt).getTime() < now && w.status !== "Resolved" ? { kind: "overdue", at: w.followUpAt } : { kind: "date", label: formatFollowUp(w.followUpAt), at: w.followUpAt };
+  }
+  if (w?.followUpKind === "review" || w?.followUpKind === "assign" || w?.followUpKind === "none") return { kind: w.followUpKind };
+  return assignedTo === "Unassigned" ? { kind: "assign" } : { kind: "review" };
+};
+
+/** The part of a row (and its activity) that is saved on the chat */
+const workflowOf = (r: Row, act: Activity[]): WorkflowUpdate => ({
+  id: r.chatId ?? "",
+  assignedTo: r.assignedTo,
+  team: r.team ?? "",
+  status: r.status,
+  priority: r.priority,
+  followUpKind: r.followUp.kind === "overdue" ? (r.followUp.at ? "date" : "review") : r.followUp.kind,
+  ...(r.followUp.kind === "date" || (r.followUp.kind === "overdue" && r.followUp.at) ? { followUpAt: r.followUp.at } : {}),
+  ...(r.seenAt ? { seenAt: r.seenAt } : {}),
+  activity: act.map(({ kind, text, by, at }) => ({ kind, text, ...(by ? { by } : {}), ...(at ? { at } : {}) })),
+});
+
+/** Records whose workflow differs from what was last saved (`saved`: chat id → JSON) */
+const unsavedWorkflows = (records: Row[], activity: Record<number, Activity[]>, saved: Map<string, string>) =>
+  records
+    .filter((r) => r.chatId)
+    .map((r) => workflowOf(r, activity[r.id] ?? []))
+    .filter((w) => saved.get(w.id) !== JSON.stringify(w));
+
+/** Saves them in batches of 500; false when a batch failed */
+const saveWorkflows = async (changed: WorkflowUpdate[], saved: Map<string, string>) => {
+  for (let i = 0; i < changed.length; i += 500) {
+    const batch = changed.slice(i, i + 500);
+    try {
+      await chatbotApi.saveWorkflow(batch);
+      batch.forEach((w) => saved.set(w.id, JSON.stringify(w)));
+    } catch {
+      return false;
+    }
+  }
+  return true;
+};
+
+/** One inbox record per saved chat (or hand-added enquiry), with its activity */
+const chatsToRows = (chats: ChatSummary[]): { rows: Row[]; activity: Record<number, Activity[]> } => {
   const now = Date.now();
+  const activity: Record<number, Activity[]> = {};
   const phoneCounts = new Map<string, number>();
   chats.forEach((c) => {
     if (c.lead?.phone) phoneCounts.set(c.lead.phone, (phoneCounts.get(c.lead.phone) || 0) + 1);
   });
-  return chats.map((c, i) => {
+  const rows = chats.map((c, i): Row => {
+    const w = c.workflow;
+    if (w?.activity?.length) activity[i + 1] = w.activity;
     const name = visitorLabel(c);
     const request = c.requests?.[c.requests.length - 1];
     const phone = c.lead?.phone;
-    const category: Category = request || phone ? "lead" : c.feedback && !c.questionCount ? "feedback" : "enquiry";
-    const tag: Tag = !phone ? "Anonymous" : (phoneCounts.get(phone) || 0) > 1 ? "Returning" : c.phoneVerifiedAt ? "Verified" : "New";
-    const detail = request
+    const manual = c.source === "manual";
+    const category: Category = manual && c.manual?.category ? c.manual.category : request || phone ? "lead" : c.feedback && !c.questionCount ? "feedback" : "enquiry";
+    const tag: Tag = manual ? ((phoneCounts.get(phone || "") || 0) > 1 ? "Returning" : "New") : !phone ? "Anonymous" : (phoneCounts.get(phone) || 0) > 1 ? "Returning" : c.phoneVerifiedAt ? "Verified" : "New";
+    const assignedTo = w?.assignedTo || "Unassigned";
+    const lastMessageAt = c.lastMessage?.createdAt ? new Date(c.lastMessage.createdAt).getTime() : 0;
+    const lastActivity = Math.max(new Date(c.updatedAt).getTime(), w?.updatedAt ? new Date(w.updatedAt).getTime() : 0);
+    const chatDetail = request
       ? request.type === "sales-callback"
         ? `Callback request${request.preferredTime ? `, ${request.preferredTime}` : ""}`
         : `${request.stallSize ? `${request.stallSize} ` : ""}quotation request${request.company ? ` (${request.company})` : ""}`
@@ -218,21 +225,26 @@ const chatsToRows = (chats: ChatSummary[]): Row[] => {
       avatar: AVATARS[i % AVATARS.length],
       tag,
       category,
-      type: TYPE_LABEL[category],
-      topic: chatTopic(c),
-      detail,
-      assignedTo: "Unassigned",
-      status: "New",
-      priority: request ? "High" : phone ? "Medium" : "Low",
-      followUp: { kind: "assign" },
-      minutesAgo: Math.max(0, Math.floor((now - new Date(c.updatedAt).getTime()) / 60_000)),
-      channel: "Website chat",
-      // The visitor's last question has no reply yet
-      unread: c.questionCount > 0 && c.lastMessage?.role === "user",
+      type: manual && c.manual?.type ? c.manual.type : TYPE_LABEL[category],
+      topic: manual ? c.manual?.topic || "General Enquiry" : chatTopic(c),
+      detail: manual ? c.manual?.detail || "" : chatDetail,
+      assignedTo,
+      status: w?.status || "New",
+      priority: w?.priority || (request ? "High" : phone ? "Medium" : "Low"),
+      followUp: followUpOf(w, assignedTo, now),
+      minutesAgo: Math.max(0, Math.floor((now - lastActivity) / 60_000)),
+      channel: manual ? (CHANNELS.find((ch) => ch === c.manual?.channel) ?? "Phone call") : "Website chat",
+      // The visitor's last question has no reply yet and has not been read here
+      unread: !manual && c.questionCount > 0 && c.lastMessage?.role === "user" && (!w?.seenAt || new Date(w.seenAt).getTime() < lastMessageAt),
       mobile: phone,
       email: c.lead?.email,
+      team: w?.team,
+      seenAt: w?.seenAt,
+      createdAt: c.createdAt,
+      manual,
     };
   });
+  return { rows, activity };
 };
 
 // ─── Display helpers ─────────────────────────────────────────────────────────
@@ -513,6 +525,12 @@ function ConfirmDialog({ confirm, onClose }: { confirm: Confirm | null; onClose:
 export default function ChatbotInboxPage() {
   const [records, setRecords] = useState<Row[]>([]);
   const [activity, setActivity] = useState<Record<number, Activity[]>>({});
+  // Active staff (Staff Management) are the people records can be assigned to
+  const [staff, setStaff] = useState<{ name: string; available: boolean; email?: string }[]>([]);
+  // Signs the activity entries made on this page
+  const me = useAppSelector((state) => state.auth.admin?.name) || "Admin";
+  // Last saved workflow per chat (JSON), so only real changes are sent
+  const savedRef = useRef(new Map<string, string>());
 
   // Range, tab and filters
   const [range, setRange] = useState<Range>("Last 7 Days");
@@ -557,10 +575,15 @@ export default function ChatbotInboxPage() {
   const fetchRecords = () => {
     const seq = ++loadSeq.current;
     chatbotApi
-      .list({ limit: 1000 })
+      .list({ limit: 1000, source: "all" })
       .then((res) => {
         if (seq !== loadSeq.current) return;
-        setRecords(chatsToRows(res.chats));
+        const { rows, activity: loaded } = chatsToRows(res.chats.filter((c) => !c.workflow?.spam));
+        // The same map stays in use, so a save still in flight records into it
+        savedRef.current.clear();
+        rows.forEach((r) => savedRef.current.set(r.chatId ?? "", JSON.stringify(workflowOf(r, loaded[r.id] ?? []))));
+        setRecords(rows);
+        setActivity(loaded);
       })
       .catch(() => seq === loadSeq.current && setLoadError(true))
       .finally(() => seq === loadSeq.current && setLoading(false));
@@ -568,10 +591,47 @@ export default function ChatbotInboxPage() {
   const showLoading = () => {
     setLoading(true);
     setLoadError(false);
-    fetchRecords();
+    // A change made just before (still waiting to be saved) is saved first, so the reload keeps it
+    const pending = unsavedWorkflows(records, activity, savedRef.current);
+    if (!pending.length) return fetchRecords();
+    void saveWorkflows(pending, savedRef.current).then(fetchRecords);
   };
   // `loading` starts true, so the first load only needs the fetch
   useEffect(fetchRecords, []);
+
+  useEffect(() => {
+    staffApi
+      .list()
+      .then((list) => setStaff(list.filter((m) => m.status !== "INACTIVE").map((m) => ({ name: m.name, available: m.status === "ACTIVE", email: m.email }))))
+      .catch(() => setStaff([]));
+  }, []);
+
+  // Save each changed record's workflow (owner, status, priority, follow-up, activity) shortly after the change
+  useEffect(() => {
+    const saved = savedRef.current;
+    const changed = unsavedWorkflows(records, activity, saved);
+    if (!changed.length) return;
+    const timer = setTimeout(async () => {
+      if (!(await saveWorkflows(changed, saved))) {
+        setToast((prev) => ({ id: (prev?.id ?? 0) + 1, text: "Could not save the latest change — check your connection and try again." }));
+      }
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [records, activity]);
+
+  // Leaving the page within that moment still saves the change
+  const latestRef = useRef({ records, activity });
+  useEffect(() => {
+    latestRef.current = { records, activity };
+  }, [records, activity]);
+  useEffect(() => {
+    const saved = savedRef.current;
+    const latest = latestRef;
+    return () => {
+      const pending = unsavedWorkflows(latest.current.records, latest.current.activity, saved);
+      if (pending.length) void saveWorkflows(pending, saved);
+    };
+  }, []);
 
   // Escape closes whichever dropdown is open (the popups handle their own buttons)
   const anyDropdown = menuId !== null || moreOpen || customOpen;
@@ -608,6 +668,14 @@ export default function ChatbotInboxPage() {
     setMenuUp(window.innerHeight - trigger.getBoundingClientRect().bottom < 290 * zoom);
     setMenuId(id);
   };
+
+  const owners = staff.length ? staff.map((m) => m.name) : [...new Set(records.map((r) => r.assignedTo))].filter((o) => o !== "Unassigned");
+  const ownerInfo: OwnerInfo[] = owners.map((name) => ({
+    name,
+    available: staff.find((m) => m.name === name)?.available ?? true,
+    email: staff.find((m) => m.name === name)?.email,
+    open: records.filter((r) => r.assignedTo === name && r.status !== "Resolved").length,
+  }));
 
   const notify = (text: string, undo?: () => void) => setToast((prev) => ({ id: (prev?.id ?? 0) + 1, text, undo }));
   const closeToast = useMemo(() => () => setToast(null), []);
@@ -717,7 +785,10 @@ export default function ChatbotInboxPage() {
     });
 
   // ── Record updates ──
-  const log = (id: number, ...entries: Activity[]) => setActivity((prev) => ({ ...prev, [id]: [...(prev[id] ?? []), ...entries] }));
+  const log = (id: number, ...entries: Activity[]) => {
+    const at = new Date().toISOString();
+    setActivity((prev) => ({ ...prev, [id]: [...(prev[id] ?? []), ...entries.map((e) => ({ ...e, at: e.at ?? at, by: e.by ?? me }))] }));
+  };
   const patch = (ids: number[], change: (r: Row) => Partial<Row>) => setRecords((prev) => prev.map((r) => (ids.includes(r.id) ? { ...r, ...change(r) } : r)));
 
   /** Puts the given rows and their activity back as they are now — used by Undo */
@@ -752,41 +823,36 @@ export default function ChatbotInboxPage() {
   const openDetail = (id: number, mode: ComposeMode = "reply") => {
     setMenuId(null);
     setDetail({ id, mode });
-    patch([id], () => ({ unread: false }));
+    patch([id], (r) => (r.unread ? { unread: false, seenAt: new Date().toISOString() } : {}));
   };
 
-  const createEnquiry = (e: NewEnquiry) => {
-    const id = Math.max(0, ...records.map((r) => r.id)) + 1;
-    const unassigned = e.assignedTo === "Unassigned";
-    const row: Row = {
-      id,
-      name: e.name,
-      initials: initialsOf(e.name),
-      avatar: AVATARS[id % AVATARS.length],
-      tag: "New",
-      category: e.category,
-      type: e.type,
-      topic: e.topic,
-      detail: e.detail,
-      assignedTo: e.assignedTo,
-      status: unassigned ? "New" : "Assigned",
-      priority: e.priority,
-      followUp: e.followUpAt ? { kind: "date", label: formatFollowUp(e.followUpAt) } : unassigned ? { kind: "assign" } : { kind: "review" },
-      minutesAgo: 0,
-      channel: e.source in CHANNEL_ICON ? (e.source as Channel) : "Phone call",
-      unread: false,
-      mobile: e.mobile || undefined,
-      email: e.email || undefined,
-    };
-    setRecords((prev) => [row, ...prev]);
-    log(id, { kind: "event", text: `Created manually from ${e.source}` });
+  const createEnquiry = async (e: NewEnquiry) => {
+    try {
+      await chatbotApi.createManual({
+        name: e.name,
+        mobile: e.mobile || undefined,
+        email: e.email || undefined,
+        category: e.category,
+        type: e.type,
+        topic: e.topic,
+        detail: e.detail,
+        priority: e.priority,
+        assignedTo: e.assignedTo,
+        source: e.source,
+        followUpAt: e.followUpAt ? new Date(e.followUpAt).toISOString() : undefined,
+      });
+    } catch (err) {
+      notify(err instanceof Error && err.message ? err.message : "Could not create the enquiry.");
+      return;
+    }
     // Make sure the new record is visible
     if (range === "Yesterday" || range === "Custom") setRange("Last 7 Days");
     setTab("all");
     clearAll();
     setSort({ key: "minutesAgo", dir: "asc" });
     setNewEnquiryKey(null);
-    notify(`Enquiry #OM-${1047 + id} created for ${e.name}`);
+    showLoading();
+    notify(`Enquiry created for ${e.name}`);
   };
 
   // A reply clears an overdue / pending review and waits on the visitor
@@ -807,7 +873,11 @@ export default function ChatbotInboxPage() {
       next.delete(r.id);
       return next;
     });
-    notify(`${r.name} marked as spam`, () => setRecords((prev) => [...prev, r]));
+    if (r.chatId) chatbotApi.saveWorkflow([{ id: r.chatId, spam: true }]).catch(() => notify("Could not mark as spam."));
+    notify(`${r.name} marked as spam`, () => {
+      setRecords((prev) => [...prev, r]);
+      if (r.chatId) chatbotApi.saveWorkflow([{ id: r.chatId, spam: false }]).catch(() => notify("Could not undo."));
+    });
   };
 
   const exportCsv = (list: Row[], file: string) => {
@@ -872,7 +942,7 @@ export default function ChatbotInboxPage() {
           <div className="flex min-w-0 items-center gap-[12px]">
             <p className="min-w-0 truncate text-[17.5px] font-medium text-[#334155]">Organic Mitra — conversations, enquiries &amp; team follow-ups</p>
             <span
-              title="Records are live website chats. Assignment, status and follow-ups are kept on this page only."
+              title="Records are live website chats and hand-added enquiries. Assignment, status, follow-ups and notes are saved."
               className="inline-flex shrink-0 items-center gap-[6px] whitespace-nowrap rounded-[6px] border border-[#cfe9d6] bg-[#eefaf1] px-[11px] py-[4px] text-[13.4px] font-medium text-[#15803d]"
             >
               Live data <Info className="h-[14px] w-[14px]" />
@@ -1158,7 +1228,7 @@ export default function ChatbotInboxPage() {
                   <option value="" disabled>
                     Assign to…
                   </option>
-                  {OWNERS.map((o) => (
+                  {owners.map((o) => (
                     <option key={o} value={o}>
                       {o}
                     </option>
@@ -1580,10 +1650,17 @@ export default function ChatbotInboxPage() {
       </div>
 
       {/* ── Popups (rendered into document.body) ── */}
-      <NewEnquiryModal key={newEnquiryKey ?? "closed"} open={newEnquiryKey !== null} owners={OWNERS} onClose={() => setNewEnquiryKey(null)} onCreate={createEnquiry} />
+      <NewEnquiryModal key={newEnquiryKey ?? "closed"} open={newEnquiryKey !== null} owners={owners} onClose={() => setNewEnquiryKey(null)} onCreate={createEnquiry} />
       <EnquiryDetailModal
         key={`detail-${detail?.id ?? "closed"}-${detail?.mode}`}
-        enquiry={detailRow && { ...detailRow, followUp: followUpText(detailRow.followUp), lastActivity: ago(detailRow.minutesAgo), review: actionFor(detailRow) === "Review" }}
+        enquiry={
+          detailRow && {
+            ...detailRow,
+            followUp: followUpText(detailRow.followUp),
+            lastActivity: ago(detailRow.minutesAgo),
+            review: actionFor(detailRow) === "Review",
+          }
+        }
         activity={detail ? activity[detail.id] ?? [] : []}
         initialMode={detail?.mode}
         onClose={() => setDetail(null)}
@@ -1601,11 +1678,13 @@ export default function ChatbotInboxPage() {
       <ReassignEnquiryModal
         key={reassignId ?? "closed"}
         enquiry={reassignRow}
+        owners={ownerInfo}
         onClose={() => setReassignId(null)}
         onConfirm={({ team, owner, reason, note }) => {
           if (reassignId === null) return;
           const wasUnassigned = reassignRow?.assignedTo === "Unassigned";
           assign([reassignId], owner);
+          patch([reassignId], () => ({ team }));
           log(reassignId, { kind: "event", text: `${wasUnassigned ? "Assigned" : "Reassigned"} to ${owner} (${team}) — ${reason}` }, ...(note ? [{ kind: "note" as const, text: note }] : []));
           notify(`${reassignRow?.name} ${wasUnassigned ? "assigned" : "reassigned"} to ${owner}`);
           setReassignId(null);

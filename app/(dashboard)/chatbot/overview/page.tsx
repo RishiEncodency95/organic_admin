@@ -30,8 +30,8 @@ import { initials, pagePath, timeAgo, visitorLabel } from "@/components/chatbot/
 
 /*
  * Chatbot Overview — live numbers from /admin/chats/stats and /admin/chats (chats are saved
- * under the visitor's IP until the mobile number is verified). Only "Team Follow-up" is still
- * sample data: there is no assignment / follow-up system behind it yet.
+ * under the visitor's IP until the mobile number is verified). "Team Follow-up" and each
+ * conversation's team status come from the Inbox & Leads workflow saved on the chats.
  *
  * Note: the dashboard layout's AdminContentScale remaps many text-[Npx] classes with
  * !important, so this page sticks to sizes outside that list (e.g. 12.5px, 13.5px).
@@ -194,14 +194,16 @@ const pageName = (url: string) => {
   return last ? last.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Home";
 };
 
-// Sample data: there is no assignment / follow-up system behind this card yet
-
-const FOLLOW_UPS = [
-  { label: "Unassigned chats", count: 4, icon: Mail, iconClass: "text-[#dc2626]", countClass: "bg-[#fde2e2] text-[#dc2626]" },
-  { label: "Overdue replies", count: 3, icon: Clock3, iconClass: "text-[#ea7a0c]", countClass: "bg-[#fde2e2] text-[#dc2626]" },
-  { label: "Follow-ups today", count: 8, icon: CalendarDays, iconClass: "text-[#dc2626]", countClass: "bg-[#fdf0d2] text-[#b45309]" },
-  { label: "Open complaints", count: 2, icon: AlertTriangle, iconClass: "text-[#dc2626]", countClass: "bg-[#fde2e2] text-[#dc2626]" },
+/** The team's current queue (Inbox & Leads), from /admin/chats/stats */
+const followUps = (f: ChatStats["followUp"] | undefined) => [
+  { label: "Unassigned chats", count: f?.unassigned, icon: Mail, iconClass: "text-[#dc2626]", countClass: "bg-[#fde2e2] text-[#dc2626]" },
+  { label: "Overdue replies", count: f?.overdue, icon: Clock3, iconClass: "text-[#ea7a0c]", countClass: "bg-[#fde2e2] text-[#dc2626]" },
+  { label: "Follow-ups today", count: f?.dueToday, icon: CalendarDays, iconClass: "text-[#dc2626]", countClass: "bg-[#fdf0d2] text-[#b45309]" },
+  { label: "Open complaints", count: f?.openComplaints, icon: AlertTriangle, iconClass: "text-[#dc2626]", countClass: "bg-[#fde2e2] text-[#dc2626]" },
 ];
+
+/** "02 Oct 2026" */
+const longDate = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 
 type Conversation = {
   id?: string;
@@ -248,7 +250,15 @@ const toConversation = (c: ChatSummary, returning: boolean): Conversation => {
         : c.questionCount > 0
           ? { label: "Answered", icon: MessagesSquare }
           : { label: "Browsing", icon: MessagesSquare },
-    status: unanswered
+    status: c.workflow?.status
+      ? c.workflow.status === "Resolved"
+        ? { label: "Resolved", className: "bg-[#dcf3e1] text-[#15803d]" }
+        : c.workflow.followUpKind === "date" && c.workflow.followUpAt && new Date(c.workflow.followUpAt).getTime() < Date.now()
+          ? { label: "Overdue", className: "bg-[#fde2e2] text-[#dc2626]" }
+          : c.workflow.assignedTo && c.workflow.assignedTo !== "Unassigned"
+            ? { label: `${c.workflow.status} • ${c.workflow.assignedTo}`, className: "bg-[#e3edfd] text-[#1d4ed8]" }
+            : { label: c.workflow.team ? `${c.workflow.team} • unassigned` : "Unassigned", className: "bg-[#fdf0d2] text-[#b45309]" }
+      : unanswered
       ? { label: "Needs review", className: "bg-[#fde2e2] text-[#dc2626]" }
       : c.phoneVerifiedAt
         ? { label: "Verified lead", className: "bg-[#dcf3e1] text-[#15803d]" }
@@ -347,7 +357,7 @@ export default function ChatbotOverviewPage() {
           <div className="flex min-w-0 items-center gap-[10px]">
             <p className="min-w-0 truncate text-[15.2px] font-medium text-[#334155]">Organic Mitra — chatbot performance &amp; team follow-up</p>
             <span
-              title="Live chatbot data. Team Follow-up is still sample data."
+              title="Live chatbot data, including the team follow-up from Inbox & Leads."
               className="inline-flex shrink-0 items-center gap-[6px] whitespace-nowrap rounded-[6px] border border-[#cfe9d6] bg-[#eefaf1] px-[10px] py-[3px] text-[12.4px] font-medium text-[#15803d]"
             >
               Live data <Info className="h-[13px] w-[13px]" />
@@ -547,18 +557,18 @@ export default function ChatbotOverviewPage() {
               <p className={smallTitle}>Team Follow-up</p>
               <p className={smallSub}>Chats that need human attention</p>
             </div>
-            <Link href="/chatbot/leads" className={`${blueLink} !text-[10.6px]`}>
+            <Link href="/chatbot/inbox" className={`${blueLink} !text-[10.6px]`}>
               Open Inbox <ArrowRight className="h-[12px] w-[12px]" />
             </Link>
           </div>
           <div className="mt-[2px] flex flex-1 flex-col justify-around divide-y divide-[#eef0f2]">
-            {FOLLOW_UPS.map((f) => {
+            {followUps(stats?.followUp).map((f) => {
               const Icon = f.icon;
               return (
-                <Link key={f.label} href="/chatbot/leads" className="flex items-center gap-[8px] py-[4px] transition hover:bg-[#f8faf9]">
+                <Link key={f.label} href="/chatbot/inbox" className="flex items-center gap-[8px] py-[4px] transition hover:bg-[#f8faf9]">
                   <Icon className={`h-[14px] w-[14px] shrink-0 ${f.iconClass}`} />
                   <span className="min-w-0 flex-1 text-[11.4px] text-[#0f172a]">{f.label}</span>
-                  <span className={`grid h-[18px] w-[18px] place-items-center rounded-full text-[10.2px] font-semibold ${f.countClass}`}>{f.count}</span>
+                  <span className={`grid h-[18px] min-w-[18px] place-items-center rounded-full px-[4px] text-[10.2px] font-semibold ${f.countClass}`}>{f.count ?? "–"}</span>
                   <ChevronRight className="h-[14px] w-[14px] text-[#94a3b8]" />
                 </Link>
               );
@@ -653,14 +663,14 @@ export default function ChatbotOverviewPage() {
           </span>
           <span className="h-[14px] w-px bg-[#cbd5e1]" />
           <span className="text-[#64748b]">
-            Last content update: <span className="text-[#0f172a]">02 Oct 2026</span>
+            Last content update: <span className="text-[#0f172a]">{stats?.contentUpdatedAt ? longDate(stats.contentUpdatedAt) : "Not published yet"}</span>
           </span>
           <span className="h-[14px] w-px bg-[#cbd5e1]" />
           <a href={PUBLIC_SITE_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-[4px] font-medium text-[#1d4ed8] hover:underline">
             Preview Chatbot <ArrowUpRight className="h-[13px] w-[13px]" />
           </a>
         </div>
-        <span className="text-[#64748b]">Team Follow-up shows sample data; everything else is live.</span>
+        <span className="text-[#64748b]">All figures are live.</span>
       </div>
     </div>
   );

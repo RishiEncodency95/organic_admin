@@ -7,8 +7,10 @@ import { ConfirmDialog, DragHandle, Select, cardClass, inputClass as baseInput, 
 
 /*
  * "Forms & Routing" tab of the Chatbot Manager. Forms and routing rules are saved to the
- * draft on the server and published with the rest; the website's quotation / callback forms
- * and team assignment do not read them yet.
+ * draft on the server and published with the rest. Once published, the website chat's
+ * Quotation Request and Callback Request forms follow their on/off switch, Company / Email /
+ * Preferred Time fields (show, required), button label, consent and confirmation text, and a
+ * request is routed to the form's team with its priority and response target (Inbox & Leads).
  * Sized so both columns fit in the Buttons & Flows tab's height (the tabs share one cell).
  */
 

@@ -5,49 +5,43 @@ import { createPortal } from "react-dom";
 import { ArrowRight, ChevronDown, Info, UserRound, Users, X } from "lucide-react";
 
 /*
- * "Reassign Enquiry" popup, opened from a row of the inbox — design preview with sample staff.
+ * "Reassign Enquiry" popup, opened from a row of the inbox. Owners are the admin panel's staff
+ * (Staff Management) with their open records; teams are the ones used in Forms & Routing.
  * It closes only from the ✕, Cancel or after confirming — not on outside clicks or Escape.
  * Rendered into document.body so the inbox page's zoom does not shrink it.
  */
 
-const TEAMS = ["Exhibitor Sales", "Visitor Desk", "Buyer Coordination", "Sponsorship Team", "Support Team"] as const;
+/** Same teams as the Chatbot Manager's Forms & Routing */
+export const INBOX_TEAMS = ["Sales Team", "Registration Team", "Buyer Team", "HR Team", "Team Lead", "Admin"] as const;
+const TEAMS = INBOX_TEAMS;
 
-type Owner = { name: string; available: boolean; open: number; limit: number };
-
-const OWNERS: Record<(typeof TEAMS)[number], Owner[]> = {
-  "Exhibitor Sales": [
-    { name: "Priya Sharma", available: true, open: 8, limit: 20 },
-    { name: "Rahul Verma", available: false, open: 19, limit: 20 },
-    { name: "Ankit Gupta", available: true, open: 12, limit: 20 },
-  ],
-  "Visitor Desk": [
-    { name: "Sneha Rao", available: true, open: 5, limit: 25 },
-    { name: "Karan Mehta", available: true, open: 9, limit: 25 },
-  ],
-  "Buyer Coordination": [{ name: "Vikram Singh", available: true, open: 7, limit: 15 }],
-  "Sponsorship Team": [{ name: "Neha Joshi", available: false, open: 4, limit: 10 }],
-  "Support Team": [{ name: "Amit Kumar", available: true, open: 11, limit: 30 }],
-};
+/** A staff member records can be assigned to, with how many open records they hold */
+export type OwnerInfo = { name: string; available: boolean; open: number; email?: string };
 
 const REASONS = ["Current owner unavailable", "Workload balancing", "Needs topic expertise", "Visitor requested a change", "Other"] as const;
 
 export type Reassignment = { team: string; owner: string; reason: string; note: string; notify: boolean };
 
 /** The inbox row being (re)assigned */
-export type EnquiryRef = { id: number; name: string; topic: string; detail: string; assignedTo: string };
+export type EnquiryRef = { id: number; name: string; topic: string; detail: string; assignedTo: string; team?: string };
 
-/** Team that handles each inbox topic (sample routing) */
+/** Usual team for each inbox topic, when the record has no team yet */
 const TOPIC_TEAM: Record<string, (typeof TEAMS)[number]> = {
-  "Stall Booking": "Exhibitor Sales",
-  Registration: "Visitor Desk",
-  "Buyer–Seller Meet": "Buyer Coordination",
-  Sponsorship: "Sponsorship Team",
+  "Stall Booking": "Sales Team",
+  "Callback Request": "Sales Team",
+  Sponsorship: "Sales Team",
+  Partnership: "Sales Team",
+  Registration: "Registration Team",
+  "Buyer–Seller Meet": "Buyer Team",
 };
-const teamFor = (topic: string) => TOPIC_TEAM[topic] ?? "Support Team";
+const teamOf = (e: EnquiryRef | null): (typeof TEAMS)[number] =>
+  (TEAMS as readonly string[]).includes(e?.team ?? "") ? (e!.team as (typeof TEAMS)[number]) : (TOPIC_TEAM[e?.topic ?? ""] ?? "Admin");
 
 type Props = {
   /** null keeps the popup closed */
   enquiry: EnquiryRef | null;
+  /** Staff to choose from */
+  owners: OwnerInfo[];
   onClose: () => void;
   onConfirm: (result: Reassignment) => void;
 };
@@ -57,11 +51,14 @@ const hiddenSelect = "absolute inset-0 h-full w-full cursor-pointer opacity-0";
 const label = "mb-[3px] block text-[13.5px] font-semibold text-[#0f172a]";
 
 /** Mount with `key={enquiry.id}` so each enquiry starts from its own defaults */
-export default function ReassignEnquiryModal({ enquiry, onClose, onConfirm }: Props) {
+export default function ReassignEnquiryModal({ enquiry, owners, onClose, onConfirm }: Props) {
   const open = enquiry !== null;
   const unassigned = enquiry?.assignedTo === "Unassigned";
-  const [team, setTeam] = useState<(typeof TEAMS)[number]>(() => teamFor(enquiry?.topic ?? ""));
-  const [ownerName, setOwnerName] = useState(() => OWNERS[teamFor(enquiry?.topic ?? "")][0].name);
+  const [team, setTeam] = useState<(typeof TEAMS)[number]>(() => teamOf(enquiry));
+  // Starts on someone other than the current owner, preferring whoever is available with the fewest open records
+  const [ownerName, setOwnerName] = useState(
+    () => [...owners].filter((o) => o.name !== enquiry?.assignedTo).sort((a, b) => Number(b.available) - Number(a.available) || a.open - b.open)[0]?.name ?? owners[0]?.name ?? ""
+  );
   const [reason, setReason] = useState<(typeof REASONS)[number]>(unassigned ? "Workload balancing" : "Current owner unavailable");
   const [note, setNote] = useState("");
   const [notify, setNotify] = useState(true);
@@ -80,8 +77,8 @@ export default function ReassignEnquiryModal({ enquiry, onClose, onConfirm }: Pr
 
   if (!enquiry || typeof document === "undefined") return null;
 
-  const owners = OWNERS[team];
-  const owner = owners.find((o) => o.name === ownerName) ?? owners[0];
+  const owner: OwnerInfo = owners.find((o) => o.name === ownerName) ?? owners[0] ?? { name: "", available: false, open: 0 };
+  const noStaff = owners.length === 0;
 
   return createPortal(
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 font-sans">
@@ -122,14 +119,14 @@ export default function ReassignEnquiryModal({ enquiry, onClose, onConfirm }: Pr
             <span
               className={`rounded-[6px] px-[10px] py-[3px] text-[12.5px] font-medium ${unassigned ? "bg-[#fdf0dc] text-[#b45309]" : "bg-[#dcf3e1] text-[#15803d]"}`}
             >
-              {unassigned ? "Unassigned" : "Auto-assigned"}
+              {unassigned ? "Unassigned" : "Assigned"}
             </span>
             <div>
               <p className="flex items-center gap-[8px] text-[14px] text-[#0f172a]">
-                <Users className="h-[17px] w-[17px]" /> {teamFor(enquiry.topic)} <ArrowRight className="h-[16px] w-[16px]" />{" "}
+                <Users className="h-[17px] w-[17px]" /> {enquiry.team || "No team yet"} <ArrowRight className="h-[16px] w-[16px]" />{" "}
                 {unassigned ? "No owner yet" : enquiry.assignedTo}
               </p>
-              <p className="ml-[25px] text-[12px] text-[#64748b]">Rule: {enquiry.topic} enquiries • Assign in Rotation</p>
+              <p className="ml-[25px] text-[12px] text-[#64748b]">Topic: {enquiry.topic}</p>
             </div>
           </div>
 
@@ -144,7 +141,6 @@ export default function ReassignEnquiryModal({ enquiry, onClose, onConfirm }: Pr
               onChange={(e) => {
                 const next = e.target.value as (typeof TEAMS)[number];
                 setTeam(next);
-                setOwnerName(OWNERS[next][0].name);
               }}
               aria-label="New team"
               className={hiddenSelect}
@@ -161,7 +157,7 @@ export default function ReassignEnquiryModal({ enquiry, onClose, onConfirm }: Pr
           <p className={`${label} mt-[8px]`}>New owner</p>
           <label className={fieldBox}>
             <UserRound className="mr-[10px] h-[16px] w-[16px] text-[#334155]" />
-            <span className="text-[13.5px]">{owner.name}</span>
+            <span className="text-[13.5px]">{noStaff ? "No staff yet — add them in Staff Management" : owner.name}</span>
             <span className={`ml-[14px] rounded-[5px] px-[8px] py-0 text-[12px] ${owner.available ? "bg-[#dcf3e1] text-[#15803d]" : "bg-[#fdf0dc] text-[#b45309]"}`}>
               {owner.available ? "Available" : "Away"}
             </span>
@@ -169,13 +165,14 @@ export default function ReassignEnquiryModal({ enquiry, onClose, onConfirm }: Pr
             <select value={owner.name} onChange={(e) => setOwnerName(e.target.value)} aria-label="New owner" className={hiddenSelect}>
               {owners.map((o) => (
                 <option key={o.name} value={o.name}>
-                  {o.name} — {o.available ? "Available" : "Away"} ({o.open}/{o.limit})
+                  {o.name} — {o.available ? "Available" : "Away"} ({o.open} open)
                 </option>
               ))}
             </select>
           </label>
-          <p className={`mt-[2px] text-[12px] ${owner.open >= owner.limit ? "text-[#dc2626]" : "text-[#64748b]"}`}>
-            {owner.open} / {owner.limit} open enquiries
+          <p className="mt-[2px] text-[12px] text-[#64748b]">
+            {owner.open} open enquir{owner.open === 1 ? "y" : "ies"}
+            {owner.email ? ` • ${owner.email}` : ""}
           </p>
 
           {/* Reason */}
@@ -226,7 +223,15 @@ export default function ReassignEnquiryModal({ enquiry, onClose, onConfirm }: Pr
             </button>
             <button
               type="button"
-              onClick={() => onConfirm({ team, owner: owner.name, reason, note: note.trim(), notify })}
+              disabled={noStaff}
+              onClick={() => {
+                // "Notify new owner": opens an email to them with the enquiry
+                if (notify && owner.email) {
+                  const body = `${enquiry.name} — ${enquiry.topic}\n${enquiry.detail}\n\nReason: ${reason}${note.trim() ? `\nNote: ${note.trim()}` : ""}\n\nOpen it in Admin → AI Chatbot → Inbox & Leads.`;
+                  window.open(`mailto:${owner.email}?subject=${encodeURIComponent(`Enquiry assigned to you: ${enquiry.name}`)}&body=${encodeURIComponent(body)}`, "_blank");
+                }
+                onConfirm({ team, owner: owner.name, reason, note: note.trim(), notify });
+              }}
               className="h-[30px] rounded-[8px] bg-[#15803d] px-[20px] text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#166534]"
             >
               {unassigned ? "Confirm Assignment" : "Confirm Reassignment"}

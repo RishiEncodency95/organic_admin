@@ -20,22 +20,24 @@ import {
 } from "lucide-react";
 import { DESIGN_WIDTH, useFitWidth } from "@/components/chatbot/useFitWidth";
 import { chatbotApi, type ChatStats, type ChatSummary } from "@/lib/chatbotApi";
+import { INBOX_TEAMS } from "../inbox/ReassignEnquiryModal";
 import { resolveRange, type RangeKey } from "@/components/chatbot/DateRangeFilter";
 
 /*
- * Chatbot Reports — leads, quotations, WhatsApp follow-ups and visitor feedback are live
- * (/admin/chats). Bookings, resolved / overdue requests, complaints and the team table are
- * still sample data: there are no booking links, assignments or complaints behind them yet.
+ * Chatbot Reports — all live from /admin/chats: leads, quotations, WhatsApp follow-ups and
+ * feedback from the chats; bookings from Book a Stand registrations made with a lead's number
+ * (confirmed once paid); resolved / overdue, complaints and team figures from the Inbox & Leads
+ * workflow (owner, team, status, follow-ups and replies saved on each record).
  *
  * Laid out at the design's width with the design's pixel sizes, then zoomed to the
  * available width (see useFitWidth). The dashboard layout's AdminContentScale remaps many
  * text-[Npx] classes with !important, so this page sticks to sizes outside that list.
  */
 
-// ─── Sample data ─────────────────────────────────────────────────────────────
+// ─── Data ────────────────────────────────────────────────────────────────────
 
 const DATE_RANGES = ["Today", "Last 7 Days", "Last 30 Days", "This Month", "All Time"] as const;
-const TEAMS = ["All Teams", "Sales Team", "Registration Team", "Buyer Team"] as const;
+const TEAMS = ["All Teams", ...INBOX_TEAMS] as const;
 const TOPICS = ["All Topics", "Stall Booking", "Sponsorship", "Partnership", "Other"] as const;
 const TABS = ["Enquiry Outcomes", "Team Performance", "Feedback & Complaints"] as const;
 const RANGE_KEY: Record<(typeof DATE_RANGES)[number], RangeKey> = {
@@ -64,34 +66,36 @@ const ExclamationIcon = ({ className = "" }: { className?: string }) => (
   </svg>
 );
 
-const SUMMARY: { title: string; value: number; icon: LucideIcon | typeof ExclamationIcon; iconClass: string; valueClass: string; cardClass: string }[] = [
+type SummaryKey = "leads" | "bookings" | "resolved" | "overdue";
+
+const SUMMARY: { key: SummaryKey; title: string; icon: LucideIcon | typeof ExclamationIcon; iconClass: string; valueClass: string; cardClass: string }[] = [
   {
+    key: "leads",
     title: "LEADS CAPTURED",
-    value: 80,
     icon: Users,
     iconClass: "border-[#d6ecdc] bg-white text-[#15633a]",
     valueClass: "text-[#14532d]",
     cardClass: "border-[#cfe9d6] bg-gradient-to-br from-[#f3fbf5] via-[#f7fcf8] to-[#e3f5e8]",
   },
   {
+    key: "bookings",
     title: "BOOKINGS LINKED",
-    value: 12,
     icon: CalendarDays,
     iconClass: "border-[#d5e2f6] bg-white text-[#2563eb]",
     valueClass: "text-[#1d4ed8]",
     cardClass: "border-[#d5e2f6] bg-gradient-to-br from-[#f4f8fe] via-[#f8fbff] to-[#e4eefc]",
   },
   {
+    key: "resolved",
     title: "RESOLVED REQUESTS",
-    value: 45,
     icon: Check,
     iconClass: "border-[#e3d9f7] bg-white text-white [&>svg]:rounded-full [&>svg]:bg-[#7c3aed] [&>svg]:p-[4px]",
     valueClass: "text-[#6d28d9]",
     cardClass: "border-[#e3d9f7] bg-gradient-to-br from-[#f8f5fe] via-[#fbf9ff] to-[#efe8fc]",
   },
   {
+    key: "overdue",
     title: "OVERDUE REQUESTS",
-    value: 5,
     icon: ExclamationIcon,
     iconClass: "border-[#f5e3bf] bg-white text-white [&>svg]:rounded-full [&>svg]:bg-[#dc2626] [&>svg]:p-[4px]",
     valueClass: "text-[#ea7a0c]",
@@ -111,16 +115,59 @@ const liveOutcomes = (chats: ChatSummary[]): OutcomeRow[] =>
       leads: leads.length,
       contacted: leads.filter((c) => c.whatsappSentAt).length,
       quotations: topic === "Stall Booking" ? quotations : null,
-      // No booking records are linked to chats yet
-      bookings: null,
+      // Book a Stand registrations made with the lead's number and paid
+      bookings: leads.filter((c) => c.booking?.paid).length,
     };
   });
 
-const TEAM_ROWS = [
-  { team: "Sales Team", color: "bg-[#2563eb]", assigned: 40, withinTarget: 85, avgReply: "22 min", resolved: 24, overdue: 3 },
-  { team: "Registration Team", color: "bg-[#9333ea]", assigned: 25, withinTarget: 92, avgReply: "15 min", resolved: 16, overdue: 1 },
-  { team: "Buyer Team", color: "bg-[#ea7a0c]", assigned: 15, withinTarget: 93, avgReply: "12 min", resolved: 5, overdue: 1 },
-];
+/** First reply the team recorded on a record (Inbox & Leads), in minutes after it came in */
+const firstReplyMinutes = (c: ChatSummary) => {
+  const reply = c.workflow?.activity?.find((a) => a.kind === "reply" && a.at);
+  return reply ? Math.max(0, (new Date(reply.at!).getTime() - new Date(c.createdAt).getTime()) / 60_000) : null;
+};
+const isResolved = (c: ChatSummary) => c.workflow?.status === "Resolved";
+const isOverdue = (c: ChatSummary, now: number) =>
+  !isResolved(c) && c.workflow?.followUpKind === "date" && !!c.workflow.followUpAt && new Date(c.workflow.followUpAt).getTime() < now;
+const minutesText = (m: number | null) => (m == null ? "—" : m < 60 ? `${Math.round(m)} min` : m < 1440 ? `${(m / 60).toFixed(1)} hr` : `${(m / 1440).toFixed(1)} days`);
+
+/** A first reply within this many minutes counts as "within target" */
+const REPLY_TARGET_MIN = 60;
+const TEAM_COLORS = ["bg-[#2563eb]", "bg-[#9333ea]", "bg-[#ea7a0c]", "bg-[#0f766e]", "bg-[#db2777]", "bg-[#475569]"];
+
+type TeamRow = { team: string; color: string; assigned: number; withinTarget: number | null; avgReply: string; resolved: number; overdue: number };
+
+/** Team figures from the records routed or assigned to each team */
+const teamRows = (records: ChatSummary[], now: number): TeamRow[] =>
+  INBOX_TEAMS.map((team, i) => {
+    const mine = records.filter((c) => c.workflow?.team === team);
+    const replies = mine.map(firstReplyMinutes).filter((m): m is number => m != null);
+    return {
+      team,
+      color: TEAM_COLORS[i % TEAM_COLORS.length],
+      assigned: mine.length,
+      withinTarget: replies.length ? Math.round((replies.filter((m) => m <= REPLY_TARGET_MIN).length / replies.length) * 100) : null,
+      avgReply: minutesText(replies.length ? replies.reduce((a, b) => a + b, 0) / replies.length : null),
+      resolved: mine.filter(isResolved).length,
+      overdue: mine.filter((c) => isOverdue(c, now)).length,
+    };
+  });
+
+/** Per-person figures for the Team Performance tab */
+const ownerRows = (records: ChatSummary[], now: number) => {
+  const owners = [...new Set(records.map((c) => c.workflow?.assignedTo).filter((o): o is string => !!o && o !== "Unassigned"))].sort();
+  return owners.map((owner) => {
+    const mine = records.filter((c) => c.workflow?.assignedTo === owner);
+    const replies = mine.map(firstReplyMinutes).filter((m): m is number => m != null);
+    return {
+      owner,
+      teams: [...new Set(mine.map((c) => c.workflow?.team).filter(Boolean))].join(", ") || "—",
+      open: mine.filter((c) => !isResolved(c)).length,
+      resolved: mine.filter(isResolved).length,
+      overdue: mine.filter((c) => isOverdue(c, now)).length,
+      avgReply: minutesText(replies.length ? replies.reduce((a, b) => a + b, 0) / replies.length : null),
+    };
+  });
+};
 
 // ─── Small pieces ────────────────────────────────────────────────────────────
 
@@ -131,7 +178,7 @@ const greenLink = "inline-flex items-center gap-[8px] text-[13.1px] font-medium 
 
 const DemoChip = () => (
   <span
-    title="Leads, quotations, WhatsApp follow-ups and feedback are live. Bookings, resolved / overdue requests, complaints and team figures are sample data."
+    title="All figures are live: chats, Book a Stand registrations and the Inbox & Leads follow-up."
     className="inline-flex shrink-0 items-center gap-[6px] whitespace-nowrap rounded-[6px] border border-[#cfe9d6] bg-[#eefaf1] px-[10px] py-[3px] text-[12.4px] font-medium text-[#15803d]"
   >
     Live data <Info className="h-[13px] w-[13px]" />
@@ -184,15 +231,18 @@ export default function ChatbotReportsPage() {
 
   const [chats, setChats] = useState<ChatSummary[] | null>(null);
   const [stats, setStats] = useState<ChatStats | null>(null);
+  // When the data was loaded: the "overdue" cut-off
+  const [now, setNow] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     const q = resolveRange({ key: RANGE_KEY[range] });
-    Promise.all([chatbotApi.list({ ...q, limit: 1000 }), chatbotApi.stats(q)])
+    Promise.all([chatbotApi.list({ ...q, limit: 1000, source: "all" }), chatbotApi.stats(q)])
       .then(([list, st]) => {
         if (cancelled) return;
-        setChats(list.chats);
+        setChats(list.chats.filter((c) => !c.workflow?.spam));
         setStats(st);
+        setNow(Date.now());
       })
       .catch(() => {
         if (cancelled) return;
@@ -205,16 +255,29 @@ export default function ChatbotReportsPage() {
   }, [range]);
 
   // Zeros (not sample numbers) if the API cannot be reached
-  const outcomes = liveOutcomes(chats || []);
+  const records = chats || [];
+  const websiteChats = records.filter((c) => c.source !== "manual");
+  const outcomes = liveOutcomes(websiteChats);
   const rows = topic === "All Topics" ? outcomes : outcomes.filter((r) => r.topic === topic);
   const totals = stats?.totals;
   const helpful = totals?.feedbackYes ?? 0;
   const notHelpful = totals?.feedbackNo ?? 0;
   const ratings = helpful + notHelpful;
   const helpfulPct = ratings ? Math.round((helpful / ratings) * 100) : 0;
-  const summaryValue = (title: string, sample: number) => (title === "LEADS CAPTURED" ? rows.reduce((n, r) => n + r.leads, 0) : sample);
+  const complaints = records.filter((c) => c.manual?.category === "complaint");
+  const summaryValue = (key: SummaryKey) =>
+    key === "leads"
+      ? rows.reduce((n, r) => n + r.leads, 0)
+      : key === "bookings"
+        ? rows.reduce((n, r) => n + (r.bookings ?? 0), 0)
+        : key === "resolved"
+          ? records.filter(isResolved).length
+          : records.filter((c) => isOverdue(c, now)).length;
   const sum = (key: "leads" | "contacted" | "quotations" | "bookings") => rows.reduce((t, r) => t + (r[key] ?? 0), 0);
-  const teams = team === "All Teams" ? TEAM_ROWS : TEAM_ROWS.filter((r) => r.team === team);
+  const allTeams = teamRows(records, now);
+  const teams = team === "All Teams" ? allTeams.filter((r) => r.assigned > 0) : allTeams.filter((r) => r.team === team);
+  const owners = ownerRows(team === "All Teams" ? records : records.filter((c) => c.workflow?.team === team), now);
+  const notHelpfulChats = websiteChats.filter((c) => c.feedback === "no");
 
   const exportCsv = () => {
     const header = ["Topic", "Leads Captured", "Contacted", "Quotations Sent", "Confirmed Bookings"];
@@ -281,14 +344,14 @@ export default function ChatbotReportsPage() {
               {SUMMARY.map((s, i) => {
                 const Icon = s.icon;
                 return (
-                  <div key={s.title} className="relative">
+                  <div key={s.key} className="relative">
                     <div className={`flex h-[68px] items-center gap-[16px] rounded-[11px] border px-[14px] ${s.cardClass}`}>
                       <span className={`grid h-[42px] w-[42px] shrink-0 place-items-center rounded-full border ${s.iconClass}`}>
                         <Icon className="h-[21px] w-[21px]" />
                       </span>
                       <span>
                         <span className="block text-[12.6px] font-semibold text-[#0f172a]">{s.title}</span>
-                        <span className={`mt-[3px] block text-[24.5px] font-bold leading-none ${s.valueClass}`}>{summaryValue(s.title, s.value)}</span>
+                        <span className={`mt-[3px] block text-[24.5px] font-bold leading-none ${s.valueClass}`}>{chats ? summaryValue(s.key) : 0}</span>
                       </span>
                     </div>
                     {i === 1 && (
@@ -365,9 +428,9 @@ export default function ChatbotReportsPage() {
                   <p className="text-[12.6px] text-[#64748b]">Visitor complaints received and resolution status</p>
                 </div>
                 <div className="mt-[5px] grid grid-cols-3 gap-[12px]">
-                  <MiniStat label="Received" value={6} icon={<ExclamationIcon className="h-[20px] w-[20px] rounded-full bg-[#dc2626] p-[4px] text-white" />} iconClass="bg-[#fde8e8]" valueClass="text-[#dc2626]" />
-                  <MiniStat label="Resolved" value={4} icon={<Check className="h-[20px] w-[20px] rounded-full bg-[#15803d] p-[4px] text-white" strokeWidth={3} />} iconClass="bg-[#e6f6ea]" valueClass="text-[#15803d]" />
-                  <MiniStat label="Open" value={2} icon={<Clock3 className="h-[19px] w-[19px] text-[#ea7a0c]" />} iconClass="bg-[#fdf3e1]" valueClass="text-[#ea7a0c]" />
+                  <MiniStat label="Received" value={complaints.length} icon={<ExclamationIcon className="h-[20px] w-[20px] rounded-full bg-[#dc2626] p-[4px] text-white" />} iconClass="bg-[#fde8e8]" valueClass="text-[#dc2626]" />
+                  <MiniStat label="Resolved" value={complaints.filter(isResolved).length} icon={<Check className="h-[20px] w-[20px] rounded-full bg-[#15803d] p-[4px] text-white" strokeWidth={3} />} iconClass="bg-[#e6f6ea]" valueClass="text-[#15803d]" />
+                  <MiniStat label="Open" value={complaints.filter((c) => !isResolved(c)).length} icon={<Clock3 className="h-[19px] w-[19px] text-[#ea7a0c]" />} iconClass="bg-[#fdf3e1]" valueClass="text-[#ea7a0c]" />
                 </div>
                 <div className="mt-auto flex items-center justify-between pt-[6px]">
                   <Link href="/chatbot/inbox" className={greenLink}>
@@ -389,12 +452,17 @@ export default function ChatbotReportsPage() {
                 <div className="grid grid-cols-[240px_136px_284px_216px_132px_160px_1fr] items-center bg-[#f7f8fa] py-[5px] text-[12.6px] text-[#334155] [&>span]:border-r [&>span]:border-[#eef0f2] [&>span:last-child]:border-r-0">
                   <span className="px-[16px]">Team</span>
                   <span className="text-center">Assigned</span>
-                  <span className="text-center">First Response Within Target</span>
+                  <span className="text-center" title={`First reply recorded within ${REPLY_TARGET_MIN} minutes`}>First Reply Within 1 Hour</span>
                   <span className="text-center">Avg First Reply</span>
                   <span className="text-center">Resolved</span>
                   <span className="text-center">Overdue</span>
                   <span className="text-center">Action</span>
                 </div>
+                {teams.length === 0 && (
+                  <p className="border-t border-[#eef0f2] px-[16px] py-[9px] text-[13.4px] text-[#64748b]">
+                    No records are routed to {team === "All Teams" ? "a team" : team} in this period yet. Teams come from Forms &amp; Routing and from assigning in Inbox &amp; Leads.
+                  </p>
+                )}
                 {teams.map((r) => (
                   <div key={r.team} className="grid h-[34px] grid-cols-[240px_136px_284px_216px_132px_160px_1fr] items-center border-t border-[#eef0f2] text-[#0f172a] [&>span]:flex [&>span]:h-full [&>span]:items-center [&>span]:border-r [&>span]:border-[#eef0f2] [&>span:last-child]:border-r-0">
                     <span className="gap-[22px] px-[16px]">
@@ -405,7 +473,7 @@ export default function ChatbotReportsPage() {
                     </span>
                     <span className="justify-center">{r.assigned}</span>
                     <span className="justify-center">
-                      <span className="rounded-[5px] bg-[#e6f6ea] px-[12px] py-[2px] text-[#15803d]">{r.withinTarget}%</span>
+                      {r.withinTarget == null ? "—" : <span className="rounded-[5px] bg-[#e6f6ea] px-[12px] py-[2px] text-[#15803d]">{r.withinTarget}%</span>}
                     </span>
                     <span className="justify-center">{r.avgReply}</span>
                     <span className="justify-center">{r.resolved}</span>
@@ -421,11 +489,70 @@ export default function ChatbotReportsPage() {
             </div>
           </div>
 
-          {TABS.slice(1).map((t) => (
-            <div key={t} {...panelProps(t)} className={`${panelClass(t)} grid place-items-center rounded-[12px] border border-dashed border-[#d6dae0] text-[14.6px] text-[#64748b]`}>
-              {t} — coming soon in this demo report.
+          {/* Team Performance: one row per person */}
+          <div {...panelProps(TABS[1])} className={`${panelClass(TABS[1])} ${card} self-start px-[18px] pb-[10px] pt-[10px]`}>
+            <p className={cardTitle}>Team Performance</p>
+            <p className={cardSub}>Records assigned to each person in Inbox &amp; Leads • selected period{team === "All Teams" ? "" : ` • ${team}`}</p>
+            <div className="mt-[6px] overflow-hidden rounded-[8px] border border-[#eef0f2] text-[13.6px]">
+              <div className="grid grid-cols-[260px_1fr_120px_120px_120px_160px] items-center bg-[#f7f8fa] py-[5px] text-[12.6px] text-[#334155] [&>span]:border-r [&>span]:border-[#eef0f2] [&>span:last-child]:border-r-0">
+                <span className="px-[16px]">Owner</span>
+                <span className="px-[16px]">Teams</span>
+                <span className="text-center">Open</span>
+                <span className="text-center">Resolved</span>
+                <span className="text-center">Overdue</span>
+                <span className="text-center">Avg First Reply</span>
+              </div>
+              {owners.length === 0 && <p className="border-t border-[#eef0f2] px-[16px] py-[9px] text-[13.4px] text-[#64748b]">Nobody has records assigned in this period yet.</p>}
+              {owners.map((o) => (
+                <div key={o.owner} className="grid h-[34px] grid-cols-[260px_1fr_120px_120px_120px_160px] items-center border-t border-[#eef0f2] text-[#0f172a] [&>span]:flex [&>span]:h-full [&>span]:items-center [&>span]:border-r [&>span]:border-[#eef0f2] [&>span:last-child]:border-r-0">
+                  <span className="gap-[12px] px-[16px] font-medium">
+                    <UserRound className="h-[15px] w-[15px] text-[#15633a]" /> {o.owner}
+                  </span>
+                  <span className="truncate px-[16px] text-[#475569]">{o.teams}</span>
+                  <span className="justify-center">{o.open}</span>
+                  <span className="justify-center">{o.resolved}</span>
+                  <span className="justify-center font-medium text-[#dc2626]">{o.overdue}</span>
+                  <span className="justify-center">{o.avgReply}</span>
+                </div>
+              ))}
             </div>
-          ))}
+            <Link href="/chatbot/inbox" className={`${greenLink} mt-[8px]`}>
+              Open Inbox &amp; Leads <ArrowRight className="h-[16px] w-[16px]" />
+            </Link>
+          </div>
+
+          {/* Feedback & Complaints: the records behind the numbers */}
+          <div {...panelProps(TABS[2])} className={`${panelClass(TABS[2])} grid grid-cols-2 gap-[14px] self-start`}>
+            {(
+              [
+                { title: "Not Helpful Ratings", sub: "Chats a visitor rated 👎 • selected period", list: notHelpfulChats, empty: "No 👎 ratings in this period." },
+                { title: "Complaints", sub: "Complaints added in Inbox & Leads • selected period", list: complaints, empty: "No complaints in this period." },
+              ] as const
+            ).map((panel) => (
+              <div key={panel.title} className={`${card} px-[16px] pb-[8px] pt-[8px]`}>
+                <p className={cardTitle}>{panel.title}</p>
+                <p className={cardSub}>{panel.sub}</p>
+                <div className="mt-[6px] max-h-[420px] overflow-y-auto rounded-[8px] border border-[#eef0f2] text-[13.4px]">
+                  {panel.list.length === 0 && <p className="px-[14px] py-[9px] text-[#64748b]">{panel.empty}</p>}
+                  {panel.list.map((c) => (
+                    <div key={c._id} className="flex items-center gap-[12px] border-t border-[#eef0f2] px-[14px] py-[6px] first:border-t-0">
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-medium text-[#0f172a]">{c.lead?.name || c.visitorName || "Visitor"}</span>
+                        <span className="block truncate text-[12.4px] text-[#64748b]">{c.manual?.detail || c.firstQuestion?.content || "Browsed the chatbot menu"}</span>
+                      </span>
+                      <span className={`shrink-0 rounded-[5px] px-[8px] py-[2px] text-[12px] font-medium ${isResolved(c) ? "bg-[#e6f6ea] text-[#15803d]" : "bg-[#fdf3e1] text-[#b45309]"}`}>
+                        {c.workflow?.status || "New"}
+                      </span>
+                      <span className="w-[86px] shrink-0 text-right text-[12.4px] text-[#64748b]">{new Date(c.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span>
+                    </div>
+                  ))}
+                </div>
+                <Link href="/chatbot/inbox" className={`${greenLink} mt-[8px]`}>
+                  Review in Inbox <ArrowRight className="h-[16px] w-[16px]" />
+                </Link>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* ── Footer ── */}

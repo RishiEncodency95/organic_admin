@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { chatbotApi, type ChatMessage } from "@/lib/chatbotApi";
 import { Bot, CalendarDays, Clock3, Flag, Info, Mail, Phone, Send, StickyNote, UserRound, X } from "lucide-react";
 
 /*
@@ -30,25 +31,29 @@ export type EnquiryDetail = {
   email?: string;
   /** Opened from the Review button (overdue / pending review) */
   review: boolean;
+  /** The saved chat behind the record (its transcript is loaded from the server) */
+  chatId?: string;
+  /** Added by hand in the inbox: there is no website chat to show */
+  manual?: boolean;
+  createdAt?: string;
 };
 
-/** What happened on the record from this page: replies to the visitor, internal notes, status events */
-export type Activity = { kind: "reply" | "note" | "event"; text: string };
+/** What happened on the record: replies to the visitor, internal notes, status events (saved with the chat) */
+export type Activity = { kind: "reply" | "note" | "event"; text: string; by?: string; at?: string };
 
 export type ComposeMode = "reply" | "note";
 
-type Message = { from: "visitor" | "bot" | "agent" | "note" | "system"; text: string; time: string };
+type Message = { from: "visitor" | "bot" | "agent" | "note" | "system"; text: string; time: string; by?: string; at: number };
 
-/** Sample conversation built from the row */
-function sampleThread(e: EnquiryDetail): Message[] {
-  const thread: Message[] = [
-    { from: "visitor", text: `Hi, I need help with ${e.topic.toLowerCase()} — ${e.detail.toLowerCase()}.`, time: "10:02 AM" },
-    { from: "bot", text: `Thanks for reaching out to Organic Mitra! I've noted your ${e.type.toLowerCase()} and shared it with our team. Someone will get back to you shortly.`, time: "10:02 AM" },
-  ];
-  if (e.assignedTo !== "Unassigned") thread.push({ from: "system", text: `Assigned to ${e.assignedTo}`, time: "10:05 AM" });
-  if (e.category === "complaint") thread.push({ from: "visitor", text: "It has been a while and I still haven't received a reply. Please look into this.", time: "11:40 AM" });
-  return thread;
-}
+/** "Today, 3:05 PM" / "12 Oct, 3:05 PM" */
+const timeLabel = (iso?: string) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const time = d.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true }).toUpperCase();
+  return d.toDateString() === new Date().toDateString() ? time : `${d.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}, ${time}`;
+};
+const stamp = (iso?: string) => (iso ? new Date(iso).getTime() || 0 : 0);
 
 const PRIORITY_CLASS: Record<string, string> = {
   High: "bg-[#fdecec] text-[#dc2626]",
@@ -81,6 +86,22 @@ export default function EnquiryDetailModal({ enquiry, activity, initialMode = "r
   const draftRef = useRef<HTMLTextAreaElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
+  // The website conversation behind the record, loaded once per open record
+  const [transcript, setTranscript] = useState<{ id: string; messages: ChatMessage[]; failed?: boolean } | null>(null);
+  const chatId = enquiry?.manual ? undefined : enquiry?.chatId;
+  const transcriptLoading = !!chatId && transcript?.id !== chatId;
+
+  useEffect(() => {
+    if (!chatId) return;
+    let cancelled = false;
+    chatbotApi
+      .get(chatId)
+      .then((chat) => !cancelled && setTranscript({ id: chatId, messages: chat.messages || [] }))
+      .catch(() => !cancelled && setTranscript({ id: chatId, messages: [], failed: true }));
+    return () => {
+      cancelled = true;
+    };
+  }, [chatId]);
 
   // Closes only from the ✕ or Close — no outside-click or Escape handlers on purpose
   useEffect(() => {
@@ -97,22 +118,42 @@ export default function EnquiryDetailModal({ enquiry, activity, initialMode = "r
   // Keep the latest message in view
   useEffect(() => {
     chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight });
-  }, [open, activity.length]);
+  }, [open, activity.length, transcript]);
 
   if (!enquiry || typeof document === "undefined") return null;
 
   const unassigned = enquiry.assignedTo === "Unassigned";
   const resolved = enquiry.status === "Resolved";
+  // The visitor's chat (or the hand-entered enquiry) followed by the team's activity, in time order
+  const opening: Message[] = enquiry.manual
+    ? [{ from: "visitor", text: enquiry.detail || enquiry.topic, time: timeLabel(enquiry.createdAt), at: stamp(enquiry.createdAt) }]
+    : (transcript && transcript.id === chatId ? transcript.messages : []).map((m): Message => ({
+        from: m.role === "user" ? "visitor" : "bot",
+        text: m.content,
+        time: timeLabel(m.createdAt),
+        at: stamp(m.createdAt),
+      }));
   const thread: Message[] = [
-    ...sampleThread(enquiry),
-    ...activity.map((a): Message => ({ from: a.kind === "reply" ? "agent" : a.kind === "note" ? "note" : "system", text: a.text, time: "Just now" })),
-  ];
+    ...opening,
+    ...activity.map((a): Message => ({
+      from: a.kind === "reply" ? "agent" : a.kind === "note" ? "note" : "system",
+      text: a.text,
+      time: timeLabel(a.at) || "Just now",
+      by: a.by,
+      // Entries without a time (none are saved that way) go last
+      at: stamp(a.at) || Number.MAX_SAFE_INTEGER,
+    })),
+  ].sort((a, b) => a.at - b.at);
+  const whatsappTo = enquiry.mobile ? `91${enquiry.mobile.replace(/\D/g, "").slice(-10)}` : "";
 
   const send = () => {
     const text = draft.trim();
     if (!text) return;
-    if (mode === "reply") onReply(text);
-    else onNote(text);
+    if (mode === "reply") {
+      onReply(text);
+      // The reply reaches the visitor through your WhatsApp, with the message filled in
+      if (whatsappTo) window.open(`https://wa.me/${whatsappTo}?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+    } else onNote(text);
     setDraft("");
   };
 
@@ -145,9 +186,7 @@ export default function EnquiryDetailModal({ enquiry, activity, initialMode = "r
             <p className="flex items-center gap-[12px] text-[14.5px] font-bold text-[#0f172a]">
               #OM-{1047 + enquiry.id} • {enquiry.name}
               <span className="rounded-[5px] bg-white px-[7px] py-[1px] text-[11px] font-medium text-[#15803d]">{enquiry.tag}</span>
-              <span title="Sample enquiry" className="inline-flex items-center gap-[4px] rounded-[5px] bg-[#dcf3e1] px-[7px] py-[1px] text-[11px] font-medium text-[#15803d]">
-                Demo data <Info className="h-[11px] w-[11px]" />
-              </span>
+              <span className="rounded-[5px] bg-white px-[7px] py-[1px] text-[11px] font-medium text-[#475569]">{enquiry.channel}</span>
             </p>
             <p className="text-[13.5px] text-[#334155]">
               {enquiry.type} • {enquiry.topic}
@@ -209,15 +248,18 @@ export default function EnquiryDetailModal({ enquiry, activity, initialMode = "r
           {/* Chat history */}
           <p className="mb-[4px] mt-[10px] text-[13.5px] font-semibold text-[#0f172a]">Chat history</p>
           <div ref={chatRef} className="flex h-[220px] flex-col gap-[8px] overflow-y-auto rounded-[9px] border border-[#eef0f2] bg-[#f8faf9] px-[12px] py-[10px]">
+            {transcriptLoading && <p className="self-center text-[12px] text-[#64748b]">Loading chat…</p>}
+            {transcript?.failed && transcript.id === chatId && <p className="self-center text-[12px] text-[#dc2626]">Could not load the chat.</p>}
+            {!transcriptLoading && !thread.length && <p className="self-center text-[12px] text-[#64748b]">The visitor only browsed the chatbot menu.</p>}
             {thread.map((m, i) =>
               m.from === "system" ? (
                 <p key={i} className="self-center rounded-full bg-[#eef0f2] px-[10px] py-[2px] text-[11.5px] text-[#475569]">
-                  {m.text} • {m.time}
+                  {m.text} • {m.by ? `${m.by} • ` : ""}{m.time}
                 </p>
               ) : m.from === "note" ? (
                 <div key={i} className="max-w-[80%] self-end rounded-[10px] border border-[#f5e3bf] bg-[#fffaf0] px-[11px] py-[6px]">
                   <span className="mb-[2px] flex items-center gap-[4px] text-[11.5px] font-medium text-[#b45309]">
-                    <StickyNote className="h-[12px] w-[12px]" /> Internal note • You • {m.time}
+                    <StickyNote className="h-[12px] w-[12px]" /> Internal note • {m.by || "You"} • {m.time}
                   </span>
                   <span className="block whitespace-pre-wrap text-[13.5px] leading-snug text-[#0f172a]">{m.text}</span>
                 </div>
@@ -225,7 +267,7 @@ export default function EnquiryDetailModal({ enquiry, activity, initialMode = "r
                 <div key={i} className={`flex max-w-[80%] flex-col ${m.from === "agent" ? "self-end items-end" : "self-start items-start"}`}>
                   <span className="mb-[2px] flex items-center gap-[4px] text-[11.5px] text-[#64748b]">
                     {m.from === "bot" && <Bot className="h-[12px] w-[12px]" />}
-                    {m.from === "visitor" ? enquiry.name : m.from === "bot" ? "Organic Mitra" : "You"} • {m.time}
+                    {m.from === "visitor" ? enquiry.name : m.from === "bot" ? "Organic Mitra" : m.by || "You"} • {m.time}
                   </span>
                   <span
                     className={`whitespace-pre-wrap rounded-[10px] px-[11px] py-[6px] text-[13.5px] leading-snug ${
@@ -255,7 +297,7 @@ export default function EnquiryDetailModal({ enquiry, activity, initialMode = "r
                   mode === m ? (m === "reply" ? "bg-[#dcf3e1] text-[#15803d]" : "bg-[#fdf0dc] text-[#b45309]") : "text-[#475569] hover:bg-slate-100"
                 }`}
               >
-                {m === "reply" ? `Reply via ${enquiry.channel}` : "Internal note"}
+                {m === "reply" ? (whatsappTo ? "Reply on WhatsApp" : "Log a reply") : "Internal note"}
               </button>
             ))}
           </div>
@@ -294,7 +336,10 @@ export default function EnquiryDetailModal({ enquiry, activity, initialMode = "r
           </div>
 
           <p className="mt-[8px] flex items-center gap-[10px] rounded-[7px] bg-[#f3f5f8] px-[11px] py-[6px] text-[12px] text-[#334155]">
-            <Info className="h-[16px] w-[16px] shrink-0" /> Demo preview — replies and notes update this record only; nothing is sent to the visitor.
+            <Info className="h-[16px] w-[16px] shrink-0" />
+            {whatsappTo
+              ? "Send saves the reply on this record and opens WhatsApp with it, ready to send to the visitor. Notes stay internal."
+              : "No mobile number: replies are saved on this record as a log (contact the visitor yourself). Notes stay internal."}
           </p>
 
           {/* Actions */}

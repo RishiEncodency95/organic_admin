@@ -77,7 +77,7 @@ type MenuButton = {
   target: string;
 };
 
-/** Where Open Form / Talk to Team buttons can send the visitor (sample lists) */
+/** Where Open Form / Talk to Team buttons send the visitor: on the website, Quotation and Callback open the chat's forms, Visitor Registration links to its page, Talk to Team shows the sales options */
 const FORM_TARGETS = ["Quotation Request", "Callback Request", "Visitor Registration"];
 const TEAM_TARGETS = ["Sales Team", "Registration Team", "Buyer Team", "Team Lead", "Admin"];
 
