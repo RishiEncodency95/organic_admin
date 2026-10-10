@@ -49,6 +49,7 @@ import {
 import { settingsApi } from "@/lib/settingsApi";
 import { dashboardApi } from "@/lib/dashboardApi";
 import { useAppSelector } from "@/store/hooks";
+import type { CmsRecord } from "@/lib/cmsJson";
 
 /* =========================================================
    TYPES
@@ -251,8 +252,8 @@ export default function PagesCmsPage() {
   const [authorFilter, setAuthorFilter] =
     useState("All Authors");
 
-  const [pageSpeedData, setPageSpeedData] = useState<Record<string, any> | null>(null);
-  const [dashboardPageSpeed, setDashboardPageSpeed] = useState<Record<string, any> | null>(null);
+  const [pageSpeedData, setPageSpeedData] = useState<CmsRecord | null>(null);
+  const [dashboardPageSpeed, setDashboardPageSpeed] = useState<CmsRecord | null>(null);
   const [isFetchingPageSpeed, setIsFetchingPageSpeed] = useState(false);
   const [pageSpeedError, setPageSpeedError] = useState<string | null>(null);
 
@@ -260,7 +261,7 @@ export default function PagesCmsPage() {
   const selectedPage = selectedPageValue ?? pages[0] ?? cmsPages[0];
   const loggedInAdminName = admin?.name?.trim() || "Admin User";
 
-  const [rawSettings, setRawSettings] = useState<Record<string, any> | null>(null);
+  const [rawSettings, setRawSettings] = useState<CmsRecord | null>(null);
 
   const [toastMessage, setToastMessage] = useState<{ title: string; type: "success" | "error" } | null>(null);
 
@@ -300,8 +301,8 @@ export default function PagesCmsPage() {
       applyPageStatus(page.id, newStatus, {
         lastUpdated,
         updated: formatPublishDate(lastUpdated),
-        author: saved.updatedBy || page.author,
-        updatedBy: saved.updatedBy || page.updatedBy,
+        author: (typeof saved.updatedBy === "string" && saved.updatedBy) || page.author,
+        updatedBy: (typeof saved.updatedBy === "string" && saved.updatedBy) || page.updatedBy,
       });
       setRawSettings((prev) =>
         prev ? { ...prev, [page.configKey!]: { ...(prev[page.configKey!] || {}), ...saved, status: newStatus } } : prev,
@@ -315,12 +316,12 @@ export default function PagesCmsPage() {
         timer: 1800,
         showConfirmButton: false,
       });
-    } catch (err: any) {
+    } catch (err) {
       applyPageStatus(page.id, previousStatus);
       Swal.fire({
         icon: "error",
         title: "Update failed",
-        text: err?.message || "Could not update the page status. Please try again.",
+        text: (err instanceof Error ? err.message : "") || "Could not update the page status. Please try again.",
         confirmButtonColor: "#dc2626",
       });
     } finally {
@@ -332,7 +333,7 @@ export default function PagesCmsPage() {
     let active = true;
     settingsApi.get().then((settings) => {
       if (!active) return;
-      const raw = settings as unknown as Record<string, any>;
+      const raw = settings as unknown as CmsRecord;
       setRawSettings(raw);
       // Support Services Helpdesk is hidden from the Pages list. It stays in pageDefinitions
       // (lib/cmsPages.ts) because page IDs come from list position, so removing it would shift every later page's ID.
@@ -404,26 +405,26 @@ export default function PagesCmsPage() {
         tbt: audits["total-blocking-time"]?.displayValue || "—",
         score: Math.round((data?.lighthouseResult?.categories?.performance?.score || 0) * 100)
       });
-    } catch (err: any) {
-      setPageSpeedError(err.message || "An error occurred");
+    } catch (err) {
+      setPageSpeedError((err instanceof Error ? err.message : "") || "An error occurred");
     } finally {
       setIsFetchingPageSpeed(false);
     }
   };
 
-  const selectedPageSections: Array<Record<string, any>> =
+  const selectedPageSections: Array<CmsRecord> =
     selectedPageConfig?.sections ?? [];
 
   const selectedPageHasInternalLinks = Boolean(
-    selectedPageConfig?.sections?.some((section: Record<string, any>) => {
-      const hrefs = [section.buttonHref, section.secondaryButtonHref, section.tertiaryButtonHref, ...(section.items ?? []).map((item: Record<string, any>) => item.href)];
+    selectedPageConfig?.sections?.some((section: CmsRecord) => {
+      const hrefs = [section.buttonHref, section.secondaryButtonHref, section.tertiaryButtonHref, ...(section.items ?? []).map((item: CmsRecord) => item.href)];
       return hrefs.some((href) => typeof href === "string" && href.trim().startsWith("/"));
     }),
   );
 
   const selectedPageHasImages = Boolean(
-    selectedPageConfig?.sections?.some((section: Record<string, any>) => {
-      const images = [section.image, section.logoImage, section.secondaryImage, section.partnerLogoImage, ...(section.items ?? []).map((item: Record<string, any>) => item.image)];
+    selectedPageConfig?.sections?.some((section: CmsRecord) => {
+      const images = [section.image, section.logoImage, section.secondaryImage, section.partnerLogoImage, ...(section.items ?? []).map((item: CmsRecord) => item.image)];
       return images.some((image) => typeof image === "string" && image.trim().length > 0);
     }),
   );
@@ -433,7 +434,7 @@ export default function PagesCmsPage() {
   const TEXT_FIELD_SKIP_PATTERN = /^(_id|key|name|enabled)$/i;
 
   const contentStats = useMemo(() => {
-    const sections: Array<Record<string, any>> = selectedPageConfig?.sections ?? [];
+    const sections: Array<CmsRecord> = selectedPageConfig?.sections ?? [];
     let textBlocks = 0;
     let images = 0;
     let ctaBlocks = 0;
@@ -452,7 +453,7 @@ export default function PagesCmsPage() {
         if (typeof value === "string" && value.trim()) textBlocks += 1;
       });
 
-      (section.items ?? []).forEach((item: Record<string, any>) => {
+      (section.items ?? []).forEach((item: CmsRecord) => {
         Object.entries(item).forEach(([key, value]) => {
           if (key === "_id") return;
           if (IMAGE_FIELD_PATTERN.test(key) && typeof value === "string" && value.trim()) {
@@ -537,9 +538,13 @@ export default function PagesCmsPage() {
   const safePage = Math.min(activePagination, totalPaginationPages);
   const paginatedPages = filteredPages.slice((safePage - 1) * pageSize, safePage * pageSize);
 
-  useEffect(() => {
+  // Back to page 1 when a filter changes
+  const filterKey = JSON.stringify([search, pageFilter, statusFilter, authorFilter, pageSize]);
+  const [pagedFor, setPagedFor] = useState(filterKey);
+  if (pagedFor !== filterKey) {
+    setPagedFor(filterKey);
     setActivePagination(1);
-  }, [search, pageFilter, statusFilter, authorFilter, pageSize]);
+  }
 
   const topStats = [
     {

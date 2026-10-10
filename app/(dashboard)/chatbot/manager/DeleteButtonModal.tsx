@@ -45,14 +45,14 @@ export default function DeleteButtonModal({ button, onClose, onConfirm }: Props)
         aria-modal="true"
         aria-labelledby="delete-button-title"
         aria-describedby="delete-button-body"
-        className="relative w-[420px] max-w-full rounded-[14px] bg-white px-[22px] pb-[16px] pt-[16px] text-[#0f172a] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.45)]"
+        className="relative w-[420px] max-w-full rounded-[14px] bg-white px-[18px] pb-[12px] pt-[12px] text-[#0f172a] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.45)]"
       >
-        <div className="flex items-start gap-[14px]">
-          <span className="grid h-[40px] w-[40px] shrink-0 place-items-center rounded-full bg-[#fdecec] text-[#dc2626]">
+        <div className="flex items-start gap-[10px]">
+          <span className="grid h-[36px] w-[36px] shrink-0 place-items-center rounded-full bg-[#fdecec] text-[#dc2626]">
             <Trash2 className="h-[19px] w-[19px]" />
           </span>
           <div className="min-w-0 flex-1">
-            <h2 id="delete-button-title" className="text-[18.5px] font-bold leading-tight text-[#0f2a1c]">
+            <h2 id="delete-button-title" className="text-[17px] font-bold leading-tight text-[#0f2a1c]">
               Delete “{button.label || "Untitled"}”?
             </h2>
             <p id="delete-button-body" className="mt-[4px] text-[13.5px] text-[#475569]">
@@ -61,19 +61,19 @@ export default function DeleteButtonModal({ button, onClose, onConfirm }: Props)
               publishing.
             </p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="-mr-[6px] -mt-[4px] grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full transition hover:bg-slate-100">
+          <button type="button" onClick={onClose} aria-label="Close" className="-mr-[6px] -mt-[4px] grid h-[28px] w-[28px] shrink-0 place-items-center rounded-full transition hover:bg-slate-100">
             <X className="h-[19px] w-[19px]" />
           </button>
         </div>
 
-        <div className="mt-[16px] flex justify-end gap-[12px]">
-          <button ref={cancelRef} type="button" onClick={onClose} className="h-[30px] rounded-[8px] border border-[#cbd5e1] bg-white px-[22px] text-[13.5px] font-semibold transition hover:bg-slate-50">
+        <div className="mt-[12px] flex justify-end gap-[12px]">
+          <button ref={cancelRef} type="button" onClick={onClose} className="h-[28px] rounded-[8px] border border-[#cbd5e1] bg-white px-[18px] text-[13.5px] font-semibold transition hover:bg-slate-50">
             Cancel
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className="inline-flex h-[30px] items-center gap-[7px] rounded-[8px] bg-[#dc2626] px-[18px] text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#b91c1c]"
+            className="inline-flex h-[28px] items-center gap-[7px] rounded-[8px] bg-[#dc2626] px-[18px] text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#b91c1c]"
           >
             <Trash2 className="h-[15px] w-[15px]" /> Delete Button
           </button>

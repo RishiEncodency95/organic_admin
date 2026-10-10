@@ -640,7 +640,7 @@ export default function NavigationMenusPage() {
               <div className="mt-[8px]">
                 <div className="flex items-center gap-[6px] text-[8.5px] font-semibold text-[#66738b]">
                   <HelpCircle className="h-[12px] w-[12px] text-[#4d8b69]" />
-                  Click "Edit Page" on any menu item to go directly to its Admin CMS Edit Page!
+                  Click &quot;Edit Page&quot; on any menu item to go directly to its Admin CMS Edit Page!
                 </div>
 
                 <div className="mt-[8px] space-y-[4px]">

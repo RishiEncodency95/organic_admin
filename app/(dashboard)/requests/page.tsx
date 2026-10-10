@@ -284,14 +284,10 @@ export default function RequestsPage() {
      LOAD ALL REQUESTS
   ========================================================== */
 
-  const load = async () => {
-    setLoading(true);
-    setError("");
-
-    try {
-      const data =
-        await requestsApi.list();
-
+  const fetchItems = () =>
+    requestsApi
+      .list()
+      .then((data) => {
       setRequests(data ?? []);
 
       setSelectedId(
@@ -313,20 +309,20 @@ export default function RequestsPage() {
           );
         }
       );
-    } catch (err) {
-      setError(
-        err instanceof
-          ApiRequestError
-          ? err.message
-          : "Could not load requests."
-      );
-    } finally {
-      setLoading(false);
-    }
+      })
+      .catch((err) =>
+        setError(err instanceof ApiRequestError ? err.message : "Could not load requests.")
+      )
+      .finally(() => setLoading(false));
+  const load = () => {
+    setLoading(true);
+    setError("");
+    return fetchItems();
   };
 
   useEffect(() => {
-    load();
+    // First load: the state already starts as loading
+    fetchItems();
   }, []);
 
   /* ==========================================================

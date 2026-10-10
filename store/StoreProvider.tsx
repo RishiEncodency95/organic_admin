@@ -28,7 +28,7 @@ export default function StoreProvider({ children }: { children: React.ReactNode 
       document.cookie = "ms_admin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
     }
     store.dispatch(hydrate(null));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   return <Provider store={store}>{children}</Provider>;

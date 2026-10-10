@@ -60,7 +60,7 @@ type ErrorKey = "name" | "url" | "file" | "question" | "answer" | "text";
 
 const label = "mb-[4px] block text-[13.5px] font-semibold text-[#0f172a]";
 const input =
-  "h-[36px] w-full rounded-[7px] border bg-white px-[14px] text-[14px] text-[#0f172a] outline-none transition placeholder:text-[#94a3b8] focus:border-[#15633a] focus:ring-2 focus:ring-[#15633a]/15";
+  "h-[32px] w-full rounded-[7px] border bg-white px-[14px] text-[14px] text-[#0f172a] outline-none transition placeholder:text-[#94a3b8] focus:border-[#15633a] focus:ring-2 focus:ring-[#15633a]/15";
 const Req = () => <span className="text-[#dc2626]"> *</span>;
 const formatSize = (bytes: number) => (bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
 
@@ -71,7 +71,7 @@ function FieldSelect<T extends string>({ value, options, onChange, ariaLabel }: 
         value={value}
         onChange={(e) => onChange(e.target.value as T)}
         aria-label={ariaLabel}
-        className="h-[36px] w-full cursor-pointer appearance-none rounded-[7px] border border-[#cbd5e1] bg-white pl-[14px] pr-[36px] text-[14px] text-[#0f172a] outline-none transition focus:border-[#15633a]"
+        className="h-[32px] w-full cursor-pointer appearance-none rounded-[7px] border border-[#cbd5e1] bg-white pl-[14px] pr-[36px] text-[14px] text-[#0f172a] outline-none transition focus:border-[#15633a]"
       >
         {options.map((o) => (
           <option key={o} value={o}>
@@ -89,11 +89,11 @@ function Expandable({ icon: Icon, title, children }: { icon: typeof Settings; ti
   const [open, setOpen] = useState(false);
   return (
     <div className="rounded-[7px] border border-[#e5e7eb]">
-      <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex h-[36px] w-full items-center gap-[10px] px-[12px] text-[13.5px] text-[#0f172a]">
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex h-[32px] w-full items-center gap-[10px] px-[12px] text-[13.5px] text-[#0f172a]">
         <Icon className="h-[16px] w-[16px]" /> {title}
         <ChevronDown className={`ml-auto h-[16px] w-[16px] transition ${open ? "rotate-180" : ""}`} />
       </button>
-      {open && <div className="border-t border-[#eef0f2] px-[12px] py-[8px] text-[13px] text-[#334155]">{children}</div>}
+      {open && <div className="border-t border-[#eef0f2] px-[12px] py-[6px] text-[13px] text-[#334155]">{children}</div>}
     </div>
   );
 }
@@ -210,7 +210,7 @@ export default function AddSourceModal({ kind, onClose, onImport }: Props) {
     );
   const border = (key: ErrorKey) => (errors[key] ? "border-[#f87171]" : "border-[#cbd5e1]");
   const topicOwner = (
-    <div className="grid grid-cols-2 gap-x-[18px]">
+    <div className="grid grid-cols-2 gap-x-[12px]">
       <div>
         <p className={label}>
           Topic
@@ -238,7 +238,7 @@ export default function AddSourceModal({ kind, onClose, onImport }: Props) {
     </>
   );
   const infoBar = (text_: string) => (
-    <p className="mt-[12px] flex items-center gap-[12px] rounded-[7px] bg-[#f3f5f8] px-[12px] py-[8px] text-[13px] text-[#334155]">
+    <p className="mt-[9px] flex items-center gap-[12px] rounded-[7px] bg-[#f3f5f8] px-[12px] py-[6px] text-[13px] text-[#334155]">
       <Info className="h-[18px] w-[18px] shrink-0" /> {text_}
     </p>
   );
@@ -253,27 +253,27 @@ export default function AddSourceModal({ kind, onClose, onImport }: Props) {
         aria-labelledby="add-source-title"
         className="relative flex max-h-[calc(100vh-32px)] w-[600px] max-w-full flex-col rounded-[14px] bg-white text-[#0f172a] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.45)]"
       >
-        <div className="min-h-0 overflow-y-auto px-[24px] pb-[16px] pt-[16px]">
+        <div className="min-h-0 overflow-y-auto px-[18px] pb-[12px] pt-[12px]">
           {/* Header */}
           <div className="flex items-start justify-between">
             <div>
-              <h2 id="add-source-title" className="text-[22px] font-bold leading-tight text-[#0f2a52]">
+              <h2 id="add-source-title" className="text-[19px] font-bold leading-tight text-[#0f2a52]">
                 Add Knowledge Source
               </h2>
-              <div className="mt-[3px] flex items-center gap-[14px]">
+              <div className="mt-[3px] flex items-center gap-[10px]">
                 <p className="text-[14px] text-[#475569]">{tab === "manual" ? "Write" : "Add"} information Organic Mitra can use to answer visitors.</p>
                 <span className="inline-flex items-center gap-[6px] rounded-[6px] bg-[#eef1f4] px-[9px] py-[3px] text-[12px] text-[#334155]">
                   <Eye className="h-[14px] w-[14px]" /> Design preview
                 </span>
               </div>
             </div>
-            <button ref={closeRef} type="button" onClick={onClose} aria-label="Close" className="-mr-[6px] grid h-[30px] w-[30px] place-items-center rounded-full text-[#0f172a] transition hover:bg-slate-100">
+            <button ref={closeRef} type="button" onClick={onClose} aria-label="Close" className="-mr-[6px] grid h-[28px] w-[28px] place-items-center rounded-full text-[#0f172a] transition hover:bg-slate-100">
               <X className="h-[20px] w-[20px]" />
             </button>
           </div>
 
           {/* Source type */}
-          <div className="mt-[12px] grid grid-cols-3 gap-[2px]">
+          <div className="mt-[9px] grid grid-cols-3 gap-[2px]">
             {KIND_TABS.map(({ kind: k, label: tabLabel, icon: Icon }) => (
               <button
                 key={k}
@@ -283,7 +283,7 @@ export default function AddSourceModal({ kind, onClose, onImport }: Props) {
                   setErrors({});
                 }}
                 aria-pressed={tab === k}
-                className={`flex h-[38px] items-center justify-center gap-[10px] rounded-[7px] border text-[14px] transition ${
+                className={`flex h-[34px] items-center justify-center gap-[10px] rounded-[7px] border text-[14px] transition ${
                   tab === k ? "border-[#cfe9d6] border-b-[3px] border-b-[#15633a] bg-[#eaf6ee] font-medium text-[#14532d]" : "border-[#e5e7eb] bg-white text-[#0f172a] hover:border-[#15633a]"
                 }`}
               >
@@ -294,9 +294,9 @@ export default function AddSourceModal({ kind, onClose, onImport }: Props) {
 
           {/* ── Website page ── */}
           {tab === "web" && (
-            <div className="mt-[12px]">
+            <div className="mt-[9px]">
               {sourceNameField()}
-              <p className={`${label} mt-[10px]`}>
+              <p className={`${label} mt-[7px]`}>
                 Website URL
                 <Req />
               </p>
@@ -304,13 +304,13 @@ export default function AddSourceModal({ kind, onClose, onImport }: Props) {
               {fieldError("url") || (
                 <p className="mt-[3px] text-[12.5px] text-[#475569]">{includeLinked ? "This page and linked pages on the same site will be imported." : "Only this page will be imported."}</p>
               )}
-              <div className="mt-[10px]">{topicOwner}</div>
-              <div className="mt-[10px] w-[calc(50%-9px)]">
+              <div className="mt-[7px]">{topicOwner}</div>
+              <div className="mt-[7px] w-[calc(50%-9px)]">
                 <p className={label}>Check for updates</p>
                 <FieldSelect value={frequency} options={FREQUENCIES} onChange={setFrequency} ariaLabel="Check for updates" />
                 <p className="mt-[3px] whitespace-nowrap text-[12.5px] text-[#475569]">New changes require review before publishing.</p>
               </div>
-              <div className="mt-[12px]">
+              <div className="mt-[9px]">
                 <Expandable icon={Settings} title="Advanced options">
                   <label className="flex cursor-pointer items-center gap-[10px]">
                     <input type="checkbox" checked={includeLinked} onChange={() => setIncludeLinked((v) => !v)} className="h-[16px] w-[16px] accent-[#15633a]" />
@@ -324,9 +324,9 @@ export default function AddSourceModal({ kind, onClose, onImport }: Props) {
 
           {/* ── Document ── */}
           {tab === "pdf" && (
-            <div className="mt-[12px]">
+            <div className="mt-[9px]">
               {sourceNameField("Source name", "e.g. Exhibitor Brochure 2027")}
-              <p className={`${label} mt-[10px]`}>
+              <p className={`${label} mt-[7px]`}>
                 Document
                 <Req />
               </p>
@@ -341,11 +341,11 @@ export default function AddSourceModal({ kind, onClose, onImport }: Props) {
                   setDragging(false);
                   pickFile(e.dataTransfer.files?.[0]);
                 }}
-                className={`flex flex-col items-center rounded-[8px] border border-dashed px-[12px] py-[12px] text-center transition ${
+                className={`flex flex-col items-center rounded-[8px] border border-dashed px-[12px] py-[9px] text-center transition ${
                   dragging ? "border-[#15633a] bg-[#eaf6ee]" : errors.file ? "border-[#f87171] bg-[#fdf6f6]" : "border-[#cbd5e1] bg-[#f8fafc]"
                 }`}
               >
-                <CloudUpload className="h-[30px] w-[30px] text-[#334155]" strokeWidth={1.6} />
+                <CloudUpload className="h-[28px] w-[28px] text-[#334155]" strokeWidth={1.6} />
                 <p className="mt-[2px] text-[14px] text-[#0f172a]">
                   Drop a file here or{" "}
                   <button type="button" onClick={() => fileRef.current?.click()} className="font-medium text-[#15803d] hover:underline">
@@ -365,7 +365,7 @@ export default function AddSourceModal({ kind, onClose, onImport }: Props) {
                 }}
               />
               {file && (
-                <div className="mt-[6px] flex items-center gap-[14px] rounded-[8px] border border-[#e5e7eb] px-[14px] py-[8px]">
+                <div className="mt-[5px] flex items-center gap-[10px] rounded-[8px] border border-[#e5e7eb] px-[14px] py-[6px]">
                   <FileText className="h-[26px] w-[26px] text-[#334155]" strokeWidth={1.6} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[14px] text-[#0f172a]">{file.name}</span>
@@ -377,9 +377,9 @@ export default function AddSourceModal({ kind, onClose, onImport }: Props) {
                 </div>
               )}
               {fieldError("file")}
-              <div className="mt-[10px]">{topicOwner}</div>
-              <p className="mt-[6px] text-[12.5px] text-[#475569]">To update this source later, upload a replacement file.</p>
-              <div className="mt-[10px]">
+              <div className="mt-[7px]">{topicOwner}</div>
+              <p className="mt-[5px] text-[12.5px] text-[#475569]">To update this source later, upload a replacement file.</p>
+              <div className="mt-[7px]">
                 <Expandable icon={Settings} title="Advanced options">
                   Imported text is split into short passages so Organic Mitra can quote the right part.
                 </Expandable>
@@ -390,7 +390,7 @@ export default function AddSourceModal({ kind, onClose, onImport }: Props) {
 
           {/* ── Text / FAQ ── */}
           {tab === "manual" && (
-            <div className="mt-[10px]">
+            <div className="mt-[7px]">
               <div className="grid grid-cols-2 gap-[2px]">
                 {(
                   [
@@ -406,7 +406,7 @@ export default function AddSourceModal({ kind, onClose, onImport }: Props) {
                       setErrors({});
                     }}
                     aria-pressed={textMode === mode}
-                    className={`flex h-[36px] items-center justify-center gap-[10px] rounded-[7px] border text-[14px] transition ${
+                    className={`flex h-[32px] items-center justify-center gap-[10px] rounded-[7px] border text-[14px] transition ${
                       textMode === mode ? "border-[#cfe9d6] border-b-[3px] border-b-[#15633a] bg-[#eaf6ee] font-medium text-[#14532d]" : "border-[#e5e7eb] bg-white text-[#0f172a] hover:border-[#15633a]"
                     }`}
                   >
@@ -415,18 +415,18 @@ export default function AddSourceModal({ kind, onClose, onImport }: Props) {
                 ))}
               </div>
 
-              <div className="mt-[10px]">{topicOwner}</div>
+              <div className="mt-[7px]">{topicOwner}</div>
 
               {textMode === "faq" ? (
                 <>
-                  <p className={`${label} mt-[10px]`}>
+                  <p className={`${label} mt-[7px]`}>
                     Question
                     <Req />
                   </p>
                   <input value={question} onChange={(e) => setQuestion(e.target.value)} maxLength={150} className={`${input} ${border("question")}`} />
                   {fieldError("question")}
 
-                  <div className="mt-[10px] flex items-end justify-between">
+                  <div className="mt-[7px] flex items-end justify-between">
                     <p className={label}>
                       Answer
                       <Req />
@@ -448,19 +448,19 @@ export default function AddSourceModal({ kind, onClose, onImport }: Props) {
                   <textarea
                     value={answer[answerLang]}
                     onChange={(e) => setAnswer({ ...answer, [answerLang]: e.target.value })}
-                    rows={3}
+                    rows={2}
                     maxLength={1000}
                     placeholder={answerLang === "en" ? "Write the answer in English" : "हिंदी में जवाब लिखें"}
-                    className={`${input} h-[72px] resize-y py-[7px] leading-snug ${border("answer")}`}
+                    className={`${input} h-[60px] resize-y py-[5px] leading-snug ${border("answer")}`}
                   />
                   {fieldError("answer")}
 
-                  <p className={`${label} mt-[10px]`}>
+                  <p className={`${label} mt-[7px]`}>
                     Similar questions <span className="font-normal text-[#475569]">(optional)</span>
                   </p>
                   <div className="flex flex-wrap items-center gap-[8px]">
                     {phrases.map((p) => (
-                      <span key={p} className="inline-flex h-[30px] items-center gap-[12px] rounded-full border border-[#e5e7eb] bg-[#f3f5f8] pl-[14px] pr-[10px] text-[13.5px] text-[#0f172a]">
+                      <span key={p} className="inline-flex h-[28px] items-center gap-[12px] rounded-full border border-[#e5e7eb] bg-[#f3f5f8] pl-[14px] pr-[10px] text-[13.5px] text-[#0f172a]">
                         {p}
                         <button type="button" onClick={() => setPhrases((prev) => prev.filter((x) => x !== p))} aria-label={`Remove ${p}`} className="hover:text-[#dc2626]">
                           <X className="h-[14px] w-[14px]" />
@@ -479,13 +479,13 @@ export default function AddSourceModal({ kind, onClose, onImport }: Props) {
                         }}
                         maxLength={80}
                         placeholder="Type, press Enter"
-                        className="h-[30px] w-[170px] rounded-full border border-[#2f8a4c] px-[12px] text-[13.5px] outline-none"
+                        className="h-[28px] w-[170px] rounded-full border border-[#2f8a4c] px-[12px] text-[13.5px] outline-none"
                       />
                     ) : (
                       <button
                         type="button"
                         onClick={() => setNewPhrase("")}
-                        className="inline-flex h-[30px] items-center gap-[8px] rounded-[7px] border border-dashed border-[#2f8a4c] px-[14px] text-[13.5px] font-medium text-[#14532d] transition hover:bg-[#f1f7ee]"
+                        className="inline-flex h-[28px] items-center gap-[8px] rounded-[7px] border border-dashed border-[#2f8a4c] px-[14px] text-[13.5px] font-medium text-[#14532d] transition hover:bg-[#f1f7ee]"
                       >
                         <Plus className="h-[16px] w-[16px]" /> Add
                       </button>
@@ -495,24 +495,24 @@ export default function AddSourceModal({ kind, onClose, onImport }: Props) {
                 </>
               ) : (
                 <>
-                  <div className="mt-[10px]">{sourceNameField("Title", "e.g. Visitor guidelines")}</div>
-                  <p className={`${label} mt-[10px]`}>
+                  <div className="mt-[7px]">{sourceNameField("Title", "e.g. Visitor guidelines")}</div>
+                  <p className={`${label} mt-[7px]`}>
                     Content
                     <Req />
                   </p>
                   <textarea
                     value={text}
                     onChange={(e) => setText(e.target.value)}
-                    rows={5}
+                    rows={4}
                     maxLength={5000}
                     placeholder="Write the information Organic Mitra should use…"
-                    className={`${input} h-[120px] resize-y py-[7px] leading-snug ${border("text")}`}
+                    className={`${input} h-[96px] resize-y py-[5px] leading-snug ${border("text")}`}
                   />
                   {fieldError("text")}
                 </>
               )}
 
-              <div className="mt-[10px]">
+              <div className="mt-[7px]">
                 <Expandable
                   icon={NotebookPen}
                   title={
@@ -527,7 +527,7 @@ export default function AddSourceModal({ kind, onClose, onImport }: Props) {
                     rows={2}
                     maxLength={300}
                     placeholder="Source link or note for your team (not shown to visitors)"
-                    className={`${input} h-[52px] resize-y py-[6px] text-[13.5px]`}
+                    className={`${input} h-[44px] resize-y py-[5px] text-[13.5px]`}
                   />
                 </Expandable>
               </div>
@@ -536,11 +536,11 @@ export default function AddSourceModal({ kind, onClose, onImport }: Props) {
           )}
 
           {/* Actions */}
-          <div className="mt-[12px] flex justify-end gap-[12px]">
-            <button type="button" onClick={onClose} className="h-[30px] rounded-[7px] border border-[#cbd5e1] bg-white px-[22px] text-[14px] font-medium text-[#0f172a] transition hover:bg-slate-50">
+          <div className="mt-[9px] flex justify-end gap-[12px]">
+            <button type="button" onClick={onClose} className="h-[28px] rounded-[7px] border border-[#cbd5e1] bg-white px-[18px] text-[14px] font-medium text-[#0f172a] transition hover:bg-slate-50">
               Cancel
             </button>
-            <button type="button" onClick={submit} className="h-[30px] rounded-[7px] bg-[#15633a] px-[20px] text-[14px] font-semibold text-white shadow-sm transition hover:bg-[#124f2f]">
+            <button type="button" onClick={submit} className="h-[28px] rounded-[7px] bg-[#15633a] px-[20px] text-[14px] font-semibold text-white shadow-sm transition hover:bg-[#124f2f]">
               {tab === "manual" ? "Save to Draft" : "Import to Draft"}
             </button>
           </div>

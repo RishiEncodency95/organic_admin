@@ -83,6 +83,7 @@ import {
   SeoScorePanel,
   QuickActionsPanel,
 } from "@/components/pages-cms/panels";
+import type { CmsJson, CmsRecord } from "@/lib/cmsJson";
 
 
 /* =========================================================
@@ -108,7 +109,7 @@ export default function CmsEditPage() {
 
   const [isEditingPublishDate, setIsEditingPublishDate] = useState(false);
 
-  const handleHeroApi = async (action: 'add' | 'edit', section: any) => {
+  const handleHeroApi = async (action: 'add' | 'edit', section: CmsJson) => {
     const form = new FormData();
     form.append("tagline", section.tagline || "");
     form.append("titlePrimary", section.titlePrimary || "");
@@ -136,13 +137,13 @@ export default function CmsEditPage() {
         }
       }
       dispatch(fetchHomeHeros());
-    } catch (err: any) {
-      Swal.fire({ title: "Error", text: err || "API failed", icon: "error" });
+    } catch (err) {
+      Swal.fire({ title: "Error", text: typeof err === "string" ? err : err instanceof Error ? err.message : "API failed", icon: "error" });
     }
   };
 
   const [pages, setPages] = useState(cmsPages);
-  const [settings, setSettings] = useState<Record<string, any> | null>(null);
+  const [settings, setSettings] = useState<CmsRecord | null>(null);
   const [saving, setSaving] = useState(false);
 
   const initialResolved = useMemo(() => {
@@ -153,17 +154,13 @@ export default function CmsEditPage() {
     () => initialResolved.configKey || "landingPage"
   );
 
-  const lastParamIdRef = useRef(params.id);
-
-  useEffect(() => {
-    if (lastParamIdRef.current !== params.id) {
-      lastParamIdRef.current = params.id;
-      const found = findCmsPageByRouteKey(pages, params.id);
-      if (found?.configKey) {
-        setActiveConfigKey(found.configKey);
-      }
-    }
-  }, [params.id, pages]);
+  // Another page opened from the URL
+  const [lastParamId, setLastParamId] = useState(params.id);
+  if (lastParamId !== params.id) {
+    setLastParamId(params.id);
+    const found = findCmsPageByRouteKey(pages, params.id);
+    if (found?.configKey) setActiveConfigKey(found.configKey);
+  }
 
   const page = useMemo(() => {
     if (activeConfigKey) {
@@ -175,7 +172,7 @@ export default function CmsEditPage() {
 
   useEffect(() => {
     settingsApi.get().then((value) => {
-      const raw = value as unknown as Record<string, any>;
+      const raw = value as unknown as CmsRecord;
       setSettings(raw);
       setPages(cmsPagesFromSettings(raw));
     }).catch(() => undefined);
@@ -272,7 +269,9 @@ export default function CmsEditPage() {
       initialForm,
     );
 
+  // The editor form follows the page being edited
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset the form when another page's data arrives
     setForm({
       pageTitle: page.title,
       slug: page.slug === "/" ? "" : page.slug.replace(/^\//, ""),
@@ -315,7 +314,7 @@ export default function CmsEditPage() {
     });
   }, [page.configKey, pageConfig, currentAdmin]);
 
-  const [sectionsDraft, setSectionsDraft] = useState<Array<Record<string, any>>>([]);
+  const [sectionsDraft, setSectionsDraft] = useState<Array<CmsRecord>>([]);
   const [openSectionIndices, setOpenSectionIndices] = useState<Set<number>>(new Set());
 
   const canonicalEditorRef = useRef<HTMLDivElement | null>(null);
@@ -378,7 +377,7 @@ export default function CmsEditPage() {
     setOgPreview(URL.createObjectURL(file));
     setOgUploading(true);
     try {
-      const res: any = await uploadApi.file(file, "bharat-organic/seo");
+      const res: CmsJson = await uploadApi.file(file, "bharat-organic/seo");
       const url = res?.url || res?.data?.url;
       if (url) {
         updateField("ogImage", url);
@@ -403,7 +402,7 @@ export default function CmsEditPage() {
   const autoGenerateSeo = async (envType: "local" | "live") => {
     const pageKey = page.slug === "/" ? "home" : (page.slug ? page.slug.replace(/^\//, "") : "home");
     try {
-      const res: any = await api.post("/seo/generate", {
+      const res: CmsJson = await api.post("/seo/generate", {
         page: pageKey,
         envType,
         metaTitle: form.metaTitle || undefined,
@@ -434,10 +433,10 @@ export default function CmsEditPage() {
           confirmButtonColor: "#134698",
         });
       }
-    } catch (err: any) {
+    } catch (err) {
       Swal.fire({
         title: "Generation Failed",
-        text: err?.message || "Failed to auto-generate SEO tags",
+        text: (err instanceof Error ? err.message : "") || "Failed to auto-generate SEO tags",
         icon: "error",
       });
     }
@@ -447,13 +446,14 @@ export default function CmsEditPage() {
     const cfg = page.configKey && settings ? settings[page.configKey] : undefined;
     const fallbackSections = resolveDefaultSectionsForPage(page);
     const stored = cfg?.sections;
-    const rawSections = fallbackSections.map((fallbackItem: Record<string, any>) =>
-      mergeSectionWithSavedData(fallbackItem, stored?.find((s: Record<string, any>) => s.key === fallbackItem.key))
+    const rawSections = fallbackSections.map((fallbackItem: CmsRecord) =>
+      mergeSectionWithSavedData(fallbackItem, stored?.find((s: CmsRecord) => s.key === fallbackItem.key))
     );
     const finalSections = (rawSections && rawSections.length > 0 ? rawSections : fallbackSections).filter(
-      (s: any) => !(s.key === "gallery-grid" || s.name === "GalleryGrid")
+      (s: CmsJson) => !(s.key === "gallery-grid" || s.name === "GalleryGrid")
     );
-    setSectionsDraft(finalSections.map((section: Record<string, any>) => ({ ...section })));
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset the section drafts when the page or its saved settings change
+    setSectionsDraft(finalSections.map((section: CmsRecord) => ({ ...section })));
     setOpenSectionIndices(new Set());
 
     if (page.configKey === "landingPage" || page.type === "home") {
@@ -610,7 +610,7 @@ export default function CmsEditPage() {
           };
           return { ...section, items: [...items, blankLink] };
         }
-        const defaultItemTemplate: Record<string, any> = {
+        const defaultItemTemplate: CmsRecord = {
           title: "",
           subtitle: "",
           description: "",
@@ -763,7 +763,7 @@ export default function CmsEditPage() {
         setForm,
       });
 
-      const raw = updated as unknown as Record<string, any>;
+      const raw = updated as unknown as CmsRecord;
       setSettings(raw);
       setPages(cmsPagesFromSettings(raw));
       setActiveConfigKey(savingKey);
@@ -792,7 +792,7 @@ export default function CmsEditPage() {
     if (targetPage && targetPage.configKey) {
       setActiveConfigKey(targetPage.configKey);
       const newRouteKey = getCmsPageRouteKey(targetPage);
-      lastParamIdRef.current = newRouteKey;
+      setLastParamId(newRouteKey);
       if (typeof window !== "undefined") {
         window.history.replaceState(null, "", `/pages/${newRouteKey}/edit`);
       }

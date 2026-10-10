@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Key } from "lucide-react";
+import type { SeoPageDetail } from "@/lib/seoAuditApi";
 
 function SectionCard({ title, icon, children, note }: { title: string; icon: React.ReactNode; children: React.ReactNode; note?: string }) {
   return (
@@ -20,7 +21,7 @@ function SectionCard({ title, icon, children, note }: { title: string; icon: Rea
   );
 }
 
-export default function AuditKeywordsSection({ page }: { page: any }) {
+export default function AuditKeywordsSection({ page }: { page: SeoPageDetail["page"] }) {
   if (!page) return null;
 
   return (
@@ -67,7 +68,7 @@ export default function AuditKeywordsSection({ page }: { page: any }) {
                 </tr>
               </thead>
               <tbody>
-                {page.keywordAnalysis.targets.map((target: any, idx: number) => (
+                {page.keywordAnalysis.targets.map((target, idx) => (
                   <tr key={`${target.source}-${target.keyword}`} className={`border-b border-slate-800 hover:bg-slate-800/80 ${idx % 2 === 0 ? "bg-slate-900/50" : ""}`}>
                     <td className="py-2.5 px-4 font-black text-white">{target.keyword}</td>
                     <td className="px-3 text-center capitalize text-slate-300 font-medium text-[11.5px]">

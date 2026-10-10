@@ -36,6 +36,7 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import Swal from "sweetalert2";
+import AnimatedCounter from "@/components/ui/AnimatedCounter";
 
 // Resolved at runtime from the actual page domain — not a build-time env var, which can
 // end up baked in as "localhost" if the production build wasn't given its own .env.
@@ -57,7 +58,7 @@ const Toast = Swal.mixin({
   },
   didOpen: (toast) => {
     toast.style.boxShadow = "none";
-    (toast.style as any).webkitBoxShadow = "none";
+    toast.style.setProperty("-webkit-box-shadow", "none");
     toast.style.filter = "none";
   },
 });
@@ -162,102 +163,6 @@ function InitialsBadge({
   );
 }
 
-// Animated Numeric Counter for KPI Cards
-function AnimatedCounter({ value, duration = 1200 }: { value: string | number; duration?: number }) {
-  const [displayValue, setDisplayValue] = useState<string>("0");
-  const spanRef = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    const strVal = String(value);
-    const numericMatch = strVal.match(/^([^0-9]*)([0-9.,]+)([^0-9]*)$/);
-
-    if (!numericMatch) {
-      setDisplayValue(strVal);
-      return;
-    }
-
-    const prefix = numericMatch[1];
-    const rawNumberStr = numericMatch[2].replace(/,/g, "");
-    const targetNum = parseFloat(rawNumberStr);
-    const suffix = numericMatch[3];
-
-    if (isNaN(targetNum)) {
-      setDisplayValue(strVal);
-      return;
-    }
-
-    if (targetNum === 0) {
-      setDisplayValue(`${prefix}0${suffix}`);
-      return;
-    }
-
-    const hasComma = numericMatch[2].includes(",");
-    const decimalPlaces = (rawNumberStr.split(".")[1] || "").length;
-
-    let animationFrameId: number | null = null;
-
-    const startCounting = () => {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      let startTime: number | null = null;
-
-      const step = (timestamp: number) => {
-        if (!startTime) startTime = timestamp;
-        const progress = Math.min((timestamp - startTime) / duration, 1);
-        const easeProgress = 1 - Math.pow(1 - progress, 3);
-        const currentNum = targetNum * easeProgress;
-        let formattedNum = currentNum.toFixed(decimalPlaces);
-
-        if (hasComma) {
-          const parts = formattedNum.split(".");
-          parts[0] = parseInt(parts[0], 10).toLocaleString();
-          formattedNum = parts.join(".");
-        }
-
-        setDisplayValue(`${prefix}${formattedNum}${suffix}`);
-
-        if (progress < 1) {
-          animationFrameId = requestAnimationFrame(step);
-        }
-      };
-
-      animationFrameId = requestAnimationFrame(step);
-    };
-
-    if (typeof IntersectionObserver !== "undefined") {
-      const el = spanRef.current;
-      if (!el) {
-        startCounting();
-        return;
-      }
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              startCounting();
-            } else {
-              setDisplayValue(`${prefix}0${suffix}`);
-            }
-          });
-        },
-        { threshold: 0.15 }
-      );
-
-      observer.observe(el);
-
-      return () => {
-        observer.disconnect();
-        if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      };
-    } else {
-      startCounting();
-      return () => {
-        if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      };
-    }
-  }, [value, duration]);
-
-  return <span ref={spanRef}>{displayValue}</span>;
-}
 
 const toneClass = {
   emerald: "bg-emerald-50 text-emerald-700 ring-emerald-200",
@@ -356,6 +261,25 @@ export const EXHIBITOR_TESTIMONIALS_CONFIG: TestimonialsManagerConfig = {
   requiredFields: false,
 };
 
+/** A testimonial as the website API stores it (company1 = name, company2 = role, quote = message) */
+type RawTestimonial = {
+  _id?: string;
+  company1?: string;
+  company2?: string;
+  location?: string;
+  quote?: string;
+  rating?: number;
+  status?: string;
+  date?: string;
+  addedOn?: string;
+  createdAt?: string;
+  author?: string;
+  color?: string;
+  logo?: string;
+  logoAlt?: string;
+  logoText?: string;
+};
+
 export default function TestimonialsManager({ config }: { config: TestimonialsManagerConfig }) {
   const router = useRouter();
   const currentAdmin = useAppSelector((state) => state.auth.admin);
@@ -395,7 +319,8 @@ export default function TestimonialsManager({ config }: { config: TestimonialsMa
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
-  const [isSyncing, setIsSyncing] = useState(false);
+  // The first sync starts on mount
+  const [isSyncing, setIsSyncing] = useState(true);
 
   // Filters
   const [query, setQuery] = useState("");
@@ -433,13 +358,12 @@ export default function TestimonialsManager({ config }: { config: TestimonialsMa
   // ─── Fetch Testimonials from Backend on Mount ───
   const fetchBackendTestimonials = async () => {
     try {
-      setIsSyncing(true);
       const res = await fetch(`${BACKEND_URL}/api${config.apiPath}`);
       if (!res.ok) return;
       const json = await res.json();
       const rawList = json?.data?.testimonials;
       if (Array.isArray(rawList)) {
-        const mapped: Testimonial[] = rawList.map((t: any, index: number) => ({
+        const mapped: Testimonial[] = rawList.map((t: RawTestimonial, index: number) => ({
           id: index + 1,
           _id: t._id,
           name: t.company1 || `Reviewer #${index + 1}`,
@@ -470,6 +394,7 @@ export default function TestimonialsManager({ config }: { config: TestimonialsMa
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- false positive: the loader sets state only after its first await
     fetchBackendTestimonials();
   }, []);
 
@@ -650,8 +575,8 @@ export default function TestimonialsManager({ config }: { config: TestimonialsMa
 
       setFormLogo(url);
       showSuccess("Logo photo uploaded successfully!");
-    } catch (err: any) {
-      showError(err?.message || "Could not upload logo photo. Please try again.");
+    } catch (err) {
+      showError((err instanceof Error ? err.message : "") || "Could not upload logo photo. Please try again.");
     } finally {
       setIsUploadingLogo(false);
       e.target.value = "";
@@ -1449,7 +1374,7 @@ export default function TestimonialsManager({ config }: { config: TestimonialsMa
                       </div>
 
                       <p className="mt-2.5 text-[8.5px] font-medium text-[#475569] line-clamp-3 leading-relaxed italic bg-slate-50/70 p-2 rounded-[5px] border border-slate-100">
-                        "{item.message}"
+                        &quot;{item.message}&quot;
                       </p>
 
                       <div className="mt-2.5 flex items-center justify-between border-t border-slate-100 pt-2 text-[8px]">
@@ -1520,7 +1445,7 @@ export default function TestimonialsManager({ config }: { config: TestimonialsMa
 
                   {/* QUOTE BOX */}
                   <div className="mt-[10px] rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-2.5 text-[8.5px] font-medium leading-[1.45] text-[#334155] italic">
-                    "{selected.message}"
+                    &quot;{selected.message}&quot;
                   </div>
 
                   {/* STATUS & COLOR PILL */}

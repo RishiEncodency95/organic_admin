@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import Swal from "sweetalert2";
 import {
   ResponsiveContainer,
   LineChart,
@@ -40,212 +40,48 @@ import {
 } from "lucide-react";
 import typography from "../pages/PagesTypography.module.css";
 import KpiStatCards, { type KpiStatCardItem } from "@/components/ui/KpiStatCards";
+import { ApiRequestError } from "@/lib/api";
+import { PUBLIC_SITE_URL } from "@/lib/cmsPages";
+import { CAREER_RANGES, careerDashboardApi, type CareerCounts, type CareerDashboard } from "@/lib/careerDashboardApi";
+import AnimatedCounter from "@/components/ui/AnimatedCounter";
 
 /* =========================================================
-   MOCK DATA
-   No careers analytics backend exists yet - this page is the
-   UI shell wired to static data shaped like the real thing,
-   so swapping in a careersApi later only touches the source.
+   LIVE DATA (GET /careers/admin/dashboard)
+   Page views / job views / apply clicks come from the website's
+   careers page; CV uploads, AI screening and applications from
+   their own records. AI bands: Eligible >= 60, Partial 50-59.
 ========================================================= */
 
-const Toast = Swal.mixin({
-  toast: true,
-  position: "top-end",
-  showConfirmButton: false,
-  timer: 2200,
-  timerProgressBar: true,
-  background: "#1e2433",
-  color: "#e2e8f0",
-});
+const APPLICATIONS = "/applications-ai-response";
 
-function notImplemented(action: string) {
-  Toast.fire({ icon: "info", iconColor: "#38bdf8", title: `${action} — coming soon` });
-}
+/** "↑ 20%" / "↓ 8%"; nothing when there is no earlier period to compare */
+const trendText = (pct: number | null | undefined) => (pct == null ? undefined : `${pct < 0 ? "↓" : "↑"} ${Math.abs(pct)}%`);
 
-const STAT_CARDS: KpiStatCardItem[] = [
-  {
-    title: "ACTIVE JOBS",
-    value: 6,
-    icon: Briefcase,
-    tone: "slate",
-    gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #e2e8f0 100%)",
-    borderColor: "#e2e8f0",
-    numColor: "#334155",
-    trend: "↑ 20%",
-    footer: "View job postings",
-    onClick: () => notImplemented("Job postings"),
-  },
-  {
-    title: "CAREER PAGE VIEWS",
-    value: "4,820",
-    icon: Eye,
-    tone: "blue",
-    gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #bae6fd 100%)",
-    borderColor: "#bae6fd",
-    numColor: "#0284c7",
-    trend: "↑ 32%",
-    footer: "View page analytics",
-    onClick: () => notImplemented("Page view analytics"),
-  },
-  {
-    title: "APPLY CLICKS",
-    value: 326,
-    icon: MousePointerClick,
-    tone: "violet",
-    gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #ddd6fe 100%)",
-    borderColor: "#ddd6fe",
-    numColor: "#6d28d9",
-    trend: "↑ 18%",
-    footer: "View click analytics",
-    onClick: () => notImplemented("Apply click analytics"),
-  },
-  {
-    title: "CV UPLOADS",
-    value: 214,
-    icon: UploadCloud,
-    tone: "indigo",
-    gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #c7d2fe 100%)",
-    borderColor: "#c7d2fe",
-    numColor: "#4338ca",
-    trend: "↑ 26%",
-    footer: "View uploads",
-    onClick: () => notImplemented("CV uploads"),
-  },
-  {
-    title: "AI CHECKED",
-    value: 208,
-    icon: ScanSearch,
-    tone: "cyan",
-    gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #a5f3fc 100%)",
-    borderColor: "#a5f3fc",
-    numColor: "#0e7490",
-    trend: "↑ 24%",
-    footer: "View AI screening",
-    onClick: () => notImplemented("AI screening results"),
-  },
-  {
-    title: "ELIGIBLE",
-    value: 126,
-    icon: CheckCircle2,
-    tone: "emerald",
-    gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #bbf7d0 100%)",
-    borderColor: "#bbf7d0",
-    numColor: "#15803d",
-    trend: "↑ 28%",
-    footer: "View eligible candidates",
-    onClick: () => notImplemented("Eligible candidates"),
-  },
-  {
-    title: "PARTIAL MATCH",
-    value: 47,
-    icon: AlertTriangle,
-    tone: "amber",
-    gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #fed7aa 100%)",
-    borderColor: "#fed7aa",
-    numColor: "#c2410c",
-    trend: "↑ 12%",
-    footer: "View partial matches",
-    onClick: () => notImplemented("Partial match candidates"),
-  },
-  {
-    title: "NOT ELIGIBLE",
-    value: 35,
-    icon: XCircle,
-    tone: "rose",
-    gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #fecdd3 100%)",
-    borderColor: "#fecdd3",
-    numColor: "#be123c",
-    trend: "↓ 8%",
-    footer: "View not eligible",
-    onClick: () => notImplemented("Not eligible candidates"),
-  },
-  {
-    title: "APPLICATIONS SUBMITTED",
-    value: 98,
-    icon: ClipboardList,
-    tone: "teal",
-    gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #99f6e4 100%)",
-    borderColor: "#99f6e4",
-    numColor: "#0f766e",
-    trend: "↑ 22%",
-    footer: "View applications",
-    onClick: () => notImplemented("Applications list"),
-  },
-];
+const fmt = (n: number | undefined) => (n == null ? "–" : n.toLocaleString("en-IN"));
+const pctOf = (n: number, base: number) => (base ? `${((n / base) * 100).toFixed(n / base >= 0.1 ? 0 : 1)}%` : "–");
 
 interface FunnelStage {
   label: string;
-  value: string;
-  pct: string;
-  barWidth: number;
+  value: number;
   color: string;
 }
-
-const FUNNEL_STAGES: FunnelStage[] = [
-  { label: "Career Page Views", value: "4,820", pct: "100%", barWidth: 100, color: "#1f6f4a" },
-  { label: "Job Detail Views", value: "2,960", pct: "61%", barWidth: 85, color: "#2f9e63" },
-  { label: "Apply Clicks", value: "326", pct: "6.8%", barWidth: 38, color: "#7fc79a" },
-  { label: "CV Uploads", value: "214", pct: "4.4%", barWidth: 32, color: "#a8dab5" },
-  { label: "AI Checked", value: "208", pct: "4.3%", barWidth: 30, color: "#bfe4c8" },
-  { label: "Eligible (≥ 60%)", value: "126", pct: "2.6%", barWidth: 20, color: "#dff2e3" },
-  { label: "Partial Match (50–59%)", value: "47", pct: "1.0%", barWidth: 15, color: "#fde68a" },
-  { label: "Not Eligible (< 50%)", value: "35", pct: "0.7%", barWidth: 13, color: "#fecaca" },
-  { label: "Applications Submitted", value: "98", pct: "2.0%", barWidth: 26, color: "#93c5fd" },
-];
-
-const PERFORMANCE_DATA = [
-  { month: "Aug 2026", pageViews: 720, applyClicks: 360, cvUploads: 260 },
-  { month: "Sep 2026", pageViews: 1180, applyClicks: 610, cvUploads: 410 },
-  { month: "Oct 2026", pageViews: 1300, applyClicks: 670, cvUploads: 455 },
-  { month: "Nov 2026", pageViews: 1420, applyClicks: 705, cvUploads: 480 },
-  { month: "Dec 2026", pageViews: 1380, applyClicks: 690, cvUploads: 465 },
-];
 
 interface DonutSlice {
   key: string;
   label: string;
   value: number;
-  pct: string;
   color: string;
 }
 
-const AI_SCREENING_TOTAL = 208;
-const AI_SCREENING_SLICES: DonutSlice[] = [
-  { key: "eligible", label: "Eligible (60%+)", value: 126, pct: "60.6%", color: "#16a34a" },
-  { key: "partial", label: "Partial Match (50-59%)", value: 47, pct: "22.6%", color: "#f59e0b" },
-  { key: "not-eligible", label: "Not Eligible (< 50%)", value: 35, pct: "16.8%", color: "#ef4444" },
-];
-
-const TOP_LOCATIONS = [
-  { city: "Delhi NCR", count: 62 },
-  { city: "Bengaluru", count: 18 },
-  { city: "Mumbai", count: 12 },
-  { city: "Hyderabad", count: 10 },
-  { city: "Others", count: 8 },
-];
-
-const QUICK_ACTIONS: { label: string; icon: LucideIcon; href?: string }[] = [
+const QUICK_ACTIONS: { label: string; icon: LucideIcon; href?: string; external?: string }[] = [
   { label: "Add New Job Posting", icon: Plus, href: "/job-postings/create" },
   { label: "Manage Job Postings", icon: Briefcase, href: "/job-postings" },
-  { label: "View Applications", icon: Users, href: "/applications-ai-response" },
+  { label: "View Applications", icon: Users, href: APPLICATIONS },
   { label: "Career Settings", icon: Settings2, href: "/career-settings" },
-  { label: "View Career Page", icon: ExternalLink },
+  { label: "View Career Page", icon: ExternalLink, external: `${PUBLIC_SITE_URL}/careers` },
 ];
 
 type ApplicationResult = "Eligible" | "Partial Match" | "Not Eligible";
-type ApplicationStatus = "Completed" | "Not Applied";
-
-interface ApplicationRow {
-  id: number;
-  name: string;
-  position: string;
-  appliedOn: string;
-  matchScore: number;
-  result: ApplicationResult;
-  status: ApplicationStatus;
-  source: string;
-  avatarColor: string;
-}
 
 const RESULT_STYLES: Record<ApplicationResult, string> = {
   Eligible: "bg-[#e8f5e9] text-[#23714a] border border-[#a5d6a7]",
@@ -253,101 +89,14 @@ const RESULT_STYLES: Record<ApplicationResult, string> = {
   "Not Eligible": "bg-[#ffebee] text-[#c62828] border border-[#ef9a9a]",
 };
 
-const LATEST_APPLICATIONS: ApplicationRow[] = [
-  { id: 1, name: "Priya Singh", position: "Sales Manager", appliedOn: "16 Sep 2026", matchScore: 82, result: "Eligible", status: "Completed", source: "Website", avatarColor: "bg-blue-100 text-blue-700" },
-  { id: 2, name: "Rahul Mehta", position: "Sales Manager", appliedOn: "15 Sep 2026", matchScore: 58, result: "Partial Match", status: "Completed", source: "LinkedIn", avatarColor: "bg-violet-100 text-violet-700" },
-  { id: 3, name: "Neha Verma", position: "Marketing Executive", appliedOn: "14 Sep 2026", matchScore: 38, result: "Not Eligible", status: "Not Applied", source: "Website", avatarColor: "bg-amber-100 text-amber-700" },
-  { id: 4, name: "Amit Kumar", position: "Business Development", appliedOn: "14 Sep 2026", matchScore: 66, result: "Eligible", status: "Completed", source: "Naukri", avatarColor: "bg-emerald-100 text-emerald-700" },
-  { id: 5, name: "Sneha Kapoor", position: "Event Coordinator", appliedOn: "13 Sep 2026", matchScore: 72, result: "Eligible", status: "Completed", source: "Indeed", avatarColor: "bg-rose-100 text-rose-700" },
-];
+const AVATAR_COLORS = ["bg-blue-100 text-blue-700", "bg-violet-100 text-violet-700", "bg-amber-100 text-amber-700", "bg-emerald-100 text-emerald-700", "bg-rose-100 text-rose-700"];
+
+const shortDate = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 
 /* =========================================================
    ANIMATED COUNTER (matches Job Postings page's counter)
 ========================================================= */
 
-function AnimatedCounter({ value, duration = 1200 }: { value: string | number; duration?: number }) {
-  const strVal = String(value);
-  const numericMatch = strVal.match(/^([^0-9]*)([0-9.,]+)([^0-9]*)$/);
-  const prefix = numericMatch?.[1] ?? "";
-  const suffix = numericMatch?.[3] ?? "";
-  const rawNumberStr = numericMatch ? numericMatch[2].replace(/,/g, "") : "";
-  const targetNum = numericMatch ? parseFloat(rawNumberStr) : NaN;
-  const hasComma = numericMatch ? numericMatch[2].includes(",") : false;
-  const decimalPlaces = (rawNumberStr.split(".")[1] || "").length;
-  const canAnimate = Boolean(numericMatch) && !isNaN(targetNum) && targetNum !== 0;
-
-  const [displayValue, setDisplayValue] = useState<string>(() =>
-    canAnimate ? `${prefix}0${suffix}` : strVal
-  );
-  const spanRef = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    if (!canAnimate) return;
-
-    let animationFrameId: number | null = null;
-
-    const startCounting = () => {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      let startTime: number | null = null;
-
-      const step = (timestamp: number) => {
-        if (!startTime) startTime = timestamp;
-        const progress = Math.min((timestamp - startTime) / duration, 1);
-        const easeProgress = 1 - Math.pow(1 - progress, 3);
-        const currentNum = targetNum * easeProgress;
-        let formattedNum = currentNum.toFixed(decimalPlaces);
-
-        if (hasComma) {
-          const parts = formattedNum.split(".");
-          parts[0] = parseInt(parts[0], 10).toLocaleString();
-          formattedNum = parts.join(".");
-        }
-
-        setDisplayValue(`${prefix}${formattedNum}${suffix}`);
-
-        if (progress < 1) {
-          animationFrameId = requestAnimationFrame(step);
-        }
-      };
-
-      animationFrameId = requestAnimationFrame(step);
-    };
-
-    if (typeof IntersectionObserver !== "undefined") {
-      const el = spanRef.current;
-      if (!el) {
-        startCounting();
-        return;
-      }
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              startCounting();
-            } else {
-              setDisplayValue(`${prefix}0${suffix}`);
-            }
-          });
-        },
-        { threshold: 0.15 }
-      );
-
-      observer.observe(el);
-
-      return () => {
-        observer.disconnect();
-        if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      };
-    } else {
-      startCounting();
-      return () => {
-        if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      };
-    }
-  }, [duration, canAnimate, prefix, suffix, targetNum, hasComma, decimalPlaces]);
-
-  return <span ref={spanRef}>{displayValue}</span>;
-}
 
 /* =========================================================
    CARD WRAPPER
@@ -413,7 +162,94 @@ function PerformanceTooltip({
 ========================================================= */
 
 export default function CareerDashboardPage() {
-  const maxLocationCount = Math.max(...TOP_LOCATIONS.map((l) => l.count));
+  const router = useRouter();
+  const [range, setRange] = useState("30d");
+  const [chart, setChart] = useState<"monthly" | "weekly" | "daily">("monthly");
+  const [data, setData] = useState<CareerDashboard | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    careerDashboardApi
+      .get(range, chart)
+      .then((d) => {
+        if (cancelled) return;
+        setData(d);
+        setError("");
+      })
+      .catch((err) => !cancelled && setError(err instanceof ApiRequestError ? err.message : "Could not load the careers dashboard."));
+    return () => {
+      cancelled = true;
+    };
+  }, [range, chart]);
+
+  const c: Partial<CareerCounts> = data?.current ?? {};
+  const t = data?.trends;
+  const goTo = (href: string) => () => router.push(href);
+  const scrollToChart = () => document.getElementById("career-performance")?.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  const card = (
+    title: string,
+    value: number | undefined,
+    icon: LucideIcon,
+    tone: KpiStatCardItem["tone"],
+    colors: [string, string],
+    trend: number | null | undefined,
+    footer: string,
+    onClick: () => void
+  ): KpiStatCardItem => ({
+    title,
+    value: data ? (value ?? 0).toLocaleString("en-IN") : "–",
+    icon,
+    tone,
+    gradient: `linear-gradient(135deg, #ffffff 0%, #ffffff 42%, ${colors[0]} 100%)`,
+    borderColor: colors[0],
+    numColor: colors[1],
+    trend: trendText(trend),
+    footer,
+    onClick,
+  });
+
+  const STAT_CARDS: KpiStatCardItem[] = [
+    card("ACTIVE JOBS", data?.activeJobs, Briefcase, "slate", ["#e2e8f0", "#334155"], null, "View job postings", goTo("/job-postings")),
+    card("CAREER PAGE VIEWS", c.pageViews, Eye, "blue", ["#bae6fd", "#0284c7"], t?.pageViews, "View page analytics", scrollToChart),
+    card("APPLY CLICKS", c.applyClicks, MousePointerClick, "violet", ["#ddd6fe", "#6d28d9"], t?.applyClicks, "View click analytics", scrollToChart),
+    card("CV UPLOADS", c.cvUploads, UploadCloud, "indigo", ["#c7d2fe", "#4338ca"], t?.cvUploads, "View uploads", goTo(APPLICATIONS)),
+    card("AI CHECKED", c.aiChecked, ScanSearch, "cyan", ["#a5f3fc", "#0e7490"], t?.aiChecked, "View AI screening", goTo(APPLICATIONS)),
+    card("ELIGIBLE", c.eligible, CheckCircle2, "emerald", ["#bbf7d0", "#15803d"], t?.eligible, "View eligible candidates", goTo(`${APPLICATIONS}?result=Eligible`)),
+    card("PARTIAL MATCH", c.partial, AlertTriangle, "amber", ["#fed7aa", "#c2410c"], t?.partial, "View partial matches", goTo(`${APPLICATIONS}?result=Partial%20Match`)),
+    card("NOT ELIGIBLE", c.notEligible, XCircle, "rose", ["#fecdd3", "#be123c"], t?.notEligible, "View not eligible", goTo(`${APPLICATIONS}?result=Not%20Eligible`)),
+    card("APPLICATIONS SUBMITTED", c.submitted, ClipboardList, "teal", ["#99f6e4", "#0f766e"], t?.submitted, "View applications", goTo(`${APPLICATIONS}?stage=Submitted`)),
+  ];
+
+  const FUNNEL_STAGES: FunnelStage[] = [
+    { label: "Career Page Views", value: c.pageViews ?? 0, color: "#1f6f4a" },
+    { label: "Job Detail Views", value: c.jobViews ?? 0, color: "#2f9e63" },
+    { label: "Apply Clicks", value: c.applyClicks ?? 0, color: "#7fc79a" },
+    { label: "CV Uploads", value: c.cvUploads ?? 0, color: "#a8dab5" },
+    { label: "AI Checked", value: c.aiChecked ?? 0, color: "#bfe4c8" },
+    { label: "Eligible (≥ 60%)", value: c.eligible ?? 0, color: "#dff2e3" },
+    { label: "Partial Match (50–59%)", value: c.partial ?? 0, color: "#fde68a" },
+    { label: "Not Eligible (< 50%)", value: c.notEligible ?? 0, color: "#fecaca" },
+    { label: "Applications Submitted", value: c.submitted ?? 0, color: "#93c5fd" },
+  ];
+  // Percentages against the widest stage (page views once the website has counted some)
+  const funnelBase = Math.max(1, ...FUNNEL_STAGES.map((s) => s.value));
+  const funnelTop = c.pageViews || funnelBase;
+
+  const PERFORMANCE_DATA = (data?.series ?? []).map((p) => ({ month: p.label, pageViews: p.pageViews, applyClicks: p.applyClicks, cvUploads: p.cvUploads }));
+
+  const AI_SCREENING_TOTAL = c.aiChecked ?? 0;
+  const AI_SCREENING_SLICES: DonutSlice[] = [
+    { key: "eligible", label: "Eligible (60%+)", value: c.eligible ?? 0, color: "#16a34a" },
+    { key: "partial", label: "Partial Match (50-59%)", value: c.partial ?? 0, color: "#f59e0b" },
+    { key: "not-eligible", label: "Not Eligible (< 50%)", value: c.notEligible ?? 0, color: "#ef4444" },
+  ];
+
+  const TOP_LOCATIONS = data?.topLocations ?? [];
+  const LATEST_APPLICATIONS = data?.latestApplications ?? [];
+  const maxLocationCount = Math.max(1, ...TOP_LOCATIONS.map((l) => l.count));
+  const rangeLabel = CAREER_RANGES.find((r) => r.value === range)?.label ?? "";
 
   return (
     <div className={`${typography.pages} min-h-[calc(100vh-100px)] w-full bg-white text-[#18233b]`}>
@@ -432,17 +268,22 @@ export default function CareerDashboardPage() {
           </div>
 
           <div className="flex items-center gap-[10px]">
-            <button
-              type="button"
-              onClick={() => notImplemented("Date range picker")}
-              className="flex h-[30px] items-center gap-[6px] rounded-[6px] border border-[#e5e6e2] bg-white px-[10px] text-[9px] font-semibold text-[#334155] hover:bg-slate-50"
-            >
+            <label className="relative flex h-[30px] items-center gap-[6px] rounded-[6px] border border-[#e5e6e2] bg-white px-[10px] text-[9px] font-semibold text-[#334155] hover:bg-slate-50">
               <CalendarDays className="h-[12px] w-[12px] text-[#64748b]" />
-              01 Aug 2026 – 17 Sep 2026
+              {data?.from ? `${shortDate(data.from)} – ${shortDate(data.to)}` : rangeLabel}
               <ChevronDown className="h-[11px] w-[11px] text-[#64748b]" />
-            </button>
+              <select value={range} onChange={(e) => setRange(e.target.value)} aria-label="Date range" className="absolute inset-0 cursor-pointer opacity-0">
+                {CAREER_RANGES.map((r) => (
+                  <option key={r.value} value={r.value}>
+                    {r.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
         </div>
+
+        {error && <p className="mb-[8px] rounded-[6px] bg-red-50 px-[10px] py-[6px] text-[9px] font-semibold text-red-600">{error}</p>}
 
         {/* =================================================
             STATS ROW
@@ -474,11 +315,11 @@ export default function CareerDashboardPage() {
                       <div className="h-[14px] w-full overflow-hidden rounded-[3px] bg-[#f4f4f1]">
                         <div
                           className="h-full rounded-[3px]"
-                          style={{ width: `${stage.barWidth}%`, backgroundColor: stage.color }}
+                          style={{ width: `${stage.value ? Math.max(2, (stage.value / funnelBase) * 100) : 0}%`, backgroundColor: stage.color }}
                         />
                       </div>
                       <span className="text-right text-[10px] font-bold text-[#263148]">
-                        {stage.value} <span className="font-medium text-[#8a92a0]">({stage.pct})</span>
+                        {data ? fmt(stage.value) : "–"} <span className="font-medium text-[#8a92a0]">({pctOf(stage.value, funnelTop)})</span>
                       </span>
                     </div>
                   ))}
@@ -487,17 +328,19 @@ export default function CareerDashboardPage() {
 
               {/* RIGHT: PERFORMANCE + AI SCREENING */}
               <div className="flex flex-col gap-[10px]">
+                <div id="career-performance">
                 <Card
                   title="Career Page Performance"
                   right={
-                    <button
-                      type="button"
-                      onClick={() => notImplemented("Chart range filter")}
-                      className="flex items-center gap-1 text-[8.5px] font-semibold text-[#334155] hover:text-[#166b40]"
-                    >
-                      Monthly
+                    <label className="relative flex items-center gap-1 text-[8.5px] font-semibold text-[#334155] hover:text-[#166b40]">
+                      {chart === "monthly" ? "Monthly" : chart === "weekly" ? "Weekly" : "Daily"}
                       <ChevronDown className="h-[11px] w-[11px]" />
-                    </button>
+                      <select value={chart} onChange={(e) => setChart(e.target.value as typeof chart)} aria-label="Chart period" className="absolute inset-0 cursor-pointer opacity-0">
+                        <option value="monthly">Monthly (6 months)</option>
+                        <option value="weekly">Weekly (8 weeks)</option>
+                        <option value="daily">Daily (14 days)</option>
+                      </select>
+                    </label>
                   }
                 >
                   <div className="mb-[8px] flex items-center gap-[12px] text-[7.5px] font-bold text-black">
@@ -528,6 +371,7 @@ export default function CareerDashboardPage() {
                     </LineChart>
                   </ResponsiveContainer>
                 </Card>
+                </div>
 
                 <Card title="AI Screening Results">
                   <div className="grid grid-cols-[100px_1fr] items-center gap-[12px]">
@@ -535,7 +379,7 @@ export default function CareerDashboardPage() {
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
-                            data={AI_SCREENING_SLICES}
+                            data={AI_SCREENING_TOTAL ? AI_SCREENING_SLICES : [{ key: "none", label: "No CVs checked", value: 1, color: "#e5e7eb" }]}
                             dataKey="value"
                             nameKey="label"
                             innerRadius="62%"
@@ -543,7 +387,7 @@ export default function CareerDashboardPage() {
                             paddingAngle={2}
                             strokeWidth={0}
                           >
-                            {AI_SCREENING_SLICES.map((slice) => (
+                            {(AI_SCREENING_TOTAL ? AI_SCREENING_SLICES : [{ key: "none", color: "#e5e7eb" }]).map((slice) => (
                               <Cell key={slice.key} fill={slice.color} />
                             ))}
                           </Pie>
@@ -567,7 +411,7 @@ export default function CareerDashboardPage() {
                             {slice.label}
                           </span>
                           <span className="shrink-0 text-[8.5px] font-bold text-[#263148]">
-                            {slice.value} <span className="font-medium text-[#8a92a0]">({slice.pct})</span>
+                            {fmt(slice.value)} <span className="font-medium text-[#8a92a0]">({pctOf(slice.value, AI_SCREENING_TOTAL)})</span>
                           </span>
                         </div>
                       ))}
@@ -610,13 +454,20 @@ export default function CareerDashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#f0f0ec]">
+                    {LATEST_APPLICATIONS.length === 0 && (
+                      <tr>
+                        <td colSpan={9} className="py-8 text-center text-[8.5px] text-[#6c7587]">
+                          {data ? "No applications yet." : "Loading…"}
+                        </td>
+                      </tr>
+                    )}
                     {LATEST_APPLICATIONS.map((app, index) => (
                       <tr key={app.id} className="transition hover:bg-slate-50/80">
                         <td className="px-[8px] py-[7px] text-[7.5px] font-semibold text-[#6c7587]">{index + 1}</td>
                         <td className="px-[8px] py-[7px]">
                           <div className="flex items-center gap-[7px]">
                             <span
-                              className={`grid h-[19px] w-[19px] shrink-0 place-items-center rounded-full text-[7.5px] font-bold ${app.avatarColor}`}
+                              className={`grid h-[19px] w-[19px] shrink-0 place-items-center rounded-full text-[7.5px] font-bold ${AVATAR_COLORS[index % AVATAR_COLORS.length]}`}
                             >
                               {app.name.charAt(0)}
                             </span>
@@ -624,7 +475,7 @@ export default function CareerDashboardPage() {
                           </div>
                         </td>
                         <td className="px-[8px] py-[7px] truncate text-[7.8px] font-medium text-[#334155]">{app.position}</td>
-                        <td className="px-[8px] py-[7px] truncate text-[7.8px] font-medium text-[#334155]">{app.appliedOn}</td>
+                        <td className="px-[8px] py-[7px] truncate text-[7.8px] font-medium text-[#334155]">{shortDate(app.appliedOn)}</td>
                         <td className="px-[8px] py-[7px]">
                           <span
                             className={`text-[7.8px] font-bold ${app.matchScore >= 60 ? "text-[#16a34a]" : app.matchScore >= 50 ? "text-[#b78103]" : "text-[#c62828]"}`}
@@ -648,7 +499,7 @@ export default function CareerDashboardPage() {
                             <button
                               type="button"
                               title="View Application"
-                              onClick={() => notImplemented(`View "${app.name}"`)}
+                              onClick={() => router.push(`${APPLICATIONS}?search=${encodeURIComponent(app.applicationId || app.name)}`)}
                               className="flex h-[24px] w-[24px] items-center justify-center rounded-[6px] bg-orange-500/10 text-orange-600 backdrop-blur-md border border-orange-400/30 shadow-[0_2px_6px_rgba(249,115,22,0.12)] transition-all hover:bg-orange-500/20 hover:border-orange-400/50 hover:scale-105 active:scale-95"
                             >
                               <Eye className="h-[12px] w-[12px] text-orange-600" />
@@ -687,7 +538,7 @@ export default function CareerDashboardPage() {
             <div className="border border-[#e7e7e3] bg-[#f6f9fe] p-[12px]">
               <h2 className="mb-[8px] text-[11px] font-bold text-[#263148]">Quick Actions</h2>
               <div className="flex flex-col gap-[2px]">
-                {QUICK_ACTIONS.map(({ label, icon: Icon, href }) => {
+                {QUICK_ACTIONS.map(({ label, icon: Icon, href, external }) => {
                   if (href) {
                     return (
                       <Link
@@ -702,16 +553,17 @@ export default function CareerDashboardPage() {
                     );
                   }
                   return (
-                    <button
+                    <a
                       key={label}
-                      type="button"
-                      onClick={() => notImplemented(label)}
+                      href={external}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="flex items-center gap-[8px] rounded-[4px] px-[6px] py-[7px] text-left text-[9.5px] font-semibold text-black transition hover:bg-slate-50"
                     >
                       <Icon className="h-[13px] w-[13px] text-[#218DAE]" />
                       {label}
                       <ArrowRight className="ml-auto h-[11px] w-[11px] text-[#c2c7d0]" />
-                    </button>
+                    </a>
                   );
                 })}
               </div>
@@ -724,6 +576,7 @@ export default function CareerDashboardPage() {
                 Top Job Locations <span className="font-medium text-[#8a92a0]">(by applications)</span>
               </h2>
               <div className="flex flex-col gap-[8px]">
+                {TOP_LOCATIONS.length === 0 && <p className="text-[8.5px] text-[#6c7587]">{data ? "No submitted applications in this period." : "Loading…"}</p>}
                 {TOP_LOCATIONS.map((loc) => (
                   <div key={loc.city} className="grid grid-cols-[74px_1fr_24px] items-center gap-[8px]">
                     <span className="truncate text-[8.5px] font-semibold text-[#334155]">{loc.city}</span>

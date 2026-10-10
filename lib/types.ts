@@ -395,7 +395,7 @@ export interface Settings {
   banners: { image: string; link?: string; title?: string }[];
   socialLinks: { platform: string; url: string }[];
   landingPage?: {
-    seo?: any;
+    seo?: Record<string, unknown>;
     sections: {
       key: string;
       name: string;

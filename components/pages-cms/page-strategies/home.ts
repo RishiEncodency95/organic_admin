@@ -1,9 +1,10 @@
 import { api } from "@/lib/api";
 import type { SectionsDraft, SetSectionsDraft } from "./types";
+import type { CmsJson } from "@/lib/cmsJson";
 
 export function syncHomeSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft): void {
   api.get("/website/home/audience-strip")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data && Array.isArray(data.items) && data.items.length > 0) {
         setSectionsDraft((prev) =>
@@ -12,7 +13,7 @@ export function syncHomeSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft):
               ? {
                   ...sec,
                   enabled: data.enabled !== false,
-                  items: data.items.map((it: any) => ({
+                  items: data.items.map((it: CmsJson) => ({
                     title: it.title ?? "",
                     subtitle: it.subtitle ?? "",
                     label: it.label ?? `${it.title ?? ""} ${it.subtitle ?? ""}`.trim(),
@@ -28,7 +29,7 @@ export function syncHomeSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft):
     .catch(() => {});
 
   api.get("/website/home/introduction-section")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         setSectionsDraft((prev) =>
@@ -60,7 +61,7 @@ export function syncHomeSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft):
     .catch(() => {});
 
   api.get("/website/home/global-platform")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         setSectionsDraft((prev) =>
@@ -103,12 +104,12 @@ export function syncHomeSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft):
                     (data.items || data.cards).length > 0
                       ? (data.items || data.cards)
                           .filter(
-                            (c: any) =>
+                            (c: CmsJson) =>
                               !/trusted brands|targeted audience|business growth/i.test(
                                 c.title || ""
                               )
                           )
-                          .map((c: any) => ({
+                          .map((c: CmsJson) => ({
                             title: c.title ?? "",
                             description: c.description ?? c.desc ?? "",
                             image: c.image ?? "",
@@ -124,7 +125,7 @@ export function syncHomeSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft):
     .catch(() => {});
 
   api.get("/website/home/why-participate")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         setSectionsDraft((prev) =>
@@ -161,7 +162,7 @@ export function syncHomeSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft):
     .catch(() => {});
 
   api.get("/website/home/conference-seminars")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         setSectionsDraft((prev) =>
@@ -200,7 +201,7 @@ export function syncHomeSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft):
     .catch(() => {});
 
   api.get("/website/home/expo-categories")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         setSectionsDraft((prev) =>
@@ -218,7 +219,7 @@ export function syncHomeSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft):
                   buttonText: data.buttonText ?? sec.buttonText,
                   buttonHref: data.buttonHref ?? data.buttonLink ?? sec.buttonHref,
                   items: Array.isArray(data.items) && data.items.length > 0
-                    ? data.items.map((it: any) => ({
+                    ? data.items.map((it: CmsJson) => ({
                         title: it.title || "",
                         description: it.description ?? it.desc ?? "",
                         image: it.image || "",
@@ -226,7 +227,7 @@ export function syncHomeSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft):
                         exploreText: it.exploreText || "Explore",
                       }))
                     : Array.isArray(data.categories) && data.categories.length > 0
-                    ? data.categories.map((it: any) => ({
+                    ? data.categories.map((it: CmsJson) => ({
                         title: it.title || "",
                         description: it.description ?? it.desc ?? "",
                         image: it.image || "",
@@ -243,7 +244,7 @@ export function syncHomeSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft):
     .catch(() => {});
 
   api.get("/website/home/beyond-exhibition")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         setSectionsDraft((prev) =>
@@ -259,13 +260,13 @@ export function syncHomeSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft):
                   image: data.image ?? sec.image,
                   imageAlt: data.imageAlt ?? sec.imageAlt,
                   items: Array.isArray(data.items) && data.items.length > 0
-                    ? data.items.map((it: any) => ({
+                    ? data.items.map((it: CmsJson) => ({
                         title: it.title || "",
                         description: it.description ?? it.subtitle ?? "",
                         icon: it.icon || "Users",
                       }))
                     : Array.isArray(data.extras) && data.extras.length > 0
-                    ? data.extras.map((it: any) => ({
+                    ? data.extras.map((it: CmsJson) => ({
                         title: it.title2 ? `${it.title} ${it.title2}`.trim() : (it.title || ""),
                         description: it.description ?? it.subtitle ?? "",
                         icon: it.icon || "Users",
@@ -280,7 +281,7 @@ export function syncHomeSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft):
     .catch(() => {});
 
   api.get("/website/home/sponsors-attend")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         setSectionsDraft((prev) =>
@@ -394,7 +395,7 @@ export async function saveHomeSections(sectionsDraft: SectionsDraft): Promise<vo
         keyPoint3: globalSec.keyPoint3,
         keyPoint4: globalSec.keyPoint4,
         keyPoint5: globalSec.keyPoint5,
-        items: (globalSec.items || []).map((it: any) => ({
+        items: (globalSec.items || []).map((it: CmsJson) => ({
           title: it.title ?? "",
           description: it.description ?? it.desc ?? "",
           desc: it.description ?? it.desc ?? "",
@@ -504,7 +505,7 @@ export async function saveHomeSections(sectionsDraft: SectionsDraft): Promise<vo
   if (expoSec) {
     try {
       const cleanItems = Array.isArray(expoSec.items)
-        ? expoSec.items.map((it: any) => ({
+        ? expoSec.items.map((it: CmsJson) => ({
             title: it.title || "",
             description: it.description || "",
             desc: it.description || "",
@@ -538,7 +539,7 @@ export async function saveHomeSections(sectionsDraft: SectionsDraft): Promise<vo
   if (beyondSec) {
     try {
       const cleanItems = Array.isArray(beyondSec.items)
-        ? beyondSec.items.map((it: any) => ({
+        ? beyondSec.items.map((it: CmsJson) => ({
             title: it.title || "",
             description: it.description || it.subtitle || "",
             subtitle: it.description || it.subtitle || "",

@@ -3,6 +3,7 @@
 import React from "react";
 import { Zap } from "lucide-react";
 import { formatDateTime, formatMs, formatNumber, ScorePill } from "../SeoBadges";
+import type { SeoPageDetail } from "@/lib/seoAuditApi";
 
 function DarkRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -27,7 +28,7 @@ function SectionCard({ title, icon, children }: { title: string; icon: React.Rea
   );
 }
 
-export default function AuditPerformanceSection({ performance }: { performance: any }) {
+export default function AuditPerformanceSection({ performance }: { performance: SeoPageDetail["performance"] }) {
   return (
     <section id="section-performance" className="scroll-mt-36 space-y-5">
       <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -49,7 +50,7 @@ export default function AuditPerformanceSection({ performance }: { performance: 
           </p>
         </SectionCard>
       ) : (
-        (performance?.audits ?? []).map((audit: any) => (
+        (performance?.audits ?? []).map((audit) => (
           <SectionCard key={audit.id} title={`Lighthouse Audit — ${audit.strategy}`} icon={<Zap className="w-5 h-5" />}>
             {audit.status === "error" ? (
               <p className="text-[13px] text-red-400 font-bold">{audit.error}</p>
@@ -121,7 +122,7 @@ export default function AuditPerformanceSection({ performance }: { performance: 
                 {audit.opportunities.length > 0 && (
                   <div className="mt-4 border-t border-slate-700/60 pt-3">
                     <h5 className="mb-2 text-[13.5px] font-bold text-white">Performance Opportunities</h5>
-                    {audit.opportunities.map((opportunity: any) => (
+                    {audit.opportunities.map((opportunity) => (
                       <div
                         key={opportunity.id}
                         className="flex justify-between border-b border-slate-800/60 py-2 text-[12px] last:border-0"

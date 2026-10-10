@@ -3,6 +3,7 @@
 import React from "react";
 import { Code2 } from "lucide-react";
 import { StatusChip } from "../SeoBadges";
+import type { SeoPageDetail } from "@/lib/seoAuditApi";
 
 function SectionCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -18,7 +19,7 @@ function SectionCard({ title, icon, children }: { title: string; icon: React.Rea
   );
 }
 
-export default function AuditSchemaSection({ page }: { page: any }) {
+export default function AuditSchemaSection({ page }: { page: SeoPageDetail["page"] }) {
   if (!page) return null;
 
   return (
@@ -39,7 +40,7 @@ export default function AuditSchemaSection({ page }: { page: any }) {
         {(page?.schemas ?? []).length === 0 ? (
           <p className="text-[13px] text-slate-400">No JSON-LD structured data blocks found on this page.</p>
         ) : (
-          (page?.schemas ?? []).map((block: any, index: number) => (
+          (page?.schemas ?? []).map((block, index) => (
             <div key={index} className="mb-3 rounded-xl border border-slate-700/60 bg-[#0f172a]/70 p-4 last:mb-0">
               <div className="mb-2 flex items-center justify-between gap-2">
                 <span className="text-[13px] font-bold text-white">

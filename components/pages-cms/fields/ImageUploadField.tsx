@@ -23,8 +23,8 @@ export function ImageUploadField({
     if (!file) return;
     setUploading(true);
     try {
-      const res: any = await uploadApi.file(file, "bharat-organic/content");
-      const uploadedUrl = res?.url || res?.data?.url;
+      const res = await uploadApi.file(file, "bharat-organic/content");
+      const uploadedUrl = res?.url || (res as { data?: { url?: string } })?.data?.url;
       if (!uploadedUrl) throw new Error("Server did not return an image URL.");
       onChange(uploadedUrl);
     } catch (err) {

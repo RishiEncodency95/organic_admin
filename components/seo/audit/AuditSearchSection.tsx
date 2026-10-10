@@ -3,6 +3,7 @@
 import React from "react";
 import { Search, TrendingUp, Eye, MousePointer, Award } from "lucide-react";
 import { formatNumber } from "../SeoBadges";
+import type { SeoPageDetail } from "@/lib/seoAuditApi";
 
 function SectionCard({ title, icon, children, note }: { title: string; icon: React.ReactNode; children: React.ReactNode; note?: string }) {
   return (
@@ -21,7 +22,7 @@ function SectionCard({ title, icon, children, note }: { title: string; icon: Rea
   );
 }
 
-export default function AuditSearchSection({ search }: { search: any }) {
+export default function AuditSearchSection({ search }: { search: SeoPageDetail["search"] }) {
   return (
     <section id="section-search" className="scroll-mt-36 space-y-5">
       <div className="flex items-center justify-between border-b border-slate-700 pb-3">

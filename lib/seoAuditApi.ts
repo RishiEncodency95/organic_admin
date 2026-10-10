@@ -119,6 +119,7 @@ export interface SeoPageRow {
 
 export interface SeoRecommendationItem {
   ruleId: string | null;
+  category?: string;
   title: string;
   whyItMatters: string;
   priority: "high" | "medium" | "low";
@@ -964,9 +965,9 @@ export const seoAuditApi = {
   },
   generateSiteRecommendation: async (force = false): Promise<SeoRecommendationResponse> => {
     try {
-      const res = await api.post<any>("/seo/recommendations/site", {});
+      const res = await api.post<SeoRecommendationResponse | null>("/seo/recommendations/site", {});
       if (res && res.status === "ok" && res.recommendation && Array.isArray(res.recommendation.items)) {
-        return res as SeoRecommendationResponse;
+        return res;
       }
     } catch {}
 
@@ -1018,9 +1019,9 @@ export const seoAuditApi = {
   },
   generatePageRecommendation: async (id: string, force = false, provider: "openai" | "gemini" = "openai"): Promise<SeoRecommendationResponse> => {
     try {
-      const res = await api.post<any>(`/seo/recommendations/pages/${id}`, { provider });
+      const res = await api.post<SeoRecommendationResponse | null>(`/seo/recommendations/pages/${id}`, { provider });
       if (res && res.status === "ok" && res.recommendation && Array.isArray(res.recommendation.items)) {
-        return res as SeoRecommendationResponse;
+        return res;
       }
     } catch {}
 

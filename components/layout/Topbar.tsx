@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ComponentType } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore, type ComponentType } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
@@ -178,10 +178,12 @@ function ServiceClock({
   expiryDate: string;
   onClick: () => void;
 }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // false on the server, true in the browser
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   const days = daysRemaining(expiryDate);
   const urgent = countdown.isExpired || days <= URGENT_DAYS;
@@ -409,9 +411,10 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
         : todayKey;
 
     if (dismissedOn !== todayKey) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- today's dismissal is in localStorage, readable only after mount
       setExpiryPopupOpen(true);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [isInternal, expiringServices.length]);
 
   const dismissExpiryPopup = () => {

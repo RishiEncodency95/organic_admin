@@ -85,8 +85,7 @@ export default function RolesPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const load = () => {
-    setLoading(true);
+  const fetchItems = () => {
     Promise.all([rolesApi.list(), rolesApi.permissions()])
       .then(([r, p]) => {
         setRoles(Array.isArray(r) ? r : []);
@@ -100,9 +99,14 @@ export default function RolesPage() {
       })
       .finally(() => setLoading(false));
   };
+  const load = () => {
+    setLoading(true);
+    return fetchItems();
+  };
 
   useEffect(() => {
-    load();
+    // First load: the state already starts as loading
+    fetchItems();
   }, []);
 
   const totalPages = Math.max(1, Math.ceil(roles.length / PAGE_SIZE));

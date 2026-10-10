@@ -58,6 +58,8 @@ export default function StaffPage() {
   const dispatch = useAppDispatch();
   const currentAdmin = useAppSelector((state) => state.auth.admin);
   const [staff, setStaff] = useState<StaffMember[]>([]);
+  // For "Unlocks in N min" (as of opening the page)
+  const [now] = useState(() => Date.now());
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -79,8 +81,7 @@ export default function StaffPage() {
   const paginatedStaff = staff.slice(startIndex, endIndex);
 
 
-  const load = () => {
-    setLoading(true);
+  const fetchItems = () => {
     Promise.all([staffApi.list(), rolesApi.list()])
       .then(([s, r]) => {
         setStaff(Array.isArray(s) ? s : []);
@@ -94,9 +95,14 @@ export default function StaffPage() {
       })
       .finally(() => setLoading(false));
   };
+  const load = () => {
+    setLoading(true);
+    return fetchItems();
+  };
 
   useEffect(() => {
-    load();
+    // First load: the state already starts as loading
+    fetchItems();
     const interval = setInterval(() => {
       staffApi.list().then((s) => {
         if (Array.isArray(s)) setStaff(s);
@@ -131,7 +137,8 @@ export default function StaffPage() {
     try {
       const result = await staffApi.invite(form);
       // result contains { user, temporaryPassword }
-      const password = result.temporaryPassword ?? (result as any)?.data?.temporaryPassword ?? "";
+      // Older backends wrap it in data
+      const password = result.temporaryPassword ?? (result as { data?: { temporaryPassword?: string } }).data?.temporaryPassword ?? "";
       setCreatedCredential({ email: form.email, password });
       showSuccess(`Account created for ${form.name}!`);
       load();
@@ -447,9 +454,9 @@ export default function StaffPage() {
                                 DEACTIVATED
                               </option>
                             </select>
-                            {s.status === "LOCKED" && s.lockUntil && new Date(s.lockUntil) > new Date() && (
+                            {s.status === "LOCKED" && s.lockUntil && new Date(s.lockUntil).getTime() > now && (
                               <span className="text-[6.5px] font-semibold text-[#ea580c] whitespace-nowrap">
-                                Unlocks in {Math.max(1, Math.ceil((new Date(s.lockUntil).getTime() - Date.now()) / 60000))}m
+                                Unlocks in {Math.max(1, Math.ceil((new Date(s.lockUntil).getTime() - now) / 60000))}m
                               </span>
                             )}
                           </div>

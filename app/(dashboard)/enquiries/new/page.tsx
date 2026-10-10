@@ -315,6 +315,15 @@ const popularCategories = [
    PAGE
 ============================================================ */
 
+/** Form category for ?category= in the link (csr, contact, or a category name) */
+const categoryFromUrl = (value: string | null) => {
+  if (!value) return null;
+  const cat = value.toLowerCase();
+  if (cat === "csr") return "CSR & Partnership";
+  if (cat === "contact" || cat === "general") return "Sewa Support";
+  return categoryOptions.find((c) => c.toLowerCase() === cat) ?? null;
+};
+
 function AddNewEnquiryContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -323,10 +332,17 @@ function AddNewEnquiryContent() {
   const fileInputRef =
     useRef<HTMLInputElement>(null);
 
-  const [form, setForm] =
-    useState<EnquiryForm>(
-      DEFAULT_FORM
-    );
+  const [form, setForm] = useState<EnquiryForm>(() => {
+    const category = categoryFromUrl(urlCategory);
+    return category ? { ...DEFAULT_FORM, category } : DEFAULT_FORM;
+  });
+  // A later change of ?category= while the page is open
+  const [categoryParam, setCategoryParam] = useState(urlCategory);
+  if (urlCategory !== categoryParam) {
+    setCategoryParam(urlCategory);
+    const category = categoryFromUrl(urlCategory);
+    if (category) setForm((prev) => ({ ...prev, category }));
+  }
 
   const [
     attachment,
@@ -344,23 +360,6 @@ function AddNewEnquiryContent() {
 
   const [submitted, setSubmitted] =
     useState(false);
-
-  useEffect(() => {
-    if (!urlCategory) return;
-    const cat = urlCategory.toLowerCase();
-    if (cat === "csr") {
-      setForm((prev) => ({ ...prev, category: "CSR & Partnership" }));
-    } else if (cat === "contact" || cat === "general") {
-      setForm((prev) => ({ ...prev, category: "Sewa Support" }));
-    } else {
-      const match = categoryOptions.find(
-        (c) => c.toLowerCase() === cat
-      );
-      if (match) {
-        setForm((prev) => ({ ...prev, category: match }));
-      }
-    }
-  }, [urlCategory]);
 
   /* ==========================================================
      UPDATE FIELD

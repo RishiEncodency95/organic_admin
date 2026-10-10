@@ -1,5 +1,6 @@
 import { api } from "@/lib/api";
 import type { SectionsDraft, SetSectionsDraft } from "./types";
+import type { CmsJson, CmsRecord } from "@/lib/cmsJson";
 
 // Admin page config key -> slug of the /partnership/<slug> page (and its backend record).
 export const SUB_PARTNERSHIP_SLUGS: Record<string, string> = {
@@ -12,18 +13,18 @@ export const SUB_PARTNERSHIP_SLUGS: Record<string, string> = {
 };
 
 const FIELDS = ["title", "subtitle", "description", "date", "location", "image", "imageAlt"] as const;
-const isHero = (sec: Record<string, any>) => sec.key === "sub-partnership-hero";
+const isHero = (sec: CmsRecord) => sec.key === "sub-partnership-hero";
 const endpoint = (slug: string) => `/website/opportunities/partnership/sub-hero/${slug}`;
 
 export function syncSubPartnershipSectionsFromLiveApi(slug: string, setSectionsDraft: SetSectionsDraft): void {
   api.get(endpoint(slug))
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         setSectionsDraft((prev) =>
           prev.map((sec) => {
             if (!isHero(sec)) return sec;
-            const next: Record<string, any> = { ...sec };
+            const next: CmsRecord = { ...sec };
             for (const k of FIELDS) next[k] = data[k] || sec[k] || "";
             return next;
           })

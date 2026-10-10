@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Image as ImageIcon } from "lucide-react";
+import type { SeoPageDetail } from "@/lib/seoAuditApi";
 
 function SectionCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -17,7 +18,7 @@ function SectionCard({ title, icon, children }: { title: string; icon: React.Rea
   );
 }
 
-export default function AuditImagesSection({ page }: { page: any }) {
+export default function AuditImagesSection({ page }: { page: SeoPageDetail["page"] }) {
   if (!page) return null;
 
   return (
@@ -69,7 +70,7 @@ export default function AuditImagesSection({ page }: { page: any }) {
           {(page?.images ?? []).length === 0 ? (
             <p className="p-4 text-[13px] text-slate-400">No image tags found on this page.</p>
           ) : (
-            (page?.images ?? []).map((image: any, index: number) => (
+            (page?.images ?? []).map((image, index) => (
               <div
                 key={`${image.src}-${index}`}
                 className="flex items-start gap-3 border-b border-slate-800/60 p-3 text-[12px] last:border-0 hover:bg-slate-800/40 rounded-lg transition-colors"

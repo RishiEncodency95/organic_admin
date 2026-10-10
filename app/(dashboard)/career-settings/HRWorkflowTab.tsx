@@ -218,7 +218,7 @@ export default function HRWorkflowTab() {
               </div>
               <div className="p-[8px] min-h-[120px] text-[9px] font-medium text-[#172762] space-y-[6px]">
                 <p>Dear {"{{candidate_name}}"},</p>
-                <p>Congratulations! You have been shortlisted for the position of "{"{{job_title}}"}" at Bharat Organic Expo.</p>
+                <p>Congratulations! You have been shortlisted for the position of &quot;{"{{job_title}}"}&quot; at Bharat Organic Expo.</p>
                 <p>Our HR team will shortly share the next steps and interview details with you.</p>
                 <p className="pt-[4px]">Best regards,<br/>Bharat Organic Expo Team</p>
               </div>
@@ -260,7 +260,7 @@ export default function HRWorkflowTab() {
               </div>
               <div className="flex-1 flex flex-col justify-center">
                 <h3 className="text-[12px] font-black text-[#148943] mb-[4px]">Great News!</h3>
-                <p className="text-[8.5px] font-medium text-[#172762] leading-tight mb-[4px]">You have been shortlisted for the position of <span className="font-bold">"Business Development Executive"</span> at <span className="font-bold">Bharat Organic Expo</span>.</p>
+                <p className="text-[8.5px] font-medium text-[#172762] leading-tight mb-[4px]">You have been shortlisted for the position of <span className="font-bold">&quot;Business Development Executive&quot;</span> at <span className="font-bold">Bharat Organic Expo</span>.</p>
                 <p className="text-[8.5px] font-medium text-[#506083] leading-tight mb-[8px]">Our HR team will shortly share the next steps and interview details with you.</p>
                 <div>
                   <button className="bg-[#148943] text-white px-[12px] py-[6px] rounded-[4px] text-[9px] font-bold flex items-center gap-[4px]">

@@ -1,20 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Clock3, ExternalLink, GripVertical, Info, Pencil } from "lucide-react";
 import { Select, cardClass } from "../chatbot/manager/managerUi";
 
 /*
- * "Alert Rules" tab of Notification Settings — design preview with sample alert rules kept
- * in component state; nothing is saved or sent.
+ * "Alert Rules" tab of Notification Settings. Its values are saved with the page (PUT
+ * /admin/chats/routing). Sent today: the "New assignment" email to the employee; overdue
+ * enquiries follow each assignment rule's No Response Action.
  */
 
-// ─── Sample data ─────────────────────────────────────────────────────────────
+// ─── Options and defaults ────────────────────────────────────────────────────
 
 const RECIPIENTS = ["Assigned employee", "Employee + Team Lead", "Concerned team + Team Lead", "Chatbot Admin", "Team Lead"] as const;
 const TIMINGS = ["Immediately", "15 min before", "At target breach", "Daily summary", "Hourly digest"] as const;
 
-type Alert = {
+export type Alert = {
   id: number;
   event: string;
   recipient: (typeof RECIPIENTS)[number];
@@ -25,7 +27,7 @@ type Alert = {
   enabled: boolean;
 };
 
-const INITIAL_ALERTS: Alert[] = [
+const DEFAULT_LIST: Alert[] = [
   { id: 1, event: "New assignment", recipient: "Assigned employee", inApp: true, email: true, timing: "Immediately", required: true, enabled: true },
   { id: 2, event: "Visitor reply", recipient: "Assigned employee", inApp: true, email: false, timing: "Immediately", required: false, enabled: true },
   { id: 3, event: "Follow-up due", recipient: "Assigned employee", inApp: true, email: true, timing: "15 min before", required: true, enabled: true },
@@ -39,6 +41,30 @@ const FIRST_RESPONSE = ["30 minutes", "1 working hour", "4 working hours", "1 wo
 const ESCALATE_AFTER = ["15 min overdue", "30 min overdue", "1 hr overdue", "2 hr overdue"] as const;
 const ESCALATE_TO = ["Team Lead", "Admin", "Backup Owner"] as const;
 const SUMMARY_TIMES = ["8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM", "6:00 PM"] as const;
+
+export type AlertSettings = {
+  list: Alert[];
+  timing: {
+    hours: (typeof WORKING_HOURS)[number];
+    firstResponse: (typeof FIRST_RESPONSE)[number];
+    after: (typeof ESCALATE_AFTER)[number];
+    to: (typeof ESCALATE_TO)[number];
+  };
+  delivery: { daily: boolean; time: (typeof SUMMARY_TIMES)[number]; group: boolean };
+};
+
+export const DEFAULT_ALERTS: AlertSettings = {
+  list: DEFAULT_LIST,
+  timing: { hours: "Use team working hours", firstResponse: "1 working hour", after: "30 min overdue", to: "Team Lead" },
+  delivery: { daily: true, time: "10:00 AM", group: true },
+};
+
+/** Saved alert settings over the defaults (older saves may miss fields) */
+export const withAlertDefaults = (saved: Partial<AlertSettings> | null | undefined): AlertSettings => ({
+  list: Array.isArray(saved?.list) && saved.list.length ? saved.list : DEFAULT_LIST,
+  timing: { ...DEFAULT_ALERTS.timing, ...(saved?.timing || {}) },
+  delivery: { ...DEFAULT_ALERTS.delivery, ...(saved?.delivery || {}) },
+});
 
 // ─── Small pieces ────────────────────────────────────────────────────────────
 
@@ -70,37 +96,23 @@ const ALERT_GRID = "grid grid-cols-[52px_196px_266px_112px_112px_216px_118px_118
 
 // ─── Tab ─────────────────────────────────────────────────────────────────────
 
-export default function AlertRulesTab({ onChange }: { onChange: () => void }) {
-  const [alerts, setAlerts] = useState(INITIAL_ALERTS);
+export default function AlertRulesTab({ value, onChange }: { value: AlertSettings; onChange: (next: AlertSettings) => void }) {
+  const { list: alerts, timing, delivery } = value;
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [timing, setTiming] = useState({
-    hours: "Use team working hours" as (typeof WORKING_HOURS)[number],
-    firstResponse: "1 working hour" as (typeof FIRST_RESPONSE)[number],
-    after: "30 min overdue" as (typeof ESCALATE_AFTER)[number],
-    to: "Team Lead" as (typeof ESCALATE_TO)[number],
-  });
-  const [delivery, setDelivery] = useState({ daily: true, time: "10:00 AM" as (typeof SUMMARY_TIMES)[number], group: true });
 
-  const setTimingField = (patch: Partial<typeof timing>) => {
-    setTiming((prev) => ({ ...prev, ...patch }));
-    onChange();
-  };
-  const setDeliveryField = (patch: Partial<typeof delivery>) => {
-    setDelivery((prev) => ({ ...prev, ...patch }));
-    onChange();
-  };
+  const setTimingField = (patch: Partial<AlertSettings["timing"]>) => onChange({ ...value, timing: { ...timing, ...patch } });
+  const setDeliveryField = (patch: Partial<AlertSettings["delivery"]>) => onChange({ ...value, delivery: { ...delivery, ...patch } });
 
-  const update = (id: number, patch: Partial<Alert>) => {
-    setAlerts((prev) =>
-      prev.map((a) => {
+  const update = (id: number, patch: Partial<Alert>) =>
+    onChange({
+      ...value,
+      list: alerts.map((a) => {
         if (a.id !== id) return a;
         const next = { ...a, ...patch };
         // A mandatory alert always stays enabled
         return next.required ? { ...next, enabled: true } : next;
-      })
-    );
-    onChange();
-  };
+      }),
+    });
 
   return (
     <div className="flex flex-col gap-[12px]">
@@ -172,10 +184,10 @@ export default function AlertRulesTab({ onChange }: { onChange: () => void }) {
         </div>
 
         <p className="mt-[8px] flex items-center gap-[14px] text-[13.6px] text-[#64748b]">
-          <Info className="h-[19px] w-[19px] text-[#334155]" /> WhatsApp alerts require an active integration.
-          <button type="button" className="text-[13.6px] text-[#1d4ed8] underline underline-offset-2 hover:text-[#15633a]">
+          <Info className="h-[19px] w-[19px] text-[#334155]" /> Emails go to each staff member&apos;s login email. Sent now: New assignment; overdue enquiries follow each rule&apos;s No Response Action.
+          <Link href="/chatbot/manager" className="text-[13.6px] text-[#1d4ed8] underline underline-offset-2 hover:text-[#15633a]">
             Manage Channels
-          </button>
+          </Link>
         </p>
       </div>
 
@@ -208,7 +220,7 @@ export default function AlertRulesTab({ onChange }: { onChange: () => void }) {
             </div>
           </div>
           <p className="mt-auto flex items-center gap-[12px] pt-[6px] text-[12.6px] text-[#64748b]">
-            <Info className="h-[17px] w-[17px] text-[#334155]" /> Sample timings — adjust to your team policy.
+            <Info className="h-[17px] w-[17px] text-[#334155]" /> Adjust to your team policy.
           </p>
         </div>
 
@@ -256,11 +268,11 @@ export default function AlertRulesTab({ onChange }: { onChange: () => void }) {
           <div className="mt-[4px] flex items-center justify-between border-b border-[#eef0f2] pb-[4px]">
             <div>
               <p className="text-[13.6px] font-medium leading-tight text-[#0f2a1c]">Delivery Log</p>
-              <p className="text-[12.1px] leading-tight text-[#64748b]">Check for any failed email or in-app deliveries.</p>
+              <p className="text-[12.1px] leading-tight text-[#64748b]">Assignments, reassignments and alert emails are written to each enquiry&apos;s activity.</p>
             </div>
-            <button type="button" className="flex items-center gap-[12px] text-[14.6px] text-[#1d4ed8] underline underline-offset-2 hover:text-[#15633a]">
-              <ExternalLink className="h-[17px] w-[17px]" /> View failed deliveries
-            </button>
+            <Link href="/chatbot/inbox" className="flex items-center gap-[12px] text-[14.6px] text-[#1d4ed8] underline underline-offset-2 hover:text-[#15633a]">
+              <ExternalLink className="h-[17px] w-[17px]" /> Open Inbox
+            </Link>
           </div>
 
           <p className="mt-auto flex items-center gap-[12px] pt-[5px] text-[12.6px] text-[#64748b]">

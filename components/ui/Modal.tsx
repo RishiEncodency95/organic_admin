@@ -23,16 +23,21 @@ export default function Modal({ isOpen, onClose, title, children, footer, size =
   const [visible, setVisible] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  if (wasOpen !== isOpen) {
+    setWasOpen(isOpen);
+    if (isOpen) setMounted(true);
+    else setVisible(false);
+  }
+
   useEffect(() => {
     if (isOpen) {
-      setMounted(true);
       // tiny delay so CSS transition picks up the state change
       const raf = requestAnimationFrame(() => {
         requestAnimationFrame(() => setVisible(true));
       });
       return () => cancelAnimationFrame(raf);
     } else {
-      setVisible(false);
       const t = setTimeout(() => setMounted(false), 280);
       return () => clearTimeout(t);
     }

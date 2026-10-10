@@ -523,8 +523,7 @@ export default function NewsletterPage() {
   useEffect(() => {
     let mounted = true;
 
-    setLoading(true);
-
+    // loading starts true
     newsletterApi
       .list()
       .then((data) => {

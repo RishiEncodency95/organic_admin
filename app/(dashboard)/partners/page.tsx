@@ -39,16 +39,20 @@ export default function PartnersPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const load = () => {
-    setLoading(true);
+  // The first load runs with loading already true
+  const fetchList = () => {
     partnersApi
       .list()
       .then(setPartners)
       .catch(() => {})
       .finally(() => setLoading(false));
   };
+  const load = () => {
+    setLoading(true);
+    fetchList();
+  };
 
-  useEffect(load, []);
+  useEffect(fetchList, []);
 
   const openCreate = () => {
     setEditingId(null);

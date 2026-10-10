@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Heading } from "lucide-react";
 import { StatusChip } from "../SeoBadges";
+import type { SeoPageDetail } from "@/lib/seoAuditApi";
 
 function SectionCard({ title, icon, children, note }: { title: string; icon: React.ReactNode; children: React.ReactNode; note?: string }) {
   return (
@@ -21,7 +22,7 @@ function SectionCard({ title, icon, children, note }: { title: string; icon: Rea
   );
 }
 
-export default function AuditHeadingsSection({ page }: { page: any }) {
+export default function AuditHeadingsSection({ page }: { page: SeoPageDetail["page"] }) {
   const [selectedHeadingLevel, setSelectedHeadingLevel] = useState<number | null>(null);
   const [selectedHeadingIndex, setSelectedHeadingIndex] = useState<number | null>(null);
 

@@ -3,6 +3,7 @@
 import React from "react";
 import { RefreshCw, Sparkles, History } from "lucide-react";
 import { formatDateTime } from "../SeoBadges";
+import type { SeoPageDetail, SeoRecommendationResponse } from "@/lib/seoAuditApi";
 
 function DarkRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -36,7 +37,7 @@ export function AuditAiFixesSection({
   generateAi,
 }: {
   aiLoading: boolean;
-  aiState: any;
+  aiState: SeoRecommendationResponse | null;
   generateAi: (force: boolean) => Promise<void>;
 }) {
   return (
@@ -114,7 +115,7 @@ export function AuditAiFixesSection({
           <div className="mb-6 rounded-2xl border border-teal-500/30 bg-[#0f172a] p-5 shadow-lg">
             <h5 className="text-[13.5px] font-black uppercase tracking-wider text-teal-400 flex items-center gap-2 mb-3">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-teal-500/20 text-teal-300 font-bold text-[11px]">✓</span>
-              What's Working Well (Positive Signals)
+              What&apos;s Working Well (Positive Signals)
             </h5>
             <div className="grid gap-2 sm:grid-cols-2">
               {aiState.recommendation.positiveSignals.map((sig: string, idx: number) => (
@@ -131,7 +132,7 @@ export function AuditAiFixesSection({
           Actionable Technical Recommendations ({aiState?.recommendation?.items?.length ?? 0})
         </h5>
 
-        {(aiState?.recommendation?.items ?? []).map((item: any, index: number) => (
+        {(aiState?.recommendation?.items ?? []).map((item, index) => (
           <div
             key={index}
             className="mb-4 rounded-2xl border border-slate-700/60 bg-[#0f172a] p-5 shadow-xl transition-all hover:border-emerald-500/60"
@@ -184,7 +185,7 @@ export function AuditAiFixesSection({
               <DarkRow
                 label="Internal Links"
                 value={item.internalLinkSuggestions
-                  .map((link: any) => `${link.anchorText} → ${link.fromOrTo}`)
+                  .map((link) => `${link.anchorText} → ${link.fromOrTo}`)
                   .join(" · ")}
               />
             )}
@@ -202,7 +203,7 @@ export function AuditAiFixesSection({
   );
 }
 
-export function AuditHistorySection({ history }: { history: any[] }) {
+export function AuditHistorySection({ history }: { history: SeoPageDetail["history"] }) {
   return (
     <section id="section-history" className="scroll-mt-36 space-y-5">
       <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -234,7 +235,7 @@ export function AuditHistorySection({ history }: { history: any[] }) {
                 </tr>
               </thead>
               <tbody>
-                {(history ?? []).map((entry: any, idx: number) => (
+                {(history ?? []).map((entry, idx) => (
                   <tr key={entry.capturedAt} className={`border-b border-slate-800/60 hover:bg-slate-800/40 ${idx % 2 === 0 ? "bg-slate-900/30" : ""}`}>
                     <td className="py-2.5 px-4 text-slate-100 font-semibold">{formatDateTime(entry.capturedAt)}</td>
                     <td className="py-2.5 px-4 text-right tabular-nums font-black text-emerald-400">

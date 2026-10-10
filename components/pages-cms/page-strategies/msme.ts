@@ -1,13 +1,14 @@
 import { api } from "@/lib/api";
 import type { SectionsDraft, SetSectionsDraft } from "./types";
+import type { CmsJson, CmsRecord } from "@/lib/cmsJson";
 
 const DIRECTOR_MESSAGE_ENDPOINT = "/website/participate/msme/official-message";
-const isDirectorMessage = (sec: Record<string, any>) =>
+const isDirectorMessage = (sec: CmsRecord) =>
   sec.key === "msme-director-message" || sec.name === "Msmedirectormessage";
 
 export function syncMsmeSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft): void {
   api.get(DIRECTOR_MESSAGE_ENDPOINT)
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         setSectionsDraft((prev) =>

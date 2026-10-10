@@ -46,7 +46,7 @@ type Props = {
   onConfirm: (result: Reassignment) => void;
 };
 
-const fieldBox = "relative flex h-[33px] items-center rounded-[7px] border border-[#cbd5e1] bg-white px-[12px] transition focus-within:border-[#15633a] focus-within:ring-2 focus-within:ring-[#15633a]/15";
+const fieldBox = "relative flex h-[30px] items-center rounded-[7px] border border-[#cbd5e1] bg-white px-[12px] transition focus-within:border-[#15633a] focus-within:ring-2 focus-within:ring-[#15633a]/15";
 const hiddenSelect = "absolute inset-0 h-full w-full cursor-pointer opacity-0";
 const label = "mb-[3px] block text-[13.5px] font-semibold text-[#0f172a]";
 
@@ -90,22 +90,22 @@ export default function ReassignEnquiryModal({ enquiry, owners, onClose, onConfi
         aria-labelledby="reassign-title"
         className="relative flex max-h-[calc(100vh-32px)] w-[500px] max-w-full flex-col rounded-[14px] bg-white text-[#0f172a] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.45)]"
       >
-        <div className="min-h-0 overflow-y-auto px-[22px] pb-[14px] pt-[14px]">
+        <div className="min-h-0 overflow-y-auto px-[18px] pb-[11px] pt-[11px]">
           {/* Header */}
           <div className="flex items-start justify-between">
             <div>
-              <h2 id="reassign-title" className="text-[20.5px] font-bold leading-tight text-[#0f2a1c]">
+              <h2 id="reassign-title" className="text-[18.5px] font-bold leading-tight text-[#0f2a1c]">
                 {unassigned ? "Assign Enquiry" : "Reassign Enquiry"}
               </h2>
               <p className="text-[13px] text-[#475569]">Admin / Team Lead only</p>
             </div>
-            <button ref={closeRef} type="button" onClick={onClose} aria-label="Close" className="-mr-[4px] grid h-[32px] w-[32px] place-items-center rounded-full text-[#0f172a] transition hover:bg-slate-100">
+            <button ref={closeRef} type="button" onClick={onClose} aria-label="Close" className="-mr-[4px] grid h-[30px] w-[30px] place-items-center rounded-full text-[#0f172a] transition hover:bg-slate-100">
               <X className="h-[20px] w-[20px]" />
             </button>
           </div>
 
           {/* Enquiry */}
-          <div className="mt-[10px] rounded-[9px] border border-[#d9ecdf] bg-[#eef7f0] px-[14px] py-[7px]">
+          <div className="mt-[7px] rounded-[9px] border border-[#d9ecdf] bg-[#eef7f0] px-[14px] py-[5px]">
             <p className="text-[14.5px] font-bold text-[#0f172a]">
               #OM-{1047 + enquiry.id} • {enquiry.name}
             </p>
@@ -115,7 +115,7 @@ export default function ReassignEnquiryModal({ enquiry, owners, onClose, onConfi
           </div>
 
           {/* Current assignment */}
-          <div className="mt-[8px] flex items-center gap-[18px] rounded-[9px] border border-[#eef0f2] px-[14px] py-[7px]">
+          <div className="mt-[6px] flex items-center gap-[12px] rounded-[9px] border border-[#eef0f2] px-[14px] py-[5px]">
             <span
               className={`rounded-[6px] px-[10px] py-[3px] text-[12.5px] font-medium ${unassigned ? "bg-[#fdf0dc] text-[#b45309]" : "bg-[#dcf3e1] text-[#15803d]"}`}
             >
@@ -131,7 +131,7 @@ export default function ReassignEnquiryModal({ enquiry, owners, onClose, onConfi
           </div>
 
           {/* New team */}
-          <p className={`${label} mt-[10px]`}>New team</p>
+          <p className={`${label} mt-[7px]`}>New team</p>
           <label className={fieldBox}>
             <Users className="mr-[10px] h-[16px] w-[16px] text-[#334155]" />
             <span className="flex-1 text-[13.5px]">{team}</span>
@@ -154,7 +154,7 @@ export default function ReassignEnquiryModal({ enquiry, owners, onClose, onConfi
           </label>
 
           {/* New owner */}
-          <p className={`${label} mt-[8px]`}>New owner</p>
+          <p className={`${label} mt-[6px]`}>New owner</p>
           <label className={fieldBox}>
             <UserRound className="mr-[10px] h-[16px] w-[16px] text-[#334155]" />
             <span className="text-[13.5px]">{noStaff ? "No staff yet — add them in Staff Management" : owner.name}</span>
@@ -176,7 +176,7 @@ export default function ReassignEnquiryModal({ enquiry, owners, onClose, onConfi
           </p>
 
           {/* Reason */}
-          <p className={`${label} mt-[6px]`}>
+          <p className={`${label} mt-[5px]`}>
             Reason for reassignment <span className="text-[#dc2626]">*</span>
           </p>
           <label className={fieldBox}>
@@ -192,7 +192,7 @@ export default function ReassignEnquiryModal({ enquiry, owners, onClose, onConfi
           </label>
 
           {/* Note */}
-          <p className={`${label} mt-[8px]`}>
+          <p className={`${label} mt-[6px]`}>
             Handover note <span className="font-normal text-[#475569]">(optional)</span>
           </p>
           <textarea
@@ -200,11 +200,11 @@ export default function ReassignEnquiryModal({ enquiry, owners, onClose, onConfi
             onChange={(e) => setNote(e.target.value)}
             rows={2}
             maxLength={300}
-            className="h-[46px] w-full resize-y rounded-[7px] border border-[#cbd5e1] bg-white px-[12px] py-[5px] text-[13.5px] text-[#0f172a] outline-none transition focus:border-[#15633a] focus:ring-2 focus:ring-[#15633a]/15"
+            className="h-[40px] w-full resize-y rounded-[7px] border border-[#cbd5e1] bg-white px-[12px] py-[5px] text-[13.5px] text-[#0f172a] outline-none transition focus:border-[#15633a] focus:ring-2 focus:ring-[#15633a]/15"
           />
 
           {/* Notify */}
-          <label className="mt-[8px] flex cursor-pointer items-start gap-[12px]">
+          <label className="mt-[6px] flex cursor-pointer items-start gap-[12px]">
             <input type="checkbox" checked={notify} onChange={() => setNotify((v) => !v)} className="mt-[1px] h-[19px] w-[19px] cursor-pointer accent-[#15803d]" />
             <span>
               <span className="block text-[13.5px] font-semibold leading-tight text-[#0f172a]">Notify new owner</span>
@@ -212,13 +212,13 @@ export default function ReassignEnquiryModal({ enquiry, owners, onClose, onConfi
             </span>
           </label>
 
-          <p className="mt-[8px] flex items-center gap-[10px] rounded-[7px] bg-[#f3f5f8] px-[11px] py-[6px] text-[12px] text-[#334155]">
+          <p className="mt-[6px] flex items-center gap-[10px] rounded-[7px] bg-[#f3f5f8] px-[11px] py-[5px] text-[12px] text-[#334155]">
             <Info className="h-[16px] w-[16px] shrink-0" /> Chat history and follow-up are retained. This change is recorded in Activity.
           </p>
 
           {/* Actions */}
-          <div className="mt-[10px] flex justify-end gap-[12px]">
-            <button type="button" onClick={onClose} className="h-[30px] rounded-[8px] border border-[#cbd5e1] bg-white px-[22px] text-[13.5px] font-semibold text-[#0f172a] transition hover:bg-slate-50">
+          <div className="mt-[7px] flex justify-end gap-[12px]">
+            <button type="button" onClick={onClose} className="h-[28px] rounded-[8px] border border-[#cbd5e1] bg-white px-[18px] text-[13.5px] font-semibold text-[#0f172a] transition hover:bg-slate-50">
               Cancel
             </button>
             <button
@@ -232,7 +232,7 @@ export default function ReassignEnquiryModal({ enquiry, owners, onClose, onConfi
                 }
                 onConfirm({ team, owner: owner.name, reason, note: note.trim(), notify });
               }}
-              className="h-[30px] rounded-[8px] bg-[#15803d] px-[20px] text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#166534]"
+              className="h-[28px] rounded-[8px] bg-[#15803d] px-[20px] text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#166534]"
             >
               {unassigned ? "Confirm Assignment" : "Confirm Reassignment"}
             </button>

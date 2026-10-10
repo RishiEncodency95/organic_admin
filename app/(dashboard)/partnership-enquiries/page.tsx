@@ -136,21 +136,21 @@ export default function PartnershipEnquiriesPage() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const load = async () => {
+  const fetchItems = () =>
+    partnershipEnquiryApi
+      .list()
+      .then((data) => setEnquiries(data.enquiries || []))
+      .catch((err) => setLoadError(err instanceof ApiRequestError ? err.message : "Failed to load partnership enquiries."))
+      .finally(() => setLoading(false));
+  const load = () => {
     setLoading(true);
     setLoadError(null);
-    try {
-      const data = await partnershipEnquiryApi.list();
-      setEnquiries(data.enquiries || []);
-    } catch (err) {
-      setLoadError(err instanceof ApiRequestError ? err.message : "Failed to load partnership enquiries.");
-    } finally {
-      setLoading(false);
-    }
+    return fetchItems();
   };
 
   useEffect(() => {
-    load();
+    // First load: the state already starts as loading
+    fetchItems();
   }, []);
 
   const changeTab = (next: typeof tab) => {

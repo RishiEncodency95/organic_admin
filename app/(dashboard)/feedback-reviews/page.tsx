@@ -42,6 +42,7 @@ import {
   X,
 } from "lucide-react";
 import Swal from "sweetalert2";
+import AnimatedCounter from "@/components/ui/AnimatedCounter";
 
 // SweetAlert2 Toast configuration matching Exhibitor List
 const Toast = Swal.mixin({
@@ -59,7 +60,7 @@ const Toast = Swal.mixin({
   },
   didOpen: (toast) => {
     toast.style.boxShadow = "none";
-    (toast.style as any).webkitBoxShadow = "none";
+    toast.style.setProperty("-webkit-box-shadow", "none");
     toast.style.filter = "none";
   },
 });
@@ -646,108 +647,6 @@ const isSameDay = (
   return d1.day === d2.day && d1.month === d2.month && d1.year === d2.year;
 };
 
-function AnimatedCounter({
-  value,
-  duration = 1000,
-}: {
-  value: string | number;
-  duration?: number;
-}) {
-  const [displayValue, setDisplayValue] = useState<string | number>(() => {
-    const str = String(value);
-    return str.match(/\d/) ? "0" : value;
-  });
-  const spanRef = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    const el = spanRef.current;
-    if (!el) return;
-
-    const strVal = String(value);
-    const numericMatch = strVal.match(/^([^\d.]*)([\d,.]+)(.*)$/);
-
-    if (!numericMatch) {
-      setDisplayValue(value);
-      return;
-    }
-
-    const prefix = numericMatch[1];
-    const rawNumberStr = numericMatch[2].replace(/,/g, "");
-    const targetNum = parseFloat(rawNumberStr);
-    const suffix = numericMatch[3];
-
-    if (isNaN(targetNum)) {
-      setDisplayValue(value);
-      return;
-    }
-
-    if (targetNum === 0) {
-      setDisplayValue(`${prefix}0${suffix}`);
-      return;
-    }
-
-    const hasComma = numericMatch[2].includes(",");
-    const decimalPlaces = (rawNumberStr.split(".")[1] || "").length;
-
-    let animationFrameId: number | null = null;
-
-    const startCounting = () => {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      let startTime: number | null = null;
-
-      const step = (timestamp: number) => {
-        if (!startTime) startTime = timestamp;
-        const progress = Math.min((timestamp - startTime) / duration, 1);
-        const easeProgress = 1 - Math.pow(1 - progress, 3);
-        const currentNum = targetNum * easeProgress;
-        let formattedNum = currentNum.toFixed(decimalPlaces);
-
-        if (hasComma) {
-          const parts = formattedNum.split(".");
-          parts[0] = parseInt(parts[0], 10).toLocaleString();
-          formattedNum = parts.join(".");
-        }
-
-        setDisplayValue(`${prefix}${formattedNum}${suffix}`);
-
-        if (progress < 1) {
-          animationFrameId = requestAnimationFrame(step);
-        }
-      };
-
-      animationFrameId = requestAnimationFrame(step);
-    };
-
-    if (typeof IntersectionObserver !== "undefined") {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              startCounting();
-            } else {
-              setDisplayValue(`${prefix}0${suffix}`);
-            }
-          });
-        },
-        { threshold: 0.15 }
-      );
-
-      observer.observe(el);
-
-      return () => {
-        observer.disconnect();
-        if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      };
-    } else {
-      startCounting();
-      return () => {
-        if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      };
-    }
-  }, [value, duration]);
-
-  return <span ref={spanRef}>{displayValue}</span>;
-}
 
 const toneClass = {
   emerald: "bg-emerald-50 text-emerald-700 ring-emerald-200",
@@ -850,110 +749,107 @@ export default function FeedbackReviewsPage() {
   });
 
   // Metric Stat Cards configuration matching Exhibitor List
-  const statCards = useMemo(
-    () => [
-      {
-        title: "TOTAL FEEDBACK",
-        value: 248,
-        suffix: "",
-        icon: Building2,
-        tone: "emerald" as const,
-        gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #bbf7d0 100%)",
-        borderColor: "#bbf7d0",
-        numColor: "#15803d",
-        trend: "↑ 18.6% vs last month",
-        footer: "View full directory",
-        onClick: () => {
-          setActiveTab("all");
-          setStatusFilter("All Status");
-          setTypeFilter("All Types");
-          setRatingFilter("All Ratings");
-          setCurrentPage(1);
-        },
+  const statCards = [
+    {
+      title: "TOTAL FEEDBACK",
+      value: 248,
+      suffix: "",
+      icon: Building2,
+      tone: "emerald" as const,
+      gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #bbf7d0 100%)",
+      borderColor: "#bbf7d0",
+      numColor: "#15803d",
+      trend: "↑ 18.6% vs last month",
+      footer: "View full directory",
+      onClick: () => {
+        setActiveTab("all");
+        setStatusFilter("All Status");
+        setTypeFilter("All Types");
+        setRatingFilter("All Ratings");
+        setCurrentPage(1);
       },
-      {
-        title: "AVERAGE RATING",
-        value: 4.6,
-        suffix: "/ 5",
-        icon: Check,
-        tone: "violet" as const,
-        gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #ddd6fe 100%)",
-        borderColor: "#ddd6fe",
-        numColor: "#6d28d9",
-        trend: "↑ 0.3 vs last month",
-        footer: "View published brands",
-        onClick: () => {
-          setRatingFilter("5 Star");
-          setCurrentPage(1);
-        },
+    },
+    {
+      title: "AVERAGE RATING",
+      value: 4.6,
+      suffix: "/ 5",
+      icon: Check,
+      tone: "violet" as const,
+      gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #ddd6fe 100%)",
+      borderColor: "#ddd6fe",
+      numColor: "#6d28d9",
+      trend: "↑ 0.3 vs last month",
+      footer: "View published brands",
+      onClick: () => {
+        setRatingFilter("5 Star");
+        setCurrentPage(1);
       },
-      {
-        title: "TESTIMONIALS",
-        value: 96,
-        suffix: "",
-        icon: Star,
-        tone: "amber" as const,
-        gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #fed7aa 100%)",
-        borderColor: "#fed7aa",
-        numColor: "#c2410c",
-        trend: "↑ 22.4% vs last month",
-        footer: "View logo assets",
-        onClick: () => {
-          setActiveTab("testimonials");
-          setCurrentPage(1);
-        },
+    },
+    {
+      title: "TESTIMONIALS",
+      value: 96,
+      suffix: "",
+      icon: Star,
+      tone: "amber" as const,
+      gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #fed7aa 100%)",
+      borderColor: "#fed7aa",
+      numColor: "#c2410c",
+      trend: "↑ 22.4% vs last month",
+      footer: "View logo assets",
+      onClick: () => {
+        setActiveTab("testimonials");
+        setCurrentPage(1);
       },
-      {
-        title: "VIDEO STORIES",
-        value: 38,
-        suffix: "",
-        icon: Video,
-        tone: "blue" as const,
-        gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #bae6fd 100%)",
-        borderColor: "#bae6fd",
-        numColor: "#0284c7",
-        trend: "↑ 26.7% vs last month",
-        footer: "View SEO tags",
-        onClick: () => {
-          setActiveTab("videos");
-          setCurrentPage(1);
-        },
+    },
+    {
+      title: "VIDEO STORIES",
+      value: 38,
+      suffix: "",
+      icon: Video,
+      tone: "blue" as const,
+      gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #bae6fd 100%)",
+      borderColor: "#bae6fd",
+      numColor: "#0284c7",
+      trend: "↑ 26.7% vs last month",
+      footer: "View SEO tags",
+      onClick: () => {
+        setActiveTab("videos");
+        setCurrentPage(1);
       },
-      {
-        title: "GOOGLE REVIEWS",
-        value: 114,
-        suffix: "",
-        icon: Globe,
-        tone: "rose" as const,
-        gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #fecdd3 100%)",
-        borderColor: "#fecdd3",
-        numColor: "#be123c",
-        trend: "↑ 15.2% vs last month",
-        footer: "Review drafts",
-        onClick: () => {
-          setActiveTab("google");
-          setCurrentPage(1);
-        },
+    },
+    {
+      title: "GOOGLE REVIEWS",
+      value: 114,
+      suffix: "",
+      icon: Globe,
+      tone: "rose" as const,
+      gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #fecdd3 100%)",
+      borderColor: "#fecdd3",
+      numColor: "#be123c",
+      trend: "↑ 15.2% vs last month",
+      footer: "Review drafts",
+      onClick: () => {
+        setActiveTab("google");
+        setCurrentPage(1);
       },
-      {
-        title: "NEEDS FOLLOW-UP",
-        value: 18,
-        suffix: "",
-        icon: Clock,
-        tone: "teal" as const,
-        gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #99f6e4 100%)",
-        borderColor: "#99f6e4",
-        numColor: "#0f766e",
-        trend: "↓ 12.5% vs last month",
-        footer: "Live on website",
-        onClick: () => {
-          setStatusFilter("Follow Up");
-          setCurrentPage(1);
-        },
+    },
+    {
+      title: "NEEDS FOLLOW-UP",
+      value: 18,
+      suffix: "",
+      icon: Clock,
+      tone: "teal" as const,
+      gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #99f6e4 100%)",
+      borderColor: "#99f6e4",
+      numColor: "#0f766e",
+      trend: "↓ 12.5% vs last month",
+      footer: "Live on website",
+      onClick: () => {
+        setStatusFilter("Follow Up");
+        setCurrentPage(1);
       },
-    ],
-    []
-  );
+    },
+  ];
 
   // Filtered rows calculation
   const filteredRows = useMemo(() => {
@@ -1832,7 +1728,7 @@ export default function FeedbackReviewsPage() {
                             {/* FEEDBACK / TITLE */}
                             <td className="px-[12px] py-[8px] max-w-[200px]">
                               <p className="line-clamp-1 text-[8.5px] font-medium text-[#475569] italic" title={item.comment}>
-                                "{item.title || item.comment}"
+                                &quot;{item.title || item.comment}&quot;
                               </p>
                             </td>
 
@@ -2736,7 +2632,7 @@ export default function FeedbackReviewsPage() {
               </h4>
             </div>
             <p className="rounded-[4px] bg-slate-50/80 p-2 text-[8px] leading-relaxed text-black border border-slate-200/80 italic font-normal">
-              "{drawerItem.comment}"
+              &quot;{drawerItem.comment}&quot;
             </p>
           </div>
 

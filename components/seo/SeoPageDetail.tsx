@@ -98,6 +98,7 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
   }, [pageId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- shows the loading state while a new request runs
     void load();
   }, [load]);
 

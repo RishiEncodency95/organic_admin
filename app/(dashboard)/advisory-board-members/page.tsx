@@ -41,6 +41,7 @@ import {
   X,
 } from "lucide-react";
 import Swal from "sweetalert2";
+import AnimatedCounter from "@/components/ui/AnimatedCounter";
 
 // SweetAlert2 theme matching admin portal dark style
 const Toast = Swal.mixin({
@@ -58,7 +59,7 @@ const Toast = Swal.mixin({
   },
   didOpen: (toast) => {
     toast.style.boxShadow = "none";
-    (toast.style as any).webkitBoxShadow = "none";
+    toast.style.setProperty("-webkit-box-shadow", "none");
     toast.style.filter = "none";
   },
 });
@@ -269,108 +270,6 @@ const INITIAL_MEMBERS: AdvisoryMemberItem[] = [
   },
 ];
 
-function AnimatedCounter({
-  value,
-  duration = 1200,
-}: {
-  value: string | number;
-  duration?: number;
-}) {
-  const [displayValue, setDisplayValue] = useState<string | number>(() => {
-    const str = String(value);
-    return str.match(/\d/) ? "0" : value;
-  });
-  const spanRef = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    const el = spanRef.current;
-    if (!el) return;
-
-    const strVal = String(value);
-    const numericMatch = strVal.match(/^([^\d.]*)([\d,.]+)(.*)$/);
-
-    if (!numericMatch) {
-      setDisplayValue(value);
-      return;
-    }
-
-    const prefix = numericMatch[1];
-    const rawNumberStr = numericMatch[2].replace(/,/g, "");
-    const targetNum = parseFloat(rawNumberStr);
-    const suffix = numericMatch[3];
-
-    if (isNaN(targetNum)) {
-      setDisplayValue(value);
-      return;
-    }
-
-    if (targetNum === 0) {
-      setDisplayValue(`${prefix}0${suffix}`);
-      return;
-    }
-
-    const hasComma = numericMatch[2].includes(",");
-    const decimalPlaces = (rawNumberStr.split(".")[1] || "").length;
-
-    let animationFrameId: number | null = null;
-
-    const startCounting = () => {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      let startTime: number | null = null;
-
-      const step = (timestamp: number) => {
-        if (!startTime) startTime = timestamp;
-        const progress = Math.min((timestamp - startTime) / duration, 1);
-        const easeProgress = 1 - Math.pow(1 - progress, 3);
-        const currentNum = targetNum * easeProgress;
-        let formattedNum = currentNum.toFixed(decimalPlaces);
-
-        if (hasComma) {
-          const parts = formattedNum.split(".");
-          parts[0] = parseInt(parts[0], 10).toLocaleString();
-          formattedNum = parts.join(".");
-        }
-
-        setDisplayValue(`${prefix}${formattedNum}${suffix}`);
-
-        if (progress < 1) {
-          animationFrameId = requestAnimationFrame(step);
-        }
-      };
-
-      animationFrameId = requestAnimationFrame(step);
-    };
-
-    if (typeof IntersectionObserver !== "undefined") {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              startCounting();
-            } else {
-              setDisplayValue(`${prefix}0${suffix}`);
-            }
-          });
-        },
-        { threshold: 0.15 }
-      );
-
-      observer.observe(el);
-
-      return () => {
-        observer.disconnect();
-        if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      };
-    } else {
-      startCounting();
-      return () => {
-        if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      };
-    }
-  }, [value, duration]);
-
-  return <span ref={spanRef}>{displayValue}</span>;
-}
 
 const toneClass = {
   emerald: "bg-emerald-50 text-emerald-700 ring-emerald-200",
@@ -481,7 +380,7 @@ export default function AdvisoryBoardMembersPage() {
         if (res && res.ok) {
           const json = await res.json();
           if (json.data && Array.isArray(json.data) && json.data.length > 0) {
-            const mapped: AdvisoryMemberItem[] = json.data.map((item: any, idx: number) => ({
+            const mapped: AdvisoryMemberItem[] = json.data.map((item: Partial<AdvisoryMemberItem>, idx: number) => ({
               id: idx + 1,
               _id: item._id || `adv_${idx + 1}`,
               name: item.name || "",
@@ -798,7 +697,7 @@ export default function AdvisoryBoardMembersPage() {
             updatedAt: timeNow,
             updatedBy: activeAdmin,
           };
-          let res = await fetch(`/api/website/advisoryboardgridmember/${selected._id || selected.id}`, {
+          const res = await fetch(`/api/website/advisoryboardgridmember/${selected._id || selected.id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
@@ -874,7 +773,7 @@ export default function AdvisoryBoardMembersPage() {
           fileSize: formFileSize || editingItem.fileSize || "15.0 KB",
         };
 
-        let res = await fetch(`/api/website/advisoryboardgridmember/${editingItem._id || editingItem.id}`, {
+        const res = await fetch(`/api/website/advisoryboardgridmember/${editingItem._id || editingItem.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
@@ -983,7 +882,7 @@ export default function AdvisoryBoardMembersPage() {
     }
 
     try {
-      let res = await fetch(`/api/website/advisoryboardgridmember/${item._id || item.id}`, {
+      const res = await fetch(`/api/website/advisoryboardgridmember/${item._id || item.id}`, {
         method: "DELETE",
       });
       if (!res.ok) {
@@ -1019,7 +918,7 @@ export default function AdvisoryBoardMembersPage() {
     if (target) {
       try {
         const payload = { status: newStatus, updatedAt: timeNow, updatedBy: activeAdmin };
-        let res = await fetch(`/api/website/advisoryboardgridmember/${target._id || target.id}`, {
+        const res = await fetch(`/api/website/advisoryboardgridmember/${target._id || target.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),

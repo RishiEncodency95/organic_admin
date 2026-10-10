@@ -41,11 +41,13 @@ export default function CropImageModal({
   const [isSaving, setIsSaving] = useState(false);
 
   // Reset to a fresh centered selection whenever a new image is opened.
-  useEffect(() => {
+  const [cropFor, setCropFor] = useState(imageSrc);
+  if (cropFor !== imageSrc) {
+    setCropFor(imageSrc);
     setCrop(undefined);
     setCompletedCrop(undefined);
     setAspectMode("free");
-  }, [imageSrc]);
+  }
 
   const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const { width, height } = e.currentTarget;

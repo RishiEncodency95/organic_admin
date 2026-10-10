@@ -18,8 +18,9 @@ export default function SeoAuditedPagesPage() {
   const [overview, setOverview] = useState<SeoOverview | null>(null);
   const [selectedPageId, setSelectedPageId] = useState<string>("home");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [pageSpeed, setPageSpeed] = useState<PageSpeedAudit | null>(null);
-  const [loadingSpeed, setLoadingSpeed] = useState(false);
+  // The audit and the page it belongs to; loading until the selected page has one
+  const [speed, setSpeed] = useState<{ pageId: string; data: PageSpeedAudit | null } | null>(null);
+  const [reAuditing, setReAuditing] = useState(false);
 
   useEffect(() => {
     seoAuditApi.overview().then(setOverview).catch(() => undefined);
@@ -28,12 +29,11 @@ export default function SeoAuditedPagesPage() {
   useEffect(() => {
     const pageObj = ALL_SITE_PAGES.find((p) => p.id === selectedPageId) || ALL_SITE_PAGES[0];
     const targetUrl = pageObj.id === "home" ? "https://bharatorganicexpo.com" : `https://bharatorganicexpo.com${pageObj.path}`;
-    
-    setLoadingSpeed(true);
-    seoAuditApi.pagespeed(targetUrl, "mobile", false)
-      .then(setPageSpeed)
-      .catch(() => setPageSpeed(null))
-      .finally(() => setLoadingSpeed(false));
+
+    seoAuditApi
+      .pagespeed(targetUrl, "mobile", false)
+      .then((data) => setSpeed({ pageId: pageObj.id, data }))
+      .catch(() => setSpeed({ pageId: pageObj.id, data: null }));
   }, [selectedPageId]);
 
   const filteredPages = ALL_SITE_PAGES.filter(
@@ -44,6 +44,8 @@ export default function SeoAuditedPagesPage() {
   );
 
   const selectedPageObj = ALL_SITE_PAGES.find((p) => p.id === selectedPageId) || ALL_SITE_PAGES[0];
+  const pageSpeed = speed?.pageId === selectedPageObj.id ? speed.data : null;
+  const loadingSpeed = speed?.pageId !== selectedPageObj.id || reAuditing;
 
   return (
     <div className="min-h-screen bg-slate-100 p-4 lg:p-6 space-y-6 text-slate-900">
@@ -122,11 +124,13 @@ export default function SeoAuditedPagesPage() {
           pagespeed={pageSpeed}
           onReAudit={() => {
             const targetUrl = selectedPageObj.id === "home" ? "https://bharatorganicexpo.com" : `https://bharatorganicexpo.com${selectedPageObj.path}`;
-            setLoadingSpeed(true);
-            seoAuditApi.pagespeed(targetUrl, "mobile", true)
-              .then(setPageSpeed)
-              .catch(() => setPageSpeed(null))
-              .finally(() => setLoadingSpeed(false));
+            const pageId = selectedPageObj.id;
+            setReAuditing(true);
+            seoAuditApi
+              .pagespeed(targetUrl, "mobile", true)
+              .then((data) => setSpeed({ pageId, data }))
+              .catch(() => setSpeed({ pageId, data: null }))
+              .finally(() => setReAuditing(false));
           }}
         />
       )}

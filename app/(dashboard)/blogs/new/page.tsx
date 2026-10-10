@@ -7,7 +7,7 @@ import typography from "../../pages/PagesTypography.module.css";
 import Swal from "sweetalert2";
 import { getImageSizeError } from "@/lib/uploadLimit";
 import { uploadApi } from "@/lib/uploadApi";
-import { blogsApi } from "@/lib/blogsApi";
+import { blogsApi, type BlogPostItem } from "@/lib/blogsApi";
 import RichTextEditor from "@/components/RichTextEditor";
 import {
   ArrowLeft,
@@ -22,6 +22,10 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
+
+/** A post as kept in the browser copy (admin_blogs_data) */
+type StoredBlog = { id?: string | number; _id?: string; slug?: string };
+
 
 // SweetAlert toast matching admin dark / light style
 const Toast = Swal.mixin({
@@ -88,7 +92,8 @@ function AddNewPostContent() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [ogImageFile, setOgImageFile] = useState<File | null>(null);
   const [ogImagePreview, setOgImagePreview] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  // Starts true while an existing post is being loaded for editing
+  const [isLoading, setIsLoading] = useState(Boolean(editId));
   const [isSlugDetached, setIsSlugDetached] = useState(false);
 
   // Schedule states
@@ -207,11 +212,11 @@ function AddNewPostContent() {
   // Handle Edit Mode / Pre-populate from API or LocalStorage
   useEffect(() => {
     if (editId) {
-      setIsLoading(true);
       blogsApi
         .getByIdOrSlug(editId)
-        .then((res: any) => {
-          const item = res?.data || res;
+        .then((res) => {
+          // Some responses arrive still wrapped in data
+          const item = (res as { data?: BlogPostItem })?.data || res;
           if (item && item.title) {
             setBlogData({
               title: item.title || "",
@@ -249,7 +254,7 @@ function AddNewPostContent() {
           // Fallback to local storage if offline
           try {
             const storedBlogs = JSON.parse(localStorage.getItem("admin_blogs_data") || "[]");
-            const found = storedBlogs.find((b: any) => String(b.id) === String(editId) || b.slug === editId);
+            const found = storedBlogs.find((b: StoredBlog) => String(b.id) === String(editId) || b.slug === editId);
             if (found) {
               setBlogData((prev) => ({
                 ...prev,
@@ -356,7 +361,7 @@ function AddNewPostContent() {
         blogData.canonicalTag.trim() || `http://localhost:3002/blog/${blogData.slug.trim()}`;
 
       // 5. Build full payload with all SEO & configuration fields
-      const payload: any = {
+      const payload: Partial<BlogPostItem> = {
         title: blogData.title.trim(),
         h1Title: blogData.h1Title.trim() || blogData.title.trim(),
         slug: blogData.slug.trim(),
@@ -398,7 +403,7 @@ function AddNewPostContent() {
       };
 
       // 6. Call Backend API
-      let savedPost: any = null;
+      let savedPost: BlogPostItem | null = null;
       if (editId) {
         savedPost = await blogsApi.update(editId, payload);
       } else {
@@ -417,7 +422,7 @@ function AddNewPostContent() {
         };
 
         if (editId) {
-          const idx = storedBlogs.findIndex((b: any) => String(b.id) === String(editId) || b._id === editId);
+          const idx = storedBlogs.findIndex((b: StoredBlog) => String(b.id) === String(editId) || b._id === editId);
           if (idx !== -1) storedBlogs[idx] = newPostItem;
           else storedBlogs.unshift(newPostItem);
         } else {
@@ -442,9 +447,9 @@ function AddNewPostContent() {
       });
 
       router.push("/blogs");
-    } catch (err: any) {
+    } catch (err) {
       console.error("Save blog post error:", err);
-      showError(err?.message || "Failed to save blog post. Please check inputs.");
+      showError((err instanceof Error ? err.message : "") || "Failed to save blog post. Please check inputs.");
     } finally {
       setIsLoading(false);
     }

@@ -43,13 +43,10 @@ export default function HomeHeroPage() {
   }, [dispatch]);
 
   // Load the first available hero by default if none is selected
-  useEffect(() => {
-    if (data && data.length > 0 && !isEditing) {
-      const hero = data[0];
-      setFormData(hero);
-      setIsEditing(true);
-    }
-  }, [data, isEditing]);
+  if (data && data.length > 0 && !isEditing) {
+    setFormData(data[0]);
+    setIsEditing(true);
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -65,9 +62,9 @@ export default function HomeHeroPage() {
   const handleSave = async () => {
     try {
       const form = new FormData();
-      Object.keys(formData).forEach((key) => {
+      Object.entries(formData).forEach(([key, value]) => {
         if (key !== "img" && key !== "_id" && key !== "createdAt" && key !== "updatedAt" && key !== "__v") {
-          form.append(key, (formData as any)[key] || "");
+          form.append(key, value ? String(value) : "");
         }
       });
 
@@ -88,8 +85,9 @@ export default function HomeHeroPage() {
       dispatch(fetchHomeHeros());
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
-    } catch (err: any) {
-      toast.error(err || "An error occurred while saving.");
+    } catch (err) {
+      // unwrap() rejects with the thunk message
+      toast.error(typeof err === "string" ? err : "An error occurred while saving.");
     }
   };
 
@@ -100,8 +98,8 @@ export default function HomeHeroPage() {
         await dispatch(deleteHomeHero(formData._id)).unwrap();
         toast.success("Home Hero deleted successfully!");
         handleNew();
-      } catch (err: any) {
-        toast.error(err || "Failed to delete.");
+      } catch (err) {
+        toast.error(typeof err === "string" ? err : "Failed to delete.");
       }
     }
   };

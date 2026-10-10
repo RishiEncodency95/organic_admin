@@ -39,13 +39,16 @@ export function SearchableSelectField({
     );
   }, [normalizedOptions, searchQuery]);
 
+  const close = () => {
+    setIsOpen(false);
+    setSearchQuery("");
+  };
+
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => {
         searchInputRef.current?.focus();
       }, 50);
-    } else {
-      setSearchQuery("");
     }
   }, [isOpen]);
 
@@ -55,7 +58,7 @@ export function SearchableSelectField({
         containerRef.current &&
         !containerRef.current.contains(event.target as Node)
       ) {
-        setIsOpen(false);
+        close();
       }
     }
     if (isOpen) {
@@ -70,7 +73,7 @@ export function SearchableSelectField({
     <div ref={containerRef} className="relative w-full select-none">
       <button
         type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
+        onClick={() => (isOpen ? close() : setIsOpen(true))}
         className="
           h-[35px]
           w-full
@@ -161,7 +164,7 @@ export function SearchableSelectField({
                     type="button"
                     onClick={() => {
                       onChange(opt.value);
-                      setIsOpen(false);
+                      close();
                     }}
                     className={`
                       w-full
@@ -190,7 +193,7 @@ export function SearchableSelectField({
               })
             ) : (
               <div className="p-3 text-center text-[11px] text-[#8c959f]">
-                No template found matching "{searchQuery}"
+                No template found matching &quot;{searchQuery}&quot;
               </div>
             )}
           </div>

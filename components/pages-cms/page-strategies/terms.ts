@@ -1,13 +1,14 @@
 import { api } from "@/lib/api";
 import type { SectionsDraft, SetSectionsDraft } from "./types";
+import type { CmsJson, CmsRecord } from "@/lib/cmsJson";
 
 const TERMS_HERO_ENDPOINT = "/website/registration/terms/terms-hero";
-const isTermsHero = (sec: Record<string, any>) =>
+const isTermsHero = (sec: CmsRecord) =>
   sec.key === "terms-page-hero" || sec.name === "Terms & Conditions Hero Banner";
 
 export function syncTermsSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft): void {
   api.get(TERMS_HERO_ENDPOINT)
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         setSectionsDraft((prev) =>

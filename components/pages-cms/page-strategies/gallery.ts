@@ -1,9 +1,10 @@
 import { api } from "@/lib/api";
 import type { SectionsDraft, SetSectionsDraft } from "./types";
+import type { CmsJson } from "@/lib/cmsJson";
 
 export function syncGallerySectionsFromLiveApi(setSectionsDraft: SetSectionsDraft): void {
   api.get("/website/gallery/hero")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         setSectionsDraft((prev) =>
@@ -17,8 +18,8 @@ export function syncGallerySectionsFromLiveApi(setSectionsDraft: SetSectionsDraf
                 description: data.shortDescription || data.description || sec.description,
                 image: data.rightImage || data.image || sec.image,
               };
-              delete (updatedSec as any).shortDescription;
-              delete (updatedSec as any).rightImage;
+              delete (updatedSec as CmsJson).shortDescription;
+              delete (updatedSec as CmsJson).rightImage;
               return updatedSec;
             }
             return sec;
@@ -29,7 +30,7 @@ export function syncGallerySectionsFromLiveApi(setSectionsDraft: SetSectionsDraf
     .catch(() => {});
 
   api.get("/website/gallery/counters")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data && Array.isArray(data.items) && data.items.length > 0) {
         setSectionsDraft((prev) =>
@@ -39,7 +40,7 @@ export function syncGallerySectionsFromLiveApi(setSectionsDraft: SetSectionsDraf
                 ...sec,
                 enabled: data.enabled !== false,
                 title: data.title || sec.title,
-                items: data.items.map((it: any) => ({
+                items: data.items.map((it: CmsJson) => ({
                   val: it.val || "",
                   label: it.label || "",
                   image: it.image || "",
@@ -74,7 +75,7 @@ export async function saveGallerySections(sectionsDraft: SectionsDraft): Promise
       enabled: countersSec.enabled !== false,
       title: countersSec.title || "EXPO IMPACT IN NUMBERS",
       items: Array.isArray(countersSec.items)
-        ? countersSec.items.map((it: any) => ({
+        ? countersSec.items.map((it: CmsJson) => ({
             val: it.val || "",
             label: it.label || "",
             image: it.image || "",

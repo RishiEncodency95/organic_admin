@@ -199,7 +199,8 @@ export default function VideoHighlightsManagementPage() {
   const [videos, setVideos] = useState<VideoHighlightItem[]>(DEFAULT_ITEMS);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
-  const [isSyncing, setIsSyncing] = useState(false);
+  // The first sync starts on mount
+  const [isSyncing, setIsSyncing] = useState(true);
   const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const [query, setQuery] = useState("");
@@ -227,15 +228,15 @@ export default function VideoHighlightsManagementPage() {
   const thumbnailFileInputRef = useRef<HTMLInputElement>(null);
   const videoFileInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchBackendVideos = async () => {
+  const fetchBackendVideos = async (quiet = false) => {
     try {
-      setIsSyncing(true);
+      if (!quiet) setIsSyncing(true);
       const res = await fetch(`${BACKEND_URL}/api/website/gallery/video-highlights/items`);
       if (!res.ok) return;
       const json = await res.json();
       const rawItems = json?.data;
       if (Array.isArray(rawItems)) {
-        const mapped: VideoHighlightItem[] = rawItems.map((v: any, index: number) => ({
+        const mapped: VideoHighlightItem[] = rawItems.map((v: Partial<VideoHighlightItem>, index: number) => ({
           id: index + 1,
           _id: v._id,
           title: v.title || `Video #${index + 1}`,
@@ -260,7 +261,8 @@ export default function VideoHighlightsManagementPage() {
   };
 
   useEffect(() => {
-    fetchBackendVideos();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- false positive: the loader sets state only after its first await
+    fetchBackendVideos(true);
   }, []);
 
   const filteredRows = useMemo(() => {
@@ -613,7 +615,7 @@ export default function VideoHighlightsManagementPage() {
               Video Highlights
             </h1>
             <p className="mt-0.5 text-[9px] font-medium text-[#6c7587]">
-              Manage YouTube, Instagram and uploaded reels shown in the "Video Highlights" section of the Gallery page.
+              Manage YouTube, Instagram and uploaded reels shown in the &quot;Video Highlights&quot; section of the Gallery page.
             </p>
           </div>
 

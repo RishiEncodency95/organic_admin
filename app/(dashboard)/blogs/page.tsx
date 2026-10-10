@@ -25,7 +25,8 @@ import {
   Trash2,
 } from "lucide-react";
 import Swal from "sweetalert2";
-import { blogsApi } from "@/lib/blogsApi";
+import { blogsApi, type BlogPostItem, type GetBlogsResponse } from "@/lib/blogsApi";
+import AnimatedCounter from "@/components/ui/AnimatedCounter";
 
 type PostStatus = "Published" | "Draft" | "Scheduled";
 type PostCategory = "Expo News" | "Industry Stories" | "Organic Trends" | "Producer Guidance";
@@ -118,99 +119,20 @@ const toneClass = {
   teal: "bg-teal-50 text-teal-700 ring-teal-200",
 } as const;
 
-function AnimatedCounter({
-  value,
-  duration = 1200,
-}: {
-  value: string | number;
-  duration?: number;
-}) {
-  const [displayValue, setDisplayValue] = useState<string | number>(() => {
-    const str = String(value);
-    return str.match(/\d/) ? "0" : value;
-  });
-  const spanRef = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    const el = spanRef.current;
-    if (!el) return;
-
-    const strVal = String(value);
-    const numericMatch = strVal.match(/^([^\d.]*)([\d,.]+)(.*)$/);
-
-    if (!numericMatch) {
-      setDisplayValue(value);
-      return;
-    }
-
-    const prefix = numericMatch[1];
-    const rawNumberStr = numericMatch[2].replace(/,/g, "");
-    const targetNum = parseFloat(rawNumberStr);
-    const suffix = numericMatch[3];
-
-    if (isNaN(targetNum)) {
-      setDisplayValue(value);
-      return;
-    }
-
-    if (targetNum === 0) {
-      setDisplayValue(`${prefix}0${suffix}`);
-      return;
-    }
-
-    const hasComma = numericMatch[2].includes(",");
-
-    let animationFrameId: number | null = null;
-    let startTime: number | null = null;
-
-    const step = (timestamp: number) => {
-      if (!startTime) startTime = timestamp;
-      const progress = Math.min((timestamp - startTime) / duration, 1);
-      const easeProgress = 1 - Math.pow(1 - progress, 3);
-      const currentVal = Math.floor(easeProgress * targetNum);
-
-      let formatted = currentVal.toString();
-      if (hasComma) {
-        formatted = currentVal.toLocaleString();
-      }
-
-      setDisplayValue(`${prefix}${formatted}${suffix}`);
-
-      if (progress < 1) {
-        animationFrameId = requestAnimationFrame(step);
-      } else {
-        let finalFormatted = targetNum.toString();
-        if (hasComma) {
-          finalFormatted = targetNum.toLocaleString();
-        }
-        setDisplayValue(`${prefix}${finalFormatted}${suffix}`);
-      }
-    };
-
-    animationFrameId = requestAnimationFrame(step);
-
-    return () => {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-    };
-  }, [value, duration]);
-
-  return <span ref={spanRef}>{displayValue}</span>;
-}
 
 export default function BlogAwarenessPage() {
   const router = useRouter();
   const [showCategories, setShowCategories] = useState(false);
   const [postsList, setPostsList] = useState<BlogPost[]>(POSTS);
-  const [loadingPosts, setLoadingPosts] = useState(false);
 
   const fetchPosts = () => {
-    setLoadingPosts(true);
     blogsApi
       .list()
-      .then((res: any) => {
-        const list = res?.data?.posts || res?.posts || [];
+      .then((res) => {
+        // Some responses arrive still wrapped in data
+        const list = (res as { data?: GetBlogsResponse })?.data?.posts || res?.posts || [];
         if (Array.isArray(list) && list.length > 0) {
-          const mapped: BlogPost[] = list.map((p: any) => {
+          const mapped: BlogPost[] = list.map((p: BlogPostItem) => {
             const rawDate = p.updatedAt || p.scheduledDate || p.publishDate || p.createdAt;
             const dateObj = rawDate ? new Date(rawDate) : null;
             const datePart = dateObj
@@ -229,7 +151,7 @@ export default function BlogAwarenessPage() {
             const dateTime = dateObj ? `${datePart}, ${timePart}` : null;
 
             return {
-              id: p._id || p.id,
+              id: p._id || p.id || p.slug,
               _id: p._id,
               title: p.title,
               category: p.category || "Expo News",
@@ -277,9 +199,6 @@ export default function BlogAwarenessPage() {
           }
         } catch {}
         setPostsList(POSTS);
-      })
-      .finally(() => {
-        setLoadingPosts(false);
       });
   };
 
@@ -310,7 +229,7 @@ export default function BlogAwarenessPage() {
       try {
         const stored = JSON.parse(localStorage.getItem("admin_blogs_data") || "[]");
         const filtered = stored.filter(
-          (p: any) => String(p.id) !== String(postId) && String(p._id) !== String(postId)
+          (p: { id?: string | number; _id?: string }) => String(p.id) !== String(postId) && String(p._id) !== String(postId)
         );
         localStorage.setItem("admin_blogs_data", JSON.stringify(filtered));
       } catch {}

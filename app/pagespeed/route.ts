@@ -102,8 +102,14 @@ async function runPageSpeed(url: string, strategy: "mobile" | "desktop"): Promis
   const fieldMetrics = raw.loadingExperience?.metrics ?? {};
   const hasFieldData = Object.keys(fieldMetrics).length > 0;
 
-  const resourceSummary = (audits["resource-summary"] as any)?.details?.items || [];
-  const getResource = (type: string) => resourceSummary.find((item: any) => item.resourceType === type);
+  type ResourceRow = { resourceType?: string; requestCount?: number; transferSize?: number };
+  const resourceSummary = (audits["resource-summary"] as { details?: { items?: ResourceRow[] } } | undefined)?.details?.items || [];
+  const getResource = (type: string) => resourceSummary.find((item) => item.resourceType === type);
+  /** Transfer size of one resource type in KB, or null */
+  const resourceKb = (type: string) => {
+    const bytes = getResource(type)?.transferSize;
+    return bytes ? Math.round(bytes / 1024) : null;
+  };
 
   return {
     ok: true,
@@ -124,15 +130,15 @@ async function runPageSpeed(url: string, strategy: "mobile" | "desktop"): Promis
       cls: num(audits["cumulative-layout-shift"]),
       siMs: num(audits["speed-index"]),
       ttfbMs: num(audits["server-response-time"]),
-      htmlKb: getResource("Document")?.transferSize ? Math.round(getResource("Document").transferSize / 1024) : null,
+      htmlKb: resourceKb("Document"),
       payloadKb: num(audits["total-byte-weight"]) ? Math.round(num(audits["total-byte-weight"])! / 1024) : null,
       totalRequests: getResource("total")?.requestCount ?? null,
       domNodes: num(audits["dom-size"]),
       imageRequests: getResource("Image")?.requestCount ?? null,
-      javascriptKb: getResource("Script")?.transferSize ? Math.round(getResource("Script").transferSize / 1024) : null,
-      cssKb: getResource("Stylesheet")?.transferSize ? Math.round(getResource("Stylesheet").transferSize / 1024) : null,
-      fontKb: getResource("Font")?.transferSize ? Math.round(getResource("Font").transferSize / 1024) : null,
-      otherKb: getResource("Other")?.transferSize ? Math.round(getResource("Other").transferSize / 1024) : null,
+      javascriptKb: resourceKb("Script"),
+      cssKb: resourceKb("Stylesheet"),
+      fontKb: resourceKb("Font"),
+      otherKb: resourceKb("Other"),
     },
     fieldData: {
       available: hasFieldData,

@@ -16,16 +16,12 @@ export default function RedirectsPage() {
   const [formData, setFormData] = useState({ source: "", destination: "", permanent: true, isActive: true });
   const [error, setError] = useState("");
 
-  const loadData = async () => {
-    try {
-      const data = await redirectsApi.getAll();
-      setRedirects(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const loadData = () =>
+    redirectsApi
+      .getAll()
+      .then(setRedirects)
+      .catch((err) => console.error(err))
+      .finally(() => setLoading(false));
 
   useEffect(() => {
     loadData();
@@ -42,8 +38,8 @@ export default function RedirectsPage() {
       }
       setIsModalOpen(false);
       loadData();
-    } catch (err: any) {
-      setError(err?.message || "Something went wrong.");
+    } catch (err) {
+      setError((err instanceof Error ? err.message : "") || "Something went wrong.");
     }
   };
 

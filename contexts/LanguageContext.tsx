@@ -19,6 +19,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the saved language is in localStorage, readable only after mount
     if (saved === "en" || saved === "hi") setLanguageState(saved);
   }, []);
 

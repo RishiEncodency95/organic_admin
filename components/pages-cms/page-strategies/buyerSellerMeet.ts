@@ -1,12 +1,13 @@
 import { api } from "@/lib/api";
 import type { SectionsDraft, SetSectionsDraft } from "./types";
+import type { CmsJson, CmsRecord } from "@/lib/cmsJson";
 
 const HERO_ENDPOINT = "/website/buyer-seller-meet/hero";
-const isHero = (sec: Record<string, any>) => sec.key === "buyer-seller-meet-hero";
+const isHero = (sec: CmsRecord) => sec.key === "buyer-seller-meet-hero";
 
 export function syncBuyerSellerMeetSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft): void {
   api.get(HERO_ENDPOINT)
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         setSectionsDraft((prev) =>

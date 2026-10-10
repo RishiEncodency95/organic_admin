@@ -4,7 +4,6 @@ import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Search,
   Download,
-  Filter,
   ChevronLeft,
   ChevronRight,
   MoreVertical,
@@ -170,7 +169,17 @@ const escapeHtml = (v: string) =>
 const formatBytes = (bytes?: number) =>
   !bytes ? "" : bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.round(bytes / 1024)} KB`;
 
+// Filters can arrive in the link (from the Careers Dashboard / Job Postings): ?result= ?position= ?stage= ?search=
 export default function ApplicationsAiResponsePage() {
+  return (
+    <Suspense fallback={null}>
+      <ApplicationsAiResponse />
+    </Suspense>
+  );
+}
+
+function ApplicationsAiResponse() {
+  const linkFilters = useSearchParams();
   const currentAdmin = useAppSelector((state) => state.auth.admin);
   const adminName = currentAdmin?.name?.trim() || "Admin";
   const [applications, setApplications] = useState<CandidateApplication[]>([]);
@@ -222,12 +231,12 @@ export default function ApplicationsAiResponsePage() {
   >("Overview");
 
   // Filters State
-  const [positionFilter, setPositionFilter] = useState("All Positions");
+  const [positionFilter, setPositionFilter] = useState(() => linkFilters.get("position") || "All Positions");
   const [hrStatusFilter, setHrStatusFilter] = useState("All Status");
-  const [aiResultFilter, setAiResultFilter] = useState("All Results");
-  const [stageFilter, setStageFilter] = useState("All Stages");
+  const [aiResultFilter, setAiResultFilter] = useState(() => linkFilters.get("result") || "All Results");
+  const [stageFilter, setStageFilter] = useState(() => linkFilters.get("stage") || "All Stages");
   const [dateRange, setDateRange] = useState("17 Sep 2026 - 17 Oct 2026");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(() => linkFilters.get("search") || "");
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -248,7 +257,8 @@ export default function ApplicationsAiResponsePage() {
         const matchesEmail = app.email.toLowerCase().includes(q);
         const matchesPhone = app.phone.toLowerCase().includes(q);
         const matchesPos = app.position.toLowerCase().includes(q);
-        if (!matchesName && !matchesEmail && !matchesPhone && !matchesPos) return false;
+        const matchesId = app.id.toLowerCase() === q;
+        if (!matchesName && !matchesEmail && !matchesPhone && !matchesPos && !matchesId) return false;
       }
 
       return true;

@@ -565,7 +565,7 @@ export default function FAQsManagementPage() {
 
                                   <div className="mt-[10px] pl-[30px]">
                                     <p className="text-[10px] font-semibold leading-[1.6] text-[#34435e]">
-                                      {item.summary} Bharat Organic Expo is India's premier international trade show bringing together organic farmers, producers, global B2B buyers, food processors and herbal brands at Yashobhoomi (IICC), New Delhi.
+                                      {item.summary} Bharat Organic Expo is India&apos;s premier international trade show bringing together organic farmers, producers, global B2B buyers, food processors and herbal brands at Yashobhoomi (IICC), New Delhi.
                                     </p>
 
                                     <div className="mt-[12px] flex items-center justify-between border-t border-[#f0f4f2] pt-[10px]">

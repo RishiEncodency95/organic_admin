@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logout } from "@/store/slices/authSlice";
@@ -23,6 +23,8 @@ const checkHasSavedAuth = (): boolean => {
   return false;
 };
 
+const noSubscription = () => () => {};
+
 /**
  * Gate for the dashboard shell.
  * Loads instantly with ZERO preloader or artificial delay.
@@ -33,23 +35,19 @@ export default function RequireAdminAuth({ children }: { children: React.ReactNo
   const dispatch = useAppDispatch();
   const { admin, hydrated } = useAppSelector((state) => state.auth);
 
-  const [hasAuth, setHasAuth] = useState<boolean>(() => checkHasSavedAuth());
+  // Saved session in this browser (false while rendering on the server)
+  const hasLocal = useSyncExternalStore(noSubscription, checkHasSavedAuth, () => false);
+  // The server rejected the session
+  const [revoked, setRevoked] = useState(false);
+  const hasAuth = !revoked && (hasLocal || (hydrated && Boolean(admin)));
 
   useEffect(() => {
-    const hasLocal = checkHasSavedAuth();
-
-    if (hydrated) {
-      if (!admin && !hasLocal) {
-        if (typeof document !== "undefined") {
-          document.cookie = "ms_admin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
-        }
-        setHasAuth(false);
-        router.replace("/login");
-        return;
+    if (hydrated && !admin && !hasLocal) {
+      if (typeof document !== "undefined") {
+        document.cookie = "ms_admin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
       }
-      setHasAuth(true);
-    } else if (hasLocal) {
-      setHasAuth(true);
+      router.replace("/login");
+      return;
     }
 
     // Verify session silently in background without blocking UI
@@ -67,11 +65,11 @@ export default function RequireAdminAuth({ children }: { children: React.ReactNo
             localStorage.removeItem(AUTH_STORAGE_KEY);
             document.cookie = "ms_admin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
           }
-          setHasAuth(false);
+          setRevoked(true);
           router.replace("/login");
         });
     }
-  }, [hydrated, admin, router, dispatch]);
+  }, [hydrated, admin, hasLocal, router, dispatch]);
 
   // If genuinely not authenticated, render null while redirecting (no slow preloader)
   if (!hasAuth && hydrated && !admin) {

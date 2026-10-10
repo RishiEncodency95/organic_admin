@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Monitor, Server } from "lucide-react";
+import type { SeoPageDetail } from "@/lib/seoAuditApi";
 
 function DarkRow({ label, value, mono }: { label: string; value: React.ReactNode; mono?: boolean }) {
   return (
@@ -31,7 +32,7 @@ function SectionCard({ title, icon, children, note }: { title: string; icon: Rea
   );
 }
 
-export function AuditBrowserHealthSection({ page }: { page: any }) {
+export function AuditBrowserHealthSection({ page }: { page: SeoPageDetail["page"] }) {
   if (!page) return null;
 
   return (
@@ -73,7 +74,7 @@ export function AuditBrowserHealthSection({ page }: { page: any }) {
                 {page?.renderedWithJs ? "✓ No problems measured in telemetry." : "Not available"}
               </p>
             ) : (
-              (page?.browserHealth?.[key] ?? []).map((problem: any, index: number) => (
+              (page?.browserHealth?.[key] ?? []).map((problem, index) => (
                 <div
                   key={`${problem.type}-${problem.message}-${index}`}
                   className="border-b border-slate-800/60 py-2.5 text-[12px] last:border-0"
@@ -98,7 +99,7 @@ export function AuditBrowserHealthSection({ page }: { page: any }) {
   );
 }
 
-export function AuditInfrastructureSection({ page }: { page: any }) {
+export function AuditInfrastructureSection({ page }: { page: SeoPageDetail["page"] }) {
   if (!page) return null;
 
   return (

@@ -1,14 +1,15 @@
 import { api } from "@/lib/api";
 import type { SectionsDraft, SetSectionsDraft } from "./types";
+import type { CmsJson, CmsRecord } from "@/lib/cmsJson";
 
 const HERO_ENDPOINT = "/website/nominatehero";
-const isHero = (sec: Record<string, any>) => sec.key === "nominate-hero";
+const isHero = (sec: CmsRecord) => sec.key === "nominate-hero";
 
 // Backend stores the icon row as features [{ label, icon }]; the editor's generic item list
 // shows them as items [{ title: label, icon }].
 export function syncNominateAdvisorySectionsFromLiveApi(setSectionsDraft: SetSectionsDraft): void {
   api.get(HERO_ENDPOINT)
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         setSectionsDraft((prev) =>
@@ -24,7 +25,7 @@ export function syncNominateAdvisorySectionsFromLiveApi(setSectionsDraft: SetSec
                   imageAlt: data.imageAlt || sec.imageAlt,
                   items:
                     Array.isArray(data.features) && data.features.length > 0
-                      ? data.features.map((f: any) => ({ title: f.label || "", icon: f.icon || "" }))
+                      ? data.features.map((f: CmsJson) => ({ title: f.label || "", icon: f.icon || "" }))
                       : sec.items,
                 }
               : sec
@@ -46,7 +47,7 @@ export async function saveNominateAdvisorySections(sectionsDraft: SectionsDraft)
       image: heroSec.image || "",
       imageAlt: heroSec.imageAlt || "",
       features: Array.isArray(heroSec.items)
-        ? heroSec.items.map((it: any) => ({ label: it.title || "", icon: it.icon || "" }))
+        ? heroSec.items.map((it: CmsJson) => ({ label: it.title || "", icon: it.icon || "" }))
         : [],
     });
   }

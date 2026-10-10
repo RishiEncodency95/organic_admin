@@ -162,16 +162,16 @@ function AddFormDialog({ open, current, taken, onClose, onCreate }: { open: bool
   return createPortal(
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 font-sans">
       <div aria-hidden="true" className="absolute inset-0 bg-[#0b1f14]/55 backdrop-blur-[2px]" />
-      <div role="dialog" aria-modal="true" aria-labelledby="add-form-title" className="relative w-[420px] max-w-full rounded-[14px] bg-white px-[22px] pb-[16px] pt-[16px] text-[#0f172a] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.45)]">
+      <div role="dialog" aria-modal="true" aria-labelledby="add-form-title" className="relative w-[420px] max-w-full rounded-[14px] bg-white px-[18px] pb-[12px] pt-[12px] text-[#0f172a] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.45)]">
         <div className="flex items-start justify-between">
-          <h2 id="add-form-title" className="text-[18.5px] font-bold leading-tight text-[#0f2a1c]">
+          <h2 id="add-form-title" className="text-[17px] font-bold leading-tight text-[#0f2a1c]">
             Add Form
           </h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="-mr-[6px] -mt-[4px] grid h-[30px] w-[30px] place-items-center rounded-full transition hover:bg-slate-100">
+          <button type="button" onClick={onClose} aria-label="Close" className="-mr-[6px] -mt-[4px] grid h-[28px] w-[28px] place-items-center rounded-full transition hover:bg-slate-100">
             <X className="h-[19px] w-[19px]" />
           </button>
         </div>
-        <label className="mt-[10px] block">
+        <label className="mt-[7px] block">
           <span className="mb-[3px] block text-[13.5px] font-semibold">
             Form name <span className="text-[#dc2626]">*</span>
           </span>
@@ -185,7 +185,7 @@ function AddFormDialog({ open, current, taken, onClose, onCreate }: { open: bool
             onKeyDown={(e) => e.key === "Enter" && submit()}
             maxLength={40}
             placeholder="e.g. Sponsorship Enquiry"
-            className={`h-[34px] w-full rounded-[7px] border px-[12px] text-[13.5px] outline-none focus:border-[#15633a] focus:ring-2 focus:ring-[#15633a]/15 ${error ? "border-[#dc2626]" : "border-[#cbd5e1]"}`}
+            className={`h-[30px] w-full rounded-[7px] border px-[12px] text-[13.5px] outline-none focus:border-[#15633a] focus:ring-2 focus:ring-[#15633a]/15 ${error ? "border-[#dc2626]" : "border-[#cbd5e1]"}`}
           />
         </label>
         {error && (
@@ -193,7 +193,7 @@ function AddFormDialog({ open, current, taken, onClose, onCreate }: { open: bool
             {error}
           </p>
         )}
-        <fieldset className="mt-[10px] text-[13.5px]">
+        <fieldset className="mt-[7px] text-[13.5px]">
           <legend className="mb-[4px] font-semibold">Start from</legend>
           {[
             [false, "Basic form (name and mobile)"],
@@ -205,12 +205,12 @@ function AddFormDialog({ open, current, taken, onClose, onCreate }: { open: bool
             </label>
           ))}
         </fieldset>
-        <p className="mt-[8px] text-[12.5px] text-[#64748b]">New forms start inactive — switch them on when ready.</p>
+        <p className="mt-[6px] text-[12.5px] text-[#64748b]">New forms start inactive — switch them on when ready.</p>
         <div className="mt-[14px] flex justify-end gap-[10px]">
-          <button type="button" onClick={onClose} className="h-[30px] rounded-[8px] border border-[#cbd5e1] bg-white px-[18px] text-[13.5px] font-semibold transition hover:bg-slate-50">
+          <button type="button" onClick={onClose} className="h-[28px] rounded-[8px] border border-[#cbd5e1] bg-white px-[18px] text-[13.5px] font-semibold transition hover:bg-slate-50">
             Cancel
           </button>
-          <button type="button" onClick={submit} className="h-[30px] rounded-[8px] bg-[#15633a] px-[18px] text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#124f2f]">
+          <button type="button" onClick={submit} className="h-[28px] rounded-[8px] bg-[#15633a] px-[18px] text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#124f2f]">
             Create Form
           </button>
         </div>

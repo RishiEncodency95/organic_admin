@@ -4,6 +4,7 @@ import { settingsApi } from "@/lib/settingsApi";
 import type { CmsPage } from "@/lib/cmsPages";
 import type { FormState } from "../types";
 import type { SectionsDraft } from "./types";
+import type { CmsJson, CmsRecord } from "@/lib/cmsJson";
 
 /** Refreshes the SEO form fields from the backend's live SEO record for this page. */
 export function syncPageSeoFromLiveApi(
@@ -14,7 +15,7 @@ export function syncPageSeoFromLiveApi(
   const pageKey = page.slug === "/" ? "home" : (page.slug ? page.slug.replace(/^\//, "") : "home");
   const isLocalEnv = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
   api.get(`/seo/${pageKey}?envType=${isLocalEnv ? "local" : "live"}`)
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const seoData = res?.data?.data || res?.data || res;
       if (seoData) {
         const defaultSiteUrl = isLocalEnv ? "http://localhost:3002" : "https://bharatorganicexpo.com";
@@ -69,12 +70,12 @@ export async function savePageCore({
   savingKey: string;
   sectionsDraft: SectionsDraft;
   form: FormState;
-  settings: Record<string, any> | null;
+  settings: CmsRecord | null;
   currentAdmin: { name?: string; email?: string } | null | undefined;
   page: CmsPage;
   canonicalEditorRef: RefObject<HTMLDivElement | null>;
   setForm: Dispatch<SetStateAction<FormState>>;
-}): Promise<Record<string, any>> {
+}): Promise<CmsRecord> {
   const current = settings?.[savingKey] ?? {};
   const now = new Date().toISOString();
   const adminName = currentAdmin?.name || currentAdmin?.email || "Admin User";
@@ -107,7 +108,7 @@ export async function savePageCore({
         robotsFollow: form.robotsFollow,
       },
     },
-  } as any);
+  } as CmsJson);
 
   setForm((prev) => ({
     ...prev,

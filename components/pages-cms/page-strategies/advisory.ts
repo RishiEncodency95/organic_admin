@@ -1,5 +1,6 @@
 import { api } from "@/lib/api";
 import type { SectionsDraft, SetSectionsDraft } from "./types";
+import type { CmsJson, CmsRecord } from "@/lib/cmsJson";
 
 function splitLastWord(text: string): { first: string; last: string } {
   const trimmed = (text || "").trim();
@@ -23,7 +24,7 @@ function splitTitleForAccent(text: string): { primary: string; accent: string } 
 
 export function syncAdvisorySectionsFromLiveApi(setSectionsDraft: SetSectionsDraft): void {
   api.get("/website/advisoryhero")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         setSectionsDraft((prev) =>
@@ -35,7 +36,7 @@ export function syncAdvisorySectionsFromLiveApi(setSectionsDraft: SetSectionsDra
                   : sec.subtitle;
               const items =
                 Array.isArray(data.features) && data.features.length > 0
-                  ? data.features.map((f: any) => ({
+                  ? data.features.map((f: CmsJson) => ({
                       title: [f.titlePart1, f.titlePart2].filter(Boolean).join(" "),
                       subtitle: [f.descPart1, f.descPart2].filter(Boolean).join(" "),
                       icon: f.icon || "Users",
@@ -45,7 +46,7 @@ export function syncAdvisorySectionsFromLiveApi(setSectionsDraft: SetSectionsDra
                 .filter((x: unknown) => typeof x === "string" && x.trim())
                 .join(" ")
                 .trim();
-              const { titlePrimary: _p, titleSecondary: _s, ...rest } = sec as Record<string, any>;
+              const { titlePrimary: _p, titleSecondary: _s, ...rest } = sec as CmsRecord;
               return {
                 ...rest,
                 title: savedTitle || sec.title,
@@ -78,7 +79,7 @@ export async function saveAdvisorySections(sectionsDraft: SectionsDraft): Promis
       image: heroSec.image,
       imageAlt: heroSec.imageAlt,
       features: Array.isArray(heroSec.items)
-        ? heroSec.items.map((it: any) => ({
+        ? heroSec.items.map((it: CmsJson) => ({
             icon: it.icon || "Users",
             titlePart1: it.title || "",
             titlePart2: "",

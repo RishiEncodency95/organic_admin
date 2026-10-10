@@ -33,8 +33,8 @@ function ResetPasswordForm() {
     try {
       await authApi.resetPassword(token, newPassword);
       setDone(true);
-    } catch (err: any) {
-      setError(err?.message || (err instanceof ApiRequestError ? err.message : "Something went wrong. Please try again."));
+    } catch (err) {
+      setError((err instanceof Error ? err.message : "") || (err instanceof ApiRequestError ? err.message : "Something went wrong. Please try again."));
     } finally {
       setIsSubmitting(false);
     }

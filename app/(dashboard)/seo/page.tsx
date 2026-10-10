@@ -155,6 +155,7 @@ export default function SeoDashboardPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- shows the loading state while a new request runs
     void load();
   }, [load]);
 

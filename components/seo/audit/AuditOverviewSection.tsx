@@ -3,6 +3,7 @@
 import React from "react";
 import { Activity, ShieldCheck, Layers } from "lucide-react";
 import { HttpStatusBadge, formatDateTime, formatMs, formatNumber, ScorePill } from "../SeoBadges";
+import type { SeoPageDetail } from "@/lib/seoAuditApi";
 
 function DarkRow({ label, value, mono }: { label: string; value: React.ReactNode; mono?: boolean }) {
   return (
@@ -32,7 +33,7 @@ function SectionCard({ title, icon, children, note }: { title: string; icon: Rea
   );
 }
 
-export default function AuditOverviewSection({ page }: { page: any }) {
+export default function AuditOverviewSection({ page }: { page: SeoPageDetail["page"] }) {
   if (!page) return null;
 
   return (

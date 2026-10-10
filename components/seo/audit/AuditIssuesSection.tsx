@@ -3,6 +3,7 @@
 import React from "react";
 import { AlertCircle } from "lucide-react";
 import { formatDateTime, SeverityBadge } from "../SeoBadges";
+import type { SeoIssue } from "@/lib/seoAuditApi";
 
 function SectionCard({ title, icon, children, note }: { title: string; icon: React.ReactNode; children: React.ReactNode; note?: string }) {
   return (
@@ -21,7 +22,7 @@ function SectionCard({ title, icon, children, note }: { title: string; icon: Rea
   );
 }
 
-export default function AuditIssuesSection({ issues }: { issues: any[] }) {
+export default function AuditIssuesSection({ issues }: { issues: SeoIssue[] }) {
   return (
     <section id="section-issues" className="scroll-mt-36 space-y-5">
       <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -47,7 +48,7 @@ export default function AuditIssuesSection({ issues }: { issues: any[] }) {
           </p>
         ) : (
           <div className="space-y-3">
-            {(issues ?? []).map((issue: any) => (
+            {(issues ?? []).map((issue) => (
               <div
                 key={issue.id}
                 className="border border-slate-700/60 bg-[#0f172a]/70 p-4 rounded-xl hover:border-red-500/50 transition-colors"

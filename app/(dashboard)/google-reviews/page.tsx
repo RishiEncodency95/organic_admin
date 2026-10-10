@@ -58,6 +58,7 @@ export default function GoogleReviewsPage() {
       setLoading(false);
     }
   }, [demo]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- false positive: load only sets state after its first await
   useEffect(() => { load() }, [load]);
 
   async function connect() {

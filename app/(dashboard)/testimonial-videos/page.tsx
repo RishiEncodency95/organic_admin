@@ -229,7 +229,8 @@ export default function TestimonialVideosManagementPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
-  const [isSyncing, setIsSyncing] = useState(false);
+  // The first sync starts on mount
+  const [isSyncing, setIsSyncing] = useState(true);
 
   // Filters
   const [query, setQuery] = useState("");
@@ -264,13 +265,12 @@ export default function TestimonialVideosManagementPage() {
   // Fetch from backend
   const fetchBackendVideos = async () => {
     try {
-      setIsSyncing(true);
       const res = await fetch(`${BACKEND_URL}/api/website/home/testimonials-carousel`);
       if (!res.ok) return;
       const json = await res.json();
       const rawVideos = json?.data?.videos;
       if (Array.isArray(rawVideos)) {
-        const mapped: TestimonialVideoItem[] = rawVideos.map((v: any, index: number) => {
+        const mapped: TestimonialVideoItem[] = rawVideos.map((v: Partial<TestimonialVideoItem> & { addedOn?: string; createdAt?: string }, index: number) => {
           const vType = (v.videoType as VideoPlatform) || "youtube";
           const vUrl = v.videoUrl || "";
           let thumb = v.thumbnail || "";
@@ -311,6 +311,7 @@ export default function TestimonialVideosManagementPage() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- false positive: the loader sets state only after its first await
     fetchBackendVideos();
   }, []);
 

@@ -146,24 +146,24 @@ export function ConfirmDialog({ confirm, onClose }: { confirm: ConfirmOptions | 
   return createPortal(
     <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 font-sans">
       <div aria-hidden="true" className="absolute inset-0 bg-[#0b1f14]/55 backdrop-blur-[2px]" />
-      <div role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" className="relative w-[420px] max-w-full rounded-[14px] bg-white px-[22px] pb-[16px] pt-[16px] text-[#0f172a] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.45)]">
+      <div role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" className="relative w-[420px] max-w-full rounded-[14px] bg-white px-[18px] pb-[12px] pt-[12px] text-[#0f172a] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.45)]">
         <div className="flex items-start justify-between gap-[12px]">
-          <h2 id="confirm-title" className="text-[18.5px] font-bold leading-tight text-[#0f2a1c]">
+          <h2 id="confirm-title" className="text-[17px] font-bold leading-tight text-[#0f2a1c]">
             {confirm.title}
           </h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="-mr-[6px] -mt-[4px] grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full transition hover:bg-slate-100">
+          <button type="button" onClick={onClose} aria-label="Close" className="-mr-[6px] -mt-[4px] grid h-[28px] w-[28px] shrink-0 place-items-center rounded-full transition hover:bg-slate-100">
             <X className="h-[19px] w-[19px]" />
           </button>
         </div>
-        <div className="mt-[6px] text-[13.5px] text-[#475569]">{confirm.body}</div>
-        <div className="mt-[16px] flex justify-end gap-[10px]">
+        <div className="mt-[5px] text-[13.5px] text-[#475569]">{confirm.body}</div>
+        <div className="mt-[12px] flex justify-end gap-[10px]">
           {!confirm.hideCancel && (
-            <button type="button" onClick={onClose} className="h-[30px] rounded-[8px] border border-[#cbd5e1] bg-white px-[18px] text-[13.5px] font-semibold transition hover:bg-slate-50">
+            <button type="button" onClick={onClose} className="h-[28px] rounded-[8px] border border-[#cbd5e1] bg-white px-[18px] text-[13.5px] font-semibold transition hover:bg-slate-50">
               Cancel
             </button>
           )}
           {confirm.secondary && (
-            <button type="button" onClick={done(confirm.secondary.run)} className="h-[30px] rounded-[8px] border border-[#f3a5a5] bg-white px-[16px] text-[13.5px] font-semibold text-[#dc2626] transition hover:bg-[#fdf2f2]">
+            <button type="button" onClick={done(confirm.secondary.run)} className="h-[28px] rounded-[8px] border border-[#f3a5a5] bg-white px-[16px] text-[13.5px] font-semibold text-[#dc2626] transition hover:bg-[#fdf2f2]">
               {confirm.secondary.label}
             </button>
           )}
@@ -171,7 +171,7 @@ export function ConfirmDialog({ confirm, onClose }: { confirm: ConfirmOptions | 
             ref={okRef}
             type="button"
             onClick={done(confirm.run)}
-            className={`h-[30px] rounded-[8px] px-[18px] text-[13.5px] font-semibold text-white shadow-sm transition ${confirm.danger ? "bg-[#dc2626] hover:bg-[#b91c1c]" : "bg-[#15633a] hover:bg-[#124f2f]"}`}
+            className={`h-[28px] rounded-[8px] px-[18px] text-[13.5px] font-semibold text-white shadow-sm transition ${confirm.danger ? "bg-[#dc2626] hover:bg-[#b91c1c]" : "bg-[#15633a] hover:bg-[#124f2f]"}`}
           >
             {confirm.confirmLabel}
           </button>

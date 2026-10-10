@@ -691,7 +691,7 @@ async function request<T>(path: string, options?: ApiRequestOptions, isRetry = f
     onRefreshFailed?.();
   }
 
-  let body: any = null;
+  let body: { success?: boolean; message?: string; data?: unknown } | null = null;
   try {
     body = await res.json();
   } catch {
@@ -737,7 +737,7 @@ async function requestBlob(path: string): Promise<Blob> {
     syncTokensFromStorage();
     const headers: Record<string, string> = {};
     if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
-    let res = await fetch(`${getApiBaseUrl()}${path}`, { headers });
+    const res = await fetch(`${getApiBaseUrl()}${path}`, { headers });
     if (!res.ok) throw new ApiRequestError(res.status, "Could not download this document.");
     return res.blob();
   } catch {

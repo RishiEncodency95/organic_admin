@@ -153,6 +153,58 @@ div:where(.swal2-container) .swal-toast-popup {
 .swal2-html-container {
   color: #cbd5e1 !important;
 }
+
+/* Compact dialogs (alerts / confirms) — the library defaults are oversized for the admin.
+   Toasts keep their own size. */
+.swal2-popup:not(.swal2-toast) {
+  width: min(22rem, calc(100vw - 32px)) !important;
+  padding: 0.9rem 1rem 1rem !important;
+  border-radius: 12px !important;
+}
+/* the icon and its tick / cross are sized in em, so its font-size scales all of it (5em → 2.75rem) */
+.swal2-popup:not(.swal2-toast) .swal2-icon {
+  font-size: 0.55rem !important;
+  margin: 0.5rem auto 0.25rem !important;
+}
+.swal2-popup:not(.swal2-toast) .swal2-title {
+  padding: 0.35rem 0.5rem 0 !important;
+  font-size: 1.05rem !important;
+  line-height: 1.35 !important;
+}
+.swal2-popup:not(.swal2-toast) .swal2-html-container {
+  margin: 0.35rem 0.5rem 0 !important;
+  font-size: 0.82rem !important;
+  line-height: 1.45 !important;
+}
+.swal2-popup:not(.swal2-toast) .swal2-actions {
+  margin: 0.85rem auto 0 !important;
+  gap: 0.4rem;
+}
+.swal2-popup:not(.swal2-toast) .swal2-styled {
+  margin: 0 !important;
+  padding: 0.4rem 1rem !important;
+  font-size: 0.8rem !important;
+  border-radius: 7px !important;
+}
+.swal2-popup:not(.swal2-toast) .swal2-input,
+.swal2-popup:not(.swal2-toast) .swal2-textarea,
+.swal2-popup:not(.swal2-toast) .swal2-select {
+  margin: 0.6rem 0.25rem 0 !important;
+  font-size: 0.82rem !important;
+}
+.swal2-popup:not(.swal2-toast) .swal2-input {
+  height: 2.2rem !important;
+}
+.swal2-popup:not(.swal2-toast) .swal2-validation-message {
+  margin: 0.5rem 0 0 !important;
+  font-size: 0.75rem !important;
+}
+.swal2-popup:not(.swal2-toast) .swal2-close {
+  font-size: 1.6rem !important;
+}
+.swal2-popup:not(.swal2-toast) .swal2-timer-progress-bar-container {
+  border-radius: 0 0 12px 12px;
+}
 .language-switch{position:absolute;z-index:5;right:2.5%;top:16px;display:flex;align-items:center;gap:10px;height:44px;padding:0 16px;border:1px solid #e1e7ec;border-radius:10px;background:#fff;color:#263449;font-weight:600;box-shadow:0 3px 12px #11223314}
 .language-switch svg{width:18px;height:18px}.language-switch svg:last-child{width:14px}
 .login-brand,.login-auth{position:relative;z-index:1;min-width:0;height:calc(100svh - 64px);overflow:hidden}

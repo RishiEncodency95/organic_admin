@@ -1,12 +1,13 @@
 import { api } from "@/lib/api";
 import type { SectionsDraft, SetSectionsDraft } from "./types";
+import type { CmsJson, CmsRecord } from "@/lib/cmsJson";
 
 const HERO_ENDPOINT = "/website/opportunities/partnership/hero";
-const isHero = (sec: Record<string, any>) => sec.key === "partnership-page-hero";
+const isHero = (sec: CmsRecord) => sec.key === "partnership-page-hero";
 
 export function syncPartnershipSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft): void {
   api.get(HERO_ENDPOINT)
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         // Older saves only have the three title lines; join them into the single H1 field.
@@ -28,7 +29,7 @@ export function syncPartnershipSectionsFromLiveApi(setSectionsDraft: SetSections
                   imageAlt: data.imageAlt || sec.imageAlt,
                   items:
                     Array.isArray(data.stats) && data.stats.length > 0
-                      ? data.stats.map((s: any) => ({
+                      ? data.stats.map((s: CmsJson) => ({
                           title: s.value || "",
                           label: s.label || "",
                           icon: s.iconKey || "Users",
@@ -55,7 +56,7 @@ export async function savePartnershipSections(sectionsDraft: SectionsDraft): Pro
       image: heroSec.image || "",
       imageAlt: heroSec.imageAlt || "",
       stats: Array.isArray(heroSec.items)
-        ? heroSec.items.map((it: any) => ({
+        ? heroSec.items.map((it: CmsJson) => ({
             iconKey: it.icon || "Users",
             value: it.title || "",
             label: it.label || "",

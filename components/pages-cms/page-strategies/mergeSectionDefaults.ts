@@ -1,18 +1,19 @@
+import type { CmsJson, CmsRecord } from "@/lib/cmsJson";
 /**
  * Merges one fallback section template item with the corresponding
  * saved section (if any), applying per-section-key cleanup so the
  * editor never shows stale/renamed fields from older content shapes.
  */
 export function mergeSectionWithSavedData(
-  fallbackItem: Record<string, any>,
-  savedItem: Record<string, any> | undefined,
-): Record<string, any> {
+  fallbackItem: CmsRecord,
+  savedItem: CmsRecord | undefined,
+): CmsRecord {
   if (!savedItem) return { ...fallbackItem };
-  const merged: Record<string, any> = {
+  const merged: CmsRecord = {
     ...fallbackItem,
     ...savedItem,
     items: fallbackItem.items !== undefined ? (
-      fallbackItem.items.map((item: Record<string, any>, idx: number) => ({
+      fallbackItem.items.map((item: CmsRecord, idx: number) => ({
         ...item,
         ...(savedItem.items?.[idx] || {}),
       }))
@@ -175,7 +176,7 @@ export function mergeSectionWithSavedData(
     delete merged.location;
     if (merged.bgImage === undefined) merged.bgImage = "";
     if (Array.isArray(merged.items)) {
-      merged.items = merged.items.map((it: any, idx: number) => {
+      merged.items = merged.items.map((it: CmsJson, idx: number) => {
         const copy = { ...it };
         delete copy.icon;
         return {
@@ -265,7 +266,7 @@ export function mergeSectionWithSavedData(
     if (!merged.keyPoint4) merged.keyPoint4 = "Investors, Financial Institutions";
     if (!merged.keyPoint5) merged.keyPoint5 = "Government Bodies, Embassies & Policy Makers";
     merged.items = (merged.items || []).filter(
-      (it: any) =>
+      (it: CmsJson) =>
         !/trusted brands|targeted audience|business growth/i.test(it.title || "")
     );
   }
@@ -325,7 +326,7 @@ export function mergeSectionWithSavedData(
     if (!merged.buttonHref) merged.buttonHref = "/exhibition-categories";
     if (!merged.exploreText) merged.exploreText = "Explore";
     if (Array.isArray(merged.items)) {
-      merged.items = merged.items.map((it: any) => {
+      merged.items = merged.items.map((it: CmsJson) => {
         const clean = { ...it };
         delete clean.icon;
         delete clean.desc;
@@ -349,7 +350,7 @@ export function mergeSectionWithSavedData(
     if (!merged.image) merged.image = "";
     if (!merged.imageAlt) merged.imageAlt = "Conferences & Seminars";
     if (Array.isArray(merged.items)) {
-      merged.items = merged.items.map((it: any) => ({
+      merged.items = merged.items.map((it: CmsJson) => ({
         title: it.title || "",
         description: it.description || it.subtitle || "",
         icon: it.icon || "Users",

@@ -26,7 +26,7 @@ import {
 
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setCredentials, logout, loginAdmin, verifyTwoFactor } from "@/store/slices/authSlice";
-import { authApi } from "@/lib/authApi";
+import { authApi, type LoginResult, type VerifyTwoFactorResponse } from "@/lib/authApi";
 import { ApiRequestError } from "@/lib/api";
 import { Input } from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
@@ -72,7 +72,9 @@ export default function LoginPage() {
 
   const [secret, setSecret] = useState("");
   const [provisioningUri, setProvisioningUri] = useState("");
-  const [qrDataUrl, setQrDataUrl] = useState("");
+  // QR image of a provisioning URI; shown only while that URI is current
+  const [qr, setQr] = useState<{ uri: string; url: string } | null>(null);
+  const qrDataUrl = qr && qr.uri === provisioningUri ? qr.url : "";
 
   const [setupCode, setSetupCode] = useState("");
 
@@ -93,19 +95,14 @@ export default function LoginPage() {
   ========================================================= */
 
   useEffect(() => {
-    if (!provisioningUri) {
-      setQrDataUrl("");
-      return;
-    }
+    if (!provisioningUri) return;
 
     QRCode.toDataURL(provisioningUri, {
       width: 220,
       margin: 1,
     })
-      .then(setQrDataUrl)
-      .catch(() => {
-        setQrDataUrl("");
-      });
+      .then((url) => setQr({ uri: provisioningUri, url }))
+      .catch(() => setQr(null));
   }, [provisioningUri]);
 
   /* =========================================================
@@ -241,19 +238,19 @@ export default function LoginPage() {
           return;
         }
 
-        let res: any;
+        let res: (Partial<LoginResult> & VerifyTwoFactorResponse) | undefined;
         if (tempToken) {
           res = await dispatch(verifyTwoFactor({ totpCode, tempToken })).unwrap();
         } else {
           res = await dispatch(loginAdmin({ email, password, totpCode })).unwrap();
         }
 
-        const data = res?.data || res;
+        const data = res;
         if (data && data.accessToken && data.admin) {
           dispatch(
             setCredentials({
               admin: {
-                id: data.admin.id || data.admin._id,
+                id: data.admin.id || data.admin._id || "",
                 name: data.admin.name,
                 email: data.admin.email,
                 phone: data.admin.phone || "",
@@ -263,7 +260,7 @@ export default function LoginPage() {
                 permissions: ["*"],
               },
               accessToken: data.accessToken,
-              refreshToken: data.refreshToken,
+              refreshToken: data.refreshToken || "",
             }),
           );
           if (typeof document !== "undefined") {
@@ -281,7 +278,7 @@ export default function LoginPage() {
           return;
         }
       }
-    } catch (err: any) {
+    } catch (err) {
       if (
         err instanceof ApiRequestError &&
         (err.message.includes("Two-factor") || err.message.includes("2FA"))
@@ -293,7 +290,7 @@ export default function LoginPage() {
       }
 
       // 429 — Too Many Login Attempts → show prominent lock alert
-      if ((err instanceof ApiRequestError && err.status === 429) || err?.status === 429) {
+      if (err instanceof ApiRequestError && err.status === 429) {
         const lockMsg = "Account temporarily locked. Too many failed login attempts. Please try again in 15 minutes.";
         setError(lockMsg);
         Swal.fire({
@@ -307,7 +304,7 @@ export default function LoginPage() {
         return;
       }
 
-      const rawMsg = typeof err === "string" ? err : err?.message;
+      const rawMsg = typeof err === "string" ? err : (err instanceof Error ? err.message : "");
       const isNetworkErr =
         (err instanceof ApiRequestError && err.status === 0) ||
         (typeof rawMsg === "string" && (rawMsg.includes("Cannot connect") || rawMsg.includes("Failed to fetch")));
@@ -343,7 +340,7 @@ export default function LoginPage() {
         confirmButtonColor: "#4B1426",
         confirmButtonText: "View Backup Codes",
       });
-    } catch (err: any) {
+    } catch (err) {
       const msg = err instanceof ApiRequestError ? err.message : "Could not verify that code. Please try again.";
       setError(msg);
       showToast("error", msg);
@@ -378,7 +375,7 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      const res: any = await authApi.forgotPassword(forgotEmail);
+      const res = await authApi.forgotPassword(forgotEmail);
       if (res?.resetToken) {
         setResetToken(res.resetToken);
         if (res.email) setEmail(res.email);
@@ -388,7 +385,7 @@ export default function LoginPage() {
         setStep("forgot-password-sent");
         showToast("success", "Password reset instructions sent!");
       }
-    } catch (err: any) {
+    } catch (err) {
       const msg = err instanceof ApiRequestError ? err.message : "Something went wrong. Please try again.";
       setError(msg);
       showToast("error", msg);
@@ -424,7 +421,7 @@ export default function LoginPage() {
         setResetToken("");
         setResetDone(false);
       }, 1500);
-    } catch (err: any) {
+    } catch (err) {
       const msg = err instanceof ApiRequestError ? err.message : "Failed to reset password. Please try again.";
       setError(msg);
       showToast("error", msg);
@@ -472,7 +469,7 @@ export default function LoginPage() {
             xl:!w-[195px]
           "
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          { }
 
           <img
             src="/bharat-organic-logo.png"
@@ -1256,7 +1253,7 @@ export default function LoginPage() {
                       shadow-sm
                     "
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      { }
 
                       <img
                         src={

@@ -170,7 +170,7 @@ export default function NotificationsTab() {
 
             <div className="text-[8.5px] font-medium text-[#172762] leading-[1.6] space-y-[6px]">
               <p>Dear {"{{candidate_name}}"},</p>
-              <p>Congratulations! Based on your information, you appear to be eligible for the position of "{"{{job_title}}"}" at Bharat Organic Expo.</p>
+              <p>Congratulations! Based on your information, you appear to be eligible for the position of &quot;{"{{job_title}}"}&quot; at Bharat Organic Expo.</p>
               <p>Please complete and submit the application form to proceed further.</p>
               <button className="bg-[#148943] text-white px-[12px] py-[6px] rounded-[4px] text-[9px] font-bold mt-[4px]">
                 Continue Application →

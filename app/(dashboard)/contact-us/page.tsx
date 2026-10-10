@@ -135,21 +135,21 @@ export default function ContactUsPage() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const load = async () => {
+  const fetchItems = () =>
+    contactEnquiryApi
+      .list()
+      .then((data) => setEnquiries(data.enquiries || []))
+      .catch((err) => setLoadError(err instanceof ApiRequestError ? err.message : "Failed to load contact messages."))
+      .finally(() => setLoading(false));
+  const load = () => {
     setLoading(true);
     setLoadError(null);
-    try {
-      const data = await contactEnquiryApi.list();
-      setEnquiries(data.enquiries || []);
-    } catch (err) {
-      setLoadError(err instanceof ApiRequestError ? err.message : "Failed to load contact messages.");
-    } finally {
-      setLoading(false);
-    }
+    return fetchItems();
   };
 
   useEffect(() => {
-    load();
+    // First load: the state already starts as loading
+    fetchItems();
   }, []);
 
   const changeTab = (next: typeof tab) => {

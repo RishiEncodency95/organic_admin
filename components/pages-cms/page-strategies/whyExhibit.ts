@@ -1,5 +1,6 @@
 import { api } from "@/lib/api";
 import type { SectionsDraft, SetSectionsDraft } from "./types";
+import type { CmsJson, CmsRecord } from "@/lib/cmsJson";
 
 // The hero H1 is one admin field; the backend keeps it as two parts because the website
 // colours them differently: the first two words (green line) and the rest (maroon line).
@@ -10,14 +11,14 @@ function splitWhyExhibitTitle(text: string): { prefix: string; highlight: string
 
 export function syncWhyExhibitSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft): void {
   api.get("/website/participate/why-exhibit/hero")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         setSectionsDraft((prev) =>
           prev.map((sec) =>
             sec.key === "why-exhibit-hero"
               ? {
-                  ...(({ titlePrimary: _p, titleSecondary: _s, ...rest }) => rest)(sec as Record<string, any>),
+                  ...(({ titlePrimary: _p, titleSecondary: _s, ...rest }) => rest)(sec as CmsRecord),
                   enabled: data.enabled !== false,
                   eyebrow: data.tagline ?? sec.eyebrow,
                   title:
@@ -32,7 +33,7 @@ export function syncWhyExhibitSectionsFromLiveApi(setSectionsDraft: SetSectionsD
                   secondaryButtonLabel: data.buttons?.[1]?.label ?? sec.secondaryButtonLabel,
                   secondaryButtonHref: data.buttons?.[1]?.href ?? sec.secondaryButtonHref,
                   items: Array.isArray(data.highlights) && data.highlights.length > 0
-                    ? data.highlights.map((h: any, idx: number) => ({
+                    ? data.highlights.map((h: CmsJson, idx: number) => ({
                         main: h.main ?? sec.items?.[idx]?.main ?? "",
                         sub: h.sub ?? sec.items?.[idx]?.sub ?? "",
                         image: h.image || h.img || sec.items?.[idx]?.image || `/uploads/icons/x${(idx % 4) + 1}.png`,
@@ -47,7 +48,7 @@ export function syncWhyExhibitSectionsFromLiveApi(setSectionsDraft: SetSectionsD
     .catch(() => {});
 
   api.get("/website/participate/why-exhibit/stats-band")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (Array.isArray(data) && data.length > 0) {
         setSectionsDraft((prev) =>
@@ -55,7 +56,7 @@ export function syncWhyExhibitSectionsFromLiveApi(setSectionsDraft: SetSectionsD
             sec.key === "exhibitors-stats" || sec.name === "StatsBand"
               ? {
                   ...sec,
-                  items: data.map((it: any, idx: number) => ({
+                  items: data.map((it: CmsJson, idx: number) => ({
                     val: it.val ?? sec.items?.[idx]?.val ?? "",
                     label: it.label ?? sec.items?.[idx]?.label ?? "",
                     icon: it.icon ?? it.iconName ?? sec.items?.[idx]?.icon ?? "Users",
@@ -69,7 +70,7 @@ export function syncWhyExhibitSectionsFromLiveApi(setSectionsDraft: SetSectionsD
     .catch(() => {});
 
   api.get("/website/participate/why-exhibit/reasons")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (Array.isArray(data) && data.length > 0) {
         setSectionsDraft((prev) =>
@@ -77,7 +78,7 @@ export function syncWhyExhibitSectionsFromLiveApi(setSectionsDraft: SetSectionsD
             sec.key === "reasons-to-exhibit" || sec.name === "ReasonsSection"
               ? {
                   ...sec,
-                  items: data.map((it: any, idx: number) => {
+                  items: data.map((it: CmsJson, idx: number) => {
                     const defaultIcons = [
                       "/uploads/icons/11og.webp",
                       "/uploads/icons/12og.webp",
@@ -112,7 +113,7 @@ export function syncWhyExhibitSectionsFromLiveApi(setSectionsDraft: SetSectionsD
     .catch(() => {});
 
   api.get("/website/participate/why-visit/segments")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       const defaultImgs = [
         "/uploads/icons/x1.webp",
@@ -134,7 +135,7 @@ export function syncWhyExhibitSectionsFromLiveApi(setSectionsDraft: SetSectionsD
                   eyebrow: data.badge ?? sec.eyebrow ?? "WHAT CAN YOU SOURCE?",
                   subtitle: data.subline ?? sec.subtitle ?? "ONE EXPO • COMPLETE ECOSYSTEM",
                   title: `${data.mainTitleLine1 ?? "Explore "}${data.segmentCount ?? "6"}${data.mainTitleLine2 ?? " Major Industry Segments"}`,
-                  items: segList.map((c: any, idx: number) => ({
+                  items: segList.map((c: CmsJson, idx: number) => ({
                     num: c.num ?? `0${idx + 1}`,
                     title: c.title ?? sec.items?.[idx]?.title ?? "",
                     subtitle: c.items ?? c.subtitle ?? sec.items?.[idx]?.subtitle ?? "",
@@ -173,7 +174,7 @@ export async function saveWhyExhibitSections(sectionsDraft: SectionsDraft): Prom
           },
         ],
         highlights: Array.isArray(whyHeroSec.items)
-          ? whyHeroSec.items.map((it: any, idx: number) => {
+          ? whyHeroSec.items.map((it: CmsJson, idx: number) => {
               const fallbackImg = `/uploads/icons/x${(idx % 4) + 1}.png`;
               const imageVal = it.image || it.img || fallbackImg;
               return {
@@ -196,7 +197,7 @@ export async function saveWhyExhibitSections(sectionsDraft: SectionsDraft): Prom
     try {
       await api.put("/website/participate/why-exhibit/stats-band", {
         title: statsSec.title || "EXPECTED IMPACT",
-        items: statsSec.items.map((it: any) => ({
+        items: statsSec.items.map((it: CmsJson) => ({
           val: it.val || "",
           label: it.label || "",
           icon: it.icon || "Users",
@@ -212,7 +213,7 @@ export async function saveWhyExhibitSections(sectionsDraft: SectionsDraft): Prom
     try {
       await api.put("/website/participate/why-exhibit/reasons", {
         title: reasonsSec.title || "Top Reasons to Exhibit at Bharat Organic Expo 2027",
-        items: reasonsSec.items.map((it: any, idx: number) => {
+        items: reasonsSec.items.map((it: CmsJson, idx: number) => {
           const defaultIcons = [
             "/uploads/icons/11og.webp",
             "/uploads/icons/12og.webp",

@@ -91,12 +91,23 @@ export interface LiveDashboardOverview {
 
 const statusConnected: DashboardSourceStatus = "connected";
 
+type RecentEnquiry = {
+  _id?: string;
+  id?: string;
+  name?: string;
+  organization?: string;
+  interest?: string;
+  category?: string;
+  city?: string;
+  createdAt?: string;
+};
+
 export const dashboardApi = {
   overview: async (): Promise<LiveDashboardOverview> => {
     try {
-      const res = await api.get<any>("/dashboard/overview");
+      const res = await api.get<LiveDashboardOverview | null>("/dashboard/overview");
       if (res && res.sources && res.sources.internal && res.sources.internal.data) {
-        return res as LiveDashboardOverview;
+        return res;
       }
     } catch {}
 
@@ -113,9 +124,9 @@ export const dashboardApi = {
 
     try {
       const [pagesRes, blogsRes, enqRes] = await Promise.allSettled([
-        api.get<any>("/seo/pages"),
-        api.get<any>("/blogs"),
-        api.get<any>("/contact-enquiry"),
+        api.get<unknown[] | { pages?: unknown[] }>("/seo/pages"),
+        api.get<unknown[] | { blogs?: unknown[] }>("/blogs"),
+        api.get<RecentEnquiry[]>("/contact-enquiry"),
       ]);
 
       if (pagesRes.status === "fulfilled" && pagesRes.value) {
@@ -132,8 +143,8 @@ export const dashboardApi = {
         const enqList = Array.isArray(enqRes.value) ? enqRes.value : [];
         if (enqList.length > 0) {
           totalEnquiriesCount = enqList.length;
-          dynamicSubmissions = enqList.slice(0, 5).map((e: any) => ({
-            id: e._id || e.id || String(Math.random()),
+          dynamicSubmissions = enqList.slice(0, 5).map((e, index) => ({
+            id: e._id || e.id || `enquiry-${index}`,
             name: e.name || e.organization || "Enquiry",
             type: e.interest || e.category || "General Enquiry",
             city: e.city || "India",

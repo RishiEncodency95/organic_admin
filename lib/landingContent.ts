@@ -1,3 +1,4 @@
+import type { CmsJson } from "@/lib/cmsJson";
 export interface LandingSectionItem {
   code?: string;
   step?: string;
@@ -54,7 +55,7 @@ export interface LandingSectionItem {
   keyPoint2?: string;
   keyPoint3?: string;
   keyPoint4?: string;
-  [key: string]: any;
+  [key: string]: CmsJson;
 }
 
 export interface LandingHeroSlide {
@@ -202,7 +203,7 @@ export interface LandingSectionContent {
   stat5Sub?: string;
   slides?: LandingHeroSlide[];
   items?: LandingSectionItem[];
-  [key: string]: any;
+  [key: string]: CmsJson;
 }
 
 export const defaultLandingSections: LandingSectionContent[] = [

@@ -167,22 +167,22 @@ export default function EnquiryDetailModal({ enquiry, activity, initialMode = "r
         aria-labelledby="detail-title"
         className="relative flex max-h-[calc(100vh-32px)] w-[600px] max-w-full flex-col rounded-[14px] bg-white text-[#0f172a] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.45)]"
       >
-        <div className="min-h-0 overflow-y-auto px-[22px] pb-[14px] pt-[14px]">
+        <div className="min-h-0 overflow-y-auto px-[18px] pb-[11px] pt-[11px]">
           {/* Header */}
           <div className="flex items-start justify-between">
             <div>
-              <h2 id="detail-title" className="text-[20.5px] font-bold leading-tight text-[#0f2a1c]">
+              <h2 id="detail-title" className="text-[18.5px] font-bold leading-tight text-[#0f2a1c]">
                 {enquiry.review ? `Review ${enquiry.type}` : `${enquiry.type} Details`}
               </h2>
               <p className="text-[13px] text-[#475569]">{enquiry.review ? "Needs attention — reply to the visitor or take action." : "Chat history, contact details and status."}</p>
             </div>
-            <button ref={closeRef} type="button" onClick={onClose} aria-label="Close" className="-mr-[4px] grid h-[30px] w-[30px] place-items-center rounded-full text-[#0f172a] transition hover:bg-slate-100">
+            <button ref={closeRef} type="button" onClick={onClose} aria-label="Close" className="-mr-[4px] grid h-[28px] w-[28px] place-items-center rounded-full text-[#0f172a] transition hover:bg-slate-100">
               <X className="h-[20px] w-[20px]" />
             </button>
           </div>
 
           {/* Enquiry */}
-          <div className="mt-[10px] rounded-[9px] border border-[#d9ecdf] bg-[#eef7f0] px-[14px] py-[7px]">
+          <div className="mt-[7px] rounded-[9px] border border-[#d9ecdf] bg-[#eef7f0] px-[14px] py-[5px]">
             <p className="flex items-center gap-[12px] text-[14.5px] font-bold text-[#0f172a]">
               #OM-{1047 + enquiry.id} • {enquiry.name}
               <span className="rounded-[5px] bg-white px-[7px] py-[1px] text-[11px] font-medium text-[#15803d]">{enquiry.tag}</span>
@@ -195,7 +195,7 @@ export default function EnquiryDetailModal({ enquiry, activity, initialMode = "r
           </div>
 
           {/* Facts */}
-          <div className="mt-[10px] grid grid-cols-3 gap-x-[16px] gap-y-[8px] rounded-[9px] border border-[#eef0f2] px-[14px] py-[9px]">
+          <div className="mt-[7px] grid grid-cols-3 gap-x-[12px] gap-y-[6px] rounded-[9px] border border-[#eef0f2] px-[14px] py-[7px]">
             <div>
               <p className={label}>Assigned to</p>
               <p className={`flex items-center gap-[6px] ${value} ${unassigned ? "text-[#d97706]" : ""}`}>
@@ -246,8 +246,8 @@ export default function EnquiryDetailModal({ enquiry, activity, initialMode = "r
           </div>
 
           {/* Chat history */}
-          <p className="mb-[4px] mt-[10px] text-[13.5px] font-semibold text-[#0f172a]">Chat history</p>
-          <div ref={chatRef} className="flex h-[220px] flex-col gap-[8px] overflow-y-auto rounded-[9px] border border-[#eef0f2] bg-[#f8faf9] px-[12px] py-[10px]">
+          <p className="mb-[4px] mt-[7px] text-[13.5px] font-semibold text-[#0f172a]">Chat history</p>
+          <div ref={chatRef} className="flex h-[190px] flex-col gap-[8px] overflow-y-auto rounded-[9px] border border-[#eef0f2] bg-[#f8faf9] px-[12px] py-[8px]">
             {transcriptLoading && <p className="self-center text-[12px] text-[#64748b]">Loading chat…</p>}
             {transcript?.failed && transcript.id === chatId && <p className="self-center text-[12px] text-[#dc2626]">Could not load the chat.</p>}
             {!transcriptLoading && !thread.length && <p className="self-center text-[12px] text-[#64748b]">The visitor only browsed the chatbot menu.</p>}
@@ -257,7 +257,7 @@ export default function EnquiryDetailModal({ enquiry, activity, initialMode = "r
                   {m.text} • {m.by ? `${m.by} • ` : ""}{m.time}
                 </p>
               ) : m.from === "note" ? (
-                <div key={i} className="max-w-[80%] self-end rounded-[10px] border border-[#f5e3bf] bg-[#fffaf0] px-[11px] py-[6px]">
+                <div key={i} className="max-w-[80%] self-end rounded-[10px] border border-[#f5e3bf] bg-[#fffaf0] px-[11px] py-[5px]">
                   <span className="mb-[2px] flex items-center gap-[4px] text-[11.5px] font-medium text-[#b45309]">
                     <StickyNote className="h-[12px] w-[12px]" /> Internal note • {m.by || "You"} • {m.time}
                   </span>
@@ -270,7 +270,7 @@ export default function EnquiryDetailModal({ enquiry, activity, initialMode = "r
                     {m.from === "visitor" ? enquiry.name : m.from === "bot" ? "Organic Mitra" : m.by || "You"} • {m.time}
                   </span>
                   <span
-                    className={`whitespace-pre-wrap rounded-[10px] px-[11px] py-[6px] text-[13.5px] leading-snug ${
+                    className={`whitespace-pre-wrap rounded-[10px] px-[11px] py-[5px] text-[13.5px] leading-snug ${
                       m.from === "agent" ? "bg-[#15803d] text-white" : m.from === "bot" ? "border border-[#d9ecdf] bg-[#eef7f0] text-[#0f172a]" : "border border-[#e5e7eb] bg-white text-[#0f172a]"
                     }`}
                   >
@@ -282,7 +282,7 @@ export default function EnquiryDetailModal({ enquiry, activity, initialMode = "r
           </div>
 
           {/* Reply / internal note */}
-          <div role="tablist" aria-label="Message type" className="mt-[8px] flex gap-[4px]">
+          <div role="tablist" aria-label="Message type" className="mt-[6px] flex gap-[4px]">
             {(["reply", "note"] as const).map((m) => (
               <button
                 key={m}
@@ -315,13 +315,13 @@ export default function EnquiryDetailModal({ enquiry, activity, initialMode = "r
               rows={2}
               maxLength={500}
               placeholder={mode === "reply" ? `Reply to ${enquiry.name}… (Enter to send, Shift+Enter for a new line)` : "Note for your team — the visitor won't see this"}
-              className={`h-[52px] w-full resize-none rounded-[7px] border px-[12px] ${mode === "note" ? "border-[#f5e3bf] bg-[#fffdf7]" : "border-[#cbd5e1] bg-white"} py-[5px] text-[13.5px] leading-snug text-[#0f172a] outline-none transition focus:border-[#15633a] focus:ring-2 focus:ring-[#15633a]/15`}
+              className={`h-[44px] w-full resize-none rounded-[7px] border px-[12px] ${mode === "note" ? "border-[#f5e3bf] bg-[#fffdf7]" : "border-[#cbd5e1] bg-white"} py-[5px] text-[13.5px] leading-snug text-[#0f172a] outline-none transition focus:border-[#15633a] focus:ring-2 focus:ring-[#15633a]/15`}
             />
             <button
               type="button"
               onClick={send}
               disabled={!draft.trim()}
-              className="inline-flex h-[35px] shrink-0 items-center gap-[7px] rounded-[8px] bg-[#15803d] px-[16px] text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#166534] disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-[31px] shrink-0 items-center gap-[7px] rounded-[8px] bg-[#15803d] px-[16px] text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#166534] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {mode === "reply" ? (
                 <>
@@ -335,7 +335,7 @@ export default function EnquiryDetailModal({ enquiry, activity, initialMode = "r
             </button>
           </div>
 
-          <p className="mt-[8px] flex items-center gap-[10px] rounded-[7px] bg-[#f3f5f8] px-[11px] py-[6px] text-[12px] text-[#334155]">
+          <p className="mt-[6px] flex items-center gap-[10px] rounded-[7px] bg-[#f3f5f8] px-[11px] py-[5px] text-[12px] text-[#334155]">
             <Info className="h-[16px] w-[16px] shrink-0" />
             {whatsappTo
               ? "Send saves the reply on this record and opens WhatsApp with it, ready to send to the visitor. Notes stay internal."
@@ -343,15 +343,15 @@ export default function EnquiryDetailModal({ enquiry, activity, initialMode = "r
           </p>
 
           {/* Actions */}
-          <div className="mt-[10px] flex justify-end gap-[12px]">
-            <button type="button" onClick={onClose} className="h-[30px] rounded-[8px] border border-[#cbd5e1] bg-white px-[22px] text-[13.5px] font-semibold text-[#0f172a] transition hover:bg-slate-50">
+          <div className="mt-[7px] flex justify-end gap-[12px]">
+            <button type="button" onClick={onClose} className="h-[28px] rounded-[8px] border border-[#cbd5e1] bg-white px-[18px] text-[13.5px] font-semibold text-[#0f172a] transition hover:bg-slate-50">
               Close
             </button>
-            <button type="button" onClick={onAssign} className="h-[30px] rounded-[8px] border border-[#f5c27a] bg-white px-[18px] text-[13.5px] font-semibold text-[#d97706] transition hover:bg-[#fffaf0]">
+            <button type="button" onClick={onAssign} className="h-[28px] rounded-[8px] border border-[#f5c27a] bg-white px-[18px] text-[13.5px] font-semibold text-[#d97706] transition hover:bg-[#fffaf0]">
               {unassigned ? "Assign" : "Reassign"}
             </button>
             {!resolved && (
-              <button type="button" onClick={onResolve} className="h-[30px] rounded-[8px] bg-[#15803d] px-[20px] text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#166534]">
+              <button type="button" onClick={onResolve} className="h-[28px] rounded-[8px] bg-[#15803d] px-[20px] text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#166534]">
                 Close / Resolve
               </button>
             )}

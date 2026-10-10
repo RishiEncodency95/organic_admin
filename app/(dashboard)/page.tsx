@@ -54,6 +54,7 @@ import {
   Eye,
   type LucideIcon,
 } from "lucide-react";
+import AnimatedCounter from "@/components/ui/AnimatedCounter";
 
 type DropdownKey =
   | "menu"
@@ -69,136 +70,6 @@ type DropdownKey =
   | "location-range"
   | null;
 
-/* =========================================================
-   ANIMATED COUNTER
-========================================================= */
-
-function AnimatedCounter({
-  value,
-  duration = 1200,
-}: {
-  value: string | number;
-  duration?: number;
-}) {
-  const [displayValue, setDisplayValue] = useState<
-    string | number
-  >("");
-
-  useEffect(() => {
-    const strVal = String(value);
-
-    const numericMatch = strVal.match(
-      /^([^\d.]*)([\d,.]+)(.*)$/,
-    );
-
-    if (!numericMatch) {
-      setDisplayValue(value);
-      return;
-    }
-
-    const prefix = numericMatch[1];
-
-    const rawNumberStr =
-      numericMatch[2].replace(/,/g, "");
-
-    const targetNum =
-      parseFloat(rawNumberStr);
-
-    const suffix = numericMatch[3];
-
-    if (
-      isNaN(targetNum) ||
-      targetNum === 0
-    ) {
-      setDisplayValue(value);
-      return;
-    }
-
-    const hasComma =
-      numericMatch[2].includes(",");
-
-    const decimalPlaces =
-      (
-        rawNumberStr.split(".")[1] ||
-        ""
-      ).length;
-
-    let startTime: number | null =
-      null;
-
-    let animationFrameId: number;
-
-    const step = (
-      timestamp: number,
-    ) => {
-      if (!startTime) {
-        startTime = timestamp;
-      }
-
-      const progress = Math.min(
-        (timestamp - startTime) /
-        duration,
-        1,
-      );
-
-      const easeProgress =
-        1 -
-        Math.pow(
-          1 - progress,
-          3,
-        );
-
-      const currentNum =
-        targetNum *
-        easeProgress;
-
-      let formattedNum =
-        currentNum.toFixed(
-          decimalPlaces,
-        );
-
-      if (hasComma) {
-        const parts =
-          formattedNum.split(".");
-
-        parts[0] = parseInt(
-          parts[0],
-          10,
-        ).toLocaleString();
-
-        formattedNum =
-          parts.join(".");
-      }
-
-      setDisplayValue(
-        `${prefix}${formattedNum}${suffix}`,
-      );
-
-      if (progress < 1) {
-        animationFrameId =
-          requestAnimationFrame(
-            step,
-          );
-      }
-    };
-
-    animationFrameId =
-      requestAnimationFrame(
-        step,
-      );
-
-    return () =>
-      cancelAnimationFrame(
-        animationFrameId,
-      );
-  }, [value, duration]);
-
-  return (
-    <>
-      {displayValue || value}
-    </>
-  );
-}
 
 /* =========================================================
    TYPES
@@ -906,6 +777,7 @@ export default function DashboardPage() {
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem("moksha-dashboard-pagespeed");
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- the cached copy is in localStorage, readable only after mount
       if (stored) setCachedPageSpeed(JSON.parse(stored));
     } catch {
       // Ignore an invalid or unavailable browser cache.
@@ -915,7 +787,6 @@ export default function DashboardPage() {
   useEffect(() => {
     const current = liveDashboard?.sources.pageSpeed;
     if (current?.status === "connected" && current.data) {
-      setCachedPageSpeed(current.data);
       window.localStorage.setItem("moksha-dashboard-pagespeed", JSON.stringify(current.data));
     }
   }, [liveDashboard?.sources.pageSpeed]);
@@ -1340,8 +1211,8 @@ export default function DashboardPage() {
       return 2; // Default Medium Priority -> Orange
     };
 
-    let all = (internal?.recentSubmissions || []).map((e) => ({
-      id: String(e.id || Math.random()),
+    let all = (internal?.recentSubmissions || []).map((e, index) => ({
+      id: String(e.id || `submission-${index}`),
       name: e.name,
       type: e.type,
       createdAt: e.createdAt,
@@ -2024,7 +1895,7 @@ export default function DashboardPage() {
                           item.gradient,
 
                         borderColor:
-                          (item as any).borderColor || undefined,
+                          ("borderColor" in item && typeof item.borderColor === "string" ? item.borderColor : undefined),
 
                         boxShadow:
                           "rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px",

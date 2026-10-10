@@ -5,6 +5,7 @@ import { X, Sparkles, CheckCircle2, AlertTriangle, HelpCircle, Code, Link as Lin
 import { formatDateTime } from "../SeoBadges";
 
 import { seoAuditApi } from "@/lib/seoAuditApi";
+import type { SeoPageDetail, SeoRecommendationResponse, SeoRecommendationItem } from "@/lib/seoAuditApi";
 
 export function OpenAiAuditModal({
   isOpen,
@@ -16,8 +17,8 @@ export function OpenAiAuditModal({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  pageDetail: any;
-  aiState: any;
+  pageDetail: SeoPageDetail | null;
+  aiState: SeoRecommendationResponse | null;
   aiLoading: boolean;
   onReGenerate: (provider?: "openai" | "gemini") => void;
 }) {
@@ -38,8 +39,8 @@ export function OpenAiAuditModal({
     ? `${(page.performance.lcpMs / 1000).toFixed(2)}s`
     : "—";
   const clsText =
-    page?.performance?.clsScore !== undefined && page?.performance?.clsScore !== null
-      ? Number(page.performance.clsScore).toFixed(3)
+    page?.performance?.cls !== undefined && page?.performance?.cls !== null
+      ? Number(page.performance.cls).toFixed(3)
       : "—";
   const perfScore = page?.performance?.score;
   const wordText = num(page?.wordCount, " words");
@@ -71,7 +72,7 @@ export function OpenAiAuditModal({
   const keywordTerms = page?.metaKeywords || "—";
   const activeProvider: "openai" | "gemini" = rec?.provider === "gemini" ? "gemini" : "openai";
 
-  const handleApplyFix = async (idx: number, item: any) => {
+  const handleApplyFix = async (idx: number, item: SeoRecommendationItem) => {
     setApplyingFixIdx(idx);
     try {
       const targetPageId = page?.id || page?.path?.replace(/^\//, "") || "home";
@@ -101,17 +102,17 @@ export function OpenAiAuditModal({
   };
 
   const allItems = rec?.items ?? [];
-  const filteredItems = allItems.filter((item: any) => {
+  const filteredItems = allItems.filter((item) => {
     if (priorityFilter === "all") return true;
     return item.priority?.toLowerCase() === priorityFilter;
   });
 
-  const isAllExpanded = filteredItems.length > 0 && filteredItems.every((_: any, i: number) => expandedItems[i]);
+  const isAllExpanded = filteredItems.length > 0 && filteredItems.every((_, i) => expandedItems[i]);
 
   const toggleExpandAll = () => {
     const nextState: Record<number, boolean> = {};
     const targetValue = !isAllExpanded;
-    filteredItems.forEach((_: any, i: number) => {
+    filteredItems.forEach((_, i) => {
       nextState[i] = targetValue;
     });
     setExpandedItems(nextState);
@@ -456,21 +457,21 @@ export function OpenAiAuditModal({
                           <CheckCircle2 className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
                           <div>
                             <strong className="text-white font-bold block">1. Title Tag & Keyword Placement Audit:</strong>
-                            <span>Front-load targeted search keywords ('Bharat Organic Expo 2027', 'Bio-Agriculture') within the opening 50 characters. Keep total length strictly between 50 and 60 characters to eliminate SERP truncation.</span>
+                            <span>Front-load targeted search keywords (&apos;Bharat Organic Expo 2027&apos;, &apos;Bio-Agriculture&apos;) within the opening 50 characters. Keep total length strictly between 50 and 60 characters to eliminate SERP truncation.</span>
                           </div>
                         </div>
                         <div className="flex items-start gap-2">
                           <CheckCircle2 className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
                           <div>
                             <strong className="text-white font-bold block">2. Meta Description CTR Expansion:</strong>
-                            <span>Expand meta description snippets to 140-150 characters featuring explicit calls to action ('Book Stall Space', 'Register Visitor Pass') to maximize organic CTR weight.</span>
+                            <span>Expand meta description snippets to 140-150 characters featuring explicit calls to action (&apos;Book Stall Space&apos;, &apos;Register Visitor Pass&apos;) to maximize organic CTR weight.</span>
                           </div>
                         </div>
                         <div className="flex items-start gap-2">
                           <CheckCircle2 className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
                           <div>
                             <strong className="text-white font-bold block">3. Broken Internal Links & Indexability Clearance:</strong>
-                            <span>Scan all of the site's crawled routes for 404 response errors, ensure self-referencing canonical tags, and replace generic anchor text ('click here') with keyword-descriptive links.</span>
+                            <span>Scan all of the site&apos;s crawled routes for 404 response errors, ensure self-referencing canonical tags, and replace generic anchor text (&apos;click here&apos;) with keyword-descriptive links.</span>
                           </div>
                         </div>
                       </div>
@@ -568,7 +569,7 @@ export function OpenAiAuditModal({
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
                           <div>
                             <strong className="text-white font-bold block">1. LCP Hero Asset Preloading & CLS Stabilization:</strong>
-                            <span>Preload Largest Contentful Paint hero images with &lt;link rel="preload" as="image" fetchpriority="high" /&gt; and set explicit image width and height dimensions to eliminate CLS layout shifts (&lt;0.1).</span>
+                            <span>Preload Largest Contentful Paint hero images with &lt;link rel=&quot;preload&quot; as=&quot;image&quot; fetchpriority=&quot;high&quot; /&gt; and set explicit image width and height dimensions to eliminate CLS layout shifts (&lt;0.1).</span>
                           </div>
                         </div>
                         <div className="flex items-start gap-2">
@@ -656,7 +657,7 @@ export function OpenAiAuditModal({
                   </div>
                 )}
 
-                {filteredItems.map((item: any, idx: number) => {
+                {filteredItems.map((item, idx) => {
                   const isItemFixed = !!fixedItems[idx];
                   const isExpanded = expandedItems[idx] ?? true; // expanded by default
 
@@ -779,7 +780,7 @@ export function OpenAiAuditModal({
                               <LinkIcon className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
                               <span className="font-semibold text-slate-400">Suggested Links:</span>
                               <span className="text-blue-300 font-mono text-[11.5px]">
-                                {item.internalLinkSuggestions.map((l: any) => `${l.anchorText} → ${l.fromOrTo}`).join(" · ")}
+                                {item.internalLinkSuggestions.map((l) => `${l.anchorText} → ${l.fromOrTo}`).join(" · ")}
                               </span>
                             </div>
                           )}

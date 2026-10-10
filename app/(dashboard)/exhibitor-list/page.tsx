@@ -39,6 +39,7 @@ import {
   X,
 } from "lucide-react";
 import Swal from "sweetalert2";
+import AnimatedCounter from "@/components/ui/AnimatedCounter";
 
 // SweetAlert2 theme matching admin portal dark style
 const Toast = Swal.mixin({
@@ -56,7 +57,7 @@ const Toast = Swal.mixin({
   },
   didOpen: (toast) => {
     toast.style.boxShadow = "none";
-    (toast.style as any).webkitBoxShadow = "none";
+    toast.style.setProperty("-webkit-box-shadow", "none");
     toast.style.filter = "none";
   },
 });
@@ -72,6 +73,9 @@ function showError(message: string) {
 function showInfo(message: string) {
   Toast.fire({ icon: "info", title: message, iconColor: "#60a5fa" });
 }
+
+/** An exhibitor as the website API returns it (older records use title / image) */
+type RawExhibitor = Partial<ExhibitorItem> & { title?: string; image?: string };
 
 export interface ExhibitorItem {
   id: number;
@@ -201,108 +205,6 @@ const CATEGORY_STYLES: Record<string, { badge: string; pill: string }> = {
   "OTHERS": { badge: "bg-slate-100 text-slate-700 border-slate-200", pill: "bg-slate-700 text-white" },
 };
 
-function AnimatedCounter({
-  value,
-  duration = 1200,
-}: {
-  value: string | number;
-  duration?: number;
-}) {
-  const [displayValue, setDisplayValue] = useState<string | number>(() => {
-    const str = String(value);
-    return str.match(/\d/) ? "0" : value;
-  });
-  const spanRef = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    const el = spanRef.current;
-    if (!el) return;
-
-    const strVal = String(value);
-    const numericMatch = strVal.match(/^([^\d.]*)([\d,.]+)(.*)$/);
-
-    if (!numericMatch) {
-      setDisplayValue(value);
-      return;
-    }
-
-    const prefix = numericMatch[1];
-    const rawNumberStr = numericMatch[2].replace(/,/g, "");
-    const targetNum = parseFloat(rawNumberStr);
-    const suffix = numericMatch[3];
-
-    if (isNaN(targetNum)) {
-      setDisplayValue(value);
-      return;
-    }
-
-    if (targetNum === 0) {
-      setDisplayValue(`${prefix}0${suffix}`);
-      return;
-    }
-
-    const hasComma = numericMatch[2].includes(",");
-    const decimalPlaces = (rawNumberStr.split(".")[1] || "").length;
-
-    let animationFrameId: number | null = null;
-
-    const startCounting = () => {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      let startTime: number | null = null;
-
-      const step = (timestamp: number) => {
-        if (!startTime) startTime = timestamp;
-        const progress = Math.min((timestamp - startTime) / duration, 1);
-        const easeProgress = 1 - Math.pow(1 - progress, 3);
-        const currentNum = targetNum * easeProgress;
-        let formattedNum = currentNum.toFixed(decimalPlaces);
-
-        if (hasComma) {
-          const parts = formattedNum.split(".");
-          parts[0] = parseInt(parts[0], 10).toLocaleString();
-          formattedNum = parts.join(".");
-        }
-
-        setDisplayValue(`${prefix}${formattedNum}${suffix}`);
-
-        if (progress < 1) {
-          animationFrameId = requestAnimationFrame(step);
-        }
-      };
-
-      animationFrameId = requestAnimationFrame(step);
-    };
-
-    if (typeof IntersectionObserver !== "undefined") {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              startCounting();
-            } else {
-              setDisplayValue(`${prefix}0${suffix}`);
-            }
-          });
-        },
-        { threshold: 0.15 }
-      );
-
-      observer.observe(el);
-
-      return () => {
-        observer.disconnect();
-        if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      };
-    } else {
-      startCounting();
-      return () => {
-        if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      };
-    }
-  }, [value, duration]);
-
-  return <span ref={spanRef}>{displayValue}</span>;
-}
 
 const toneClass = {
   emerald: "bg-emerald-50 text-emerald-700 ring-emerald-200",
@@ -492,6 +394,7 @@ export default function ExhibitorListPage() {
             updatedBy: item.updatedBy || loggedInAdminName,
           }));
           const sorted = normalized.sort((a: ExhibitorItem, b: ExhibitorItem) => a.order - b.order);
+          // eslint-disable-next-line react-hooks/set-state-in-effect -- the saved list is in localStorage, readable only after mount
           setExhibitors(sorted);
         }
       }
@@ -519,7 +422,7 @@ export default function ExhibitorListPage() {
         if (itemsRes && itemsRes.ok) {
           const json = await itemsRes.json().catch(() => null);
           if (json && Array.isArray(json.data) && json.data.length > 0) {
-            const mapped: ExhibitorItem[] = json.data.map((item: any, idx: number) => ({
+            const mapped: ExhibitorItem[] = json.data.map((item: RawExhibitor, idx: number) => ({
               id: typeof item.order === "number" ? item.order : idx + 1,
               _id: item._id,
               name: item.name || item.title || "Exhibitor",
@@ -761,7 +664,7 @@ export default function ExhibitorListPage() {
             updatedAt: timeNow,
             updatedBy: activeAdmin,
           };
-          let res = await fetch(`/api/website/participate/exhibitor-list/items/${selected._id || selected.id}`, {
+          const res = await fetch(`/api/website/participate/exhibitor-list/items/${selected._id || selected.id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
@@ -873,7 +776,7 @@ export default function ExhibitorListPage() {
         throw new Error(json?.message || `Bulk upload failed (status ${res.status}).`);
       }
 
-      const created: ExhibitorItem[] = json.data.map((item: any) => ({
+      const created: ExhibitorItem[] = json.data.map((item: RawExhibitor) => ({
         id: item.order,
         _id: item._id,
         name: item.name || item.title || "Exhibitor",
@@ -960,7 +863,7 @@ export default function ExhibitorListPage() {
           updatedBy: activeAdmin,
           fileSize: formFileSize || editingItem.fileSize || "15.0 KB",
         };
-        let res = await fetch(`/api/website/participate/exhibitor-list/items/${editingItem._id || editingItem.id}`, {
+        const res = await fetch(`/api/website/participate/exhibitor-list/items/${editingItem._id || editingItem.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
@@ -1074,7 +977,7 @@ export default function ExhibitorListPage() {
     }
 
     try {
-      let res = await fetch(`/api/website/participate/exhibitor-list/items/${item._id || item.id}`, {
+      const res = await fetch(`/api/website/participate/exhibitor-list/items/${item._id || item.id}`, {
         method: "DELETE",
       });
       if (!res.ok) {
@@ -1113,7 +1016,7 @@ export default function ExhibitorListPage() {
     if (target) {
       try {
         const payload = { status: newStatus, updatedAt: timeNow, updatedBy: activeAdmin };
-        let res = await fetch(`/api/website/participate/exhibitor-list/items/${target._id || target.id}`, {
+        const res = await fetch(`/api/website/participate/exhibitor-list/items/${target._id || target.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),

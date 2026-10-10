@@ -1,6 +1,7 @@
 import { ChevronRight } from "lucide-react";
 import { SectionFieldsEditor, SectionItemsEditor, SectionTitle } from "../section-editor";
 import { Toggle } from "../fields";
+import type { CmsRecord } from "@/lib/cmsJson";
 
 export function PageSectionsPanel({
   sectionsDraft,
@@ -14,8 +15,8 @@ export function PageSectionsPanel({
   removeSectionItem,
   resetToWebsiteDefaults,
 }: {
-  sectionsDraft: Array<Record<string, any>>;
-  setSectionsDraft: React.Dispatch<React.SetStateAction<Array<Record<string, any>>>>;
+  sectionsDraft: Array<CmsRecord>;
+  setSectionsDraft: React.Dispatch<React.SetStateAction<Array<CmsRecord>>>;
   openSectionIndices: Set<number>;
   setOpenSectionIndices: React.Dispatch<React.SetStateAction<Set<number>>>;
   toggleSectionAccordion: (index: number) => void;

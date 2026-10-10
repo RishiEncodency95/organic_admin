@@ -3,18 +3,20 @@ import { api } from "./api";
 
 const SETTINGS_KEY = "bharat_organic_admin_settings_v3";
 
+// Used until the backend answers (and offline)
 const defaultMockSettings: Settings = {
-  websiteName: "Bharat Organic Expo 2027",
-  fullPaymentDiscount: 5,
-  currency: "INR",
-  contactEmail: "info@bharatorganicexpo.com",
-  contactPhone: "+91 9654900525"
-} as any;
+  _id: "",
+  siteName: "Bharat Organic Expo 2027",
+  helplineNumber: "+91 9654900525",
+  supportEmail: "info@bharatorganicexpo.com",
+  banners: [],
+  socialLinks: [],
+};
 
 export const settingsApi = {
   get: async (): Promise<Settings> => {
     try {
-      const res: any = await api.get("/settings?website=Organicexpo");
+      const res = await api.get<Partial<Settings> & { data?: Partial<Settings> }>("/settings?website=Organicexpo");
       const backendData = res?.data || res || {};
       if (backendData && Object.keys(backendData).length > 0) {
         if (typeof window !== "undefined") {
@@ -38,14 +40,15 @@ export const settingsApi = {
     }
     return defaultMockSettings;
   },
-  getSystemAlerts: async (): Promise<any> => ({ alerts: [] }),
+  // No separate alerts endpoint yet: the defaults (no systemAlerts set)
+  getSystemAlerts: async (): Promise<Settings> => defaultMockSettings,
   // Pages & CMS "Published" toggle. Patches only data.<configKey>.status on the server.
   setPageStatus: async (
     configKey: string,
     status: "Published" | "Draft",
     updatedBy?: string,
-  ): Promise<Record<string, any>> => {
-    const res: any = await api.patch("/settings/page-status?website=Organicexpo", { configKey, status, updatedBy });
+  ): Promise<Record<string, unknown>> => {
+    const res = await api.patch<{ data?: Record<string, unknown> }>("/settings/page-status?website=Organicexpo", { configKey, status, updatedBy });
     const pageConfig = res?.data || {};
     // Keep the cached settings in sync: settingsApi.update() PUTs this whole object,
     // so a stale status here would silently revert the toggle on the next save elsewhere.
@@ -75,7 +78,7 @@ export const settingsApi = {
     }
     const updated = { ...current, ...payload };
 
-    const res: any = await api.put("/settings?website=Organicexpo", updated);
+    const res = await api.put<Partial<Settings> & { data?: Partial<Settings> }>("/settings?website=Organicexpo", updated);
     const saved = { ...updated, ...(res?.data || res || {}) };
     if (typeof window !== "undefined") {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(saved));

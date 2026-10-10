@@ -5,6 +5,7 @@ import { ChevronRight, Plus, Trash2 } from "lucide-react";
 import { FieldLabel, ImageUploadField, SelectField, TextInput, Textarea, Toggle, VideoUploadField } from "../fields";
 import RichTextEditor from "@/components/RichTextEditor";
 import { IMAGE_KEY_PATTERN, LONG_TEXT_KEY_PATTERN, VIDEO_KEY_PATTERN, humanizeKey } from "./sectionFieldHelpers";
+import type { CmsRecord } from "@/lib/cmsJson";
 
 /* =========================================================
    GENERIC SECTION ITEMS EDITOR
@@ -20,7 +21,7 @@ export function SectionItemsEditor({
   onRemoveItem,
   sectionId,
 }: {
-  items: Array<Record<string, any>>;
+  items: Array<CmsRecord>;
   onChangeItem: (index: number, key: string, value: unknown) => void;
   onAddItem: () => void;
   onRemoveItem: (index: number) => void;
@@ -100,7 +101,7 @@ export function SectionItemsEditor({
     return "Add New Section Block";
   };
 
-  const getItemLabel = (item: Record<string, any>, index: number) => {
+  const getItemLabel = (item: CmsRecord, index: number) => {
     const mainTitle = item.name || item.title || item.label || (item.title1 ? `${item.title1} ${item.title2 || ""}`.trim() : null) || item.question || item.tagline || item.companyName1;
     if (mainTitle) return String(mainTitle);
     if (sectionId === "why-exhibit-hero") return item.main ? `${item.main} ${item.sub || ""}`.trim() : `Highlight Block ${index + 1}`;

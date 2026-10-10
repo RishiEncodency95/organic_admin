@@ -7,7 +7,9 @@ const Toggle2 = ({ checked }: { checked: boolean }) => (
   </div>
 );
 
-const ToggleRow = ({ icon: Icon, iconColor, label, active }: any) => (
+type RowIcon = React.ComponentType<{ size?: number; className?: string }>;
+
+const ToggleRow = ({ icon: Icon, iconColor, label, active }: { icon: RowIcon; iconColor: string; label: string; active: boolean }) => (
   <div className="flex items-center justify-between">
     <div className="flex items-center gap-[6px]">
       <Icon size={10} className={iconColor} />
@@ -17,7 +19,7 @@ const ToggleRow = ({ icon: Icon, iconColor, label, active }: any) => (
   </div>
 );
 
-const SimpleToggleRow = ({ label, active }: any) => (
+const SimpleToggleRow = ({ label, active }: { label: string; active: boolean }) => (
   <div className="flex items-center justify-between">
     <div className="flex items-center gap-[6px]">
       <Toggle2 checked={active} />
@@ -26,7 +28,7 @@ const SimpleToggleRow = ({ label, active }: any) => (
   </div>
 );
 
-const CheckboxRow = ({ icon: Icon, iconColor, iconBg, title, desc, active }: any) => (
+const CheckboxRow = ({ icon: Icon, iconColor, iconBg, title, desc, active }: { icon: RowIcon; iconColor: string; iconBg: string; title: string; desc: string; active: boolean }) => (
   <div className="flex items-start gap-[6px]">
     <div className={`w-[12px] h-[12px] mt-[2px] rounded-[3px] flex items-center justify-center flex-shrink-0 ${active ? 'bg-[#2563EB]' : 'border border-[#E0E5EB] bg-white'}`}>
       {active && <Check size={8} className="text-white" strokeWidth={3} />}
@@ -43,7 +45,7 @@ const CheckboxRow = ({ icon: Icon, iconColor, iconBg, title, desc, active }: any
   </div>
 );
 
-const SliderRow = ({ icon: Icon, iconColor, iconBg, label, percent, color, active }: any) => (
+const SliderRow = ({ icon: Icon, iconColor, iconBg, label, percent, color, active }: { icon: RowIcon; iconColor: string; iconBg: string; label: string; percent: string; color: string; active?: boolean }) => (
   <div className="flex items-center justify-between gap-[8px]">
     <div className="flex items-center gap-[6px] w-[110px]">
       <div className={`w-[18px] h-[18px] rounded-[4px] flex items-center justify-center flex-shrink-0 ${iconBg}`}>
@@ -61,7 +63,7 @@ const SliderRow = ({ icon: Icon, iconColor, iconBg, label, percent, color, activ
   </div>
 );
 
-const RadioRow = ({ label, active }: any) => (
+const RadioRow = ({ label, active }: { label: string; active: boolean }) => (
   <div className="flex items-start gap-[6px]">
     <div className={`w-[12px] h-[12px] rounded-full mt-[1px] border-[3px] flex-shrink-0 ${active ? 'border-[#2563EB] bg-white' : 'border-[#E1E6EC] bg-white'}`}></div>
     <span className="text-[9px] font-bold text-[#172762]">{label}</span>

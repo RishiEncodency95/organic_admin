@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Link2 } from "lucide-react";
 import { HttpStatusBadge } from "../SeoBadges";
+import type { SeoPageDetail } from "@/lib/seoAuditApi";
 
 type LinkFilter = "all" | "internal" | "external" | "nofollow" | "broken" | "redirecting" | "mixed";
 
@@ -29,7 +30,7 @@ function SectionCard({ title, icon, children }: { title: string; icon: React.Rea
   );
 }
 
-export default function AuditLinksSection({ page, detail }: { page: any; detail: any }) {
+export default function AuditLinksSection({ page, detail }: { page: SeoPageDetail["page"]; detail: SeoPageDetail }) {
   const [linkFilter, setLinkFilter] = useState<LinkFilter>("all");
 
   if (!page) return null;
@@ -83,13 +84,13 @@ export default function AuditLinksSection({ page, detail }: { page: any; detail:
           const outgoing = detail?.links?.outgoing ?? [];
           const counts: Record<LinkFilter, number> = {
             all: outgoing.length,
-            internal: outgoing.filter((link: any) => link.isInternal).length,
-            external: outgoing.filter((link: any) => !link.isInternal).length,
-            nofollow: outgoing.filter((link: any) => link.isNofollow).length,
-            broken: outgoing.filter((link: any) => link.isBroken).length,
-            redirecting: outgoing.filter((link: any) => link.redirectHops > 0).length,
+            internal: outgoing.filter((link) => link.isInternal).length,
+            external: outgoing.filter((link) => !link.isInternal).length,
+            nofollow: outgoing.filter((link) => link.isNofollow).length,
+            broken: outgoing.filter((link) => link.isBroken).length,
+            redirecting: outgoing.filter((link) => link.redirectHops > 0).length,
             mixed: outgoing.filter(
-              (link: any) =>
+              (link) =>
                 (page?.url ?? "").startsWith("https://") && (link.normalizedTarget ?? "").startsWith("http://")
             ).length,
           };
@@ -102,7 +103,7 @@ export default function AuditLinksSection({ page, detail }: { page: any; detail:
             redirecting: "Redirecting",
             mixed: "Mixed content",
           };
-          const visibleLinks = outgoing.filter((link: any) => {
+          const visibleLinks = outgoing.filter((link) => {
             if (linkFilter === "internal") return link.isInternal;
             if (linkFilter === "external") return !link.isInternal;
             if (linkFilter === "nofollow") return link.isNofollow;
@@ -145,7 +146,7 @@ export default function AuditLinksSection({ page, detail }: { page: any; detail:
                       </tr>
                     </thead>
                     <tbody>
-                      {visibleLinks.map((link: any, index: number) => (
+                      {visibleLinks.map((link, index) => (
                         <tr key={`${link.normalizedTarget}-${index}`} className={`border-b border-slate-800 hover:bg-slate-800/80 ${index % 2 === 0 ? "bg-slate-900/50" : ""}`}>
                           <td className="max-w-[320px] truncate py-2.5 px-4 font-mono text-cyan-300 font-medium" title={link.target}>
                             {link.target}

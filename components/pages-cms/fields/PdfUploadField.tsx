@@ -21,8 +21,8 @@ export function PdfUploadField({
     if (!file) return;
     setUploading(true);
     try {
-      const res: any = await uploadApi.file(file, "bharat-organic/brochures");
-      const uploadedUrl = res?.url || res?.data?.url;
+      const res = await uploadApi.file(file, "bharat-organic/brochures");
+      const uploadedUrl = res?.url || (res as { data?: { url?: string } })?.data?.url;
       if (!uploadedUrl) throw new Error("Server did not return a PDF URL.");
       onChange(uploadedUrl);
     } catch (err) {
@@ -119,7 +119,7 @@ export function PdfUploadField({
       ) : (
         <div className="text-[9px] text-[#94a3b8] italic flex items-center gap-1 px-1">
           <FileText className="h-3 w-3 text-[#cbd5e1]" />
-          No PDF file attached. Paste a file URL or click "Upload PDF".
+          No PDF file attached. Paste a file URL or click &quot;Upload PDF&quot;.
         </div>
       )}
     </div>

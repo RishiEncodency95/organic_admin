@@ -1,12 +1,13 @@
 import { api } from "@/lib/api";
 import type { SectionsDraft, SetSectionsDraft } from "./types";
+import type { CmsJson, CmsRecord } from "@/lib/cmsJson";
 
 const HERO_ENDPOINT = "/website/bloghero";
-const isHero = (sec: Record<string, any>) => sec.key === "blog-hero";
+const isHero = (sec: CmsRecord) => sec.key === "blog-hero";
 
 export function syncBlogSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft): void {
   api.get(HERO_ENDPOINT)
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         // Older saves only have the two-part title; join it into the single H1 field.
@@ -17,7 +18,7 @@ export function syncBlogSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft):
         setSectionsDraft((prev) =>
           prev.map((sec) => {
             if (!isHero(sec)) return sec;
-            const { titlePrimary: _p, titleSecondary: _s, ...rest } = sec as Record<string, any>;
+            const { titlePrimary: _p, titleSecondary: _s, ...rest } = sec as CmsRecord;
             return {
               ...rest,
               eyebrow: data.tagline || sec.eyebrow,

@@ -1,16 +1,17 @@
 import { api } from "@/lib/api";
 import type { SectionsDraft, SetSectionsDraft } from "./types";
+import type { CmsJson } from "@/lib/cmsJson";
 
 export function syncAwardsSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft): void {
   api.get("/website/awards/hero")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         setSectionsDraft((prev) =>
           prev.map((sec) => {
             if (sec.key === "awards-hero" || sec.name === "Awards Hero Banner") {
               const cleanedSec = { ...sec };
-              delete (cleanedSec as any).shortDescription;
+              delete (cleanedSec as CmsJson).shortDescription;
               return {
                 ...cleanedSec,
                 enabled: data.enabled !== false,
@@ -23,7 +24,7 @@ export function syncAwardsSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft
                   subtitle:
                     data.subtitle ||
                     (Array.isArray(data.highlights) && data.highlights.length > 0
-                      ? data.highlights.map((h: any) => h.text || h).join(" • ")
+                      ? data.highlights.map((h: CmsJson) => h.text || h).join(" • ")
                       : sec.subtitle || "Celebrating Excellence • Innovation • Sustainability"),
                   description:
                     data.description || data.shortDescription || sec.description || sec.shortDescription,
@@ -69,20 +70,20 @@ export function syncAwardsSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft
     .catch(() => {});
 
   api.get("/website/awards/stats")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         setSectionsDraft((prev) =>
           prev.map((sec) => {
             if (sec.key === "awards-stats" || sec.name === "Key Statistics Strip") {
               const cleanedSec = { ...sec };
-              delete (cleanedSec as any).eyebrow;
-              delete (cleanedSec as any).title;
+              delete (cleanedSec as CmsJson).eyebrow;
+              delete (cleanedSec as CmsJson).title;
               return {
                 ...cleanedSec,
                 enabled: data.enabled !== false,
                 items: Array.isArray(data.items) && data.items.length > 0
-                  ? data.items.map((it: any, idx: number) => ({
+                  ? data.items.map((it: CmsJson, idx: number) => ({
                       id: it.id || idx + 1,
                       title: it.title ?? "",
                       label: it.label || it.subtitle || "",
@@ -99,15 +100,15 @@ export function syncAwardsSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft
     .catch(() => {});
 
   api.get("/website/awards/about")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         setSectionsDraft((prev) =>
           prev.map((sec) => {
             if (sec.key === "awards-about" || sec.name === "About the Awards") {
               const cleanedSec = { ...sec };
-              delete (cleanedSec as any).image;
-              delete (cleanedSec as any).imageAlt;
+              delete (cleanedSec as CmsJson).image;
+              delete (cleanedSec as CmsJson).imageAlt;
               return {
                 ...cleanedSec,
                 enabled: data.enabled !== false,
@@ -124,7 +125,7 @@ export function syncAwardsSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft
     .catch(() => {});
 
   api.get("/website/awards/categories")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         const rawCats = data.items || data.categories;
@@ -132,15 +133,15 @@ export function syncAwardsSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft
           prev.map((sec) => {
             if (sec.key === "awards-categories" || sec.name === "Award Sector Categories") {
               const cleanedSec = { ...sec };
-              delete (cleanedSec as any).description;
-              delete (cleanedSec as any).shortDescription;
+              delete (cleanedSec as CmsJson).description;
+              delete (cleanedSec as CmsJson).shortDescription;
               return {
                 ...cleanedSec,
                 enabled: data.enabled !== false,
                 eyebrow: data.eyebrow || sec.eyebrow || "AWARD CATEGORIES",
                 title: data.title || sec.title || "Award Categories",
                 items: Array.isArray(rawCats) && rawCats.length > 0
-                  ? rawCats.map((it: any, idx: number) => {
+                  ? rawCats.map((it: CmsJson, idx: number) => {
                       const fallbackImages = [
                         "/assets/awards/organic_food.png",
                         "/assets/awards/ayush.png",
@@ -180,7 +181,7 @@ export function syncAwardsSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft
     .catch(() => {});
 
   api.get("/website/awards/grand-awards")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         const rawItems = data.items || data.awards;
@@ -188,8 +189,8 @@ export function syncAwardsSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft
           prev.map((sec) => {
             if (sec.key === "awards-grand-awards" || sec.name === "Prestigious Grand Awards") {
               const cleanedSec = { ...sec };
-              delete (cleanedSec as any).description;
-              delete (cleanedSec as any).shortDescription;
+              delete (cleanedSec as CmsJson).description;
+              delete (cleanedSec as CmsJson).shortDescription;
               const fallbackImages = [
                 "/assets/awards/organic_enterpreneur.png",
                 "/assets/awards/organic_startup.png",
@@ -204,7 +205,7 @@ export function syncAwardsSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft
                 eyebrow: data.eyebrow || sec.eyebrow || "GRAND HONOURS",
                 title: data.title || sec.title || "Prestigious Grand Awards",
                 items: Array.isArray(rawItems) && rawItems.length > 0
-                  ? rawItems.map((it: any, idx: number) => {
+                  ? rawItems.map((it: CmsJson, idx: number) => {
                       let finalImage = it.image || "";
                       if (!finalImage || (!finalImage.startsWith("/") && !finalImage.startsWith("http"))) {
                         if (it.icon && (it.icon.startsWith("/") || it.icon.startsWith("http"))) {
@@ -232,7 +233,7 @@ export function syncAwardsSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft
     .catch(() => {});
 
   api.get("/website/awards/process")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         const rawItems = data.items || data.steps;
@@ -240,8 +241,8 @@ export function syncAwardsSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft
           prev.map((sec) => {
             if (sec.key === "awards-process" || sec.name === "Our Evaluation Process") {
               const cleanedSec = { ...sec };
-              delete (cleanedSec as any).description;
-              delete (cleanedSec as any).shortDescription;
+              delete (cleanedSec as CmsJson).description;
+              delete (cleanedSec as CmsJson).shortDescription;
               const fallbackImages = [
                 "/assets/awards/nomination.png",
                 "/assets/awards/eligibility.png",
@@ -256,7 +257,7 @@ export function syncAwardsSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft
                 eyebrow: data.eyebrow || sec.eyebrow || "EVALUATION PROCESS",
                 title: data.title || sec.title || "Our Evaluation Process",
                 items: Array.isArray(rawItems) && rawItems.length > 0
-                  ? rawItems.map((it: any, idx: number) => {
+                  ? rawItems.map((it: CmsJson, idx: number) => {
                       let finalImage = it.image || "";
                       if (!finalImage || (!finalImage.startsWith("/") && !finalImage.startsWith("http"))) {
                         if (it.icon && (it.icon.startsWith("/") || it.icon.startsWith("http"))) {
@@ -285,7 +286,7 @@ export function syncAwardsSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft
     .catch(() => {});
 
   api.get("/website/awards/nomination-hero")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         setSectionsDraft((prev) =>
@@ -317,7 +318,7 @@ export function syncAwardsSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft
     .catch(() => {});
 
   api.get("/website/awards/nomination-steps")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         setSectionsDraft((prev) =>
@@ -329,7 +330,7 @@ export function syncAwardsSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft
                   ...sec,
                   enabled: data.enabled !== false,
                   title: data.title || sec.title || "THE AWARD PROCESS",
-                  items: rawItems.map((it: any, idx: number) => ({
+                  items: rawItems.map((it: CmsJson, idx: number) => ({
                     id: it.id ?? idx + 1,
                     num: it.num || String(idx + 1).padStart(2, "0"),
                     title: it.title || "",
@@ -381,7 +382,7 @@ export async function saveAwardsSections(sectionsDraft: SectionsDraft): Promise<
         eyebrow: statsSec.eyebrow || "AWARDS STATS",
         title: statsSec.title || "Key Metrics & Scale",
         items: Array.isArray(statsSec.items)
-          ? statsSec.items.map((it: any, idx: number) => ({
+          ? statsSec.items.map((it: CmsJson, idx: number) => ({
               id: it.id || idx + 1,
               title: it.title || "",
               label: it.label || it.subtitle || "",
@@ -418,7 +419,7 @@ export async function saveAwardsSections(sectionsDraft: SectionsDraft): Promise<
         eyebrow: catSec.eyebrow || "AWARD CATEGORIES",
         title: catSec.title || "Award Categories",
         items: Array.isArray(catSec.items)
-          ? catSec.items.map((it: any, idx: number) => ({
+          ? catSec.items.map((it: CmsJson, idx: number) => ({
               id: it.id || idx + 1,
               title: it.title || "",
               image: it.image || it.icon || "",
@@ -443,7 +444,7 @@ export async function saveAwardsSections(sectionsDraft: SectionsDraft): Promise<
         eyebrow: grandSec.eyebrow || "GRAND HONOURS",
         title: grandSec.title || "Prestigious Grand Awards",
         items: Array.isArray(grandSec.items)
-          ? grandSec.items.map((it: any, idx: number) => ({
+          ? grandSec.items.map((it: CmsJson, idx: number) => ({
               id: it.id || idx + 1,
               title: it.title || it.label || "",
               label: it.title || it.label || "",
@@ -465,7 +466,7 @@ export async function saveAwardsSections(sectionsDraft: SectionsDraft): Promise<
         eyebrow: processSec.eyebrow || "EVALUATION PROCESS",
         title: processSec.title || "Our Evaluation Process",
         items: Array.isArray(processSec.items)
-          ? processSec.items.map((it: any, idx: number) => ({
+          ? processSec.items.map((it: CmsJson, idx: number) => ({
               id: it.id || idx + 1,
               title: it.title || "",
               description: it.description || it.desc || it.shortDescription || "",
@@ -513,7 +514,7 @@ export async function saveAwardsSections(sectionsDraft: SectionsDraft): Promise<
       await api.put("/website/awards/nomination-steps", {
         enabled: nomStepsSec.enabled !== false,
         title: nomStepsSec.title || "THE AWARD PROCESS",
-        items: rawItems.map((it: any, idx: number) => ({
+        items: rawItems.map((it: CmsJson, idx: number) => ({
           id: it.id ?? idx + 1,
           num: it.num || String(idx + 1).padStart(2, "0"),
           title: it.title || "",

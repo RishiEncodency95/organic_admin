@@ -50,7 +50,7 @@ export default function CasesMap() {
   if (pins.length === 0) {
     return (
       <div className="flex h-72 items-center justify-center text-center text-xs text-text-muted">
-        No open cases have a mapped location yet — pins appear once a request's address is geocoded.
+        No open cases have a mapped location yet — pins appear once a request&apos;s address is geocoded.
       </div>
     );
   }

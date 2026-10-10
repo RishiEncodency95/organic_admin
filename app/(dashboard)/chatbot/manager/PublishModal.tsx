@@ -74,7 +74,7 @@ export default function PublishModal({ tab, onTabChange, onClose, versions, hasD
   const versionRows = (
     <div className="flex flex-col">
       {list.map((ver, i) => (
-        <div key={ver.minor} className={`flex items-center gap-[20px] py-[7px] ${i > 0 ? "border-t border-[#eef0f2]" : ""}`}>
+        <div key={ver.minor} className={`flex items-center gap-[14px] py-[5px] ${i > 0 ? "border-t border-[#eef0f2]" : ""}`}>
           <span className="w-[34px] text-[16.5px] font-bold text-[#0f172a]">{v(ver.minor)}</span>
           <span className={`w-[76px] rounded-full py-[2px] text-center text-[12.5px] ${i === 0 ? "bg-[#dcf3e1] text-[#15803d]" : "bg-[#eef1f4] text-[#475569]"}`}>{i === 0 ? "Live" : "Previous"}</span>
           <span className="min-w-0 flex-1">
@@ -87,7 +87,7 @@ export default function PublishModal({ tab, onTabChange, onClose, versions, hasD
             <button
               type="button"
               onClick={() => onTabChange("history")}
-              className="h-[32px] w-[112px] rounded-[7px] border border-[#cbd5e1] bg-white text-[13.5px] font-semibold text-[#0f172a] transition hover:bg-slate-50"
+              className="h-[30px] w-[112px] rounded-[7px] border border-[#cbd5e1] bg-white text-[13.5px] font-semibold text-[#0f172a] transition hover:bg-slate-50"
             >
               View
             </button>
@@ -98,7 +98,7 @@ export default function PublishModal({ tab, onTabChange, onClose, versions, hasD
                 onRestore(ver);
                 setRestored(v(ver.minor));
               }}
-              className="h-[32px] w-[112px] rounded-[7px] border border-[#2f8a4c] bg-white text-[13px] font-semibold text-[#14532d] transition hover:bg-[#f1f7ee]"
+              className="h-[30px] w-[112px] rounded-[7px] border border-[#2f8a4c] bg-white text-[13px] font-semibold text-[#14532d] transition hover:bg-[#f1f7ee]"
             >
               Restore to Draft
             </button>
@@ -121,10 +121,10 @@ export default function PublishModal({ tab, onTabChange, onClose, versions, hasD
         aria-labelledby="publish-title"
         className="relative flex max-h-[calc(100vh-32px)] w-[660px] max-w-full flex-col rounded-[14px] bg-white text-[#0f172a] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.45)]"
       >
-        <div className="min-h-0 overflow-y-auto px-[22px] pb-[14px] pt-[14px]">
+        <div className="min-h-0 overflow-y-auto px-[18px] pb-[11px] pt-[11px]">
           {/* Header: title + chips on one line, subtitle underneath */}
           <div className="flex items-center gap-[12px]">
-            <h2 id="publish-title" className="mr-auto whitespace-nowrap text-[21px] font-bold leading-tight text-[#0f2a1c]">
+            <h2 id="publish-title" className="mr-auto whitespace-nowrap text-[19px] font-bold leading-tight text-[#0f2a1c]">
               Publish &amp; Version History
             </h2>
             <div className="flex shrink-0 items-center gap-[8px]">
@@ -144,7 +144,7 @@ export default function PublishModal({ tab, onTabChange, onClose, versions, hasD
           <p className="mt-[2px] text-[13.5px] text-[#475569]">Review changes before updating Organic Mitra.</p>
 
           {/* Tabs */}
-          <div className="mt-[8px] flex border-b border-[#e5e7eb]">
+          <div className="mt-[6px] flex border-b border-[#e5e7eb]">
             {(
               [
                 ["publish", "Publish Changes"],
@@ -164,15 +164,15 @@ export default function PublishModal({ tab, onTabChange, onClose, versions, hasD
             ))}
           </div>
 
-          <div className="mt-[10px] rounded-[10px] border border-[#eef0f2] px-[16px] pb-[10px] pt-[10px]">
+          <div className="mt-[7px] rounded-[10px] border border-[#eef0f2] px-[16px] pb-[8px] pt-[8px]">
             {tab === "publish" ? (
               <>
                 <p className="text-[16.5px] font-bold text-[#0f2a1c]">Changes ready to publish</p>
                 {hasDraft ? (
                   <div className="mt-[4px] flex flex-col">
-                    {changeRows.length === 0 && <p className="py-[7px] text-[13.5px] text-[#334155]">Draft changes are saved and ready to publish.</p>}
+                    {changeRows.length === 0 && <p className="py-[5px] text-[13.5px] text-[#334155]">Draft changes are saved and ready to publish.</p>}
                     {changeRows.map(({ label, count, icon: Icon }, i) => (
-                      <div key={label} className={`flex items-center gap-[14px] py-[7px] ${i > 0 ? "border-t border-[#eef0f2]" : ""}`}>
+                      <div key={label} className={`flex items-center gap-[10px] py-[5px] ${i > 0 ? "border-t border-[#eef0f2]" : ""}`}>
                         <Icon className="h-[20px] w-[20px] text-[#0f172a]" />
                         <span className="flex-1 text-[13.5px] text-[#0f172a]">{label}</span>
                         <span className="text-[13.5px] text-[#334155]">{count} updated</span>
@@ -181,11 +181,11 @@ export default function PublishModal({ tab, onTabChange, onClose, versions, hasD
                     ))}
                   </div>
                 ) : (
-                  <p className="mt-[6px] text-[13px] text-[#64748b]">No unpublished changes — {v(live.minor)} is live.</p>
+                  <p className="mt-[5px] text-[13px] text-[#64748b]">No unpublished changes — {v(live.minor)} is live.</p>
                 )}
 
                 {hasDraft && (
-                  <div className="mt-[6px] flex items-center gap-[12px] rounded-[8px] bg-[#eef8f1] px-[12px] py-[7px]">
+                  <div className="mt-[5px] flex items-center gap-[12px] rounded-[8px] bg-[#eef8f1] px-[12px] py-[5px]">
                     <span className="grid h-[24px] w-[24px] place-items-center rounded-full bg-[#15803d] text-white">
                       <Check className="h-[14px] w-[14px]" strokeWidth={3} />
                     </span>
@@ -196,7 +196,7 @@ export default function PublishModal({ tab, onTabChange, onClose, versions, hasD
                   </div>
                 )}
 
-                <p className="mt-[10px] text-[13.5px] font-semibold text-[#0f172a]">
+                <p className="mt-[7px] text-[13.5px] font-semibold text-[#0f172a]">
                   Release note <span className="font-normal text-[#475569]">(optional)</span>
                 </p>
                 <input
@@ -204,11 +204,11 @@ export default function PublishModal({ tab, onTabChange, onClose, versions, hasD
                   onChange={(e) => setNote(e.target.value)}
                   maxLength={150}
                   disabled={!hasDraft}
-                  className="mt-[4px] h-[33px] w-full rounded-[7px] border border-[#cbd5e1] bg-white px-[12px] text-[13.5px] text-[#0f172a] outline-none transition focus:border-[#15633a] focus:ring-2 focus:ring-[#15633a]/15 disabled:bg-slate-50"
+                  className="mt-[4px] h-[30px] w-full rounded-[7px] border border-[#cbd5e1] bg-white px-[12px] text-[13.5px] text-[#0f172a] outline-none transition focus:border-[#15633a] focus:ring-2 focus:ring-[#15633a]/15 disabled:bg-slate-50"
                 />
                 <p className="mt-[4px] text-[12px] text-[#475569]">Publishing applies to new chats. Active chats continue on their current version.</p>
 
-                <div className="mt-[8px] border-t border-[#eef0f2] pt-[8px]">
+                <div className="mt-[6px] border-t border-[#eef0f2] pt-[8px]">
                   <p className="text-[16.5px] font-bold text-[#0f2a1c]">Recent versions</p>
                   {versionRows}
                 </div>
@@ -222,23 +222,23 @@ export default function PublishModal({ tab, onTabChange, onClose, versions, hasD
           </div>
 
           {/* Actions */}
-          <div className="mt-[12px] flex items-center gap-[12px]">
+          <div className="mt-[9px] flex items-center gap-[12px]">
             <a
               href={PUBLIC_SITE_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex h-[30px] items-center rounded-[8px] border border-[#cbd5e1] bg-white px-[18px] text-[13.5px] font-semibold text-[#0f172a] transition hover:bg-slate-50"
+              className="inline-flex h-[28px] items-center rounded-[8px] border border-[#cbd5e1] bg-white px-[18px] text-[13.5px] font-semibold text-[#0f172a] transition hover:bg-slate-50"
             >
               Preview Draft
             </a>
-            <button type="button" onClick={onClose} className="ml-auto h-[30px] rounded-[8px] border border-[#cbd5e1] bg-white px-[22px] text-[13.5px] font-semibold text-[#0f172a] transition hover:bg-slate-50">
+            <button type="button" onClick={onClose} className="ml-auto h-[28px] rounded-[8px] border border-[#cbd5e1] bg-white px-[18px] text-[13.5px] font-semibold text-[#0f172a] transition hover:bg-slate-50">
               Cancel
             </button>
             <button
               type="button"
               onClick={() => onPublish(note.trim())}
               disabled={!hasDraft || publishing}
-              className="h-[30px] rounded-[8px] bg-[#15633a] px-[22px] text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#124f2f] disabled:opacity-50"
+              className="h-[28px] rounded-[8px] bg-[#15633a] px-[18px] text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#124f2f] disabled:opacity-50"
             >
               Publish {v(draftMinor)}
             </button>

@@ -49,9 +49,7 @@ export default function MsmeApplicationsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
 
-  const load = () => {
-    setLoading(true);
-    setError(null);
+  const fetchItems = () => {
     msmeApi
       .list()
       .then(setApplications)
@@ -60,10 +58,16 @@ export default function MsmeApplicationsPage() {
       })
       .finally(() => setLoading(false));
   };
+  const load = () => {
+    setLoading(true);
+    setError(null);
+    return fetchItems();
+  };
 
   useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // First load: the state already starts as loading
+    fetchItems();
+     
   }, []);
 
   const filtered = useMemo(() => {

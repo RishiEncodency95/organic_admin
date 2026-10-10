@@ -723,11 +723,12 @@ function EnquiriesPageContent() {
       categoryParam || ""
     );
 
-  useEffect(() => {
-    if (categoryParam) {
-      setSource(categoryParam);
-    }
-  }, [categoryParam]);
+  // ?category= changed while the page is open
+  const [sourceParam, setSourceParam] = useState(categoryParam);
+  if (categoryParam !== sourceParam) {
+    setSourceParam(categoryParam);
+    if (categoryParam) setSource(categoryParam);
+  }
 
   const [search, setSearch] =
     useState("");
@@ -756,8 +757,7 @@ function EnquiriesPageContent() {
      API LOAD
   ========================================================== */
 
-  const load = () => {
-    setLoading(true);
+  const fetchItems = () => {
 
     enquiriesApi
       .list()
@@ -769,9 +769,14 @@ function EnquiriesPageContent() {
         setLoading(false)
       );
   };
+  const load = () => {
+    setLoading(true);
+    return fetchItems();
+  };
 
   useEffect(() => {
-    load();
+    // First load: the state already starts as loading
+    fetchItems();
   }, []);
 
   /* ==========================================================

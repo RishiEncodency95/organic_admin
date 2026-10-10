@@ -116,7 +116,7 @@ export default function GeneralSettings() {
             <div className="w-[12px] h-[12px] rounded-full bg-[#2563EB] text-white flex items-center justify-center flex-shrink-0 mt-[1px]">
               <Info size={8} />
             </div>
-            <p className="text-[9px] font-semibold text-[#2563EB] leading-tight">Candidates below 40% will see a "Not Eligible" result page with guidance.</p>
+            <p className="text-[9px] font-semibold text-[#2563EB] leading-tight">Candidates below 40% will see a &quot;Not Eligible&quot; result page with guidance.</p>
           </div>
         </div>
       </div>

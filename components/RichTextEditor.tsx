@@ -94,10 +94,10 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         commandVal = val.startsWith("<") ? val : `<${val}>`;
       }
       try {
-        document.execCommand(command, false, commandVal as any);
+        document.execCommand(command, false, commandVal ?? undefined);
       } catch {
         try {
-          document.execCommand(command, false, val as any);
+          document.execCommand(command, false, val ?? undefined);
         } catch {}
       }
       handleInput();
@@ -122,8 +122,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     const doc = parser.parseFromString(html, "text/html");
 
     // Remove styling and font tags
-    const allElements = doc.body.querySelectorAll("*");
-    allElements.forEach((el: any) => {
+    const allElements = doc.body.querySelectorAll<HTMLElement>("*");
+    allElements.forEach((el) => {
       const textColor = el.style.color;
       el.removeAttribute("style");
       if (textColor) el.style.color = textColor;
@@ -131,8 +131,10 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       el.removeAttribute("id");
       if (el.tagName === "FONT") {
         const parent = el.parentNode;
-        while (el.firstChild) parent.insertBefore(el.firstChild, el);
-        parent.removeChild(el);
+        if (parent) {
+          while (el.firstChild) parent.insertBefore(el.firstChild, el);
+          parent.removeChild(el);
+        }
       }
     });
 
@@ -382,7 +384,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
                 maxLength={7}
                 className="w-16 h-6 text-[10px] bg-transparent focus:outline-none uppercase font-mono font-bold text-gray-700"
                 onChange={(e) => {
-                  let val = e.target.value.replace("#", "");
+                  const val = e.target.value.replace("#", "");
                   if (val.length === 3 || val.length === 6) {
                     execCommand("foreColor", `#${val}`);
                   }
@@ -390,7 +392,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    let val = (e.target as HTMLInputElement).value.replace("#", "");
+                    const val = (e.target as HTMLInputElement).value.replace("#", "");
                     execCommand("foreColor", `#${val}`);
                     (editorRef.current as HTMLElement)?.focus();
                   }
@@ -417,7 +419,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       {/* Editable Content Area */}
       {isCodeEditor ? (
         <textarea
-          ref={editorRef as any}
+          ref={editorRef as React.RefObject<HTMLTextAreaElement>}
           value={value}
           onChange={(e) => onChange && onChange(e.target.value)}
           className="w-full p-6 focus:outline-none font-mono text-sm leading-relaxed bg-gray-50/50 resize-y border-none text-gray-900"
@@ -426,7 +428,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         />
       ) : (
         <div
-          ref={editorRef as any}
+          ref={editorRef as React.RefObject<HTMLDivElement>}
           contentEditable
           onInput={handleInput}
           onPaste={handlePaste}

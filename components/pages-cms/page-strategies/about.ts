@@ -1,12 +1,13 @@
 import { api } from "@/lib/api";
 import type { SectionsDraft, SetSectionsDraft } from "./types";
+import type { CmsJson, CmsRecord } from "@/lib/cmsJson";
 
 // Old placeholder photo that ended up in saved pillar items; treat it as "no image" so the site shows its static default.
 const isPlaceholderImage = (img: unknown) => typeof img === "string" && img.includes("moksha-sewa/assets/km.jpg");
 
 export function syncAboutSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft): void {
   api.get("/website/abouts/about/about-hero")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         setSectionsDraft((prev) =>
@@ -17,7 +18,7 @@ export function syncAboutSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft)
                 .filter((x: unknown) => typeof x === "string" && x.trim())
                 .join(" ")
                 .trim();
-              const { titlePrimary: _p, titleSecondary: _s, ...rest } = sec as Record<string, any>;
+              const { titlePrimary: _p, titleSecondary: _s, ...rest } = sec as CmsRecord;
               return {
                 ...rest,
                 eyebrow: data.tagline || sec.eyebrow,
@@ -40,7 +41,7 @@ export function syncAboutSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft)
     .catch(() => {});
 
   api.get("/website/abouts/about/home-about")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         setSectionsDraft((prev) =>
@@ -66,7 +67,7 @@ export function syncAboutSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft)
     .catch(() => {});
 
   api.get("/website/abouts/about/four-pillars")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         setSectionsDraft((prev) =>
@@ -80,14 +81,14 @@ export function syncAboutSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft)
                 title: data.title || sec.title,
                 subtitle: data.subtitle || sec.subtitle,
                 items: pillars.length
-                  ? pillars.map((p: any) => ({
+                  ? pillars.map((p: CmsJson) => ({
                       title: Array.isArray(p.title) ? p.title.join(" ") : p.title || "",
                       description: p.desc || "",
                       image: isPlaceholderImage(p.img) ? "" : p.img || "",
                       imageAlt: p.imgAlt || "",
                       icon: p.icon || "",
                     }))
-                  : (sec.items || []).map((it: any) => ({ imageAlt: "", ...it })),
+                  : (sec.items || []).map((it: CmsJson) => ({ imageAlt: "", ...it })),
               };
             }
             return sec;
@@ -138,7 +139,7 @@ export async function saveAboutSections(sectionsDraft: SectionsDraft): Promise<v
       eyebrow: pillarsSec.eyebrow || "",
       title: pillarsSec.title || "",
       subtitle: pillarsSec.subtitle || "",
-      pillars: items.map((it: any) => ({
+      pillars: items.map((it: CmsJson) => ({
         title: it.title || "",
         desc: it.description || "",
         img: isPlaceholderImage(it.image) ? "" : it.image || "",

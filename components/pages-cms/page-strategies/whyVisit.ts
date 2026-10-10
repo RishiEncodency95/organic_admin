@@ -1,9 +1,10 @@
 import { api } from "@/lib/api";
 import type { SectionsDraft, SetSectionsDraft } from "./types";
+import type { CmsJson } from "@/lib/cmsJson";
 
 export function syncWhyVisitSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft): void {
   api.get("/website/participate/why-visit/matters")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         setSectionsDraft((prev) =>
@@ -21,7 +22,7 @@ export function syncWhyVisitSectionsFromLiveApi(setSectionsDraft: SetSectionsDra
                   lowerTitle: data.lowerTitle ?? data.bannerTitle ?? sec.lowerTitle,
                   lowerDescription: data.lowerDescription ?? data.bannerDesc ?? sec.lowerDescription,
                   items: Array.isArray(data.items || data.cards) && (data.items || data.cards).length > 0
-                    ? (data.items || data.cards).map((it: any, idx: number) => ({
+                    ? (data.items || data.cards).map((it: CmsJson, idx: number) => ({
                         num: it.num ?? `0${idx + 1}`,
                         title: it.title ?? sec.items?.[idx]?.title ?? "",
                         description: it.description ?? it.desc ?? sec.items?.[idx]?.description ?? "",
@@ -57,7 +58,7 @@ export async function saveWhyVisitSections(sectionsDraft: SectionsDraft): Promis
         bannerTitle: mattersSec.lowerTitle || "One Visit. Multiple Opportunities.",
         bannerDesc: mattersSec.lowerDescription || "Save time, meet the right people and take your business to the next level.",
         items: Array.isArray(mattersSec.items)
-          ? mattersSec.items.map((it: any, idx: number) => ({
+          ? mattersSec.items.map((it: CmsJson, idx: number) => ({
               num: it.num || `0${idx + 1}`,
               title: it.title || "",
               description: it.description || it.desc || "",
@@ -67,7 +68,7 @@ export async function saveWhyVisitSections(sectionsDraft: SectionsDraft): Promis
             }))
           : [],
         cards: Array.isArray(mattersSec.items)
-          ? mattersSec.items.map((it: any, idx: number) => ({
+          ? mattersSec.items.map((it: CmsJson, idx: number) => ({
               num: it.num || `0${idx + 1}`,
               title: it.title || "",
               description: it.description || it.desc || "",
@@ -92,7 +93,7 @@ export async function saveWhyVisitSections(sectionsDraft: SectionsDraft): Promis
         segmentCount: "",
         mainTitleLine2: "",
         segments: Array.isArray(industriesSec.items)
-          ? industriesSec.items.map((it: any, idx: number) => ({
+          ? industriesSec.items.map((it: CmsJson, idx: number) => ({
               num: it.num || `0${idx + 1}`,
               title: it.title || "",
               items: it.subtitle || it.items || "",

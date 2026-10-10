@@ -29,16 +29,20 @@ export default function CampaignsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const load = () => {
-    setLoading(true);
+  // The first load runs with loading already true
+  const fetchList = () => {
     campaignsApi
       .list()
       .then(setCampaigns)
       .catch(() => {})
       .finally(() => setLoading(false));
   };
+  const load = () => {
+    setLoading(true);
+    fetchList();
+  };
 
-  useEffect(load, []);
+  useEffect(fetchList, []);
 
   const openCreate = () => {
     setEditingId(null);

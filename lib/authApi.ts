@@ -18,9 +18,42 @@ const defaultMockAdmin: AdminUser = {
   permissions: ["*"],
 };
 
+/** Admin as the auth endpoints return it */
+type AuthAdmin = {
+  id?: string;
+  _id?: string;
+  name: string;
+  email: string;
+  phone?: string;
+  avatarUrl?: string;
+  role?: string;
+  roleName?: string;
+  isTwoFactorEnabled?: boolean;
+};
+
+type LoginResponse = {
+  requiresTwoFactor?: boolean;
+  tempToken?: string;
+  accessToken?: string;
+  refreshToken?: string;
+  admin?: AuthAdmin;
+  twoFactorSetupRequired?: boolean;
+  message?: string;
+};
+
+export type VerifyTwoFactorResponse = {
+  accessToken?: string;
+  refreshToken?: string;
+  admin?: AuthAdmin;
+  backupCodes?: string[];
+  message?: string;
+};
+
+type TwoFactorSetup = { secret?: string; manualKey?: string; provisioningUri?: string; otpauthUrl?: string; qrCode?: string };
+
 export const authApi = {
   login: async (identifier: string, password: string, totpCode?: string, tempToken?: string): Promise<LoginResult> => {
-    const res = await api.post<any>("/auth/login", { email: identifier, password, totpCode });
+    const res = await api.post<LoginResponse>("/auth/login", { email: identifier, password, totpCode });
 
     if (res && res.requiresTwoFactor) {
       return {
@@ -36,7 +69,7 @@ export const authApi = {
     if (res && res.accessToken && res.admin) {
       return {
         user: {
-          id: res.admin.id || res.admin._id,
+          id: res.admin.id || res.admin._id || "",
           name: res.admin.name,
           email: res.admin.email,
           phone: res.admin.phone || "",
@@ -56,7 +89,7 @@ export const authApi = {
   },
 
   verifyTwoFactor: async (code: string, tempToken?: string) => {
-    const res = await api.post<any>("/auth/verify-2fa", { token: code, tempToken });
+    const res = await api.post<VerifyTwoFactorResponse>("/auth/verify-2fa", { token: code, tempToken });
     return res;
   },
 
@@ -79,10 +112,10 @@ export const authApi = {
   },
 
   setupTwoFactor: async () => {
-    const res = await api.get<any>("/auth/setup-2fa");
+    const res = await api.get<TwoFactorSetup>("/auth/setup-2fa");
     if (res && (res.secret || res.manualKey)) {
       return {
-        secret: res.secret || res.manualKey,
+        secret: res.secret || res.manualKey || "",
         provisioningUri: res.provisioningUri || res.otpauthUrl || `otpauth://totp/BharatOrganic:${res.secret}?secret=${res.secret}&issuer=BharatOrganicExpo`,
         qrCodeUrl: res.qrCode,
       };
@@ -91,7 +124,7 @@ export const authApi = {
   },
 
   confirmTwoFactor: async (code: string) => {
-    const res = await api.post<any>("/auth/verify-2fa", { token: code });
+    const res = await api.post<VerifyTwoFactorResponse>("/auth/verify-2fa", { token: code });
     if (res && res.backupCodes) {
       return { backupCodes: res.backupCodes };
     }
@@ -101,10 +134,10 @@ export const authApi = {
   },
 
   getMe: async () => {
-    const res = await api.get<any>("/auth/me");
+    const res = await api.get<{ user?: AuthAdmin }>("/auth/me");
     if (res && res.user) {
       return {
-        userId: res.user.id || res.user._id,
+        userId: res.user.id || res.user._id || "",
         name: res.user.name,
         email: res.user.email,
         phone: res.user.phone,
@@ -119,7 +152,7 @@ export const authApi = {
   },
 
   forgotPassword: async (email: string) => {
-    return await api.post("/auth/forgot-password", { email });
+    return await api.post<{ resetToken?: string; email?: string }>("/auth/forgot-password", { email });
   },
 
   resetPassword: async (token: string, newPassword: string) => {

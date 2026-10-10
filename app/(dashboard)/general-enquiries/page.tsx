@@ -841,9 +841,8 @@ export default function GeneralEnquiriesPage() {
      LOAD
   ========================================================== */
 
+  // loading starts true
   useEffect(() => {
-    setLoading(true);
-
     enquiriesApi
       .list()
       .then((data) =>

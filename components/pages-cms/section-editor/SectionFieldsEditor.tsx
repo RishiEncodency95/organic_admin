@@ -6,12 +6,13 @@ import {
   VIDEO_KEY_PATTERN,
   humanizeKey,
 } from "./sectionFieldHelpers";
+import type { CmsRecord } from "@/lib/cmsJson";
 
 export function SectionFieldsEditor({
   section,
   onFieldChange,
 }: {
-  section: Record<string, any>;
+  section: CmsRecord;
   onFieldChange: (key: string, value: unknown) => void;
 }) {
   if (section.key === "footer" || section.name === "Footer & Social Links") {

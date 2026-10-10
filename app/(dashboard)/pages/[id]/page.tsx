@@ -360,7 +360,7 @@ function WebsitePreview() {
           >
             <Globe2 className="h-[9px] w-[9px]" />
 
-            India's Premier Organic &amp; Natural Trade Expo
+            India&apos;s Premier Organic &amp; Natural Trade Expo
           </div>
 
           <h2

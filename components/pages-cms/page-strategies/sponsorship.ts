@@ -1,5 +1,6 @@
 import { api } from "@/lib/api";
 import type { SectionsDraft, SetSectionsDraft } from "./types";
+import type { CmsJson } from "@/lib/cmsJson";
 
 function splitFirstWord(text: string): { first: string; rest: string } {
   const trimmed = (text || "").trim();
@@ -11,7 +12,7 @@ function splitFirstWord(text: string): { first: string; rest: string } {
 
 export function syncSponsorshipSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft): void {
   api.get("/website/opportunities/sponsorship/hero")
-    .then((res: any) => {
+    .then((res: CmsJson) => {
       const data = res?.data?.data || res?.data || res;
       if (data) {
         setSectionsDraft((prev) =>
@@ -21,7 +22,7 @@ export function syncSponsorshipSectionsFromLiveApi(setSectionsDraft: SetSections
               const description = [data.descriptionBold, data.descriptionText].filter(Boolean).join(" ") || sec.description;
               const items =
                 Array.isArray(data.stats) && data.stats.length > 0
-                  ? data.stats.map((s: any) => ({
+                  ? data.stats.map((s: CmsJson) => ({
                       title: s.number || "",
                       label: (s.label || "").replace(/\n/g, " "),
                       icon: s.iconKey || "Users",
@@ -60,7 +61,7 @@ export async function saveSponsorshipSections(sectionsDraft: SectionsDraft): Pro
       image: heroSec.image,
       imageAlt: heroSec.imageAlt || "",
       stats: Array.isArray(heroSec.items)
-        ? heroSec.items.map((it: any) => ({
+        ? heroSec.items.map((it: CmsJson) => ({
             iconKey: it.icon || "Users",
             number: it.title || "",
             label: it.label || "",

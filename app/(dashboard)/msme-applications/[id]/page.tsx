@@ -55,20 +55,22 @@ export default function MsmeApplicationDetailPage() {
   const [reviewSaving, setReviewSaving] = useState<MsmeReviewStatus | null>(null);
   const [reviewError, setReviewError] = useState<string | null>(null);
 
-  const load = () => {
+  const fetchApplication = () => {
     if (!params.id) return;
-    setLoading(true);
-    setError(null);
     msmeApi
       .getById(params.id)
-      .then(setApplication)
+      .then((data) => {
+        setApplication(data);
+        setError(null);
+      })
       .catch((err) => {
         setError(err instanceof ApiRequestError ? err.message : "Could not load this application.");
       })
       .finally(() => setLoading(false));
   };
 
-  useEffect(load, [params.id]);
+  // The first load runs with loading already true
+  useEffect(fetchApplication, [params.id]);
 
   const handleReview = async (reviewStatus: MsmeReviewStatus) => {
     if (!params.id) return;

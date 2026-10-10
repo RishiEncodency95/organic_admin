@@ -493,13 +493,13 @@ function ConfirmDialog({ confirm, onClose }: { confirm: Confirm | null; onClose:
   return createPortal(
     <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 font-sans">
       <div aria-hidden="true" onClick={onClose} className="absolute inset-0 bg-[#0b1f14]/55 backdrop-blur-[2px]" />
-      <div role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" className="relative w-[400px] max-w-full rounded-[14px] bg-white p-[20px] text-[#0f172a] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.45)]">
-        <h2 id="confirm-title" className="text-[17.5px] font-bold text-[#0f2a1c]">
+      <div role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" className="relative w-[400px] max-w-full rounded-[14px] bg-white p-[16px] text-[#0f172a] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.45)]">
+        <h2 id="confirm-title" className="text-[16.5px] font-bold text-[#0f2a1c]">
           {confirm.title}
         </h2>
-        <p className="mt-[6px] text-[13.5px] text-[#475569]">{confirm.body}</p>
-        <div className="mt-[16px] flex justify-end gap-[12px]">
-          <button type="button" onClick={onClose} className="h-[30px] rounded-[8px] border border-[#cbd5e1] bg-white px-[20px] text-[13.5px] font-semibold transition hover:bg-slate-50">
+        <p className="mt-[5px] text-[13.5px] text-[#475569]">{confirm.body}</p>
+        <div className="mt-[12px] flex justify-end gap-[12px]">
+          <button type="button" onClick={onClose} className="h-[28px] rounded-[8px] border border-[#cbd5e1] bg-white px-[20px] text-[13.5px] font-semibold transition hover:bg-slate-50">
             Cancel
           </button>
           <button
@@ -509,7 +509,7 @@ function ConfirmDialog({ confirm, onClose }: { confirm: Confirm | null; onClose:
               confirm.run();
               onClose();
             }}
-            className="h-[30px] rounded-[8px] bg-[#15803d] px-[20px] text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#166534]"
+            className="h-[28px] rounded-[8px] bg-[#15803d] px-[20px] text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#166534]"
           >
             {confirm.confirmLabel}
           </button>

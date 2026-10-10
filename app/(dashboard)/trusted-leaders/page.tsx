@@ -38,6 +38,7 @@ import {
   CATEGORY_KEYS,
   trustedLeadersApi,
 } from "@/lib/trustedLeadersApi";
+import AnimatedCounter from "@/components/ui/AnimatedCounter";
 
 // SweetAlert2 notification setup
 const Toast = Swal.mixin({
@@ -55,7 +56,7 @@ const Toast = Swal.mixin({
   },
   didOpen: (toast) => {
     toast.style.boxShadow = "none";
-    (toast.style as any).webkitBoxShadow = "none";
+    toast.style.setProperty("-webkit-box-shadow", "none");
     toast.style.filter = "none";
   },
 });
@@ -96,108 +97,6 @@ const toneClass = {
   teal: "bg-teal-50 text-teal-700 ring-teal-200",
 } as const;
 
-function AnimatedCounter({
-  value,
-  duration = 1200,
-}: {
-  value: string | number;
-  duration?: number;
-}) {
-  const [displayValue, setDisplayValue] = useState<string | number>(() => {
-    const str = String(value);
-    return str.match(/\d/) ? "0" : value;
-  });
-  const spanRef = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    const el = spanRef.current;
-    if (!el) return;
-
-    const strVal = String(value);
-    const numericMatch = strVal.match(/^([^\d.]*)([\d,.]+)(.*)$/);
-
-    if (!numericMatch) {
-      setDisplayValue(value);
-      return;
-    }
-
-    const prefix = numericMatch[1];
-    const rawNumberStr = numericMatch[2].replace(/,/g, "");
-    const targetNum = parseFloat(rawNumberStr);
-    const suffix = numericMatch[3];
-
-    if (isNaN(targetNum)) {
-      setDisplayValue(value);
-      return;
-    }
-
-    if (targetNum === 0) {
-      setDisplayValue(`${prefix}0${suffix}`);
-      return;
-    }
-
-    const hasComma = numericMatch[2].includes(",");
-    const decimalPlaces = (rawNumberStr.split(".")[1] || "").length;
-
-    let animationFrameId: number | null = null;
-
-    const startCounting = () => {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      let startTime: number | null = null;
-
-      const step = (timestamp: number) => {
-        if (!startTime) startTime = timestamp;
-        const progress = Math.min((timestamp - startTime) / duration, 1);
-        const easeProgress = 1 - Math.pow(1 - progress, 3);
-        const currentNum = targetNum * easeProgress;
-        let formattedNum = currentNum.toFixed(decimalPlaces);
-
-        if (hasComma) {
-          const parts = formattedNum.split(".");
-          parts[0] = parseInt(parts[0], 10).toLocaleString();
-          formattedNum = parts.join(".");
-        }
-
-        setDisplayValue(`${prefix}${formattedNum}${suffix}`);
-
-        if (progress < 1) {
-          animationFrameId = requestAnimationFrame(step);
-        }
-      };
-
-      animationFrameId = requestAnimationFrame(step);
-    };
-
-    if (typeof IntersectionObserver !== "undefined") {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              startCounting();
-            } else {
-              setDisplayValue(`${prefix}0${suffix}`);
-            }
-          });
-        },
-        { threshold: 0.15 }
-      );
-
-      observer.observe(el);
-
-      return () => {
-        observer.disconnect();
-        if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      };
-    } else {
-      startCounting();
-      return () => {
-        if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      };
-    }
-  }, [value, duration]);
-
-  return <span ref={spanRef}>{displayValue}</span>;
-}
 
 const formatTimestamp = () => {
   const d = new Date();
@@ -258,7 +157,7 @@ export default function TrustedLeadersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<PartnerCategory>("ALL");
   const [statusFilter, setStatusFilter] = useState("All Status");
-  const [selectedId, setSelectedId] = useState<string>("");
+  const [pickedId, setSelectedId] = useState<string>("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -309,6 +208,7 @@ export default function TrustedLeadersPage() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the saved copy is in localStorage, readable only after mount
     loadData();
   }, []);
 
@@ -386,12 +286,8 @@ export default function TrustedLeadersPage() {
     return list.sort((a, b) => a.order - b.order);
   }, [partnersData, loggedInAdminName]);
 
-  // Set initial selected item when list loads
-  useEffect(() => {
-    if (allPartnersList.length > 0 && !selectedId) {
-      setSelectedId(allPartnersList[0].id);
-    }
-  }, [allPartnersList, selectedId]);
+  // The first item is selected until another is picked
+  const selectedId = pickedId || allPartnersList[0]?.id || "";
 
   // Counts by category
   const categoryCounts = useMemo(() => {

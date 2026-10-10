@@ -38,24 +38,24 @@ const API_URL = "/website/home/home-hero";
 export const fetchHomeHeros = createAsyncThunk('homeHero/fetchAll', async (_, { rejectWithValue }) => {
   try {
     return await api.get<HomeHero[]>(API_URL);
-  } catch (error: any) {
-    return rejectWithValue(error.message || 'Failed to fetch Home Hero data');
+  } catch (error) {
+    return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch Home Hero data');
   }
 });
 
 export const createHomeHero = createAsyncThunk('homeHero/create', async (formData: FormData, { rejectWithValue }) => {
   try {
     return await api.postForm<HomeHero>(API_URL, formData);
-  } catch (error: any) {
-    return rejectWithValue(error.message || 'Failed to create Home Hero');
+  } catch (error) {
+    return rejectWithValue(error instanceof Error ? error.message : 'Failed to create Home Hero');
   }
 });
 
 export const updateHomeHero = createAsyncThunk('homeHero/update', async ({ id, formData }: { id: string; formData: FormData }, { rejectWithValue }) => {
   try {
     return await api.putForm<HomeHero>(`${API_URL}/${id}`, formData);
-  } catch (error: any) {
-    return rejectWithValue(error.message || 'Failed to update Home Hero');
+  } catch (error) {
+    return rejectWithValue(error instanceof Error ? error.message : 'Failed to update Home Hero');
   }
 });
 
@@ -63,8 +63,8 @@ export const deleteHomeHero = createAsyncThunk('homeHero/delete', async (id: str
   try {
     await api.delete(`${API_URL}/${id}`);
     return id;
-  } catch (error: any) {
-    return rejectWithValue(error.message || 'Failed to delete Home Hero');
+  } catch (error) {
+    return rejectWithValue(error instanceof Error ? error.message : 'Failed to delete Home Hero');
   }
 });
 

@@ -42,8 +42,8 @@ export const loginAdmin = createAsyncThunk(
     try {
       const result = await authApi.login(email, password, totpCode);
       return result;
-    } catch (err: any) {
-      return rejectWithValue(err?.message || "Login failed");
+    } catch (err) {
+      return rejectWithValue(err instanceof Error ? err.message : "Login failed");
     }
   }
 );
@@ -54,8 +54,8 @@ export const verifyTwoFactor = createAsyncThunk(
     try {
       const result = await authApi.verifyTwoFactor(totpCode, tempToken);
       return result;
-    } catch (err: any) {
-      return rejectWithValue(err?.message || "2FA verification failed");
+    } catch (err) {
+      return rejectWithValue(err instanceof Error ? err.message : "2FA verification failed");
     }
   }
 );
@@ -104,7 +104,8 @@ const authSlice = createSlice({
       })
       .addCase(loginAdmin.rejected, (state, action) => {
         state.loading = false;
-        state.error = (action.payload as any)?.message || action.error.message || "Failed to login";
+        // rejectWithValue passes the message itself
+        state.error = (typeof action.payload === "string" && action.payload) || action.error.message || "Failed to login";
       })
       // verifyTwoFactor cases
       .addCase(verifyTwoFactor.pending, (state) => {
@@ -116,7 +117,7 @@ const authSlice = createSlice({
       })
       .addCase(verifyTwoFactor.rejected, (state, action) => {
         state.loading = false;
-        state.error = (action.payload as any)?.message || action.error.message || "Failed to verify 2FA";
+        state.error = (typeof action.payload === "string" && action.payload) || action.error.message || "Failed to verify 2FA";
       });
   }
 });

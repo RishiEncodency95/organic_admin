@@ -59,7 +59,7 @@ type Props = {
 };
 
 const label = "mb-[3px] block text-[13.5px] font-semibold text-[#0f172a]";
-const fieldBox = "relative flex h-[33px] items-center rounded-[7px] border border-[#cbd5e1] bg-white px-[12px] transition focus-within:border-[#15633a] focus-within:ring-2 focus-within:ring-[#15633a]/15";
+const fieldBox = "relative flex h-[30px] items-center rounded-[7px] border border-[#cbd5e1] bg-white px-[12px] transition focus-within:border-[#15633a] focus-within:ring-2 focus-within:ring-[#15633a]/15";
 const hiddenSelect = "absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed";
 const textarea =
   "w-full resize-y rounded-[7px] border border-[#cbd5e1] bg-white px-[12px] py-[5px] text-[13.5px] leading-snug text-[#0f172a] outline-none transition focus:border-[#15633a] focus:ring-2 focus:ring-[#15633a]/15 disabled:bg-slate-50 disabled:text-slate-400";
@@ -132,22 +132,22 @@ export default function ResolveEnquiryModal({ enquiry, onClose, onResolve }: Pro
         aria-labelledby="resolve-title"
         className="relative flex max-h-[calc(100vh-32px)] w-[520px] max-w-full flex-col rounded-[14px] bg-white text-[#0f172a] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.45)]"
       >
-        <div className="min-h-0 overflow-y-auto px-[22px] pb-[14px] pt-[14px]">
+        <div className="min-h-0 overflow-y-auto px-[18px] pb-[11px] pt-[11px]">
           {/* Header */}
           <div className="flex items-start justify-between">
             <div>
-              <h2 id="resolve-title" className="text-[20.5px] font-bold leading-tight text-[#0f2a1c]">
+              <h2 id="resolve-title" className="text-[18.5px] font-bold leading-tight text-[#0f2a1c]">
                 Close / Resolve
               </h2>
               <p className="text-[13px] text-[#475569]">Record the outcome and update the visitor.</p>
             </div>
-            <button ref={closeRef} type="button" onClick={onClose} aria-label="Close" className="-mr-[4px] grid h-[30px] w-[30px] place-items-center rounded-full text-[#0f172a] transition hover:bg-slate-100">
+            <button ref={closeRef} type="button" onClick={onClose} aria-label="Close" className="-mr-[4px] grid h-[28px] w-[28px] place-items-center rounded-full text-[#0f172a] transition hover:bg-slate-100">
               <X className="h-[20px] w-[20px]" />
             </button>
           </div>
 
           {/* Enquiry */}
-          <div className="mt-[10px] rounded-[9px] border border-[#d9ecdf] bg-[#eef7f0] px-[14px] py-[7px]">
+          <div className="mt-[7px] rounded-[9px] border border-[#d9ecdf] bg-[#eef7f0] px-[14px] py-[5px]">
             <p className="flex items-center gap-[12px] text-[14.5px] font-bold text-[#0f172a]">
               #OM-{1047 + enquiry.id} • {enquiry.name}
             </p>
@@ -158,7 +158,7 @@ export default function ResolveEnquiryModal({ enquiry, onClose, onResolve }: Pro
           </div>
 
           {/* Status + outcome */}
-          <div className="mt-[10px] grid grid-cols-2 gap-x-[16px]">
+          <div className="mt-[7px] grid grid-cols-2 gap-x-[12px]">
             <div>
               <p className={label}>
                 Final status <span className="text-[#dc2626]">*</span>
@@ -174,7 +174,7 @@ export default function ResolveEnquiryModal({ enquiry, onClose, onResolve }: Pro
           </div>
 
           {/* Summary */}
-          <p className={`${label} mt-[8px]`}>
+          <p className={`${label} mt-[6px]`}>
             Resolution summary <span className="text-[#dc2626]">*</span>
           </p>
           <textarea
@@ -186,12 +186,12 @@ export default function ResolveEnquiryModal({ enquiry, onClose, onResolve }: Pro
             rows={2}
             maxLength={500}
             placeholder="What was done to resolve this enquiry?"
-            className={`${textarea} h-[52px]`}
+            className={`${textarea} h-[44px]`}
           />
           <p className="mt-[2px] text-[12px] text-[#64748b]">Saved internally in Activity.</p>
 
           {/* Visitor update */}
-          <div className="mt-[8px] border-t border-[#eef0f2] pt-[8px]">
+          <div className="mt-[6px] border-t border-[#eef0f2] pt-[8px]">
             <label className="flex cursor-pointer items-start gap-[12px]">
               <input type="checkbox" checked={sendUpdate} onChange={() => setSendUpdate((v) => !v)} className="mt-[1px] h-[19px] w-[19px] cursor-pointer accent-[#15803d]" />
               <span>
@@ -202,7 +202,7 @@ export default function ResolveEnquiryModal({ enquiry, onClose, onResolve }: Pro
               </span>
             </label>
 
-            <div className="mt-[6px] grid grid-cols-[150px_1fr] gap-x-[16px]">
+            <div className="mt-[5px] grid grid-cols-[150px_1fr] gap-x-[12px]">
               <div>
                 <p className={`${label} ${sendUpdate ? "" : "text-slate-400"}`}>Channel</p>
                 <FieldSelect value={channel} options={CHANNELS} onChange={setChannel} ariaLabel="Channel" disabled={!sendUpdate} />
@@ -216,16 +216,16 @@ export default function ResolveEnquiryModal({ enquiry, onClose, onResolve }: Pro
                     setError("");
                   }}
                   disabled={!sendUpdate}
-                  rows={3}
+                  rows={2}
                   maxLength={500}
-                  className={`${textarea} h-[72px]`}
+                  className={`${textarea} h-[60px]`}
                 />
               </div>
             </div>
           </div>
 
           {/* Feedback */}
-          <label className="mt-[8px] flex cursor-pointer items-start gap-[12px] border-t border-[#eef0f2] pt-[8px]">
+          <label className="mt-[6px] flex cursor-pointer items-start gap-[12px] border-t border-[#eef0f2] pt-[8px]">
             <input type="checkbox" checked={requestFeedback} onChange={() => setRequestFeedback((v) => !v)} className="mt-[1px] h-[19px] w-[19px] cursor-pointer accent-[#15803d]" />
             <span>
               <span className="block text-[13.5px] font-semibold leading-tight text-[#0f172a]">Request feedback</span>
@@ -233,22 +233,22 @@ export default function ResolveEnquiryModal({ enquiry, onClose, onResolve }: Pro
             </span>
           </label>
 
-          <p className="mt-[8px] flex items-center gap-[10px] rounded-[7px] bg-[#f3f5f8] px-[11px] py-[6px] text-[12px] text-[#334155]">
+          <p className="mt-[6px] flex items-center gap-[10px] rounded-[7px] bg-[#f3f5f8] px-[11px] py-[5px] text-[12px] text-[#334155]">
             <Info className="h-[16px] w-[16px] shrink-0" /> Pending follow-up will be cleared. New replies reopen this enquiry.
           </p>
 
           {error && (
-            <p role="alert" className="mt-[6px] text-[12px] text-[#dc2626]">
+            <p role="alert" className="mt-[5px] text-[12px] text-[#dc2626]">
               {error}
             </p>
           )}
 
           {/* Actions */}
-          <div className="mt-[10px] flex justify-end gap-[12px]">
-            <button type="button" onClick={onClose} className="h-[30px] rounded-[8px] border border-[#cbd5e1] bg-white px-[22px] text-[13.5px] font-semibold text-[#0f172a] transition hover:bg-slate-50">
+          <div className="mt-[7px] flex justify-end gap-[12px]">
+            <button type="button" onClick={onClose} className="h-[28px] rounded-[8px] border border-[#cbd5e1] bg-white px-[18px] text-[13.5px] font-semibold text-[#0f172a] transition hover:bg-slate-50">
               Cancel
             </button>
-            <button type="button" onClick={submit} className="h-[30px] rounded-[8px] bg-[#15803d] px-[20px] text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#166534]">
+            <button type="button" onClick={submit} className="h-[28px] rounded-[8px] bg-[#15803d] px-[20px] text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#166534]">
               {sendUpdate ? "Resolve & Send" : "Resolve"}
             </button>
           </div>

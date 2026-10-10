@@ -3,14 +3,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
-  Ban,
   Briefcase,
   CheckCircle2,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   ClipboardList,
-  Copy,
   ExternalLink,
   Eye,
   Filter,
@@ -21,7 +19,6 @@ import {
   Pencil,
   Plus,
   Search,
-  Send,
   Settings2,
   Sprout,
   Trash2,
@@ -32,7 +29,10 @@ import {
 import Swal from "sweetalert2";
 import typography from "../pages/PagesTypography.module.css";
 import Link from "next/link"
+import { useRouter } from "next/navigation";
+import { PUBLIC_SITE_URL } from "@/lib/cmsPages";
 import { jobsApi, toAdminStatus, toBackendStatus, type AdminJobStatus, type JobPosting as BackendJobPosting } from "@/lib/careersApi";
+import AnimatedCounter from "@/components/ui/AnimatedCounter";
 /* =========================================================
    TYPES
    Backed by the real careers API (lib/careersApi.ts). The
@@ -90,16 +90,16 @@ const TABS: { key: "all" | "active" | "draft" | "closed"; label: string }[] = [
   { key: "closed", label: "Closed" },
 ];
 
-const QUICK_ACTIONS: { label: string; icon: LucideIcon }[] = [
-  { label: "Add New Job", icon: Plus },
-  { label: "Edit Job Content", icon: FilePenLine },
-  { label: "Publish / Unpublish", icon: Send },
-  { label: "Duplicate Job", icon: Copy },
-  { label: "Close Vacancy", icon: Ban },
-  { label: "Manage Application Form", icon: FormInput },
-  { label: "View Applications", icon: Users },
-  { label: "Career Settings", icon: Settings2 },
+// Editing, publishing and closing one job are on its row (pencil / status dropdown)
+const QUICK_ACTIONS: { label: string; icon: LucideIcon; href: string }[] = [
+  { label: "Add New Job", icon: Plus, href: "/job-postings/create" },
+  { label: "Careers Dashboard", icon: FilePenLine, href: "/career-dashboard" },
+  { label: "Manage Application Form", icon: FormInput, href: "/career-settings" },
+  { label: "View Applications", icon: Users, href: "/applications-ai-response" },
+  { label: "Career Settings", icon: Settings2, href: "/career-settings" },
 ];
+
+const CAREERS_PAGE = `${PUBLIC_SITE_URL}/careers`;
 
 const PAGE_SIZE = 10;
 
@@ -116,10 +116,6 @@ const Toast = Swal.mixin({
   background: "#1e2433",
   color: "#e2e8f0",
 });
-
-function notImplemented(action: string) {
-  Toast.fire({ icon: "info", iconColor: "#38bdf8", title: `${action} — coming soon` });
-}
 
 /* =========================================================
    STAT CARDS (matching the Media Library / Testimonials / Feedback
@@ -150,101 +146,6 @@ interface StatCardItem {
   onClick: () => void;
 }
 
-function AnimatedCounter({ value, duration = 1200 }: { value: string | number; duration?: number }) {
-  const [displayValue, setDisplayValue] = useState<string>("0");
-  const spanRef = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    const strVal = String(value);
-    const numericMatch = strVal.match(/^([^0-9]*)([0-9.,]+)([^0-9]*)$/);
-
-    if (!numericMatch) {
-      setDisplayValue(strVal);
-      return;
-    }
-
-    const prefix = numericMatch[1];
-    const rawNumberStr = numericMatch[2].replace(/,/g, "");
-    const targetNum = parseFloat(rawNumberStr);
-    const suffix = numericMatch[3];
-
-    if (isNaN(targetNum)) {
-      setDisplayValue(strVal);
-      return;
-    }
-
-    if (targetNum === 0) {
-      setDisplayValue(`${prefix}0${suffix}`);
-      return;
-    }
-
-    const hasComma = numericMatch[2].includes(",");
-    const decimalPlaces = (rawNumberStr.split(".")[1] || "").length;
-
-    let animationFrameId: number | null = null;
-
-    const startCounting = () => {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      let startTime: number | null = null;
-
-      const step = (timestamp: number) => {
-        if (!startTime) startTime = timestamp;
-        const progress = Math.min((timestamp - startTime) / duration, 1);
-        const easeProgress = 1 - Math.pow(1 - progress, 3);
-        const currentNum = targetNum * easeProgress;
-        let formattedNum = currentNum.toFixed(decimalPlaces);
-
-        if (hasComma) {
-          const parts = formattedNum.split(".");
-          parts[0] = parseInt(parts[0], 10).toLocaleString();
-          formattedNum = parts.join(".");
-        }
-
-        setDisplayValue(`${prefix}${formattedNum}${suffix}`);
-
-        if (progress < 1) {
-          animationFrameId = requestAnimationFrame(step);
-        }
-      };
-
-      animationFrameId = requestAnimationFrame(step);
-    };
-
-    if (typeof IntersectionObserver !== "undefined") {
-      const el = spanRef.current;
-      if (!el) {
-        startCounting();
-        return;
-      }
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              startCounting();
-            } else {
-              setDisplayValue(`${prefix}0${suffix}`);
-            }
-          });
-        },
-        { threshold: 0.15 }
-      );
-
-      observer.observe(el);
-
-      return () => {
-        observer.disconnect();
-        if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      };
-    } else {
-      startCounting();
-      return () => {
-        if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      };
-    }
-  }, [value, duration]);
-
-  return <span ref={spanRef}>{displayValue}</span>;
-}
 
 /* =========================================================
    JOB POSTINGS PAGE
@@ -254,27 +155,23 @@ export default function JobPostingsPage() {
   const [jobs, setJobs] = useState<JobPosting[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const router = useRouter();
   const [tab, setTab] = useState<"all" | "active" | "draft" | "closed">("all");
   const [search, setSearch] = useState("");
   const [department, setDepartment] = useState("All Departments");
   const [location, setLocation] = useState("All Locations");
   const [page, setPage] = useState(1);
 
-  const loadJobs = async () => {
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const data = await jobsApi.list();
-      setJobs(data.map(toRow));
-    } catch (err) {
-      setLoadError(err instanceof Error ? err.message : "Failed to load job postings.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadJobs();
+    let cancelled = false;
+    jobsApi
+      .list()
+      .then((data) => !cancelled && setJobs(data.map(toRow)))
+      .catch((err) => !cancelled && setLoadError(err instanceof Error ? err.message : "Failed to load job postings."))
+      .finally(() => !cancelled && setLoading(false));
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleStatusChange = async (id: string, nextStatus: JobStatus) => {
@@ -369,77 +266,74 @@ export default function JobPostingsPage() {
     setPage(1);
   };
 
-  const statCards: StatCardItem[] = useMemo(
-    () => [
-      {
-        title: "TOTAL JOBS",
-        value: counts.all,
-        icon: Briefcase,
-        tone: "slate",
-        gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #e2e8f0 100%)",
-        borderColor: "#e2e8f0",
-        numColor: "#334155",
-        footer: "View all jobs",
-        onClick: () => changeTab("all"),
-      },
-      {
-        title: "ACTIVE JOBS",
-        value: counts.active,
-        icon: CheckCircle2,
-        tone: "emerald",
-        gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #bbf7d0 100%)",
-        borderColor: "#bbf7d0",
-        numColor: "#15803d",
-        footer: "View active jobs",
-        onClick: () => changeTab("active"),
-      },
-      {
-        title: "DRAFT JOBS",
-        value: counts.draft,
-        icon: FileClock,
-        tone: "amber",
-        gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #fed7aa 100%)",
-        borderColor: "#fed7aa",
-        numColor: "#c2410c",
-        footer: "View drafts",
-        onClick: () => changeTab("draft"),
-      },
-      {
-        title: "CLOSED JOBS",
-        value: counts.closed,
-        icon: XCircle,
-        tone: "rose",
-        gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #fecdd3 100%)",
-        borderColor: "#fecdd3",
-        numColor: "#be123c",
-        footer: "View closed jobs",
-        onClick: () => changeTab("closed"),
-      },
-      {
-        title: "TOTAL PAGE VIEWS",
-        value: jobs.reduce((sum, j) => sum + j.views, 0).toLocaleString(),
-        icon: Eye,
-        tone: "blue",
-        gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #bae6fd 100%)",
-        borderColor: "#bae6fd",
-        numColor: "#0284c7",
-        footer: "View page analytics",
-        onClick: () => notImplemented("Page view analytics"),
-      },
-      {
-        title: "TOTAL APPLICATIONS",
-        value: jobs.reduce((sum, j) => sum + j.applications, 0).toLocaleString(),
-        icon: ClipboardList,
-        tone: "teal",
-        gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #99f6e4 100%)",
-        borderColor: "#99f6e4",
-        numColor: "#0f766e",
-        footer: "View applications",
-        onClick: () => notImplemented("Applications list"),
-      },
-    ],
-    [counts, jobs]
-  );
+  const statCards: StatCardItem[] = [
+    {
+      title: "TOTAL JOBS",
+      value: counts.all,
+      icon: Briefcase,
+      tone: "slate",
+      gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #e2e8f0 100%)",
+      borderColor: "#e2e8f0",
+      numColor: "#334155",
+      footer: "View all jobs",
+      onClick: () => changeTab("all"),
+    },
+    {
+      title: "ACTIVE JOBS",
+      value: counts.active,
+      icon: CheckCircle2,
+      tone: "emerald",
+      gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #bbf7d0 100%)",
+      borderColor: "#bbf7d0",
+      numColor: "#15803d",
+      footer: "View active jobs",
+      onClick: () => changeTab("active"),
+    },
+    {
+      title: "DRAFT JOBS",
+      value: counts.draft,
+      icon: FileClock,
+      tone: "amber",
+      gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #fed7aa 100%)",
+      borderColor: "#fed7aa",
+      numColor: "#c2410c",
+      footer: "View drafts",
+      onClick: () => changeTab("draft"),
+    },
+    {
+      title: "CLOSED JOBS",
+      value: counts.closed,
+      icon: XCircle,
+      tone: "rose",
+      gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #fecdd3 100%)",
+      borderColor: "#fecdd3",
+      numColor: "#be123c",
+      footer: "View closed jobs",
+      onClick: () => changeTab("closed"),
+    },
+    {
+      title: "TOTAL PAGE VIEWS",
+      value: jobs.reduce((sum, j) => sum + j.views, 0).toLocaleString(),
+      icon: Eye,
+      tone: "blue",
+      gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #bae6fd 100%)",
+      borderColor: "#bae6fd",
+      numColor: "#0284c7",
+      footer: "View page analytics",
+      onClick: () => router.push("/career-dashboard"),
+    },
+    {
+      title: "TOTAL APPLICATIONS",
+      value: jobs.reduce((sum, j) => sum + j.applications, 0).toLocaleString(),
+      icon: ClipboardList,
+      tone: "teal",
+      gradient: "linear-gradient(135deg, #ffffff 0%, #ffffff 42%, #99f6e4 100%)",
+      borderColor: "#99f6e4",
+      numColor: "#0f766e",
+      footer: "View applications",
+      onClick: () => router.push("/applications-ai-response"),
+    },
+  ];
 
   return (
     <div className={`${typography.pages} min-h-[calc(100vh-100px)] w-full bg-white text-[#18233b]`}>
@@ -618,11 +512,17 @@ export default function JobPostingsPage() {
 
               <button
                 type="button"
-                onClick={() => notImplemented("Advanced filters")}
+                onClick={() => {
+                  setSearch("");
+                  setDepartment("All Departments");
+                  setLocation("All Locations");
+                  setPage(1);
+                }}
+                title="Clear search, department and location"
                 className="flex h-[30px] items-center gap-[5px] rounded-[5px] border border-[#e5e6e2] bg-white px-[10px] text-[9.5px] font-semibold text-[#414b5e] hover:bg-slate-50"
               >
                 <Filter className="h-[11px] w-[11px]" />
-                Filter
+                Clear Filters
               </button>
             </div>
 
@@ -674,14 +574,13 @@ export default function JobPostingsPage() {
                         </td>
                         <td className="px-[6px] py-[6px] text-[7px] font-semibold text-[#6c7587]">{startIndex + rowIndex + 1}</td>
                         <td className="px-[6px] py-[6px]">
-                          <button
-                            type="button"
-                            title={job.title}
-                            onClick={() => notImplemented(`Preview "${job.title}"`)}
+                          <Link
+                            href={`/job-postings/create?id=${job.id}`}
+                            title={`Edit "${job.title}"`}
                             className="block w-full truncate text-left text-[7px] font-bold text-[#4B1426] hover:underline"
                           >
                             {job.title}
-                          </button>
+                          </Link>
                         </td>
                         <td className="px-[6px] py-[6px] truncate text-[7px] font-medium text-[#334155]">{job.department}</td>
                         <td className="px-[6px] py-[6px] truncate text-[7px] font-bold text-[#166534]">{job.location}</td>
@@ -798,13 +697,9 @@ export default function JobPostingsPage() {
             <div className="border border-[#e7e7e3] bg-white p-[12px]">
               <div className="mb-[8px] flex items-center justify-between">
                 <h2 className="text-[11px] font-bold text-[#263148]">Preview Job Page</h2>
-                <button
-                  type="button"
-                  onClick={() => notImplemented("Preview job page")}
-                  className="text-[#293681] hover:text-[#4B1426]"
-                >
+                <a href={CAREERS_PAGE} target="_blank" rel="noopener noreferrer" title="Open the careers page" className="text-[#293681] hover:text-[#4B1426]">
                   <ExternalLink className="h-[13px] w-[13px]" />
-                </button>
+                </a>
               </div>
 
               <div className="relative flex h-[92px] flex-col items-center justify-center overflow-hidden rounded-[6px] bg-gradient-to-br from-[#1f6f4a] to-[#2f9e63] px-[10px] text-center">
@@ -813,44 +708,30 @@ export default function JobPostingsPage() {
                 <p className="text-[8px] font-medium leading-tight text-white/90">Be a Part of a Greener Tomorrow</p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => notImplemented("View live page")}
+              <a
+                href={CAREERS_PAGE}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="mt-[9px] flex h-[28px] w-full items-center justify-center rounded-[5px] border border-[#dedfdb] text-[9px] font-bold text-[#334155] hover:bg-slate-50"
               >
                 View Live Page
-              </button>
+              </a>
             </div>
 
             {/* QUICK ACTIONS */}
             <div className="border border-[#e7e7e3] bg-white p-[12px]">
               <h2 className="mb-[8px] text-[11px] font-bold text-[#263148]">Quick Actions</h2>
               <div className="flex flex-col gap-[2px]">
-                {QUICK_ACTIONS.map(({ label, icon: Icon }) => {
-                  if (label === "Add New Job") {
-                    return (
-                      <Link
-                        key={label}
-                        href="/job-postings/create"
-                        className="flex items-center gap-[8px] rounded-[4px] px-[6px] py-[7px] text-left text-[9.5px] font-semibold text-[#334155] transition hover:bg-slate-50"
-                      >
-                        <Icon className="h-[13px] w-[13px] text-[#218DAE]" />
-                        {label}
-                      </Link>
-                    );
-                  }
-                  return (
-                    <button
-                      key={label}
-                      type="button"
-                      onClick={() => notImplemented(label)}
-                      className="flex items-center gap-[8px] rounded-[4px] px-[6px] py-[7px] text-left text-[9.5px] font-semibold text-[#334155] transition hover:bg-slate-50"
-                    >
-                      <Icon className="h-[13px] w-[13px] text-[#218DAE]" />
-                      {label}
-                    </button>
-                  );
-                })}
+                {QUICK_ACTIONS.map(({ label, icon: Icon, href }) => (
+                  <Link
+                    key={label}
+                    href={href}
+                    className="flex items-center gap-[8px] rounded-[4px] px-[6px] py-[7px] text-left text-[9.5px] font-semibold text-[#334155] transition hover:bg-slate-50"
+                  >
+                    <Icon className="h-[13px] w-[13px] text-[#218DAE]" />
+                    {label}
+                  </Link>
+                ))}
               </div>
             </div>
 

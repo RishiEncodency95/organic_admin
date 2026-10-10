@@ -73,7 +73,7 @@ const Toast = Swal.mixin({
   },
   didOpen: (toast) => {
     toast.style.boxShadow = "none";
-    (toast.style as any).webkitBoxShadow = "none";
+    toast.style.setProperty("-webkit-box-shadow", "none");
     toast.style.filter = "none";
   },
 });
@@ -89,6 +89,22 @@ function showError(message: string) {
 function showInfo(message: string) {
   Toast.fire({ icon: "info", title: message, iconColor: "#60a5fa" });
 }
+
+type SocialLinks = { facebook: string; instagram: string; twitter: string; youtube: string; linkedin: string };
+
+/** /seo-settings responses (some wrap the payload in data) */
+interface AdvancedSeoSettings {
+  headerScripts?: string;
+  footerScripts?: string;
+  seoFiles?: SeoFile[];
+  ga4MeasurementId?: string;
+  gtmContainerId?: string;
+  googleSearchConsoleVerification?: string;
+  socialLinks?: Partial<SocialLinks>;
+}
+type MaybeWrapped<T> = T & { data?: T };
+type FileListResponse = SeoFile[] | { data?: SeoFile[] };
+const fileList = (res: FileListResponse | null) => (Array.isArray(res) ? res : res?.data);
 
 interface SeoFile {
   _id: string;
@@ -156,7 +172,7 @@ export default function AdvancedSeoPage() {
   const [allowIndex, setAllowIndex] = useState(true);
   const [allowFollow, setAllowFollow] = useState(true);
 
-  const [socialLinks, setSocialLinks] = useState({
+  const [socialLinks, setSocialLinks] = useState<SocialLinks>({
     facebook: "https://www.facebook.com/bharatorganicexpo",
     instagram: "https://www.instagram.com/bharatorganicexpo",
     twitter: "https://x.com/organicexpoin",
@@ -177,14 +193,9 @@ export default function AdvancedSeoPage() {
 
   const backendUrl = getBackendUrl();
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
   const fetchData = async () => {
     try {
-      setIsPageLoading(true);
-      const response = await api.get<any>("/seo-settings/advanced");
+      const response = await api.get<MaybeWrapped<AdvancedSeoSettings>>("/seo-settings/advanced");
       const data = response?.data || response;
       if (data) {
         setScripts({
@@ -216,6 +227,12 @@ export default function AdvancedSeoPage() {
     }
   };
 
+  // isPageLoading starts true
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- false positive: the loader sets state only after its first await
+    fetchData();
+  }, []);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setScripts((prev) => ({
@@ -227,7 +244,7 @@ export default function AdvancedSeoPage() {
   const handleSaveScripts = async () => {
     try {
       setIsLoading(true);
-      const response = await api.put<any>("/seo-settings/scripts", {
+      const response = await api.put<MaybeWrapped<AdvancedSeoSettings>>("/seo-settings/scripts", {
         ...scripts,
         ...trackingKeys,
         socialLinks,
@@ -256,8 +273,8 @@ export default function AdvancedSeoPage() {
           }));
         }
       }
-    } catch (error: any) {
-      showError(error?.message || "Failed to update global scripts");
+    } catch (error) {
+      showError((error instanceof Error ? error.message : "") || "Failed to update global scripts");
     } finally {
       setIsLoading(false);
     }
@@ -266,7 +283,7 @@ export default function AdvancedSeoPage() {
   const handleSaveSocialLinks = async () => {
     try {
       setSavingSocial(true);
-      const response = await api.put<any>("/seo-settings/social-links", socialLinks);
+      const response = await api.put<MaybeWrapped<Partial<SocialLinks>>>("/seo-settings/social-links", socialLinks);
       const data = response?.data || response;
 
       showSuccess("Social media links saved successfully!");
@@ -277,8 +294,8 @@ export default function AdvancedSeoPage() {
           ...data,
         }));
       }
-    } catch (error: any) {
-      showError(error?.message || "Failed to update social media links");
+    } catch (error) {
+      showError((error instanceof Error ? error.message : "") || "Failed to update social media links");
     } finally {
       setSavingSocial(false);
     }
@@ -298,8 +315,8 @@ export default function AdvancedSeoPage() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await api.postForm<any>("/seo-settings/upload-file", formData);
-      const data = response?.data || response;
+      const response = await api.postForm<FileListResponse>("/seo-settings/upload-file", formData);
+      const data = fileList(response);
 
       if (Array.isArray(data)) {
         setSeoFiles(data);
@@ -308,8 +325,8 @@ export default function AdvancedSeoPage() {
       }
 
       showSuccess(`${file.name} uploaded successfully and active at root!`);
-    } catch (error: any) {
-      showError(error?.message || "File upload failed. Please try again.");
+    } catch (error) {
+      showError((error instanceof Error ? error.message : "") || "File upload failed. Please try again.");
     } finally {
       setUploadingFile(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -333,8 +350,8 @@ export default function AdvancedSeoPage() {
     if (!result.isConfirmed) return;
 
     try {
-      const response = await api.delete<any>(`/seo-settings/file/${fileId}`);
-      const data = response?.data || response;
+      const response = await api.delete<FileListResponse>(`/seo-settings/file/${fileId}`);
+      const data = fileList(response);
       if (Array.isArray(data)) {
         setSeoFiles(data);
       } else {
@@ -342,8 +359,8 @@ export default function AdvancedSeoPage() {
       }
 
       showSuccess(`"${fileName}" deleted successfully.`);
-    } catch (error: any) {
-      showError(error?.message || "Failed to delete file.");
+    } catch (error) {
+      showError((error instanceof Error ? error.message : "") || "Failed to delete file.");
     }
   };
 

@@ -42,7 +42,7 @@ export default function SeoSettingsForm({
 }: SeoSettingsFormProps) {
   const [generating, setGenerating] = useState(false);
 
-  const updateField = (key: keyof SeoOptions, value: any) => {
+  const updateField = <K extends keyof SeoOptions>(key: K, value: SeoOptions[K]) => {
     onChange({ ...seo, [key]: value });
   };
 
