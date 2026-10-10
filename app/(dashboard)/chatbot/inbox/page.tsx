@@ -1701,9 +1701,9 @@ export default function ChatbotInboxPage() {
             resolveId,
             { kind: "event", text: `${status} — ${outcome}` },
             { kind: "note", text: summary },
-            ...(sendUpdate ? [{ kind: "reply" as const, text: `${message}\n\n(sent via ${channel})` }] : [])
+            ...(sendUpdate ? [{ kind: "reply" as const, text: `${message}\n\n(${channel === "Website chat" ? "recorded only" : `via ${channel}`})` }] : [])
           );
-          notify(`${resolveRow?.name}: ${status.toLowerCase()}${sendUpdate ? `, update sent via ${channel}` : ""}`);
+          notify(`${resolveRow?.name}: ${status.toLowerCase()}${sendUpdate && channel !== "Website chat" ? `, update opened in ${channel}` : ""}`);
           setResolveId(null);
         }}
       />

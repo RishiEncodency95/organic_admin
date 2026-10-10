@@ -5,21 +5,22 @@ import { createPortal } from "react-dom";
 import { ChevronDown, Info, X } from "lucide-react";
 
 /*
- * "Close / Resolve" popup, opened from a row's ⋮ menu in the inbox — design preview; the
- * visitor message is not actually sent. It closes only from the ✕, Cancel or after
+ * "Close / Resolve" popup, opened from a row's ⋮ menu in the inbox. "Resolve & Send" saves the
+ * resolution on the record and opens the visitor message in WhatsApp, email or SMS (with the
+ * visitor's number / email) ready to send; "Website chat" only records it. It closes only from the ✕, Cancel or after
  * resolving — not on outside clicks or Escape. Rendered into document.body so the inbox
  * page's zoom does not shrink it.
  */
 
 /** The inbox row being resolved */
-export type ResolveTarget = { id: number; name: string; type: string; topic: string; category: string; assignedTo: string };
+export type ResolveTarget = { id: number; name: string; type: string; topic: string; category: string; assignedTo: string; mobile?: string; email?: string };
 
 export type Resolution = { status: string; outcome: string; summary: string; sendUpdate: boolean; channel: string; message: string; requestFeedback: boolean };
 
 const STATUSES = ["Resolved", "Closed – no response", "Closed – duplicate", "Closed – not relevant"] as const;
 const CHANNELS = ["Website chat", "WhatsApp", "Email", "SMS"] as const;
 
-/** Sample outcomes and default texts per inbox category */
+/** Outcomes and default texts per inbox category */
 const PRESETS: Record<string, { outcomes: string[]; summary: string; issue: string }> = {
   support: {
     outcomes: ["Registration issue fixed", "Information shared", "Referred to team"],
@@ -87,7 +88,8 @@ export default function ResolveEnquiryModal({ enquiry, onClose, onResolve }: Pro
   const [outcome, setOutcome] = useState(preset.outcomes[0]);
   const [summary, setSummary] = useState(preset.summary);
   const [sendUpdate, setSendUpdate] = useState(true);
-  const [channel, setChannel] = useState<(typeof CHANNELS)[number]>("Website chat");
+  // Starts on a channel the visitor can actually be reached on
+  const [channel, setChannel] = useState<(typeof CHANNELS)[number]>(enquiry?.mobile ? "WhatsApp" : enquiry?.email ? "Email" : "Website chat");
   const [message, setMessage] = useState(`Your ${preset.issue} has been resolved. Please contact us here if you need further help.\n\nNamo Gange Namaste!`);
   const [requestFeedback, setRequestFeedback] = useState(false);
   const [error, setError] = useState("");
@@ -109,7 +111,15 @@ export default function ResolveEnquiryModal({ enquiry, onClose, onResolve }: Pro
   const submit = () => {
     if (!summary.trim()) return setError("Please add a resolution summary.");
     if (sendUpdate && !message.trim()) return setError("Please write the message for the visitor, or untick “Send update to visitor”.");
-    onResolve({ status, outcome, summary: summary.trim(), sendUpdate, channel, message: message.trim(), requestFeedback });
+    const mobile = (enquiry.mobile || "").replace(/\D/g, "").slice(-10);
+    if (sendUpdate && (channel === "WhatsApp" || channel === "SMS") && !mobile) return setError(`No mobile number for this visitor — choose another channel.`);
+    if (sendUpdate && channel === "Email" && !enquiry.email) return setError("No email address for this visitor — choose another channel.");
+    const text = `${message.trim()}${requestFeedback ? "\n\nHow was your experience with us? Please reply with your feedback." : ""}`;
+    // Opens the message ready to send from your WhatsApp / mail / SMS app
+    if (sendUpdate && channel === "WhatsApp") window.open(`https://wa.me/91${mobile}?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+    if (sendUpdate && channel === "Email") window.open(`mailto:${enquiry.email}?subject=${encodeURIComponent(`Your ${enquiry.type.toLowerCase()} — Bharat Organic Expo`)}&body=${encodeURIComponent(text)}`, "_blank");
+    if (sendUpdate && channel === "SMS") window.open(`sms:+91${mobile}?body=${encodeURIComponent(text)}`, "_blank");
+    onResolve({ status, outcome, summary: summary.trim(), sendUpdate, channel, message: text, requestFeedback });
   };
 
   return createPortal(
@@ -140,9 +150,6 @@ export default function ResolveEnquiryModal({ enquiry, onClose, onResolve }: Pro
           <div className="mt-[10px] rounded-[9px] border border-[#d9ecdf] bg-[#eef7f0] px-[14px] py-[7px]">
             <p className="flex items-center gap-[12px] text-[14.5px] font-bold text-[#0f172a]">
               #OM-{1047 + enquiry.id} • {enquiry.name}
-              <span title="Sample enquiry" className="inline-flex items-center gap-[4px] rounded-[5px] bg-[#dcf3e1] px-[7px] py-[1px] text-[11px] font-medium text-[#15803d]">
-                Demo data <Info className="h-[11px] w-[11px]" />
-              </span>
             </p>
             <p className="text-[13.5px] text-[#334155]">
               {enquiry.type} • {enquiry.topic}
@@ -189,7 +196,9 @@ export default function ResolveEnquiryModal({ enquiry, onClose, onResolve }: Pro
               <input type="checkbox" checked={sendUpdate} onChange={() => setSendUpdate((v) => !v)} className="mt-[1px] h-[19px] w-[19px] cursor-pointer accent-[#15803d]" />
               <span>
                 <span className="block text-[13.5px] font-semibold leading-tight text-[#0f172a]">Send update to visitor</span>
-                <span className="block text-[12px] text-[#475569]">Share the resolution with the visitor via the selected channel.</span>
+                <span className="block text-[12px] text-[#475569]">
+                  {channel === "Website chat" ? "Saved on the record only — the website chat cannot message the visitor." : `Opens ${channel} with the message, ready to send to the visitor.`}
+                </span>
               </span>
             </label>
 
