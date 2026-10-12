@@ -23,6 +23,7 @@ import {
   Tag,
   ExternalLink,
   Trash2,
+  UsersRound,
 } from "lucide-react";
 import Swal from "sweetalert2";
 import { blogsApi, type BlogPostItem, type GetBlogsResponse } from "@/lib/blogsApi";
@@ -315,7 +316,7 @@ export default function BlogAwarenessPage() {
   );
 
   if (showCategories) {
-    return <ManageBlogCategoriesView />;
+    return <ManageBlogCategoriesView onBack={() => setShowCategories(false)} />;
   }
 
   return (
@@ -348,6 +349,30 @@ export default function BlogAwarenessPage() {
             >
               <FolderClosed className="h-[12px] w-[12px] text-[#ea580c]" strokeWidth={1.7} />
               Manage Categories
+            </Link>
+
+            <Link
+              href="/blogs/experts"
+              className="flex h-[30px] items-center justify-center gap-[5px] rounded-[6px] border border-[#bbf7d0] bg-[#f0fdf4] px-[14px] text-[8.5px] font-semibold text-[#15803d] transition hover:bg-[#dcfce7] shadow-sm"
+            >
+              <UsersRound className="h-[12px] w-[12px] text-[#15803d]" strokeWidth={1.7} />
+              Manage Experts
+            </Link>
+
+            <Link
+              href="/blogs/updates"
+              className="flex h-[30px] items-center justify-center gap-[5px] rounded-[6px] border border-[#bfdbfe] bg-[#eff6ff] px-[14px] text-[8.5px] font-semibold text-[#1d4ed8] transition hover:bg-[#dbeafe] shadow-sm"
+            >
+              <Megaphone className="h-[12px] w-[12px] text-[#1d4ed8]" strokeWidth={1.7} />
+              Manage Updates
+            </Link>
+
+            <Link
+              href="/blogs/reports"
+              className="flex h-[30px] items-center justify-center gap-[5px] rounded-[6px] border border-[#e9d5ff] bg-[#faf5ff] px-[14px] text-[8.5px] font-semibold text-[#7e22ce] transition hover:bg-[#f3e8ff] shadow-sm"
+            >
+              <FileText className="h-[12px] w-[12px] text-[#7e22ce]" strokeWidth={1.7} />
+              Manage Reports
             </Link>
 
             <button

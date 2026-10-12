@@ -21,40 +21,47 @@ const SIZE_CLASSES = {
 
 export default function Modal({ isOpen, onClose, title, children, footer, size = "md" }: ModalProps) {
   const [visible, setVisible] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  // Still on screen for the close animation after isOpen turned false
+  const [closing, setClosing] = useState(false);
 
   const [wasOpen, setWasOpen] = useState(isOpen);
   if (wasOpen !== isOpen) {
     setWasOpen(isOpen);
-    if (isOpen) setMounted(true);
-    else setVisible(false);
+    if (!isOpen) {
+      setVisible(false);
+      setClosing(true);
+    }
   }
+
+  // Rendered whenever it is open: a delayed "unmount" from an earlier close can no longer hide a
+  // modal that was just opened (that race made popups sometimes fail to open on the first click).
+  const mounted = isOpen || closing;
 
   useEffect(() => {
     if (isOpen) {
       // tiny delay so CSS transition picks up the state change
+      let inner = 0;
       const raf = requestAnimationFrame(() => {
-        requestAnimationFrame(() => setVisible(true));
+        inner = requestAnimationFrame(() => setVisible(true));
       });
-      return () => cancelAnimationFrame(raf);
-    } else {
-      const t = setTimeout(() => setMounted(false), 280);
-      return () => clearTimeout(t);
+      return () => {
+        cancelAnimationFrame(raf);
+        cancelAnimationFrame(inner);
+      };
     }
-  }, [isOpen]);
+    if (!closing) return;
+    const t = setTimeout(() => setClosing(false), 280);
+    return () => clearTimeout(t);
+  }, [isOpen, closing]);
 
+  // Esc does not close it either, so a half-filled form is never lost by accident
   useEffect(() => {
     if (!isOpen) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKeyDown);
     document.body.style.overflow = "hidden";
     return () => {
-      document.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = "";
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!mounted) return null;
 
@@ -71,8 +78,8 @@ export default function Modal({ isOpen, onClose, title, children, footer, size =
         background: visible ? "rgba(0,0,0,0.48)" : "rgba(0,0,0,0)",
       }}
     >
-      {/* Backdrop click to close */}
-      <div className="absolute inset-0" onClick={onClose} />
+      {/* Backdrop: clicking outside does not close — only the × and the footer buttons do */}
+      <div className="absolute inset-0" />
 
       {/* Modal Panel */}
       <div

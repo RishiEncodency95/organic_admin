@@ -8,6 +8,7 @@ import Swal from "sweetalert2";
 import { getImageSizeError } from "@/lib/uploadLimit";
 import { uploadApi } from "@/lib/uploadApi";
 import { blogsApi, type BlogPostItem } from "@/lib/blogsApi";
+import { blogCategoriesApi } from "@/lib/blogCategoriesApi";
 import RichTextEditor from "@/components/RichTextEditor";
 import {
   ArrowLeft,
@@ -208,6 +209,23 @@ function AddNewPostContent() {
     const rawText = blogData.content.replace(/<[^>]*>/g, " ").trim();
     return rawText ? rawText.split(/\s+/).filter(Boolean).length : 0;
   }, [blogData.content]);
+
+  // Categories come from Blog & Awareness → Manage Categories; the old fixed list is the fallback
+  const [categoryList, setCategoryList] = useState<{ name: string; hidden: boolean }[]>([]);
+  useEffect(() => {
+    blogCategoriesApi
+      .list()
+      .then((list) => setCategoryList(list.map((c) => ({ name: c.name, hidden: c.status === "hidden" }))))
+      .catch(() => setCategoryList([]));
+  }, []);
+  const categoryOptions = useMemo(() => {
+    const list = categoryList.length
+      ? categoryList
+      : ["Expo News", "Industry Stories", "Organic Trends", "Producer Guidance", "Ayurveda & Wellness", "Sustainable Agriculture"].map((name) => ({ name, hidden: false }));
+    // A post saved under a category that no longer exists keeps showing it
+    const current = blogData.category.trim();
+    return current && !list.some((c) => c.name.toLowerCase() === current.toLowerCase()) ? [{ name: current, hidden: false }, ...list] : list;
+  }, [categoryList, blogData.category]);
 
   // Handle Edit Mode / Pre-populate from API or LocalStorage
   useEffect(() => {
@@ -939,12 +957,11 @@ function AddNewPostContent() {
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-[#dfe4e8] rounded-[5px] bg-white text-[10.5px] font-semibold text-[#1e293b] outline-none focus:border-[#075b33] shadow-2xs"
                   >
-                    <option value="Expo News">Expo News</option>
-                    <option value="Industry Stories">Industry Stories</option>
-                    <option value="Organic Trends">Organic Trends</option>
-                    <option value="Producer Guidance">Producer Guidance</option>
-                    <option value="Ayurveda & Wellness">Ayurveda &amp; Wellness</option>
-                    <option value="Sustainable Agriculture">Sustainable Agriculture</option>
+                    {categoryOptions.map((c) => (
+                      <option key={c.name} value={c.name}>
+                        {c.name}{c.hidden ? " (hidden)" : ""}
+                      </option>
+                    ))}
                   </select>
                 </div>
 

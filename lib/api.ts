@@ -648,6 +648,10 @@ async function request<T>(path: string, options?: ApiRequestOptions, isRetry = f
     path.includes("/msme") ||
     path.includes("/awards/nominations") ||
     path.startsWith("/advisory-nominations") ||
+    path.startsWith("/blog-categories") ||
+    path.startsWith("/blog-experts") ||
+    path.startsWith("/blog-updates") ||
+    path.startsWith("/blog-reports") ||
     path.includes("/contact-enquiry") ||
     path.startsWith("/buyer-enquiries") ||
     path.startsWith("/visitor-registrations") ||
