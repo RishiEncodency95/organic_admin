@@ -107,6 +107,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "Partnership Enquiries", href: "/partnership-enquiries", icon: Handshake },
       { label: "Newsletter Subscribers", href: "/newsletter", icon: Mail, badge: "342" },
       { label: "Award Nominations", href: "/website/award-nominations", icon: Award, badge: "NEW" },
+      { label: "Advisory Nominations", href: "/website/advisory-nominations", icon: Users, badge: "NEW" },
     ],
   },
   {
