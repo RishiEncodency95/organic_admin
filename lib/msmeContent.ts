@@ -17,7 +17,7 @@ export const defaultMsmeSections: LandingSectionContent[] = [
     buttonLabel: "CHECK PMS ELIGIBILITY",
     buttonHref: "/participate/msme/eligibility-check",
     secondaryButtonLabel: "GET PMS SUPPORT",
-    secondaryButtonHref: "tel:+9654900525",
+    secondaryButtonHref: "tel:+919654900525",
   },
   {
     key: "feature-strip",
@@ -149,7 +149,7 @@ export const defaultMsmeSections: LandingSectionContent[] = [
     description: "Our dedicated MSME support team is here to guide you through eligibility, documents, and portal registration.",
     image: "",
     buttonLabel: "TALK TO MSME ADVISOR",
-    buttonHref: "tel:+9654900525",
+    buttonHref: "tel:+919654900525",
   },
   {
     key: "msme-director-message",
@@ -271,7 +271,7 @@ export const defaultMsmeSections: LandingSectionContent[] = [
     buttonLabel: "CHECK PMS ELIGIBILITY",
     buttonHref: "/participate/msme/eligibility-check",
     secondaryButtonLabel: "CALL MSME HELPLINE",
-    secondaryButtonHref: "tel:+9654900525",
+    secondaryButtonHref: "tel:+919654900525",
   },
 ];
 
@@ -391,7 +391,7 @@ export const defaultMsmeEligibilityCheckSections: LandingSectionContent[] = [
     tertiaryButtonLabel: "Download Eligibility Summary",
     tertiaryButtonHref: "/download/eligibility-summary.pdf",
     quaternaryButtonLabel: "Talk to PMS Support Team",
-    quaternaryButtonHref: "tel:+9654900525",
+    quaternaryButtonHref: "tel:+919654900525",
     items: [
       { title: "Micro Enterprise", statusText: "PASSED", icon: "Building2" },
       { title: "Manufacturing", statusText: "PASSED", icon: "Factory" },
@@ -410,7 +410,7 @@ export const defaultMsmeEligibilityCheckSections: LandingSectionContent[] = [
     buttonLabel: "Apply for PMS Support",
     buttonHref: "/participate/msme/apply",
     secondaryButtonLabel: "Talk to PMS Support Team",
-    secondaryButtonHref: "tel:+9654900525",
+    secondaryButtonHref: "tel:+919654900525",
   },
 ];
 

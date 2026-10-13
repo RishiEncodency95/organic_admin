@@ -94,6 +94,7 @@ export const NAV_SECTIONS: NavSection[] = [
       },
       { label: "Buyer Registrations", href: "/forms-submissions", icon: BriefcaseBusiness, badge: "125" },
       { label: "Buyer Enquiries", href: "/buyer-enquiries", icon: MessageSquareText, badge: "NEW" },
+      { label: "Website Feedback", href: "/website-feedback", icon: Star, badge: "NEW" },
       {
         label: "Visitor Registrations",
         icon: Users,

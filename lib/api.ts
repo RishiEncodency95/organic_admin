@@ -653,6 +653,7 @@ async function request<T>(path: string, options?: ApiRequestOptions, isRetry = f
     path.startsWith("/blog-updates") ||
     path.startsWith("/blog-reports") ||
     path.startsWith("/newsletter") ||
+    path.startsWith("/feedback") ||
     path.startsWith("/partnership-enquiry") ||
     path.includes("/contact-enquiry") ||
     path.startsWith("/buyer-enquiries") ||
