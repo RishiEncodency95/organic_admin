@@ -432,7 +432,7 @@ export function mergeSectionWithSavedData(
     if (merged.conferenceHelpline === undefined) merged.conferenceHelpline = "+91 98183 53841";
     if (merged.contactEmail === undefined) merged.contactEmail = "info@namogangewellness.com";
     if (merged.facebookUrl === undefined) merged.facebookUrl = "https://facebook.com/bharatorganicexpo";
-    if (merged.twitterUrl === undefined) merged.twitterUrl = "https://twitter.com/bharatorganic";
+    if (merged.twitterUrl === undefined) merged.twitterUrl = "https://x.com/organicexpoin";
     if (merged.linkedinUrl === undefined) merged.linkedinUrl = "https://linkedin.com/company/bharatorganicexpo";
     if (merged.instagramUrl === undefined) merged.instagramUrl = "https://instagram.com/bharatorganicexpo";
     if (merged.youtubeUrl === undefined) merged.youtubeUrl = "https://youtube.com/@bharatorganicexpo";

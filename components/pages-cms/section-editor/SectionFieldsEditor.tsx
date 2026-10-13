@@ -164,7 +164,7 @@ export function SectionFieldsEditor({
               <TextInput
                 value={String(section.twitterUrl || "")}
                 onChange={(next) => onFieldChange("twitterUrl", next)}
-                placeholder="https://twitter.com/bharatorganic"
+                placeholder="https://x.com/organicexpoin"
                 hideLimit={true}
               />
             </div>
