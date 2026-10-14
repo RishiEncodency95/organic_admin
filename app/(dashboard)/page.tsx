@@ -55,6 +55,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import AnimatedCounter from "@/components/ui/AnimatedCounter";
+import ServiceRenewalChips from "@/components/dashboard/ServiceRenewalChips";
 
 type DropdownKey =
   | "menu"
@@ -1844,10 +1845,16 @@ export default function DashboardPage() {
           "
         >
           {/* DASHBOARD PAGE TITLE (ABOVE SEO HEALTH SCORE & STAT CARDS) */}
-          <div className="mb-2.5 flex items-center justify-between">
-            <h1 className="text-[17px] font-bold tracking-tight text-slate-800">
-              Dashboard
-            </h1>
+          <div className="mb-2.5 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-[17px] font-bold tracking-tight text-slate-800">
+                Dashboard
+              </h1>
+              <p className="text-[11px] font-medium text-slate-500">
+                Website performance &amp; activity
+              </p>
+            </div>
+            <ServiceRenewalChips />
           </div>
 
           {/* =================================================

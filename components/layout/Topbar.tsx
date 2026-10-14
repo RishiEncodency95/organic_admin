@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, useSyncExternalStore, type ComponentType } from "react";
+import { useCallback, useEffect, useState, type ComponentType } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
@@ -57,8 +57,6 @@ import { ExternalService, Settings } from "@/lib/types";
 import {
   daysRemaining,
   isWithinPopupThreshold,
-  useCountdown,
-  formatCountdown,
 } from "@/lib/systemServiceUtils";
 import { NAV_SECTIONS } from "./navigation";
 import Modal from "@/components/ui/Modal";
@@ -109,9 +107,6 @@ const DATE_OPTIONS = [
 
 const FAR_FUTURE = "2099-01-01T00:00:00.000Z";
 
-type Countdown = ReturnType<typeof useCountdown>;
-
-
 /** Pages reached from the profile menu rather than the sidebar */
 const MENU_PAGE_TITLES: Record<string, string> = {
   "/notification-settings": "Notification Settings",
@@ -159,76 +154,6 @@ function careersSectionLabel(pathname: string): string | null {
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
   return isCareersRoute ? "Careers & Applications" : null;
-}
-
-/** One renewal clock inside the status cluster. Kept deliberately quiet: the countdown is the
- * content, the icon and the small label only say which clock you are looking at. */
-function ServiceClock({
-  label,
-  name,
-  icon: Icon,
-  countdown,
-  expiryDate,
-  onClick,
-}: {
-  label: string;
-  name: string;
-  icon: typeof Globe2;
-  countdown: Countdown;
-  expiryDate: string;
-  onClick: () => void;
-}) {
-  // false on the server, true in the browser
-  const mounted = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false
-  );
-
-  const days = daysRemaining(expiryDate);
-  const urgent = countdown.isExpired || days <= URGENT_DAYS;
-  const palette = countdown.isExpired
-    ? { card: "border-red-200 bg-gradient-to-br from-red-50 via-white to-rose-50 hover:border-red-300", label: "text-red-700", digit: "text-red-700", unit: "text-red-600", dot: "animate-pulse bg-red-500", icon: "border-red-200 bg-red-50 text-red-600", live: "bg-red-100 text-red-700" }
-    : urgent
-      ? { card: "border-amber-200 bg-gradient-to-br from-amber-50 via-white to-orange-50 hover:border-amber-300", label: "text-amber-700", digit: "text-amber-700", unit: "text-amber-600", dot: "animate-pulse bg-amber-500", icon: "border-amber-200 bg-amber-50 text-amber-600", live: "bg-amber-100 text-amber-700" }
-      : { card: "border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-teal-50 hover:border-emerald-300", label: "text-emerald-700", digit: "text-emerald-700", unit: "text-emerald-600", dot: "bg-emerald-500", icon: "border-emerald-200 bg-emerald-50 text-emerald-600", live: "bg-emerald-100 text-emerald-700" };
-  const parts = [
-    { value: mounted ? countdown.days : 0, unit: "Days" },
-    { value: mounted ? countdown.hours : 0, unit: "Hours" },
-    { value: mounted ? countdown.minutes : 0, unit: "Mins" },
-    { value: mounted ? countdown.seconds : 0, unit: "Secs" },
-  ];
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      suppressHydrationWarning
-      title={mounted ? `${name} — renews ${new Date(expiryDate).toLocaleDateString()}` : name}
-      className={`group flex h-[46px] min-w-[210px] items-center gap-2 rounded-none border px-2.5 text-left shadow-[0_4px_14px_rgba(15,23,42,0.06)] transition-all hover:-translate-y-px hover:shadow-[0_7px_20px_rgba(15,23,42,0.10)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent ${palette.card}`}
-    >
-      <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-none border shadow-inner ${palette.icon}`}>
-        <Icon className="h-4 w-4" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="mb-0.5 flex items-center justify-between gap-2">
-          <span className={`truncate text-[10px] font-semibold ${palette.label}`}>{label} Renews In</span>
-          <span className={`inline-flex shrink-0 items-center gap-1 rounded-none px-2 py-0.5 text-[8px] font-semibold ${palette.live}`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${palette.dot}`} />
-            {countdown.isExpired ? "Expired" : "Live"}
-          </span>
-        </span>
-        <span className="grid grid-cols-4 divide-x divide-current/15">
-          {parts.map((part) => (
-            <span key={part.unit} className={`flex flex-col items-center justify-center px-1 ${palette.digit}`}>
-              <span className="font-mono text-[12px] font-semibold leading-none tabular-nums" suppressHydrationWarning>{String(part.value).padStart(2, "0")}</span>
-              <small className={`mt-0.5 text-[5.5px] font-semibold uppercase leading-none tracking-wide ${palette.unit}`}>{part.unit}</small>
-            </span>
-          ))}
-        </span>
-      </span>
-    </button>
-  );
 }
 
 export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
@@ -384,13 +309,6 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
     )
     .sort(byExpiry);
 
-  const fallbackDomainExpiry = "2027-05-31T00:00:00.000Z";
-  const fallbackHostingExpiry = "2027-05-31T00:00:00.000Z";
-  const domainExpiryDate = domainService?.expiryDate ?? fallbackDomainExpiry;
-  const hostingExpiryDate = hostingService?.expiryDate ?? fallbackHostingExpiry;
-  const hostingCountdown = useCountdown(hostingExpiryDate);
-  const domainCountdown = useCountdown(domainExpiryDate);
-
   const urgentOtherCount = otherServices.filter(
     (service) => daysRemaining(service.expiryDate) <= URGENT_DAYS
   ).length;
@@ -423,16 +341,6 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
       EXPIRY_POPUP_DISMISS_KEY,
       new Date().toISOString().slice(0, 10)
     );
-  };
-
-  const goToServices = () => {
-    setExpiringOpen(false);
-    if (typeof window !== "undefined") {
-      sessionStorage.removeItem("moksha_system_services_grant");
-      sessionStorage.removeItem("moksha_system_services_expires_at");
-      sessionStorage.removeItem("bharat_organic_system_services_grant");
-    }
-    router.push("/system-services");
   };
 
   const handleExpiringClick = () => {
@@ -615,26 +523,6 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
               </div>
             </motion.div>
           )}
-        </div>
-
-        {/* CENTER – DOMAIN & HOSTING EXPIRE COUNTDOWN TIMERS */}
-        <div className="hidden lg:flex items-center justify-center gap-2.5 min-w-0 px-2">
-          <ServiceClock
-            label="Domain"
-            name={domainService?.name || "bharatorganicexpo.com"}
-            icon={Globe2}
-            countdown={domainCountdown}
-            expiryDate={domainExpiryDate}
-            onClick={goToServices}
-          />
-          <ServiceClock
-            label="Hosting"
-            name={hostingService?.name || "Server Hosting"}
-            icon={Server}
-            countdown={hostingCountdown}
-            expiryDate={hostingExpiryDate}
-            onClick={goToServices}
-          />
         </div>
 
         {/* RIGHT – ICONS & PROFILE */}
