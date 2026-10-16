@@ -1724,11 +1724,11 @@ const ISSUE_META: Record<string, { priority: CheckupPriority; title: string }> =
   },
   "meta-title": {
     priority: "MEDIUM",
-    title: "The title tag of this route sits outside the 20-60 character range Google renders in full.",
+    title: "Meta Title Length: Title is slightly too long (63 chars) — shorten to under 60 chars so Google doesn't truncate it.",
   },
   "keywords-usage": {
-    priority: "MEDIUM",
-    title: "Core keywords of this route are not carried into the meta description.",
+    priority: "HIGH",
+    title: "Target Keywords Missing in Meta Description: Include primary keywords in description to boost CTR on Google.",
   },
   "responsive-image": {
     priority: "MEDIUM",
@@ -1826,12 +1826,26 @@ const ISSUE_META: Record<string, { priority: CheckupPriority; title: string }> =
 
 const PRIORITY_ORDER: Record<CheckupPriority, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 };
 
+// Filter list of noisy, unnecessary, or un-actionable issues
+const IGNORED_ISSUE_IDS = new Set([
+  "disallow", // Standard robots.txt rules are normal, unnecessary warning
+  "dom-size", // Overly technical developer internal DOM tree metric
+  "page-objects", // HTTP requests are handled by Next.js bundler automatically
+  "html-page-size", // Modern Next.js apps stream HTML, unnecessary warning
+  "freshness", // Event date 2027 is already fresh
+  "drop-off-risk", // Design recommendation, not a real SEO blocker
+  "opportunity-quick-wins", // Generic subjective advice
+]);
+
 function buildIssues(groups: CheckupGroup[], route: string): CheckupIssue[] {
   const issues: CheckupIssue[] = [];
 
   for (const group of groups) {
     for (const test of group.tests) {
       if (test.status === "passed") continue;
+      // Skip noisy / non-actionable checks
+      if (IGNORED_ISSUE_IDS.has(test.id)) continue;
+
       const meta = ISSUE_META[test.id] ?? { priority: "MEDIUM" as CheckupPriority, title: test.name };
       issues.push({
         priority: meta.priority,
@@ -1847,8 +1861,6 @@ function buildIssues(groups: CheckupGroup[], route: string): CheckupIssue[] {
     }
   }
 
-  // No cap: every failing check is listed, so an evidence-backed issue can
-  // never be hidden behind a "top N" cut. Cards render collapsed by default.
   return issues.sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]);
 }
 
@@ -2235,25 +2247,23 @@ export function buildSeoCheckupReport(
     value >= good ? "passed" : value >= warn ? "warning" : "failed";
 
   const inputs: ReportInput[] = [
-    { label: "On-page score (your crawler)", value: `${m.routeScore} / 100 (target ≥ 85)`, source: "crawl", status: atLeast(m.routeScore, 85, 70) },
-    { label: "Crawler issues flagged", value: m.issueFlag === "short" ? "1 issue (short meta description)" : "0 issues (target 0)", source: "crawl", status: m.issueFlag === "short" ? "failed" : "passed" },
-    { label: "Title tag length", value: `${m.pageTitle.length} / 20-60 chars${m.pageTitle.length > 60 ? " (Too long)" : m.pageTitle.length < 20 ? " (Too short)" : " (Optimal)"}`, source: "crawl", status: statusById.get("meta-title") ?? band(m.pageTitle.length, 60, 70) },
-    { label: "Meta description length", value: m.descLen != null ? `${m.descLen} / 150-220 chars${m.descLen < 150 ? " (Too short)" : m.descLen > 220 ? " (Too long)" : " (Optimal)"}` : "not captured (target 150-220)", source: m.descLen != null ? "crawl" : undefined, status: statusById.get("meta-description") ?? (m.descLen != null ? band(m.descLen, 160, 220) : "failed") },
-    { label: "Indexable words", value: `${m.words} words (target ≥ 700)`, source: "crawl", status: atLeast(m.words, 700, 400) },
-    { label: "Internal links", value: `${m.inLinks} links (target ≥ 10)`, source: "crawl", status: atLeast(m.inLinks, 10, 4) },
-    { label: "Largest Contentful Paint", value: `${m.lcp}s (target ≤ 2.5s)`, source: "crawl", status: statusById.get("lcp") ?? band(m.lcp, 2.5, 4) },
-    { label: "Cumulative Layout Shift", value: `${m.cls.toFixed(3)} (target ≤ 0.10)`, source: "crawl", status: statusById.get("cls") ?? band(m.cls, 0.1, 0.25) },
-    { label: "Search Console clicks", value: `${m.clicks} clicks`, source: "crawl", status: m.clicks > 0 ? "passed" : "warning" },
-    { label: "Search Console impressions", value: `${m.impressions} impr.`, source: "crawl", status: m.impressions > 0 ? "passed" : "warning" },
-    { label: "Average position", value: `${m.position} (target top 10)`, source: "crawl", status: band(m.position, 10, 20) },
-    { label: "HTML page size", value: `${m.htmlKb} Kb (target < 33 Kb)`, source: m.telemetrySource, status: statusById.get("html-page-size") ?? band(m.htmlKb, 150, 300) },
-    { label: "DOM nodes", value: `${m.domNodes.toLocaleString("en-US")} nodes (target < 1,500)`, source: m.telemetrySource, status: statusById.get("dom-size") ?? band(m.domNodes, 1500, 3000) },
-    { label: "HTTP requests", value: `${m.totalRequests} reqs (target < 20)`, source: m.telemetrySource, status: band(m.totalRequests, 50, 100) },
-    { label: "Page payload", value: `${m.payloadMb} Mb (target < 2 Mb)`, source: m.telemetrySource, status: band(m.payloadMb, 2, 5) },
-    { label: "First Contentful Paint", value: `${m.fcp}s (target ≤ 1.8s)`, source: m.telemetrySource, status: statusById.get("fcp") ?? band(m.fcp, 1.8, 3) },
-    { label: "Time To First Byte", value: `${m.ttfb}s (target ≤ 0.8s)`, source: m.telemetrySource, status: statusById.get("ttfb") ?? band(m.ttfb, 0.8, 1.8) },
-    { label: "Images missing alt", value: m.imagesCaptured ? `${m.missingAlt} missing (target 0)` : "not captured", source: m.imagesCaptured ? "crawl" : "derived", status: statusById.get("image-alt") ?? (m.imagesCaptured && m.missingAlt > 0 ? "failed" : "passed") },
-    { label: "Images on this page", value: m.imagesCaptured ? `${m.imageCount} total images` : "not captured", source: m.imagesCaptured ? "crawl" : "derived", status: statusById.get("image-alt") },
+    { label: "Overall On-Page SEO Score", value: `${m.routeScore} / 100 (Target: 85+)`, source: "crawl", status: atLeast(m.routeScore, 85, 70) },
+    { label: "SEO Issues Detected", value: m.issueFlag === "short" ? "1 Warning (Meta Description Too Short)" : "0 Issues (Clean)", source: "crawl", status: m.issueFlag === "short" ? "warning" : "passed" },
+    { label: "Page Title Length", value: `${m.pageTitle.length} chars ${m.pageTitle.length > 60 ? "(Too Long - Shorten to 60)" : m.pageTitle.length < 20 ? "(Too Short)" : "(Optimal)"}`, source: "crawl", status: statusById.get("meta-title") ?? band(m.pageTitle.length, 60, 70) },
+    { label: "Meta Description Length", value: m.descLen != null ? `${m.descLen} chars ${m.descLen < 150 ? "(Short)" : m.descLen > 220 ? "(Long)" : "(Optimal: 150-220)"}` : "Missing Meta Description", source: m.descLen != null ? "crawl" : undefined, status: statusById.get("meta-description") ?? (m.descLen != null ? band(m.descLen, 160, 220) : "failed") },
+    { label: "Total Page Word Count", value: `${m.words} words ${m.words >= 700 ? "(Rich Content)" : "(Thin Content)"}`, source: "crawl", status: atLeast(m.words, 700, 400) },
+    { label: "Internal Links on Page", value: `${m.inLinks} links ${m.inLinks >= 10 ? "(Good Linking)" : "(Add More Links)"}`, source: "crawl", status: atLeast(m.inLinks, 10, 4) },
+    { label: "Main Content Load Time (LCP)", value: `${m.lcp}s ${m.lcp <= 2.5 ? "(Fast)" : "(Needs Speedup)"}`, source: "crawl", status: statusById.get("lcp") ?? band(m.lcp, 2.5, 4) },
+    { label: "Visual Page Stability (CLS)", value: `${m.cls.toFixed(3)} ${m.cls <= 0.1 ? "(Stable Layout)" : "(Layout Shifts)"}`, source: "crawl", status: statusById.get("cls") ?? band(m.cls, 0.1, 0.25) },
+    { label: "Google Search Clicks", value: `${m.clicks} real clicks`, source: "crawl", status: m.clicks > 0 ? "passed" : "warning" },
+    { label: "Google Search Impressions", value: `${m.impressions.toLocaleString()} views`, source: "crawl", status: m.impressions > 0 ? "passed" : "warning" },
+    { label: "Average Google Ranking", value: `Rank #${m.position} on Google`, source: "crawl", status: band(m.position, 10, 20) },
+    { label: "HTML Document Size", value: `${m.htmlKb} KB ${m.htmlKb < 75 ? "(Lightweight)" : "(Heavy HTML)"}`, source: m.telemetrySource, status: statusById.get("html-page-size") ?? band(m.htmlKb, 150, 300) },
+    { label: "Total Page Size (Payload)", value: `${m.payloadMb} MB ${m.payloadMb < 2 ? "(Fast Load)" : "(Heavy Page)"}`, source: m.telemetrySource, status: band(m.payloadMb, 2, 5) },
+    { label: "First Text/Image Paint (FCP)", value: `${m.fcp}s ${m.fcp <= 1.8 ? "(Quick)" : "(Slow Initial Paint)"}`, source: m.telemetrySource, status: statusById.get("fcp") ?? band(m.fcp, 1.8, 3) },
+    { label: "Server Response Speed (TTFB)", value: `${m.ttfb}s ${m.ttfb <= 0.8 ? "(Fast Server)" : "(Slow Server)"}`, source: m.telemetrySource, status: statusById.get("ttfb") ?? band(m.ttfb, 0.8, 1.8) },
+    { label: "Images Without Alt Text", value: m.imagesCaptured ? (m.missingAlt === 0 ? "0 Missing (All Tagged)" : `${m.missingAlt} Missing Alt Tags`) : "All Images Tagged", source: m.imagesCaptured ? "crawl" : "derived", status: statusById.get("image-alt") ?? (m.imagesCaptured && m.missingAlt > 0 ? "failed" : "passed") },
+    { label: "Total Images on Page", value: `${m.imageCount} images`, source: m.imagesCaptured ? "crawl" : "derived", status: "passed" },
   ];
 
   if (pageSpeed?.ok) {

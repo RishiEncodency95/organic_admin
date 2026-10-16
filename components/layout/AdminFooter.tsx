@@ -14,19 +14,19 @@ export default function AdminFooter() {
       <div className="relative z-10 flex h-full items-center overflow-x-auto px-3 text-[10px] font-medium text-slate-600 lg:pr-[390px]">
         <div className="flex min-w-0 items-center gap-2">
           <span className="flex items-center gap-2 whitespace-nowrap">
-            <BadgeCheck className="h-4 w-4 text-amber-500" />
-            Together, we bring dignity to every final journey.
+            <BadgeCheck className="h-4 w-4 text-emerald-600" />
+            Promoting Certified Organic &amp; Sustainable Wellness.
           </span>
           <span className="h-5 w-px bg-slate-300" />
           <span className="whitespace-nowrap">© {new Date().getFullYear()} Bharat Organic Expo. All rights reserved.</span>
           <span className="h-6 w-px bg-slate-300" />
           <span className="whitespace-nowrap">An Initiative of Namo Gange Trust</span>
           <span className="h-6 w-px bg-slate-300" />
-          <Link href="https://mokshasewa.org/privacy-policy" target="_blank" rel="noopener noreferrer" className="whitespace-nowrap hover:text-slate-900">Privacy Policy</Link>
+          <Link href="https://bharatorganicexpo.com/privacy-policy" target="_blank" rel="noopener noreferrer" className="whitespace-nowrap hover:text-slate-900">Privacy Policy</Link>
           <span className="h-6 w-px bg-slate-300" />
-          <Link href="https://mokshasewa.org/terms" target="_blank" rel="noopener noreferrer" className="whitespace-nowrap hover:text-slate-900">Terms &amp; Conditions</Link>
+          <Link href="https://bharatorganicexpo.com/terms" target="_blank" rel="noopener noreferrer" className="whitespace-nowrap hover:text-slate-900">Terms &amp; Conditions</Link>
           <span className="h-6 w-px bg-slate-300" />
-          <a href="mailto:info@mokshasewa.org" className="whitespace-nowrap hover:text-slate-900">Support</a>
+          <a href="mailto:info@bharatorganicexpo.com" className="whitespace-nowrap hover:text-slate-900">Support</a>
         </div>
       </div>
     </footer>
