@@ -92,24 +92,24 @@ export default function SeoActivityLogWidget() {
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-1.5">
             {logs.map((log) => (
               <div
                 key={log._id}
-                className="flex items-start justify-between gap-4 p-3.5 rounded-lg border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition"
+                className="flex items-center justify-between gap-3 px-3 py-1.5 rounded-md border border-emerald-200/60 bg-emerald-50/80 hover:bg-emerald-100/80 transition"
               >
-                <div className="flex items-start gap-3">
-                  <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-800 font-black text-xs flex items-center justify-center shrink-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="h-6 w-6 rounded-full bg-emerald-100 text-emerald-800 font-black text-[10px] flex items-center justify-center shrink-0">
                     {log.userName?.charAt(0)?.toUpperCase() || "A"}
                   </div>
-                  <div>
-                    <div className="text-xs font-bold text-slate-900">
+                  <div className="min-w-0">
+                    <div className="text-[11px] font-bold text-slate-900 truncate">
                       <span>{log.userName || "Admin"}</span>{" "}
                       <span className="font-semibold text-slate-500">
                         {log.details || `${log.action} in ${log.module}`}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-400 font-mono">
+                    <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-mono">
                       <span>{log.url}</span>
                       <span>•</span>
                       <span className="font-sans font-bold text-emerald-700">{log.status}</span>
@@ -118,11 +118,11 @@ export default function SeoActivityLogWidget() {
                 </div>
 
                 <div className="text-right shrink-0">
-                  <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-200 text-slate-700">
+                  <span className="inline-block px-1.5 py-px rounded text-[9px] font-bold uppercase tracking-wider bg-slate-200 text-slate-700">
                     {log.action}
                   </span>
-                  <div className="text-[10px] text-slate-400 mt-1 flex items-center gap-1 justify-end font-medium">
-                    <Calendar className="h-3 w-3" />
+                  <div className="text-[9px] text-slate-400 flex items-center gap-1 justify-end font-medium">
+                    <Calendar className="h-2.5 w-2.5" />
                     {new Date(log.createdAt).toLocaleDateString()} {new Date(log.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                   </div>
                 </div>

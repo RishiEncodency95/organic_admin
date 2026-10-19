@@ -134,10 +134,10 @@ export default function BacklinkManager() {
             <Link2 className="h-4 w-4" /> Off-Page SEO Intelligence
           </div>
           <h2 className="text-lg font-extrabold text-slate-900 mt-0.5">
-            Backlinks Matrix & Excel Tracker
+            Backlinks of Bharat Organic Website
           </h2>
           <p className="text-xs font-medium text-slate-500">
-            Upload Excel sheets of acquired backlinks, monitor DA authority, follow/nofollow distribution, and export data.
+            See how many backlinks point to bharatorganicexpo.com, from where, and which ones are active, lost, or broken.
           </p>
         </div>
 

@@ -595,6 +595,94 @@ function getMockDataForPath(path: string, method: string = "GET"): unknown {
 
   // Staff and Roles have a real backend — no mock fallback
 
+  if (p.includes("/seo/backlinks") || p.includes("/backlinks")) {
+    const items = [
+      {
+        _id: "bl-1",
+        targetUrl: "https://bharatorganicexpo.com",
+        sourceUrl: "https://apeda.gov.in/organic/bharat-organic-expo",
+        anchorText: "Bharat Organic Expo 2027",
+        type: "dofollow",
+        daScore: 72,
+        status: "active",
+        notes: "APEDA official partner listing",
+        createdAt: "2026-09-15T10:00:00Z",
+        updatedAt: "2026-10-01T10:00:00Z",
+      },
+      {
+        _id: "bl-2",
+        targetUrl: "https://bharatorganicexpo.com/exhibitors",
+        sourceUrl: "https://trademagazine.in/organic-expo-india",
+        anchorText: "exhibitor registration organic expo",
+        type: "dofollow",
+        daScore: 54,
+        status: "active",
+        notes: "Trade magazine feature article",
+        createdAt: "2026-09-20T10:00:00Z",
+        updatedAt: "2026-10-05T10:00:00Z",
+      },
+      {
+        _id: "bl-3",
+        targetUrl: "https://bharatorganicexpo.com/visit",
+        sourceUrl: "https://delhitourism.gov.in/events",
+        anchorText: "Yashobhoomi organic event",
+        type: "nofollow",
+        daScore: 65,
+        status: "active",
+        notes: "Government events listing",
+        createdAt: "2026-09-25T10:00:00Z",
+        updatedAt: "2026-10-10T10:00:00Z",
+      },
+      {
+        _id: "bl-4",
+        targetUrl: "https://bharatorganicexpo.com",
+        sourceUrl: "https://organic-blogspot.com/bharat-organic-2027",
+        anchorText: "Bharat Organic",
+        type: "dofollow",
+        daScore: 31,
+        status: "lost",
+        notes: "Blog removed the backlink",
+        createdAt: "2026-08-10T10:00:00Z",
+        updatedAt: "2026-10-12T10:00:00Z",
+      },
+      {
+        _id: "bl-5",
+        targetUrl: "https://bharatorganicexpo.com/register",
+        sourceUrl: "https://old-directory.in/listing/organic-expo",
+        anchorText: "Register for organic expo",
+        type: "dofollow",
+        daScore: 22,
+        status: "broken",
+        notes: "Source page returning 404",
+        createdAt: "2026-07-05T10:00:00Z",
+        updatedAt: "2026-10-14T10:00:00Z",
+      },
+      {
+        _id: "bl-6",
+        targetUrl: "https://bharatorganicexpo.com/blogs",
+        sourceUrl: "https://healthline-india.in/superfoods-organic",
+        anchorText: "organic superfoods expo",
+        type: "dofollow",
+        daScore: 48,
+        status: "active",
+        notes: "Health blog sponsored post",
+        createdAt: "2026-09-01T10:00:00Z",
+        updatedAt: "2026-10-08T10:00:00Z",
+      },
+    ];
+    const total = items.length;
+    const active = items.filter((i) => i.status === "active").length;
+    const lost = items.filter((i) => i.status === "lost").length;
+    const broken = items.filter((i) => i.status === "broken").length;
+    const dofollow = items.filter((i) => i.type === "dofollow").length;
+    const nofollow = items.filter((i) => i.type === "nofollow").length;
+    return {
+      items,
+      meta: { total, page: 1, limit: 50, totalPages: 1 },
+      stats: { total, active, lost, broken, dofollow, nofollow },
+    };
+  }
+
   if (p.includes("/redirects") || p.includes("/audit")) {
     return [];
   }

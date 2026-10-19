@@ -32,7 +32,7 @@ const routeUrl = (p: RouteOption) =>
   p.id === "home" ? "https://bharatorganicexpo.com" : `https://bharatorganicexpo.com${p.path}`;
 
 export default function SeoAuditedPagesPage() {
-  const [activeTab, setActiveTab] = useState<"audit" | "backlinks" | "ai_content" | "keyword_planner" | "activity_log">("audit");
+  const [activeTab, setActiveTab] = useState<"audit" | "backlinks" | "ai_content" | "keyword_planner" | "activity_log">("backlinks");
   const [overview, setOverview] = useState<SeoOverview | null>(null);
   const [routes, setRoutes] = useState<RouteOption[]>([HOME_OPTION]);
   const [routesError, setRoutesError] = useState<string | null>(null);
