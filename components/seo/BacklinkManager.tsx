@@ -53,8 +53,8 @@ export default function BacklinkManager() {
         status: statusFilter || undefined,
         limit: 50,
       });
-      if (res && res.success) {
-        setBacklinks(res.data);
+      if (res && Array.isArray(res.items)) {
+        setBacklinks(res.items);
         if (res.stats) setStats(res.stats);
       }
     } catch {

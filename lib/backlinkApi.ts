@@ -1,4 +1,4 @@
-import { api } from "./api";
+import { api, getAccessToken } from "./api";
 import { API_BASE_URL } from "./api";
 
 export interface BacklinkItem {
@@ -25,8 +25,7 @@ export interface BacklinkStats {
 }
 
 export interface BacklinkResponse {
-  success: boolean;
-  data: BacklinkItem[];
+  items: BacklinkItem[];
   meta: {
     total: number;
     page: number;
@@ -60,7 +59,7 @@ export const backlinkApi = {
     status?: "active" | "lost" | "broken";
     notes?: string;
   }) => {
-    return api.post<{ success: boolean; data: BacklinkItem }>("/seo/backlinks/create", payload);
+    return api.post<BacklinkItem>("/seo/backlinks/create", payload);
   },
 
   // 3. Upload Excel / CSV file
@@ -68,7 +67,7 @@ export const backlinkApi = {
     const formData = new FormData();
     formData.append("file", file);
 
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const token = getAccessToken();
     const response = await fetch(`${API_BASE_URL}/seo/backlinks/upload-excel`, {
       method: "POST",
       headers: {
@@ -89,6 +88,6 @@ export const backlinkApi = {
 
   // 5. Delete backlink
   delete: async (id: string) => {
-    return api.delete<{ success: boolean; message: string }>(`/seo/backlinks/${id}`);
+    return api.delete<{ message: string }>(`/seo/backlinks/${id}`);
   },
 };

@@ -34,20 +34,20 @@ export default function KeywordPlannerTool() {
       setLoading(true);
       setNotice(null);
       const res = await api.post<{
-        success: boolean;
-        mode: string;
+        keywords?: KeywordItem[];
+        primaryRecommendation?: string;
+        lsiKeywords?: string[];
         requiresSetup?: boolean;
         message?: string;
-        data?: any;
       }>("/seo/keyword-planner", {
         seedKeyword: seed,
         mode,
       });
 
-      if (res && res.data) {
-        setData(res.data);
-      }
-      if (res && res.message) {
+      if (res && Array.isArray(res.keywords)) {
+        setData(res as any);
+        setNotice(null);
+      } else if (res?.message) {
         setNotice(res.message);
       }
     } catch (err: any) {
@@ -88,7 +88,7 @@ export default function KeywordPlannerTool() {
               mode === "ai" ? "bg-white text-emerald-800 shadow-xs" : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            <Cpu className="h-3.5 w-3.5" /> Option 3: AI Intelligence (Free)
+            <Cpu className="h-3.5 w-3.5" /> AI Keyword Intelligence
           </button>
           <button
             type="button"
@@ -97,7 +97,7 @@ export default function KeywordPlannerTool() {
               mode === "google_ads" ? "bg-white text-blue-800 shadow-xs" : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            <Globe className="h-3.5 w-3.5" /> Option 1: Google Ads API
+            <Globe className="h-3.5 w-3.5" /> Google Ads Network
           </button>
         </div>
       </div>

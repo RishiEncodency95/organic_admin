@@ -8,6 +8,7 @@ export function proxy(request: NextRequest) {
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
+    pathname.startsWith("/pagespeed") ||
     pathname.startsWith("/static") ||
     pathname.includes(".")
   ) {

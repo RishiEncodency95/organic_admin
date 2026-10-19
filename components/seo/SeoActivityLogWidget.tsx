@@ -26,12 +26,11 @@ export default function SeoActivityLogWidget() {
       setLoading(true);
       // Fetch activity logs filtered by SEO or recent admin writes
       const res = await api.get<{
-        success: boolean;
-        data?: ActivityLogItem[];
-        logs?: ActivityLogItem[];
+        items?: ActivityLogItem[];
+        total?: number;
       }>("/activity-logs?limit=15");
 
-      const items = res?.data || res?.logs || [];
+      const items = res?.items || [];
       // Filter for SEO related items if available, or show general audit trail
       const seoRelated = items.filter(
         (i) =>

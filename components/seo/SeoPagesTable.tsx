@@ -22,7 +22,7 @@ import {
   type SeoSeverity,
 } from "@/lib/seoAuditApi";
 import { getSavedPageSpeed, isPageSpeedRunActive, runPageSpeedBatch, type PageSpeedBatchProgress } from "@/lib/pageSpeedBatch";
-import { PAGE_INVENTORY, SITE_URL } from "@/lib/seoCheckupData";
+import { SITE_URL } from "@/lib/seoCheckupData";
 import {
   HttpStatusBadge,
   IssueCountCell,
@@ -408,7 +408,13 @@ export default function SeoPagesTable({ onSelectPage, onAuditStarted, selectedPa
 
   const startPageSpeed = async (refresh = false) => {
     if (pageSpeedRunning) return;
-    const targets = PAGE_INVENTORY.map((page) => ({ url: `${SITE_URL}${page.path}` }));
+    // Real PageSpeed runs target the CURRENT real page rows (from the live audit),
+    // never a static route list.
+    const targets = rows.map((page) => ({ url: page.url }));
+    if (targets.length === 0) {
+      setError("No real pages to score yet — run a live audit first.");
+      return;
+    }
     const allCached = targets.every((target) => getSavedPageSpeed(target.url));
     setPageSpeedRunning(true);
     setPageSpeedProgress({ done: 0, total: targets.length, remaining: targets.length, currentUrl: null, error: null });
@@ -602,12 +608,12 @@ export default function SeoPagesTable({ onSelectPage, onAuditStarted, selectedPa
           type="button"
           onClick={() => void startPageSpeed(false)}
           disabled={pageSpeedRunning}
-          title={`Fetch real Google PageSpeed Insights scores for all ${PAGE_INVENTORY.length} routes (runs one at a time, cached 6h)`}
+          title="Fetch real Google PageSpeed Insights scores for the listed real routes (runs one at a time, cached 6h)"
           className="inline-flex h-[30px] items-center gap-1.5 rounded-[6px] bg-[#1d4ed8] px-3.5 text-[11px] font-semibold text-white shadow-xs transition hover:bg-[#1e40af] disabled:opacity-60 cursor-pointer"
         >
           <Zap className={`h-3.5 w-3.5 ${pageSpeedRunning ? "animate-pulse" : ""}`} />
           {pageSpeedRunning
-            ? `PageSpeed ${pageSpeedProgress?.done ?? 0}/${pageSpeedProgress?.total ?? PAGE_INVENTORY.length}`
+            ? `PageSpeed ${pageSpeedProgress?.done ?? 0}/${pageSpeedProgress?.total ?? rows.length}`
             : "Run PageSpeed"}
         </button>
       </div>
@@ -629,7 +635,7 @@ export default function SeoPagesTable({ onSelectPage, onAuditStarted, selectedPa
           <p className="text-[10.5px] font-semibold text-[#1d4ed8]">
             {pageSpeedProgress?.currentUrl
               ? `Fetching Google PageSpeed Insights… ${pageSpeedProgress.currentUrl.replace(SITE_URL, "")}`
-              : `${pageSpeedProgress?.done ?? 0} of ${pageSpeedProgress?.total ?? PAGE_INVENTORY.length} routes scored`}
+              : `${pageSpeedProgress?.done ?? 0} of ${pageSpeedProgress?.total ?? rows.length} routes scored`}
             {pageSpeedProgress?.error ? ` · last error: ${pageSpeedProgress.error}` : ""}
           </p>
         </div>

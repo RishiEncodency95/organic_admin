@@ -9,6 +9,8 @@ export interface SeoCheckupReportProps {
   url?: string;
   meta?: ReportMetaOverride;
   pagespeed?: PageSpeedSnapshot | null;
+  strategy?: "mobile" | "desktop";
+  onStrategyChange?: (strategy: "mobile" | "desktop") => void;
   onClose?: () => void;
   onReAudit?: () => void;
   onExportPdf?: () => void;
@@ -24,6 +26,8 @@ export function SeoSiteCheckupReport({
   url,
   meta,
   pagespeed,
+  strategy,
+  onStrategyChange,
   onClose,
   onReAudit,
   onExportPdf,
@@ -38,6 +42,8 @@ export function SeoSiteCheckupReport({
       url={url}
       meta={meta}
       pagespeed={pagespeed}
+      strategy={strategy}
+      onStrategyChange={onStrategyChange}
       onClose={onClose}
       onReAudit={onReAudit}
       onExportPdf={onExportPdf}

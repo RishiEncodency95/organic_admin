@@ -40,70 +40,24 @@ function persist(): void {
   }
 }
 
-import { PAGE_INVENTORY } from "./seoCheckupData";
-
-function generateFallbackPageSpeed(url: string): PageSpeedAudit | null {
-  const pathStr = url.replace(/^https?:\/\/[^\/]+/, "") || "/";
-  const inv = PAGE_INVENTORY.find((p) => p.path === pathStr);
-  if (!inv) return null;
-
-  const derivedPerf = Math.round(100 - (Math.max(0, inv.lcp - 0.8) * 12) - (inv.cls * 50));
-  const perfScore = Math.max(50, Math.min(100, derivedPerf));
-  const hash = inv.id.split("").reduce((a, b) => a + b.charCodeAt(0), 0);
-  const bpScore = 95 + (hash % 6);
-  const accScore = 92 + (hash % 9);
-
-  return {
-    ok: true,
-    url,
-    strategy: "mobile",
-    fetchedAt: new Date().toISOString(),
-    cached: true,
-    scores: {
-      performance: perfScore,
-      accessibility: accScore,
-      bestPractices: bpScore,
-      seo: inv.score,
-    },
-    metrics: {
-      lcpMs: inv.lcp * 1000,
-      cls: inv.cls,
-      fcpMs: (inv.lcp * 0.6) * 1000,
-      tbtMs: 15,
-      siMs: 1800,
-      ttfbMs: (0.06 + inv.lcp * 0.07) * 1000,
-      htmlKb: Math.round(14 + inv.words * 0.03),
-      payloadKb: Math.round((12 + Math.round(inv.words / 45) + inv.inLinks) * 36.5),
-      totalRequests: 12 + Math.round(inv.words / 45) + inv.inLinks,
-      domNodes: Math.round(400 + inv.words * 0.7 + inv.inLinks * 10 + Math.max(1, Math.round(inv.words / 200)) * 3),
-      imageRequests: Math.max(1, Math.round(inv.words / 200)),
-      javascriptKb: null,
-      cssKb: null,
-      fontKb: null,
-      otherKb: null,
-    },
-    fieldData: { available: true, overall: "PASS" },
-  };
-}
-
+/**
+ * Returns a REAL cached PageSpeed Insights run for the URL, or null when no
+ * real run has happened yet. This module never synthesises scores — if no
+ * measurement exists the caller must show an explicit "not run" state.
+ */
 export function getSavedPageSpeed(url: string): PageSpeedAudit | null {
   loadStorage();
-  const saved = memory.get(url);
-  if (saved) return saved;
-  return generateFallbackPageSpeed(url);
+  return memory.get(url) ?? null;
 }
 
 export function getSavedPageSpeedMap(): Map<string, PageSpeedAudit> {
   loadStorage();
-  const map = new Map(memory);
-  PAGE_INVENTORY.forEach((inv) => {
-    const url = `https://bharatorganicexpo.com${inv.path === "/" ? "" : inv.path}`;
-    if (!map.has(url)) {
-      const fallback = generateFallbackPageSpeed(url);
-      if (fallback) map.set(url, fallback);
-    }
-  });
-  return map;
+  return new Map(memory);
+}
+
+export function savePageSpeed(url: string, audit: PageSpeedAudit): void {
+  memory.set(url, audit);
+  persist();
 }
 
 export function isPageSpeedRunActive(): boolean {
@@ -123,56 +77,60 @@ export interface PageSpeedBatchProgress {
 }
 
 /**
- * Runs Google PageSpeed Insights against a list of routes one at a time.
- * Google's unkeyed quota is small, so concurrency stays at 1 and results are
- * cached in localStorage for the same 6h window the /pagespeed route uses.
+ * Runs REAL Google PageSpeed Insights audits one URL at a time through the
+ * `/pagespeed` API route and caches only successful runs. Failures are
+ * reported in progress state but never written as fabricated successes.
  */
 export async function runPageSpeedBatch(
   items: PageSpeedBatchItem[],
-  onProgress?: (progress: PageSpeedBatchProgress) => void,
+  onProgress: (progress: PageSpeedBatchProgress) => void,
   strategy: "mobile" | "desktop" = "mobile",
   refresh = false,
-): Promise<void> {
-  if (running) return;
-  loadStorage();
-
-  const targets = refresh ? items : items.filter((item) => getSavedPageSpeed(item.url)?.ok !== true);
-  if (targets.length === 0) {
-    onProgress?.({ done: items.length, total: items.length, remaining: 0, currentUrl: null, error: null });
-    return;
-  }
-
+): Promise<PageSpeedAudit[]> {
+  if (running) return [];
   running = true;
-  let error: string | null = null;
+
+  const results: PageSpeedAudit[] = [];
   try {
-    for (let index = 0; index < targets.length; index += 1) {
-      const current = targets[index];
-      onProgress?.({
+    for (let index = 0; index < items.length; index += 1) {
+      const item = items[index];
+      onProgress({
         done: index,
-        total: targets.length,
-        remaining: targets.length - index,
-        currentUrl: current.url,
-        error,
+        total: items.length,
+        remaining: items.length - index,
+        currentUrl: item.url,
+        error: null,
       });
+
       try {
-        const audit = await seoAuditApi.pagespeed(current.url, strategy, refresh);
-        memory.set(current.url, audit);
-        persist();
-        error = audit.ok ? null : audit.message ?? "PageSpeed unavailable";
+        const audit = await seoAuditApi.pagespeed(item.url, strategy, refresh);
+        if (audit && audit.ok) {
+          memory.set(item.url, audit);
+          persist();
+          results.push(audit);
+        } else {
+          onProgress({
+            done: index,
+            total: items.length,
+            remaining: items.length - index,
+            currentUrl: item.url,
+            error: (audit && audit.message) || "PageSpeed Insights returned no data",
+          });
+        }
       } catch (caught) {
-        error = caught instanceof Error ? caught.message : "PageSpeed request failed";
+        onProgress({
+          done: index,
+          total: items.length,
+          remaining: items.length - index,
+          currentUrl: item.url,
+          error: caught instanceof Error ? caught.message : "PageSpeed fetch failed",
+        });
       }
-      onProgress?.({
-        done: index + 1,
-        total: targets.length,
-        remaining: targets.length - index - 1,
-        currentUrl: null,
-        error,
-      });
-      await new Promise((resolve) => setTimeout(resolve, 400));
     }
+
+    onProgress({ done: items.length, total: items.length, remaining: 0, currentUrl: null, error: null });
+    return results;
   } finally {
     running = false;
-    persist();
   }
 }

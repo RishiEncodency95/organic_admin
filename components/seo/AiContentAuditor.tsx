@@ -30,16 +30,22 @@ export default function AiContentAuditor({ currentRoute }: { currentRoute?: stri
     try {
       setLoading(true);
       const res = await api.post<{
-        success: boolean;
-        data: any;
+        wordCount: number;
+        aiScore: number;
+        originalityScore: number;
+        isAiDetected: boolean;
+        verdict: string;
+        flaggedPhrases: string[];
+        feedback: string[];
+        analyzedAt: string;
       }>("/seo/content-audit", {
         text: content,
         targetKeyword: targetKeyword || undefined,
         route: currentRoute || "/",
       });
 
-      if (res && res.data) {
-        setResult(res.data);
+      if (res) {
+        setResult(res);
       }
     } catch (err: any) {
       alert(err.message || "Failed to audit content");

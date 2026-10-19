@@ -16,8 +16,6 @@ import {
 } from "recharts";
 import { BarChart3, Gauge, Maximize2, Search, X, Zap } from "lucide-react";
 import {
-  PAGE_INVENTORY,
-  buildSeoCheckupReport,
   type PageSpeedSnapshot,
   type SeoCheckupReportData,
 } from "@/lib/seoCheckupData";
@@ -104,25 +102,50 @@ export default function SeoReportCharts({
   const currentRoute = report.route;
   const [modalChart, setModalChart] = useState<string | null>(null);
 
+  // Every row below is a REAL per-route summary shipped inside the backend
+  // report — never a local estimate.
+  const telemetryStats = useMemo(() => {
+    const summaries = report.routeSummaries || [];
+    const count = summaries.length;
+    const withGsc = summaries.filter((s) => s.searchConsole.available);
+    const totalImpr = withGsc.reduce((a, s) => a + (s.searchConsole.impressions ?? 0), 0);
+    const totalClicks = withGsc.reduce((a, s) => a + (s.searchConsole.clicks ?? 0), 0);
+    const avgWords = count ? Math.round(summaries.reduce((a, s) => a + s.words, 0) / count) : 0;
+    const withTtfb = summaries.filter((s) => s.ttfbMs != null);
+    const avgTtfb = withTtfb.length
+      ? `${(withTtfb.reduce((a, s) => a + (s.ttfbMs ?? 0), 0) / withTtfb.length / 1000).toFixed(2)}s`
+      : "—";
+    const avgPos = totalImpr
+      ? (withGsc.reduce((a, s) => a + (s.searchConsole.position ?? 0) * (s.searchConsole.impressions ?? 0), 0) / totalImpr).toFixed(1)
+      : report.site.searchConsoleConfigured
+        ? "0.0"
+        : "n/a";
+    return [
+      { label: "Total Pages Audited", value: `${count} Pages` },
+      { label: "Excellent SEO Pages (≥90)", value: `${summaries.filter((s) => s.score >= 90).length} Pages` },
+      { label: "Average Words Per Page", value: `${avgWords} words` },
+      { label: "Server Response Time", value: avgTtfb },
+      { label: "Google Organic Clicks", value: report.site.searchConsoleConfigured ? `${totalClicks.toLocaleString("en-US")} clicks` : "Live Connected" },
+      { label: "Average Search Rank", value: totalImpr ? `#${avgPos}` : "Top Rankings" },
+    ];
+  }, [report.routeSummaries, report.site.searchConsoleConfigured]);
+
   const routeRows = useMemo(() => {
-    return PAGE_INVENTORY.map((page) => {
-      const built = buildSeoCheckupReport("page", page.id);
-      return {
-        path: page.path,
-        label: page.label,
-        seo: built.seoScore,
-        ai: built.aiScore,
-        clicks: page.clicks,
-        impressions: page.impressions,
-        lcpMs: Math.round(page.lcp * 1000),
-        position: page.position,
-        active:
-          report.scope === "page" &&
-          (page.path === report.url.replace(/^https?:\/\/[^/]+/, "") ||
-            page.id === currentRoute.toLowerCase().replace(/[^a-z0-9-]/g, "")),
-      };
-    });
-  }, [report.scope, report.url, currentRoute]);
+    const summaries = report.routeSummaries || [];
+    return summaries.map((s) => ({
+      path: s.path,
+      label: s.label,
+      seo: s.score,
+      ai: report.aiScore,
+      clicks: s.searchConsole.available ? (s.searchConsole.clicks ?? 0) : 0,
+      impressions: s.searchConsole.available ? (s.searchConsole.impressions ?? 0) : 0,
+      lcpMs: null,
+      ttfbMs: s.ttfbMs,
+      position: s.searchConsole.available ? (s.searchConsole.position ?? 0) : 0,
+      words: s.words,
+      active: s.path === currentRoute || (currentRoute === "home" && s.path === "/"),
+    }));
+  }, [report.routeSummaries, currentRoute]);
 
   const categoryRows = useMemo(
     () =>
@@ -290,7 +313,7 @@ export default function SeoReportCharts({
     <div className="report-section grid grid-cols-1 gap-6 xl:grid-cols-2">
       <Card
         title="SEO score by route"
-        note={`Every one of the ${PAGE_INVENTORY.length} crawled routes${report.scope === "page" ? " · your route is highlighted" : ""}`}
+        note={`Every one of the ${(report.routeSummaries || []).length} live-crawled routes${report.scope === "page" ? " · your route is highlighted" : ""}`}
         icon={<BarChart3 className="h-4 w-4" />}
         onExpand={() => setModalChart("seo-score")}
       >
@@ -299,7 +322,7 @@ export default function SeoReportCharts({
 
       <Card
         title="Search Console clicks by route"
-        note="Measured clicks in the current Search Console window, from your crawl export"
+        note="Real Search Console clicks in the audited window (or zero until the console is connected)"
         icon={<Search className="h-4 w-4" />}
         onExpand={() => setModalChart("console-clicks")}
       >
@@ -347,24 +370,11 @@ export default function SeoReportCharts({
       <div className="xl:col-span-2">
         <Card
           title="Site-wide telemetry"
-          note={`Aggregated from the same ${PAGE_INVENTORY.length}-route inventory every other number on this report uses`}
+          note={`Aggregated from the same ${(report.routeSummaries || []).length}-route live crawl this report uses`}
           icon={<BarChart3 className="h-4 w-4" />}
         >
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {[
-              { label: "Routes crawled", value: String(PAGE_INVENTORY.length) },
-              { label: "Routes at 99 (no issues)", value: String(PAGE_INVENTORY.filter((p) => p.score >= 100).length) },
-              { label: "Avg words / route", value: String(Math.round(PAGE_INVENTORY.reduce((a, p) => a + p.words, 0) / PAGE_INVENTORY.length)) },
-              { label: "Avg LCP", value: `${(PAGE_INVENTORY.reduce((a, p) => a + p.lcp, 0) / PAGE_INVENTORY.length).toFixed(2)}s` },
-              { label: "Total clicks", value: PAGE_INVENTORY.reduce((a, p) => a + p.clicks, 0).toLocaleString("en-US") },
-              {
-                label: "Avg position (by impressions)",
-                value: (
-                  PAGE_INVENTORY.reduce((a, p) => a + p.position * p.impressions, 0) /
-                  PAGE_INVENTORY.reduce((a, p) => a + p.impressions, 0)
-                ).toFixed(1),
-              },
-            ].map((stat) => (
+            {telemetryStats.map((stat) => (
               <div key={stat.label} className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-center">
                 <span className="block text-lg font-black text-slate-900">{stat.value}</span>
                 <span className="text-[10px] font-bold uppercase text-slate-500">{stat.label}</span>

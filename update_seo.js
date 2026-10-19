@@ -1,7 +1,11 @@
 const fs = require('fs');
 
 const SITE_URL = 'https://bharatorganicexpo.com';
-const API_KEY = process.env.PAGESPEED_API_KEY || 'AIzaSyDAkRG0nCY2vs3SFRGF5xI9ufFattuKHIg';
+const API_KEY = process.env.PAGESPEED_API_KEY;
+if (!API_KEY) {
+  console.error('PAGESPEED_API_KEY is not set. Run: export PAGESPEED_API_KEY=...');
+  process.exit(1);
+}
 const ENDPOINT = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed';
 
 const paths = [

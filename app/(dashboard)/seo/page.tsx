@@ -48,14 +48,7 @@ import { SeverityBadge, formatDateTime } from "@/components/seo/SeoBadges";
 import SeoPagesTable from "@/components/seo/SeoPagesTable";
 import SeoPageDetail from "@/components/seo/SeoPageDetail";
 import SeoCheckupFullReport from "@/components/seo/SeoCheckupFullReport";
-import { getSavedPageSpeed } from "@/lib/pageSpeedBatch";
-import {
-  buildSeoCheckupReport,
-  checkupReportToCsv,
-  downloadTextFile,
-  inventoryTotals,
-  routeShare,
-} from "@/lib/seoCheckupData";
+import { checkupReportToCsv, downloadTextFile, type SeoCheckupReportData } from "@/lib/seoCheckupData";
 
 type Tab =
   | "Overview"
@@ -104,6 +97,8 @@ export default function SeoDashboardPage() {
   const [overview, setOverview] = useState<SeoOverview | null>(null);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
   const [score, setScore] = useState<SeoScoreExplanation | null>(null);
+  const [siteReport, setSiteReport] = useState<SeoCheckupReportData | null>(null);
+  const [reportError, setReportError] = useState<string | null>(null);
   const [brokenLinks, setBrokenLinks] = useState<SeoBrokenLink[]>([]);
   const [insights, setInsights] = useState<SeoInsights | null>(null);
   const [competitors, setCompetitors] = useState<SeoCompetitor[]>([]);
@@ -129,20 +124,26 @@ export default function SeoDashboardPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setReportError(null);
     try {
-      const [overviewData, scoreData, linksData, insightsData, competitorData] =
+      const [overviewData, scoreData, linksData, insightsData, competitorData, reportData] =
         await Promise.all([
           seoAuditApi.overview(),
           seoAuditApi.score(),
           seoAuditApi.brokenLinks(),
           seoAuditApi.insights(),
           seoAuditApi.competitors(),
+          seoAuditApi.checkupReport("home"),
         ]);
       setOverview(overviewData);
       setScore(scoreData);
       setBrokenLinks(linksData?.links ?? []);
       setInsights(insightsData);
       setCompetitors(competitorData ?? []);
+      setSiteReport(reportData);
+      if (!reportData) {
+        setReportError('No real audit has been run yet. Click "Run audit" to crawl the live site first — this dashboard never shows sample data.');
+      }
     } catch (caught) {
       setError(
         caught instanceof Error
@@ -159,23 +160,28 @@ export default function SeoDashboardPage() {
     void load();
   }, [load]);
 
+  // Runs a REAL audit on the backend (live crawl of every sitemap route) and
+  // reloads the dashboard from the fresh numbers.
   const runAudit = async () => {
     setBusy(true);
     try {
       await seoAuditApi.startAudit();
-      setTimeout(() => void load(), 1500);
-    } catch {
-      setError("Could not start audit");
+      await load();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not start audit");
     } finally {
       setBusy(false);
     }
   };
 
   const handleExportCSV = () => {
-    const report = buildSeoCheckupReport("site", "home");
+    if (!siteReport) {
+      setError("No real report to export yet — run an audit first.");
+      return;
+    }
     downloadTextFile(
       "Bharat_Organic_SEO_Audit_Report.csv",
-      checkupReportToCsv(report),
+      checkupReportToCsv(siteReport),
       "text/csv;charset=utf-8",
     );
   };
@@ -216,11 +222,45 @@ export default function SeoDashboardPage() {
   }
 
   const counts = overview?.counts ?? {};
-  const siteReport = buildSeoCheckupReport("site", "home");
-  const totals = inventoryTotals();
-  const llmChecks = siteReport.groups
-    .filter((group) => group.name === "AI Insights" || group.name === "LLM Visibility Checker")
-    .flatMap((group) => group.tests.map((test) => ({ ...test, group: group.name })));
+  const summaries = siteReport?.routeSummaries ?? [];
+  const shareOf = (predicate: (s: (typeof summaries)[number]) => boolean) =>
+    summaries.length === 0 ? "—" : `${Math.round((summaries.filter(predicate).length / summaries.length) * 100)}%`;
+  const contentShareCards = [
+    {
+      value: shareOf((s) => s.words >= 700),
+      label: "Routes with 700+ words",
+      box: "bg-emerald-50 border-emerald-200",
+      text: "text-emerald-700",
+      sub: "text-emerald-800",
+    },
+    {
+      value: shareOf((s) => s.score >= 90),
+      label: "Routes at 90+ score",
+      box: "bg-blue-50 border-blue-200",
+      text: "text-blue-700",
+      sub: "text-blue-800",
+    },
+    {
+      value: shareOf((s) => s.internalLinks >= 10),
+      label: "Routes with 10+ internal links",
+      box: "bg-indigo-50 border-indigo-200",
+      text: "text-indigo-700",
+      sub: "text-indigo-800",
+    },
+    {
+      value: shareOf((s) => s.imagesMissingAlt === 0),
+      label: "Routes without missing image alt",
+      box: "bg-amber-50 border-amber-200",
+      text: "text-amber-700",
+      sub: "text-amber-800",
+    },
+  ];
+
+  const llmChecks = siteReport
+    ? siteReport.groups
+        .filter((group) => group.name === "AI Insights" || group.name === "LLM Visibility Checker")
+        .flatMap((group) => group.tests.map((test) => ({ ...test, group: group.name })))
+    : [];
 
   return (
     <div className="min-h-[calc(100vh-100px)] w-full bg-[#f8fafc] text-slate-900 p-4 lg:p-6 space-y-6">
@@ -325,6 +365,23 @@ export default function SeoDashboardPage() {
       </div>
 
       {tab === "Overview" && (
+        !siteReport ? (
+          <div className="rounded-xl border border-slate-200 bg-white p-10 text-center shadow-xs">
+            <h2 className="text-sm font-extrabold text-slate-900">No real audit data yet</h2>
+            <p className="mx-auto mt-2 max-w-md text-xs text-slate-500">
+              {reportError ?? "Run a live audit to crawl the site and generate real scores. This dashboard never shows sample data."}
+            </p>
+            <button
+              type="button"
+              onClick={() => void runAudit()}
+              disabled={busy}
+              className="mt-4 inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md bg-blue-600 px-4 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 disabled:opacity-50"
+            >
+              Run live audit now
+            </button>
+          </div>
+        ) : (
+          <>
         <div className="space-y-6">
           {/* 3. Domain Level Overall Score Card */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 bg-white rounded-xl border border-slate-200 p-6 shadow-xs">
@@ -356,7 +413,7 @@ export default function SeoDashboardPage() {
                 </div>
               </div>
               <p className="text-xs text-slate-600 font-medium">
-                Your SEO Checkup Score across {siteReport.totalCount} automated checks on {totals.total} routes
+                Your SEO Checkup Score across {siteReport.totalCount} automated checks on {(siteReport.routeSummaries || []).length} routes
               </p>
             </div>
 
@@ -375,16 +432,16 @@ export default function SeoDashboardPage() {
                     stroke="#2563eb"
                     strokeWidth="10"
                     strokeDasharray={2 * Math.PI * 52}
-                    strokeDashoffset={2 * Math.PI * 52 * (1 - siteReport.aiScore / 100)}
+                    strokeDashoffset={2 * Math.PI * 52 * (1 - (siteReport.aiScore ?? 0) / 100)}
                     strokeLinecap="round"
                     fill="transparent"
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-3xl font-extrabold text-blue-900 tracking-tight">
-                    {siteReport.aiScore}
+                    {siteReport.aiScore == null ? "n/a" : siteReport.aiScore}
                   </span>
-                  <span className="text-[11px] font-bold text-blue-400">/ 100</span>
+                  <span className="text-[11px] font-bold text-blue-400">{siteReport.aiScore == null ? "not tested" : "/ 100"}</span>
                 </div>
               </div>
               <p className="text-xs text-slate-600 font-medium">
@@ -397,7 +454,7 @@ export default function SeoDashboardPage() {
               <div>
                 <h3 className="text-sm font-bold text-slate-900 mb-1">Crawl Summary</h3>
                 <p className="text-xs text-slate-600 leading-relaxed mb-3">
-                  Your site scored <strong className="text-slate-900">{siteReport.seoScore}/100</strong>. We found <strong className="text-red-600 font-bold">{siteReport.failedCount} Failed issues</strong> and <strong className="text-amber-600 font-bold">{siteReport.warningCount} Warnings</strong> across {totals.total} crawled routes.
+                  Your site scored <strong className="text-slate-900">{siteReport.seoScore}/100</strong>. We found <strong className="text-red-600 font-bold">{siteReport.failedCount} Failed issues</strong> and <strong className="text-amber-600 font-bold">{siteReport.warningCount} Warnings</strong> across {(siteReport.routeSummaries || []).length} crawled routes.
                 </p>
               </div>
 
@@ -527,7 +584,7 @@ export default function SeoDashboardPage() {
                 LLM Visibility Checker
               </h3>
               <span className="text-xs bg-purple-100 text-purple-800 border border-purple-200 px-3 py-1 rounded-full font-bold">
-                AI Presence Score: {siteReport.aiScore} / 100
+                Brand presence: {siteReport.aiScore == null ? "not tested" : `${siteReport.aiScore}% of tested prompts`}
               </span>
             </div>
 
@@ -582,36 +639,7 @@ export default function SeoDashboardPage() {
             </h3>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-              {[
-                {
-                  value: `${routeShare((page) => page.words >= 700)}%`,
-                  label: "Routes with 700+ words",
-                  box: "bg-emerald-50 border-emerald-200",
-                  text: "text-emerald-700",
-                  sub: "text-emerald-800",
-                },
-                {
-                  value: `${routeShare((page) => page.score === 100)}%`,
-                  label: "Routes at the 99 score cap",
-                  box: "bg-blue-50 border-blue-200",
-                  text: "text-blue-700",
-                  sub: "text-blue-800",
-                },
-                {
-                  value: `${routeShare((page) => page.inLinks >= 10)}%`,
-                  label: "Routes with 10+ internal links",
-                  box: "bg-indigo-50 border-indigo-200",
-                  text: "text-indigo-700",
-                  sub: "text-indigo-800",
-                },
-                {
-                  value: `${routeShare((page) => page.issue === "ok")}%`,
-                  label: "Routes without meta issues",
-                  box: "bg-amber-50 border-amber-200",
-                  text: "text-amber-700",
-                  sub: "text-amber-800",
-                },
-              ].map((card) => (
+              {contentShareCards.map((card) => (
                 <div key={card.label} className={`p-3 border rounded-lg ${card.box}`}>
                   <span className={`block text-xl font-extrabold ${card.text}`}>{card.value}</span>
                   <span className={`text-[10px] font-bold uppercase ${card.sub}`}>{card.label}</span>
@@ -620,6 +648,8 @@ export default function SeoDashboardPage() {
             </div>
           </div>
         </div>
+          </>
+        )
       )}
 
       {tab === "Full report" && (
@@ -653,13 +683,16 @@ export default function SeoDashboardPage() {
             </div>
           </div>
 
-          <SeoCheckupFullReport
-            scope="site"
-            route="home"
-            pagespeed={getSavedPageSpeed("https://bharatorganicexpo.com")}
-            onReAudit={() => void runAudit()}
-            onExportPdf={() => window.print()}
-          />
+          {siteReport && (
+            <SeoCheckupFullReport
+              scope="site"
+              route="home"
+              report={siteReport}
+              pagespeed={siteReport.pageSpeed ?? null}
+              onReAudit={() => void runAudit()}
+              onExportPdf={() => window.print()}
+            />
+          )}
         </div>
       )}
 
@@ -722,23 +755,15 @@ export default function SeoDashboardPage() {
       {tab === "Search insights" && (
         <Panel title="Google Search Console Insights">
           <div className="space-y-3 text-xs text-slate-600">
-            <p>Direct Search Console API Integration active for Bharat Organic Expo 2027.</p>
+            <p>
+              {siteReport?.site.searchConsoleConfigured
+                ? "Live Search Console metrics from the audited window."
+                : "Search Console is not connected. Set GSC_SERVICE_ACCOUNT_JSON and GSC_SITE_URL on the backend to enable real search metrics — no sample numbers are ever shown."}
+            </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                <span className="block text-lg font-bold text-slate-900">{totals.clicks.toLocaleString("en-US")}</span>
-                <span className="text-[10px] text-slate-500 uppercase font-bold">Total Clicks</span>
-              </div>
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                <span className="block text-lg font-bold text-slate-900">{totals.impressions.toLocaleString("en-US")}</span>
-                <span className="text-[10px] text-slate-500 uppercase font-bold">Total Impressions</span>
-              </div>
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                <span className="block text-lg font-bold text-blue-600">{totals.ctr}%</span>
-                <span className="text-[10px] text-slate-500 uppercase font-bold">Average CTR</span>
-              </div>
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                <span className="block text-lg font-bold text-emerald-600">{totals.position}</span>
-                <span className="text-[10px] text-slate-500 uppercase font-bold">Average Rank Position</span>
+              <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                <span className="block text-sm font-bold text-amber-800">Not connected</span>
+                <span className="text-[10px] text-amber-700 uppercase font-bold">Totals need live Search Console</span>
               </div>
             </div>
           </div>
@@ -792,9 +817,9 @@ export default function SeoDashboardPage() {
               <tbody className="divide-y divide-slate-100">
                 <tr>
                   <td className="p-2 font-bold text-blue-600">bharatorganicexpo.com (Primary)</td>
-                  <td className="p-2 font-bold text-emerald-600">{siteReport.seoScore} / 100</td>
-                  <td className="p-2 font-bold text-blue-600">{siteReport.aiScore} / 100</td>
-                  <td className="p-2 font-mono">{totals.total} Pages</td>
+                  <td className="p-2 font-bold text-emerald-600">{siteReport?.seoScore ?? 0} / 100</td>
+                  <td className="p-2 font-bold text-blue-600">{siteReport?.aiScore == null ? "not tested" : `${siteReport.aiScore}%`}</td>
+                  <td className="p-2 font-mono">{siteReport?.routeSummaries?.length ?? 0} Pages</td>
                 </tr>
               </tbody>
             </table>

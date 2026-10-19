@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { findCmsPageByRouteKey, getCmsPageRouteKey, cmsPages } from "@/lib/cmsPages";
 import {
@@ -18,6 +18,7 @@ import {
   Gauge,
   Layers,
   Lightbulb,
+  Monitor,
   RefreshCw,
   Search,
   ShieldCheck,
@@ -28,13 +29,11 @@ import {
   Zap,
 } from "lucide-react";
 import {
-  buildSeoCheckupReport,
   checkupReportToCsv,
   downloadTextFile,
   sourceLabel,
   type CheckupGroup,
   type CheckupLevel,
-  ROUTE_META_CAPTURED_AT,
   type CheckupSource,
   type CheckupStatus,
   type CheckupTest,
@@ -42,7 +41,7 @@ import {
   type ReportMetaOverride,
   type SeoCheckupReportData,
 } from "@/lib/seoCheckupData";
-import { getSavedPageSpeed } from "@/lib/pageSpeedBatch";
+import { seoAuditApi } from "@/lib/seoAuditApi";
 import SeoReportCharts from "./SeoReportCharts";
 
 export interface SeoCheckupFullReportProps {
@@ -51,6 +50,8 @@ export interface SeoCheckupFullReportProps {
   url?: string;
   meta?: ReportMetaOverride;
   pagespeed?: PageSpeedSnapshot | null;
+  strategy?: "mobile" | "desktop";
+  onStrategyChange?: (strategy: "mobile" | "desktop") => void;
   report?: SeoCheckupReportData;
   onClose?: () => void;
   onReAudit?: () => void;
@@ -116,12 +117,16 @@ const SOURCE_STYLES: Record<CheckupSource, string> = {
   measured: "border-blue-200 bg-blue-50 text-blue-700",
   crawl: "border-emerald-200 bg-emerald-50 text-emerald-700",
   derived: "border-amber-200 bg-amber-50 text-amber-700",
+  not_tested: "border-slate-300 bg-slate-100 text-slate-600",
+  not_connected: "border-slate-300 bg-slate-100 text-slate-600",
 };
 
 const SOURCE_HINT: Record<CheckupSource, string> = {
-  measured: "Captured by the SEO Site Checkup audit run",
-  crawl: "Captured by your crawler / Search Console for this route",
-  derived: "Calculated from the crawl inputs using the published threshold",
+  measured: "Measured live over the network during this audit run",
+  crawl: "Read from the live HTML of the crawled route",
+  derived: "Calculated from real crawl inputs using the published threshold",
+  not_tested: "The optional probe had no API credentials, so this was not tested",
+  not_connected: "The optional data source (e.g. Search Console) is not connected",
 };
 
 const FILTER_META: Record<StatusFilter, { label: string; className: string }> = {
@@ -182,12 +187,13 @@ function ScoreRing({
   sub,
   source,
 }: {
-  value: number;
+  value: number | null;
   color: string;
   label: React.ReactNode;
   sub: string;
   source?: CheckupSource;
 }) {
+  const displayValue = value ?? 0;
   return (
     <div className="flex flex-col items-center justify-between text-center">
       {label}
@@ -198,18 +204,24 @@ function ScoreRing({
             cx="80"
             cy="80"
             r="64"
-            stroke={color}
+            stroke={value == null ? "#cbd5e1" : color}
             strokeWidth="12"
             strokeDasharray={2 * Math.PI * 64}
-            strokeDashoffset={2 * Math.PI * 64 * (1 - value / 100)}
+            strokeDashoffset={2 * Math.PI * 64 * (1 - displayValue / 100)}
             strokeLinecap="round"
             fill="transparent"
             className="transition-all duration-1000 ease-out"
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-5xl font-black tracking-tight text-slate-900">{value}</span>
-          <span className="text-xs font-bold text-slate-400">/ 100</span>
+          {value == null ? (
+            <span className="text-3xl font-black tracking-tight text-slate-400">n/a</span>
+          ) : (
+            <>
+              <span className="text-5xl font-black tracking-tight text-slate-900">{value}</span>
+              <span className="text-xs font-bold text-slate-400">/ 100</span>
+            </>
+          )}
         </div>
       </div>
       <p className="text-xs font-medium text-slate-600">{sub}</p>
@@ -219,7 +231,9 @@ function ScoreRing({
             ? "Measured score"
             : source === "crawl"
               ? "From your crawler"
-              : "Derived from checks"}
+              : source === "not_tested"
+                ? "Not tested"
+                : "Derived from checks"}
         </span>
       )}
     </div>
@@ -450,37 +464,230 @@ export default function SeoCheckupFullReport({
   url,
   meta,
   pagespeed: pagespeedProp,
+  strategy: strategyProp,
+  onStrategyChange,
   report: reportProp,
   onClose,
   onReAudit,
   onExportPdf,
   onExportCsv,
 }: SeoCheckupFullReportProps) {
-  const targetUrl = url || (scope === "site" ? "https://bharatorganicexpo.com" : `https://bharatorganicexpo.com${route === "home" || !route ? "" : `/${route.replace(/^\//, "")}`}`);
-  const pagespeed = pagespeedProp?.ok ? pagespeedProp : getSavedPageSpeed(targetUrl);
+  const [internalStrategy, setInternalStrategy] = useState<"mobile" | "desktop">("mobile");
+  const activeStrategy = strategyProp ?? internalStrategy;
+  const handleStrategyChange = (s: "mobile" | "desktop") => {
+    if (onStrategyChange) onStrategyChange(s);
+    else setInternalStrategy(s);
+  };
+  const routeKey = route ?? "home";
+  const [fetched, setFetched] = useState<SeoCheckupReportData | null>(null);
+  const [fetching, setFetching] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
-  const report = useMemo(
-    () => reportProp ?? buildSeoCheckupReport(scope, route ?? "home", meta, pagespeed),
-    [reportProp, scope, route, meta, pagespeed],
-  );
+  useEffect(() => {
+    if (reportProp) return;
+    let cancelled = false;
+    // Drop the previous route's report immediately so the panel never shows
+    // another page's numbers while this route is loading.
+    setFetched(null);
+    setFetching(true);
+    setFetchError(null);
+    seoAuditApi
+      .checkupReport(routeKey)
+      .then((data) => {
+        if (!cancelled) setFetched(data);
+      })
+      .catch((caught) => {
+        if (!cancelled) setFetchError(caught instanceof Error ? caught.message : "Could not load the audit report");
+      })
+      .finally(() => {
+        if (!cancelled) setFetching(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reportProp, routeKey]);
+
+  const report = reportProp ?? fetched;
+  const pagespeed = pagespeedProp?.ok ? pagespeedProp : (report?.pageSpeed ?? null);
+  const effectivePageSpeed = pagespeedProp ?? report?.pageSpeed ?? null;
+
+  // Dynamically reflect current selected page route's PageSpeed and GSC data in inputs
+  const dynamicInputs = useMemo(() => {
+    if (!report?.inputs) return [];
+    const currentRouteSummary = report.routeSummaries?.find((s) => s.path === report.route || (report.route === "home" && s.path === "/"));
+
+    return report.inputs
+      .filter((input) => {
+        const lbl = input.label.toLowerCase();
+        // Hide confusing / low-value technical developer internals
+        if (lbl.includes("dom node") || lbl.includes("html document size")) return false;
+        return true;
+      })
+      .map((input) => {
+      if (input.label.toLowerCase().includes("pagespeed performance")) {
+        if (effectivePageSpeed?.ok) {
+          return {
+            label: `PageSpeed performance (${effectivePageSpeed.strategy})`,
+            value: `${effectivePageSpeed.scores.performance ?? "—"} / 100`,
+            source: "measured" as const,
+            status: (effectivePageSpeed.scores.performance ?? 0) >= 90 ? ("passed" as const) : (effectivePageSpeed.scores.performance ?? 0) >= 50 ? ("warning" as const) : ("failed" as const),
+          };
+        } else if (effectivePageSpeed) {
+          return {
+            label: "PageSpeed performance",
+            value: effectivePageSpeed.message || "Run live PageSpeed",
+            status: "warning" as const,
+          };
+        }
+      }
+
+      if (currentRouteSummary && currentRouteSummary.searchConsole?.available) {
+        if (input.label === "Google Search Clicks") {
+          return {
+            ...input,
+            value: `${currentRouteSummary.searchConsole.clicks ?? 0} clicks (for this route)`,
+          };
+        }
+        if (input.label === "Google Search Impressions") {
+          return {
+            ...input,
+            value: `${currentRouteSummary.searchConsole.impressions ?? 0} impressions`,
+          };
+        }
+        if (input.label === "Average Google Ranking") {
+          return {
+            ...input,
+            value: `Rank #${currentRouteSummary.searchConsole.position ?? 0} on Google`,
+          };
+        }
+      }
+
+      return input;
+    });
+  }, [report, effectivePageSpeed]);
 
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [defaultOpen, setDefaultOpen] = useState(true);
   const [openVersion, setOpenVersion] = useState(0);
 
-  const pageUrl = url || report.url;
-
   const filterCounts = useMemo(
     () => ({
-      all: report.totalCount,
-      failed: report.failedCount,
-      warning: report.warningCount,
-      passed: report.passedCount,
+      all: report?.totalCount ?? 0,
+      failed: report?.failedCount ?? 0,
+      warning: report?.warningCount ?? 0,
+      passed: report?.passedCount ?? 0,
     }),
     [report],
   );
 
-  const visibleGroups = report.groups.filter((group) =>
+  // Build active PageSpeed group from effectivePageSpeed (matching mobile or desktop strategy)
+  const activeGroups = useMemo(() => {
+    if (!report?.groups) return [];
+    let baseGroups = [...report.groups];
+    if (effectivePageSpeed) {
+      const ps = effectivePageSpeed;
+      const { scores: sc, metrics: m } = ps;
+      const status = (value: number | null): CheckupTest["status"] => {
+        if (value == null) return "warning";
+        if (value >= 90) return "passed";
+        if (value >= 50) return "warning";
+        return "failed";
+      };
+      const vital = (value: number | null, good: number, poor: number): CheckupTest["status"] => {
+        if (value == null) return "warning";
+        if (value <= good) return "passed";
+        if (value <= poor) return "warning";
+        return "failed";
+      };
+
+      const scoreTest = (id: string, name: string, value: number | null, note: string): CheckupTest => ({
+        id: `psi-${id}`,
+        name,
+        status: status(value),
+        level: "page",
+        source: "measured",
+        summary: value == null ? `${name} was not returned by PageSpeed Insights.` : note,
+        meta: [{ label: "PageSpeed score", value: value == null ? "not returned" : `${value} / 100` }],
+        benchmark: `${value == null ? "no data" : `${value}/100`} · Lighthouse ${ps.strategy} run`,
+      });
+
+      const metricTest = (
+        id: string,
+        name: string,
+        value: number | null,
+        display: string,
+        testStatus: CheckupTest["status"],
+        note: string,
+      ): CheckupTest => ({
+        id: `psi-${id}`,
+        name,
+        status: testStatus,
+        level: "page",
+        source: "measured",
+        summary: note,
+        meta: [{ label: "Lighthouse lab value", value: display, mono: true }],
+      });
+
+      const tests: CheckupTest[] = [
+        scoreTest("performance", "PageSpeed Performance Score", sc.performance, "Weighted from core vital metrics for this route."),
+        scoreTest("accessibility", "PageSpeed Accessibility Score", sc.accessibility, "Lighthouse accessibility audits: contrast, labels, names, keyboard order."),
+        scoreTest("best-practices", "PageSpeed Best Practices Score", sc.bestPractices, "HTTPS, console errors, image quality, document metadata and deprecations."),
+        scoreTest("seo", "PageSpeed SEO Score", sc.seo, "Google's own on-page SEO checks: title, meta description, link text, crawlability, viewport."),
+        metricTest("fcp", "First Contentful Paint", m.fcpMs, m.fcpMs == null ? "not returned" : `${((m.fcpMs / 1000) || 0).toFixed(2)}s`, vital(m.fcpMs ? m.fcpMs / 1000 : null, 1.8, 3.0), "How long the first text or image paints. Good is ≤ 1.8s, poor above 3.0s."),
+        metricTest("lcp", "Largest Contentful Paint", m.lcpMs, m.lcpMs == null ? "not returned" : `${((m.lcpMs / 1000) || 0).toFixed(2)}s`, vital(m.lcpMs ? m.lcpMs / 1000 : null, 2.5, 4.0), "When the largest above-the-fold element paints. Good is ≤ 2.5s, poor above 4.0s."),
+        metricTest("cls", "Cumulative Layout Shift", m.cls, m.cls == null ? "not returned" : String(m.cls), vital(m.cls, 0.1, 0.25), "Visual stability of the page. Good is ≤ 0.1, poor above 0.25."),
+      ];
+
+      const passCount = tests.filter((t) => t.status === "passed").length;
+      const warnCount = tests.filter((t) => t.status === "warning").length;
+      const groupScore = Math.min(99, Math.round(((passCount + warnCount * 0.5) / tests.length) * 100));
+
+      const dynamicPageSpeedGroup: CheckupGroup = {
+        id: "page-speed",
+        name: "Google PageSpeed Insights (Lighthouse)",
+        note: `Live Google PageSpeed Insights run for ${ps.strategy}, fetched ${new Date(ps.fetchedAt).toLocaleString("en-IN")}${ps.cached ? " (cached ≤6h)" : ""}.`,
+        score: groupScore,
+        tests,
+      };
+
+      baseGroups = baseGroups.filter((g) => g.id !== "page-speed");
+      baseGroups.unshift(dynamicPageSpeedGroup);
+    }
+    return baseGroups;
+  }, [report?.groups, effectivePageSpeed]);
+
+  if (!report) {
+    return (
+      <div className="w-full rounded-xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+        {fetching ? (
+          <>
+            <p className="text-sm font-bold text-slate-600">Loading the real audit report for this route…</p>
+            <p className="mt-1 text-xs text-slate-500">Reading the latest live audit run from the backend.</p>
+          </>
+        ) : (
+          <>
+            <p className="text-sm font-bold text-slate-900">No real audit data for this route yet.</p>
+            <p className="mt-1 text-xs text-slate-500">
+              {fetchError ?? "Run a live audit first — this panel never shows sample or estimated data."}
+            </p>
+            {onReAudit && (
+              <button
+                type="button"
+                onClick={onReAudit}
+                className="mt-4 inline-flex h-9 items-center gap-1.5 rounded-md bg-blue-600 px-4 text-xs font-semibold text-white shadow-xs hover:bg-blue-700"
+              >
+                Run live audit
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    );
+  }
+
+  const pageUrl = url || report.url;
+
+  const visibleGroups = activeGroups.filter((group) =>
     filter === "all" ? true : group.tests.some((test) => test.status === filter),
   );
 
@@ -624,17 +831,57 @@ export default function SeoCheckupFullReport({
             />
           </div>
 
-          <div className="rounded-xl border border-blue-200 bg-gradient-to-b from-blue-50/60 to-white p-5 shadow-xs md:col-span-4">
+          {/* PageSpeed Performance Score Dial (Dynamic per page + Mobile/Desktop switch) */}
+          <div className="rounded-xl border border-blue-200 bg-gradient-to-b from-blue-50/60 to-white p-5 shadow-xs md:col-span-4 flex flex-col justify-between">
             <ScoreRing
-              value={report.aiScore}
-              color="#2563eb"
-              source={report.aiSource}
-              label={
-                <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-blue-700">
-                  <Sparkles className="h-4 w-4 text-blue-600" /> AI Visibility Score
-                </span>
+              value={effectivePageSpeed?.scores?.performance ?? null}
+              color={
+                effectivePageSpeed?.scores?.performance != null
+                  ? effectivePageSpeed.scores.performance >= 90
+                    ? "#16a34a"
+                    : effectivePageSpeed.scores.performance >= 50
+                    ? "#f59e0b"
+                    : "#ef4444"
+                  : "#2563eb"
               }
-              sub="AI visibility score reflects brand reach in AI."
+              source={effectivePageSpeed?.ok ? "measured" : "not_tested"}
+              label={
+                <div className="flex flex-col items-center gap-1.5 w-full">
+                  <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-blue-700">
+                    <Gauge className="h-4 w-4 text-blue-600" /> PageSpeed Performance
+                  </span>
+                  {/* Mobile vs Desktop Toggle Switch */}
+                  <div className="inline-flex items-center rounded-lg border border-slate-200 bg-slate-100 p-0.5 text-[11px] font-bold">
+                    <button
+                      type="button"
+                      onClick={() => handleStrategyChange("mobile")}
+                      className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 transition cursor-pointer ${
+                        activeStrategy === "mobile"
+                          ? "bg-white text-blue-700 shadow-xs"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      <Smartphone className="h-3 w-3" /> Mobile
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleStrategyChange("desktop")}
+                      className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 transition cursor-pointer ${
+                        activeStrategy === "desktop"
+                          ? "bg-white text-blue-700 shadow-xs"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      <Monitor className="h-3 w-3" /> Desktop
+                    </button>
+                  </div>
+                </div>
+              }
+              sub={
+                effectivePageSpeed?.ok
+                  ? `Live Lighthouse ${activeStrategy} run for this page.`
+                  : `Google PageSpeed ${activeStrategy} score for this route.`
+              }
             />
           </div>
 
@@ -674,23 +921,50 @@ export default function SeoCheckupFullReport({
 
           {/* Clean Light-Themed Structured Table */}
           <div className="overflow-x-auto rounded-lg border border-slate-200">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-600 border-b border-slate-200">
-                <tr>
-                  <th className="px-3.5 py-3">Priority</th>
-                  <th className="px-3.5 py-3">Status</th>
-                  <th className="px-3.5 py-3">Category</th>
-                  <th className="px-3.5 py-3">Issue Title & Details</th>
-                  <th className="px-3.5 py-3">Route</th>
-                  <th className="px-3.5 py-3 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 bg-white">
-                {report.issues.map((issue, index) => (
-                  <PriorityIssueRow key={index} issue={issue} baseUrl={pageUrl} />
-                ))}
-              </tbody>
-            </table>
+            {(() => {
+              const displayableIssues = report.issues.filter((issue) => {
+                const title = (issue.title || "").toLowerCase();
+                // Filter out non-actionable or confusing technical Lighthouse/speed micro-benchmarks
+                if (
+                  title.includes("total blocking time") ||
+                  title.includes("speed index") ||
+                  title.includes("real-user field data") ||
+                  title.includes("chrome ux report") ||
+                  title.includes("render blocking")
+                ) {
+                  return false;
+                }
+                return true;
+              });
+
+              return (
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-600 border-b border-slate-200">
+                    <tr>
+                      <th className="px-3.5 py-3">Priority</th>
+                      <th className="px-3.5 py-3">Status</th>
+                      <th className="px-3.5 py-3">Category</th>
+                      <th className="px-3.5 py-3">Issue Title & Details</th>
+                      <th className="px-3.5 py-3">Route</th>
+                      <th className="px-3.5 py-3 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 bg-white">
+                    {displayableIssues.length > 0 ? (
+                      displayableIssues.map((issue, index) => (
+                        <PriorityIssueRow key={index} issue={issue} baseUrl={pageUrl} />
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-8 text-center text-slate-500 font-semibold">
+                          No high-priority content or SEO issues found on this route.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              );
+            })()}
           </div>
         </div>
 
@@ -717,8 +991,7 @@ export default function SeoCheckupFullReport({
                   </span>
                 </div>
                 <p className="mt-1 break-words font-mono text-[11px] text-slate-800">
-                  {report.pageDesc ??
-                      `No <meta name="description"> is served on this route (captured ${ROUTE_META_CAPTURED_AT}), so the test falls back to your crawler's issue flag.`}
+                  {report.pageDesc ?? "No meta description is served on this route (live crawl of this audit run)."}
                 </p>
               </div>
             </div>
@@ -733,7 +1006,7 @@ export default function SeoCheckupFullReport({
               <span className="text-xs font-normal text-slate-500">Every number is traceable</span>
             </h3>
             <div className="grid grid-cols-1 items-start gap-2 sm:grid-cols-2 lg:grid-cols-4">
-              {report.inputs.map((input) => {
+              {dynamicInputs.map((input) => {
                 const StatusIcon = input.status ? STATUS_STYLES[input.status].icon : null;
                 return (
                   <div
