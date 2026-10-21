@@ -1,0 +1,104 @@
+/*
+ * Infrastructure module style scope.
+ *
+ * The module is a 1:1 port of the original (Encodency Omniplatform) screens, which were designed against that app's
+ * global CSS. This file reproduces just the parts of it the module relies on, under `.infra-root`, so the look is the
+ * same without changing anything for the rest of this admin. The only intended difference is the typeface: the font
+ * is inherited from this app (Inter, as loaded in app/layout.tsx).
+ *
+ * Specificity note: this app's globals.css forces `font-weight: 600 !important` on .font-bold / .font-medium /
+ * .font-semibold and `font-weight: 400` on every element, so the weights are restated here with higher specificity.
+ */
+
+.infra-root {
+  /* Tailwind theme values of the original app (radius scale and elevation) */
+  --radius-sm: calc(0.5rem - 2px);
+  --radius-md: 0.5rem;
+  --radius-lg: calc(0.5rem + 2px);
+  --radius-xl: calc(0.5rem + 6px);
+  --shadow-xs: 0 1px 2px 0 rgb(30 42 50 / 0.04);
+  --shadow-sm: 0 1px 3px 0 rgb(30 42 50 / 0.06), 0 1px 2px -1px rgb(30 42 50 / 0.04);
+  --shadow-md: 0 4px 12px -2px rgb(30 42 50 / 0.08), 0 2px 4px -2px rgb(30 42 50 / 0.04);
+  --shadow-lg: 0 12px 32px -8px rgb(30 42 50 / 0.14);
+
+  color: #172044;
+  font-size: 16px;
+  line-height: 1.5;
+  font-feature-settings: "cv11", "ss01";
+  font-variant-numeric: tabular-nums;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* the original app's `* { border-color: var(--border) }` base rule: lower than every utility, so explicit colours win */
+@layer base {
+  .infra-root,
+  .infra-root *,
+  .infra-root *::before,
+  .infra-root *::after {
+    border-color: #ece9e6;
+  }
+}
+
+/* Weights: restated against this app's global overrides */
+.infra-root * { font-weight: inherit; }
+.infra-root th { font-weight: 700; }
+.infra-root strong, .infra-root b { font-weight: bolder !important; }
+.infra-root .font-thin { font-weight: 100 !important; }
+.infra-root .font-extralight { font-weight: 200 !important; }
+.infra-root .font-light { font-weight: 300 !important; }
+.infra-root .font-normal { font-weight: 400 !important; }
+.infra-root .font-medium { font-weight: 500 !important; }
+.infra-root .font-semibold { font-weight: 600 !important; }
+.infra-root .font-bold { font-weight: 700 !important; }
+.infra-root .font-extrabold { font-weight: 800 !important; }
+.infra-root .font-black { font-weight: 900 !important; }
+
+/* A single, consistent focus treatment (original base rule) */
+.infra-root :focus-visible {
+  outline: 2px solid #dc1820;
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+.infra-root .recharts-wrapper, .infra-root .recharts-surface { outline: none; }
+.infra-root .recharts-wrapper *:focus, .infra-root .recharts-wrapper *:focus-visible { outline: none; }
+
+/* Thin scrollbars (original) */
+.infra-root, .infra-root * { scrollbar-width: thin; scrollbar-color: rgba(148, 163, 184, 0.35) transparent; }
+.infra-root *::-webkit-scrollbar { width: 6px; height: 6px; }
+.infra-root *::-webkit-scrollbar-track { background: transparent; }
+.infra-root *::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.35); border-radius: 9999px; }
+.infra-root *::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.6); }
+.infra-root .scrollbar-thin { scrollbar-width: thin; scrollbar-color: #ddd8d3 transparent; }
+.infra-root .scrollbar-thin::-webkit-scrollbar { width: 4px; height: 4px; }
+.infra-root .scrollbar-thin::-webkit-scrollbar-track, .infra-root .scrollbar-thin::-webkit-scrollbar-corner { background: transparent; }
+.infra-root .scrollbar-thin::-webkit-scrollbar-thumb { background: #ddd8d3; border-radius: 9999px; }
+.infra-root .scrollbar-thin::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+.infra-root .tabular { font-variant-numeric: tabular-nums; }
+
+/* The original admin shell lifts any tiny text to a 12px minimum */
+.infra-root [class*="text-[6"],
+.infra-root [class*="text-[7"],
+.infra-root [class*="text-[8"],
+.infra-root [class*="text-[9"],
+.infra-root [class*="text-[10px]"],
+.infra-root [class*="text-[10.5px]"],
+.infra-root [class*="text-[11px]"],
+.infra-root [class*="text-[11.5px]"] {
+  font-size: 12px !important;
+}
+
+/* Dialog motion (tw-animate-css equivalents: fade + zoom-95, 150ms) */
+@keyframes infra-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes infra-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes infra-dialog-in { from { opacity: 0; transform: translate(-50%, -50%) scale(0.95); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+@keyframes infra-dialog-out { from { opacity: 1; transform: translate(-50%, -50%) scale(1); } to { opacity: 0; transform: translate(-50%, -50%) scale(0.95); } }
+.infra-root .infra-overlay[data-state="open"] { animation: infra-fade-in 150ms ease-out; }
+.infra-root .infra-overlay[data-state="closed"] { animation: infra-fade-out 150ms ease-in; }
+.infra-root .infra-dialog[data-state="open"] { animation: infra-dialog-in 150ms ease-out; }
+.infra-root .infra-dialog[data-state="closed"] { animation: infra-dialog-out 150ms ease-in; }
+
+/* Brings the module's pages to the edges of this app's content column, then applies the original page padding */
+.infra-page { margin: -4px -6px -6px -6px; min-height: calc(100% + 10px); background: #f5f8fc; padding: 20px 16px 64px; overflow-x: hidden; }
+@media (min-width: 640px) { .infra-page { padding-left: 20px; padding-right: 20px; } }
+@media (min-width: 1280px) { .infra-page { padding-left: 24px; padding-right: 24px; } }
