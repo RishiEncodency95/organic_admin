@@ -18,7 +18,7 @@ export const defaultSponsorshipSections: OpportunitySectionContent[] = [
     imageAlt: "Sponsorship opportunities at Bharat Organic Expo 2027",
     items: [
       { title: "8,000+", label: "BUSINESS VISITORS", icon: "Users" },
-      { title: "200+", label: "EXHIBITORS", icon: "Store" },
+      { title: "100+", label: "EXHIBITORS", icon: "Store" },
       { title: "150+", label: "SPEAKERS", icon: "Presentation" },
       { title: "25+", label: "COUNTRIES", icon: "Globe" },
       { title: "UNLIMITED", label: "BUSINESS OPPORTUNITIES", icon: "Handshake" },
@@ -152,7 +152,7 @@ export const defaultEPromotionSections: OpportunitySectionContent[] = [
     imageAlt: "E-Promotion opportunities at Bharat Organic Expo 2027",
     items: [
       { title: "8,000+", label: "BUSINESS VISITORS", icon: "Users" },
-      { title: "200+", label: "EXHIBITORS", icon: "Store" },
+      { title: "100+", label: "EXHIBITORS", icon: "Store" },
       { title: "150+", label: "SPEAKERS", icon: "Presentation" },
       { title: "25+", label: "COUNTRIES", icon: "Globe" },
       { title: "UNLIMITED", label: "BUSINESS OPPORTUNITIES", icon: "Handshake" },
@@ -261,9 +261,9 @@ export const defaultPartnershipPageSections: OpportunitySectionContent[] = [
     imageAlt: "Partnership and collaboration at Bharat Organic Expo 2027",
     items: [
       { title: "8,000+", label: "VISITORS / DELEGATES", icon: "Users" },
-      { title: "200+", label: "EXHIBITORS", icon: "Store" },
+      { title: "100+", label: "EXHIBITORS", icon: "Store" },
       { title: "1,000+", label: "GLOBAL BUYERS", icon: "Globe" },
-      { title: "65+", label: "EXPERT SPEAKERS", icon: "UserCheck" },
+      { title: "150+", label: "EXPERT SPEAKERS", icon: "UserCheck" },
       { title: "B2B", label: "MEETINGS", icon: "Briefcase" },
     ],
   },

@@ -89,7 +89,7 @@ export const defaultParticipateAsExhibitorSections: LandingSectionContent[] = [
     enabled: true,
     title: "EXPO STATS",
     items: [
-      { value: "200+", label: "EXHIBITORS", icon: "Building2" },
+      { value: "100+", label: "EXHIBITORS", icon: "Building2" },
       { value: "8,000+", label: "BUSINESS VISITORS", icon: "Users" },
       { value: "150+", label: "SPEAKERS", icon: "Mic" },
       { value: "30+", label: "COUNTRY PARTICIPATION", icon: "Globe" },

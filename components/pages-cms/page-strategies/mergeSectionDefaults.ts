@@ -307,7 +307,7 @@ export function mergeSectionWithSavedData(
     if (!merged.stat2Sub) merged.stat2Sub = "NEW DELHI";
     if (!merged.stat3Title) merged.stat3Title = "INSIGHTS. IDEAS.";
     if (!merged.stat3Sub) merged.stat3Sub = "IMPACT.";
-    if (!merged.stat4Title) merged.stat4Title = "50+ GLOBAL";
+    if (!merged.stat4Title) merged.stat4Title = "150+ GLOBAL";
     if (!merged.stat4Sub) merged.stat4Sub = "SPEAKERS";
     if (!merged.stat5Title) merged.stat5Title = "20+ KEY";
     if (!merged.stat5Sub) merged.stat5Sub = "SESSIONS";
@@ -406,7 +406,7 @@ export function mergeSectionWithSavedData(
     if (!merged.websiteUrl) merged.websiteUrl = "www.bharatorganicexpo.com";
     if (merged.description === undefined || merged.description.startsWith("Showcasing certified products")) {
       merged.description =
-        "A global platform uniting over 500+ exhibitors from across the organic value chain, showcasing certified products, advanced agritech, sustainable practices, and the rich heritage of traditional wellness. Discover organic living with conferences and B2B opportunities.";
+        "A global platform uniting over 100+ exhibitors from across the organic value chain, showcasing certified products, advanced agritech, sustainable practices, and the rich heritage of traditional wellness. Discover organic living with conferences and B2B opportunities.";
     }
     // Left blank on purpose (used to hardcode a local server `/uploads/...`
     // URL) — the public Footer component already falls back to its own

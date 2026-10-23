@@ -17,9 +17,9 @@ export const defaultWhyVisitSections: LandingSectionContent[] = [
     secondaryButtonHref: "/registration/visitor-registration",
     items: [
       { val: "8,000+", label: "VISITORS / DELEGATES", icon: "Users" },
-      { val: "200+", label: "EXHIBITORS", icon: "Building2" },
+      { val: "100+", label: "EXHIBITORS", icon: "Building2" },
       { val: "GLOBAL", label: "PERSPECTIVES", icon: "Globe" },
-      { val: "100+", label: "EXPERT SPEAKERS", icon: "Mic" },
+      { val: "150+", label: "EXPERT SPEAKERS", icon: "Mic" },
       { val: "B2B", label: "MEETINGS", icon: "Handshake" },
     ],
   },

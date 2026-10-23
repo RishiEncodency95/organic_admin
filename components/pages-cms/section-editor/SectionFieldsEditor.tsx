@@ -25,12 +25,12 @@ export function SectionFieldsEditor({
             value={
               section.description !== undefined && !section.description.startsWith("Showcasing certified products")
                 ? String(section.description)
-                : "A global platform uniting over 500+ exhibitors from across the organic value chain, showcasing certified products, advanced agritech, sustainable practices, and the rich heritage of traditional wellness. Discover organic living with conferences and B2B opportunities."
+                : "A global platform uniting over 100+ exhibitors from across the organic value chain, showcasing certified products, advanced agritech, sustainable practices, and the rich heritage of traditional wellness. Discover organic living with conferences and B2B opportunities."
             }
             onChange={(next) => onFieldChange("description", next)}
             rows={4}
             noLimit={true}
-            placeholder="A global platform uniting over 500+ exhibitors from across the organic value chain..."
+            placeholder="A global platform uniting over 100+ exhibitors from across the organic value chain..."
           />
         </div>
 

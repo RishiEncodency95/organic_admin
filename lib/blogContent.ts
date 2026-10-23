@@ -139,9 +139,9 @@ export const defaultBlogSections: LandingSectionContent[] = [
     enabled: true,
     title: "STATISTICS",
     items: [
-      { value: "200+", label: "EXHIBITORS" },
+      { value: "100+", label: "EXHIBITORS" },
       { value: "8000+", label: "VISITORS" },
-      { value: "100+", label: "EXPERT SPEAKERS" },
+      { value: "150+", label: "EXPERT SPEAKERS" },
       { value: "100+", label: "ORGANIC & NATURAL BRANDS" },
       { value: "3+", label: "DAYS OF EXHIBITION" },
       { value: "1000+", label: "GLOBAL BUYERS" },

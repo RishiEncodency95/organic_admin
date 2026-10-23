@@ -121,7 +121,7 @@ export const defaultAboutSections: LandingSectionContent[] = [
     items: [
       {
         title: "INTERNATIONAL EXHIBITION",
-        description: "Spanning 40,000+ sq ft across three halls, featuring 200+ exhibitors from 8 key sectors including Medical, AYUSH, Wellness, and Digital Health. Witness live demos, finalize deals, and explore global innovations in dedicated country pavilions for specialized high-level networking and business growth.",
+        description: "Spanning 40,000+ sq ft across three halls, featuring 100+ exhibitors from 8 key sectors including Medical, AYUSH, Wellness, and Digital Health. Witness live demos, finalize deals, and explore global innovations in dedicated country pavilions for specialized high-level networking and business growth.",
         image: "",
         imageAlt: "",
         icon: "Globe",

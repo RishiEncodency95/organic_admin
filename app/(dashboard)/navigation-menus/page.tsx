@@ -247,7 +247,7 @@ const MENU_STRUCTURES: Record<number, MenuStructureItem[]> = {
   7: [
     { id: "t-email", label: "Email: info@namogangewellness.com", type: "Top Bar Email", url: "mailto:info@namogangewellness.com", icon: HelpCircle },
     { id: "t-phone", label: "Phone: +91 96549 00525", type: "Top Bar Phone", url: "tel:+919654900525", icon: HelpCircle },
-    { id: "t-marquee", label: "Ticker: 500+ SPEAKERS CONFIRMED • EARLY BIRD DISCOUNT ENDING SOON!", type: "Top Bar Ticker", url: "#", icon: Lightbulb },
+    { id: "t-marquee", label: "Ticker: 150+ SPEAKERS CONFIRMED • EARLY BIRD DISCOUNT ENDING SOON!", type: "Top Bar Ticker", url: "#", icon: Lightbulb },
   ],
 };
 

@@ -52,14 +52,14 @@ export const fallbackExhibitors = [
 ];
 
 export const HERO_STATS = [
-    { value: "200+", label: "Exhibiting Brands" },
+    { value: "100+", label: "Exhibiting Brands" },
     { value: "8,000+", label: "Trade Visitors" },
-    { value: "50+", label: "Expert Speakers" },
+    { value: "150+", label: "Expert Speakers" },
     { value: "2 Days", label: "Of Networking & Business" },
 ];
 
 export const BOTTOM_STATS = [
-    { value: "200+", label: "Exhibitors" },
+    { value: "100+", label: "Exhibitors" },
     { value: "8,000+", label: "Visitors" },
     { value: "3 Days", label: "Of Knowledge" },
     { value: "PAN India", label: "Participation" },
@@ -74,7 +74,7 @@ export const defaultExhibitorsSections: LandingSectionContent[] = [
     enabled: true,
     eyebrow: "TRUSTED BY",
     // Single H1: the website shows word 1 dark + word 2 green on line 1, the rest on line 2.
-    title: "150+ Leading Health & Wellness Brands",
+    title: "100+ Leading Health & Wellness Brands",
     description: "India's most influential health, Ayurveda, fitness and wellness companies have chosen Bharat Organic Expo as the platform to showcase, connect and grow.",
     date: "19-21 February 2027",
     location: "Hall 12, Bharat Mandapam, New Delhi",

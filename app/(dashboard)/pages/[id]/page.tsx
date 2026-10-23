@@ -474,7 +474,7 @@ function WebsitePreview() {
 
         <FeatureItem
           icon={UsersRound}
-          title="500+ Exhibitors"
+          title="100+ Exhibitors"
           description="Pan India participation"
         />
       </div>

@@ -47,9 +47,9 @@ export const defaultGallerySections: LandingSectionContent[] = [
     enabled: true,
     title: "EXPO IMPACT IN NUMBERS",
     items: [
-      { val: "200+", label: "Exhibitors", image: "/uploads/icons/gal2.png" },
-      { val: "8,000", label: "Visitors", image: "/uploads/icons/gal1.png" },
-      { val: "50+", label: "Expert Speakers", image: "/uploads/icons/gal3.png" },
+      { val: "100+", label: "Exhibitors", image: "/uploads/icons/gal2.png" },
+      { val: "8,000+", label: "Visitors", image: "/uploads/icons/gal1.png" },
+      { val: "150+", label: "Expert Speakers", image: "/uploads/icons/gal3.png" },
       { val: "5,000+", label: "Delegates", image: "/uploads/icons/gal4.png" },
       { val: "25+", label: "Countries Participated", image: "/uploads/icons/gal5.png" },
       { val: "100+", label: "Sessions Conducted", image: "/uploads/icons/gal6.png" },

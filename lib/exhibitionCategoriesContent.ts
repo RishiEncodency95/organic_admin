@@ -12,7 +12,7 @@ export const defaultExhibitionCategoriesSections: LandingSectionContent[] = [
     image: "https://res.cloudinary.com/ldlcnnhz/image/upload/v1791006354/bharat-organic/exhibition-categories/hero-bg.webp",
     // Stats bar features: title = value ("200+"), subtitle = label ("Exhibitors Expected").
     items: [
-      { title: "200+", subtitle: "Exhibitors Expected" },
+      { title: "100+", subtitle: "Exhibitors Expected" },
       { title: "8000+", subtitle: "Business Visitors" },
       { title: "Global", subtitle: "Business Platform" },
       { title: "Endless", subtitle: "Business Opportunities" },

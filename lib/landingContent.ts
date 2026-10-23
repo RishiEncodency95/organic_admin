@@ -212,7 +212,7 @@ export const defaultLandingSections: LandingSectionContent[] = [
     name: "Topbar & Header Contact",
     enabled: true,
     title: "Bharat Organic Expo 2027",
-    marqueeText: "500+ SPEAKERS CONFIRMED • EARLY BIRD DISCOUNT ENDING SOON! • JOIN 50,000+ PROFESSIONALS FROM 25+ COUNTRIES",
+    marqueeText: "150+ SPEAKERS CONFIRMED • EARLY BIRD DISCOUNT ENDING SOON! • JOIN 50,000+ PROFESSIONALS FROM 25+ COUNTRIES",
     phoneNumber: "+91 96549 00525",
     contactEmail: "info@namogangewellness.com",
   },
@@ -449,7 +449,7 @@ export const defaultLandingSections: LandingSectionContent[] = [
     stat2Sub: "NEW DELHI",
     stat3Title: "INSIGHTS. IDEAS.",
     stat3Sub: "IMPACT.",
-    stat4Title: "50+ GLOBAL",
+    stat4Title: "150+ GLOBAL",
     stat4Sub: "SPEAKERS",
     stat5Title: "20+ KEY",
     stat5Sub: "SESSIONS",
@@ -635,7 +635,7 @@ export const defaultLandingSections: LandingSectionContent[] = [
     name: "Footer & Social Links",
     enabled: true,
     description:
-      "A global platform uniting over 500+ exhibitors from across the organic value chain, showcasing certified products, advanced agritech, sustainable practices, and the rich heritage of traditional wellness. Discover organic living with conferences and B2B opportunities.",
+      "A global platform uniting over 100+ exhibitors from across the organic value chain, showcasing certified products, advanced agritech, sustainable practices, and the rich heritage of traditional wellness. Discover organic living with conferences and B2B opportunities.",
     // Left blank on purpose — see settings.controller.ts on the backend for
     // why these no longer hardcode a local `/uploads/...` URL.
     logoImage: "",
