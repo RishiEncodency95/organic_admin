@@ -738,6 +738,7 @@ async function request<T>(path: string, options?: ApiRequestOptions, isRetry = f
     path.startsWith("/advisory-nominations") ||
     path.startsWith("/blog-categories") ||
     path.startsWith("/blog-experts") ||
+    path.startsWith("/downloads") ||
     path.startsWith("/blog-updates") ||
     path.startsWith("/blog-reports") ||
     path.startsWith("/newsletter") ||
@@ -872,7 +873,8 @@ export const api = {
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
   postForm: <T>(path: string, formData: FormData, options?: Pick<ApiRequestOptions, "timeoutMs">) =>
     request<T>(path, { method: "POST", body: formData, ...options }),
-  putForm: <T>(path: string, formData: FormData) => request<T>(path, { method: "PUT", body: formData }),
+  putForm: <T>(path: string, formData: FormData, options?: Pick<ApiRequestOptions, "timeoutMs">) =>
+    request<T>(path, { method: "PUT", body: formData, ...options }),
   getHtml: requestHtml,
   getBlob: requestBlob,
 };
