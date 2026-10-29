@@ -195,7 +195,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
   const [activeTitle, setActiveTitle] = useState<string | null>(null);
   const [greeting, setGreeting] = useState<{ text: string; icon: React.ReactNode }>({
     text: "Good Day",
-    icon: <Sun size={18} className="text-orange-500" />,
+    icon: <Sun size={20} className="text-orange-500" />,
   });
 
   useEffect(() => {
@@ -204,17 +204,17 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
       if (hour >= 5 && hour < 12) {
         setGreeting({
           text: "Good Morning",
-          icon: <Sunrise size={18} className="text-amber-500" />,
+          icon: <Sunrise size={20} className="text-amber-500" />,
         });
       } else if (hour >= 12 && hour < 17) {
         setGreeting({
           text: "Good Afternoon",
-          icon: <Sun size={18} className="text-orange-500" />,
+          icon: <Sun size={20} className="text-orange-500" />,
         });
       } else {
         setGreeting({
           text: "Good Evening",
-          icon: <Moon size={18} className="text-indigo-400" />,
+          icon: <Moon size={20} className="text-indigo-400" />,
         });
       }
     };
@@ -508,7 +508,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: "easeOut" }}
-              className="flex items-center gap-1.5 py-1"
+              className="flex items-center gap-2 py-1"
             >
               {/* Icon */}
               <div className="flex items-center justify-center">
@@ -517,7 +517,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 
               {/* Text Content */}
               <div className="flex items-center">
-                <span className="text-[13px] font-semibold text-[#23471d] tracking-tight">
+                <span className="text-[15px] font-semibold text-[#23471d] tracking-tight">
                   {greeting.text}
                 </span>
               </div>
@@ -526,7 +526,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
         </div>
 
         {/* RIGHT – ICONS & PROFILE */}
-        <div className="flex items-center gap-2 sm:gap-3 relative">
+        <div className="flex items-center gap-2 sm:gap-4 relative">
           {/* Help & Support */}
           <div className="relative">
             <button
@@ -535,7 +535,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
               className="p-2 rounded-lg hover:bg-[#23471d]/10 transition-all duration-200 hover:scale-105"
               title="Help & Support"
             >
-              <HelpCircle size={18} className="text-[#23471d]" />
+              <HelpCircle size={22} className="text-[#23471d]" />
             </button>
             {activeTitle === "help" && (
               <motion.div
@@ -560,7 +560,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
               className="p-2 rounded-lg hover:bg-[#23471d]/10 transition-all duration-200 hover:scale-105"
               title="Reminder List"
             >
-              <BellRing size={18} className="text-[#23471d]" />
+              <BellRing size={22} className="text-[#23471d]" />
             </button>
             {activeTitle === "reminder" && !expiringOpen && (
               <motion.div
@@ -585,12 +585,12 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
               className="relative p-2 rounded-lg hover:bg-[#23471d]/10 transition-all duration-200 hover:scale-105"
               title="Notifications"
             >
-              <Bell size={18} className="text-[#23471d]" />
+              <Bell size={22} className="text-[#23471d]" />
               {bellCount > 0 && (
                 <motion.span
                   animate={{ scale: [1, 1.2, 1] }}
                   transition={{ duration: 2, repeat: Infinity }}
-                  className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-rose-600 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-semibold shadow-lg"
+                  className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[11px] w-[22px] h-[22px] rounded-full flex items-center justify-center font-bold border-2 border-white shadow-md"
                 >
                   {bellCount > 9 ? "9+" : bellCount}
                 </motion.span>
@@ -608,11 +608,11 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
                 setMenuOpen(!menuOpen);
                 setActiveTitle(null);
               }}
-              className="relative flex items-center gap-2 p-1 sm:pr-3 bg-white border-2 border-slate-300 shadow-xs rounded-full hover:bg-slate-50 transition-all duration-200"
+              className="relative flex items-center gap-2 p-1 sm:pr-3 bg-white border border-slate-200 shadow-sm rounded-full hover:bg-slate-50 transition-all duration-200"
             >
               {/* Profile Avatar: image if uploaded, Lottie animation if not */}
               <div className="relative flex-shrink-0">
-                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden border-2 border-slate-200 flex-shrink-0 flex items-center justify-center shadow-xs bg-white">
+                <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-200 flex-shrink-0 flex items-center justify-center shadow-xs bg-white">
                   {admin?.avatarUrl && admin.avatarUrl.trim() !== "" && admin.avatarUrl !== "null" ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -632,19 +632,21 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
               </div>
 
               {/* User Info */}
-              <div className="hidden sm:flex flex-col text-left leading-none ml-1">
-                <span className="text-[12px] font-bold text-slate-800">
+              <div className="hidden sm:flex items-center gap-2 text-left leading-none ml-1">
+                <span className="text-[14px] font-semibold text-slate-800">
                   {admin?.name || displayName}
                 </span>
 
-                <span className="text-[10px] font-bold uppercase tracking-wide mt-0.5" style={{ color: "#4B1426" }}>
+                <span className="text-slate-300">&ndash;</span>
+
+                <span className="text-[12px] font-semibold uppercase tracking-wide text-slate-700">
                   {displayRole}
                 </span>
               </div>
 
               <ChevronDown
-                size={14}
-                className={`text-slate-500 transition-transform duration-200 ${menuOpen ? "rotate-180" : ""}`}
+                size={16}
+                className={`ml-2 text-slate-500 transition-transform duration-200 ${menuOpen ? "rotate-180" : ""}`}
               />
             </button>
 

@@ -1845,12 +1845,12 @@ export default function DashboardPage() {
           "
         >
           {/* DASHBOARD PAGE TITLE (ABOVE SEO HEALTH SCORE & STAT CARDS) */}
-          <div className="mb-2.5 flex items-center justify-between gap-3">
+          <div className="mb-3 flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <h1 className="text-[17px] font-bold tracking-tight text-slate-800">
+              <h1 className="text-[26px] font-bold leading-tight tracking-tight text-slate-900">
                 Dashboard
               </h1>
-              <p className="text-[11px] font-medium text-slate-500">
+              <p className="text-[16px] font-semibold text-slate-500">
                 Website performance &amp; activity
               </p>
             </div>

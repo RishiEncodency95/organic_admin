@@ -15,20 +15,20 @@ const URGENT_DAYS = 14;
 
 const PALETTES = {
   expired: {
-    chip: "border-red-200 bg-gradient-to-br from-red-50 via-white to-rose-50 hover:border-red-300",
-    icon: "border-red-200 bg-red-50 text-red-600",
+    chip: "border-red-200 bg-red-50/70 hover:border-red-300",
+    icon: "border-red-200 bg-white text-red-500",
     digit: "text-red-600",
     suffix: "text-red-600",
   },
   urgent: {
-    chip: "border-amber-200 bg-gradient-to-br from-amber-50 via-white to-orange-50 hover:border-amber-300",
-    icon: "border-amber-200 bg-amber-50 text-amber-600",
+    chip: "border-amber-200 bg-amber-50/70 hover:border-amber-300",
+    icon: "border-amber-200 bg-white text-amber-600",
     digit: "text-amber-600",
     suffix: "text-amber-600",
   },
   safe: {
-    chip: "border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-teal-50 hover:border-emerald-300",
-    icon: "border-emerald-200 bg-emerald-50 text-emerald-600",
+    chip: "border-emerald-200 bg-emerald-50/70 hover:border-emerald-300",
+    icon: "border-emerald-200 bg-white text-emerald-600",
     digit: "text-emerald-600",
     suffix: "text-emerald-600",
   },
@@ -68,26 +68,26 @@ function RenewalChip({
       onClick={onClick}
       suppressHydrationWarning
       title={mounted ? `${name} — renews ${new Date(expiryDate).toLocaleDateString()}` : name}
-      className={`group inline-flex h-9 items-center gap-2 rounded-lg border px-2.5 text-left shadow-sm transition-all hover:-translate-y-px hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#23471d] ${palette.chip}`}
+      className={`group inline-flex h-[54px] items-center gap-3 rounded-lg border px-3 pr-4 text-left shadow-sm transition-all hover:-translate-y-px hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#23471d] ${palette.chip}`}
     >
-      <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border shadow-inner ${palette.icon}`}>
-        <Icon className="h-3.5 w-3.5" />
+      <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg border ${palette.icon}`}>
+        <Icon className="h-5 w-5" />
       </span>
-      <span className="flex items-baseline gap-1.5 whitespace-nowrap">
-        <span className="text-[11px] font-bold tracking-tight text-slate-700">
+      <span className="flex items-baseline gap-3 whitespace-nowrap">
+        <span className="text-[15px] font-semibold tracking-tight text-slate-800">
           {label} Renewal
         </span>
         <span
-          className={`font-mono text-[15px] font-extrabold leading-none tabular-nums ${palette.digit}`}
+          className={`font-mono text-[17px] font-semibold leading-none tabular-nums ${palette.digit}`}
           suppressHydrationWarning
         >
           {mounted ? String(expired ? 0 : days).padStart(2, "0") : "00"}
         </span>
-        <span className={`text-[10px] font-semibold ${palette.suffix}`}>
-          {expired ? "Expired" : "days left"}
+        <span className={`-ml-1.5 text-[15px] font-semibold ${palette.suffix}`}>
+          {expired ? "Expired" : "Days left"}
         </span>
       </span>
-      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" />
+      <ChevronRight className="ml-5 h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" />
     </button>
   );
 }
@@ -134,7 +134,7 @@ export default function ServiceRenewalChips() {
   };
 
   return (
-    <div className="hidden items-center gap-2 sm:flex">
+    <div className="hidden items-center gap-3 sm:flex">
       <RenewalChip
         label="Domain"
         name={domainService?.name || "bharatorganicexpo.com"}
