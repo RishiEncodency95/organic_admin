@@ -17,7 +17,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const pathname = usePathname();
   // Infrastructure is a self-contained port with its own type scale and spacing (see components/infrastructure/infra.css)
-  const useCompactReadableScale = pathname !== "/" && !pathname.startsWith("/pages") && !pathname.startsWith("/staff") && !pathname.startsWith("/infrastructure");
+  const useCompactReadableScale = pathname !== "/" && !pathname.startsWith("/pages") && !pathname.startsWith("/staff") && !pathname.startsWith("/infrastructure") && !pathname.startsWith("/competitor-analyzer");
 
   return (
     <RequireAdminAuth>
