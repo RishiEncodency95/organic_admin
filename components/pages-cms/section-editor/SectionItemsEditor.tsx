@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ChevronRight, Plus, Trash2 } from "lucide-react";
+import { Calendar, ChevronRight, Clock, Plus, Trash2 } from "lucide-react";
 import { FieldLabel, ImageUploadField, SelectField, TextInput, Textarea, Toggle, VideoUploadField } from "../fields";
 import RichTextEditor from "@/components/RichTextEditor";
 import { IMAGE_KEY_PATTERN, LONG_TEXT_KEY_PATTERN, VIDEO_KEY_PATTERN, humanizeKey } from "./sectionFieldHelpers";
@@ -140,9 +140,9 @@ export function SectionItemsEditor({
                               sectionId === "buyer-seller-meet" ? "Matchmaking Process Steps" :
                                 sectionId === "testimonials-carousel" ? "Exhibitor & Visitor Reviews" :
                                   sectionId === "exhibition-hero" ? "Hero Features (Stats Bar)" :
-                                  sectionId === "nominate-hero" ? "Hero Features (Icon Row)" :
-                                  sectionId === "navbar" ? "Header Navigation Links" :
-                                    sectionId === "footer" ? "Footer Quick Links" : "Section Content Blocks"}
+                                    sectionId === "nominate-hero" ? "Hero Features (Icon Row)" :
+                                      sectionId === "navbar" ? "Header Navigation Links" :
+                                        sectionId === "footer" ? "Footer Quick Links" : "Section Content Blocks"}
           </span>
           <span className="rounded-full bg-blue-50 border border-blue-200 px-[7px] py-[1px] text-[8.5px] font-bold text-blue-700">
             {items.length} Total
@@ -241,8 +241,8 @@ export function SectionItemsEditor({
             const currentFeatures = Array.isArray(item.features) && item.features.length > 0
               ? item.features
               : Array.isArray(item.points) && item.points.length > 0
-              ? item.points
-              : defaultFeatures[index % defaultFeatures.length];
+                ? item.points
+                : defaultFeatures[index % defaultFeatures.length];
 
             if (itemToEdit.feature1 === undefined) itemToEdit.feature1 = item.feature1 ?? currentFeatures[0] ?? "";
             if (itemToEdit.feature2 === undefined) itemToEdit.feature2 = item.feature2 ?? currentFeatures[1] ?? "";
@@ -400,9 +400,9 @@ export function SectionItemsEditor({
               {isOpen && (
                 <div className="p-[12px] grid grid-cols-2 gap-[10px] bg-white">
                   {sectionId === "hero" && (
-                    <div className="col-span-2 flex flex-col gap-2 rounded-[6px] bg-[#f8fafc] p-[10px] border border-[#e2e8f0]">
-                      <div className="flex items-center gap-3">
-                        <span className="text-[12px] font-semibold text-[#1e293b]">Schedule</span>
+                    <div className="col-span-2 overflow-hidden rounded-[6px] border border-[#e2e8f0] bg-white">
+                      <div className="flex items-center justify-between bg-[#f8fafc] px-[12px] py-[8px] border-b border-[#e2e8f0]">
+                        <span className="text-[12px] font-semibold text-[#1e293b]">Schedule Slide</span>
                         <Toggle
                           checked={Boolean(itemToEdit.isScheduled)}
                           onChange={(val) => onChangeItem(index, "isScheduled", val)}
@@ -410,42 +410,44 @@ export function SectionItemsEditor({
                       </div>
 
                       {Boolean(itemToEdit.isScheduled) && (
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-[8px] pt-1 border-t border-[#e2e8f0]">
-                          <div className="flex flex-col gap-1">
-                            <FieldLabel>Start Date</FieldLabel>
-                            <input
-                              type="date"
-                              value={String(itemToEdit.startDate || "")}
-                              onChange={(e) => onChangeItem(index, "startDate", e.target.value)}
-                              className="h-[34px] w-full rounded-[4px] border border-[#cbd5e1] bg-white px-[8px] text-[12px] font-medium text-[#1e293b] shadow-2xs transition focus:border-[#2563eb] focus:outline-none focus:ring-1 focus:ring-[#2563eb]"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <FieldLabel>Start Time</FieldLabel>
-                            <input
-                              type="time"
-                              value={String(itemToEdit.startTime || "")}
-                              onChange={(e) => onChangeItem(index, "startTime", e.target.value)}
-                              className="h-[34px] w-full rounded-[4px] border border-[#cbd5e1] bg-white px-[8px] text-[12px] font-medium text-[#1e293b] shadow-2xs transition focus:border-[#2563eb] focus:outline-none focus:ring-1 focus:ring-[#2563eb]"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <FieldLabel>End Date</FieldLabel>
-                            <input
-                              type="date"
-                              value={String(itemToEdit.endDate || "")}
-                              onChange={(e) => onChangeItem(index, "endDate", e.target.value)}
-                              className="h-[34px] w-full rounded-[4px] border border-[#cbd5e1] bg-white px-[8px] text-[12px] font-medium text-[#1e293b] shadow-2xs transition focus:border-[#2563eb] focus:outline-none focus:ring-1 focus:ring-[#2563eb]"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <FieldLabel>End Time</FieldLabel>
-                            <input
-                              type="time"
-                              value={String(itemToEdit.endTime || "")}
-                              onChange={(e) => onChangeItem(index, "endTime", e.target.value)}
-                              className="h-[34px] w-full rounded-[4px] border border-[#cbd5e1] bg-white px-[8px] text-[12px] font-medium text-[#1e293b] shadow-2xs transition focus:border-[#2563eb] focus:outline-none focus:ring-1 focus:ring-[#2563eb]"
-                            />
+                        <div className="p-[10px] bg-white">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-[8px]">
+                            <div className="flex flex-col gap-1">
+                              <FieldLabel>Start Date</FieldLabel>
+                              <input
+                                type="date"
+                                value={String(itemToEdit.startDate || "")}
+                                onChange={(e) => onChangeItem(index, "startDate", e.target.value)}
+                                className="h-[34px] w-full rounded-[4px] border border-[#cbd5e1] bg-white px-[8px] text-[12px] font-medium text-[#1e293b] shadow-2xs transition focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <FieldLabel>Start Time</FieldLabel>
+                              <input
+                                type="time"
+                                value={String(itemToEdit.startTime || "")}
+                                onChange={(e) => onChangeItem(index, "startTime", e.target.value)}
+                                className="h-[34px] w-full rounded-[4px] border border-[#cbd5e1] bg-white px-[8px] text-[12px] font-medium text-[#1e293b] shadow-2xs transition focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <FieldLabel>End Date</FieldLabel>
+                              <input
+                                type="date"
+                                value={String(itemToEdit.endDate || "")}
+                                onChange={(e) => onChangeItem(index, "endDate", e.target.value)}
+                                className="h-[34px] w-full rounded-[4px] border border-[#cbd5e1] bg-white px-[8px] text-[12px] font-medium text-[#1e293b] shadow-2xs transition focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <FieldLabel>End Time</FieldLabel>
+                              <input
+                                type="time"
+                                value={String(itemToEdit.endTime || "")}
+                                onChange={(e) => onChangeItem(index, "endTime", e.target.value)}
+                                className="h-[34px] w-full rounded-[4px] border border-[#cbd5e1] bg-white px-[8px] text-[12px] font-medium text-[#1e293b] shadow-2xs transition focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                              />
+                            </div>
                           </div>
                         </div>
                       )}
@@ -464,33 +466,33 @@ export function SectionItemsEditor({
                             ? "Start Date"
                             : sectionId === "hero" && key === "startTime"
                               ? "Start Time"
-                            : sectionId === "hero" && key === "endDate"
-                              ? "End Date"
-                            : sectionId === "hero" && key === "endTime"
-                              ? "End Time"
-                            : sectionId === "hero" && key === "date"
-                              ? "Display Date Text"
-                            : sectionId === "industry-segments" && key === "image"
-                            ? "Main Image (Upload / URL)"
-                            : sectionId === "industry-segments" && key === "iconImage"
-                              ? "Top Image / Icon (Upload / URL)"
-                              : sectionId === "awards-categories" && key === "image"
-                                ? "Category Icon / Image (Upload / URL)"
-                                : sectionId === "awards-grand-awards" && key === "image"
-                                  ? "Award Icon / Image (Upload / URL)"
-                                  : sectionId === "awards-process" && key === "image"
-                                    ? "Process Icon / Image (Upload / URL)"
-                                    : sectionId === "global-platform" && key === "image"
-                                      ? "Highlight Icon / Image (Upload)"
-                                      : sectionId === "global-platform" && key === "imageAlt"
-                                        ? "Image Alt Text"
-                                        : sectionId === "exhibition-hero" && key === "title"
-                                          ? "Feature Value (e.g. 200+)"
-                                          : sectionId === "exhibition-hero" && key === "subtitle"
-                                            ? "Feature Label (e.g. Exhibitors Expected)"
-                                            : sectionId === "nominate-hero" && key === "title"
-                                              ? "Feature Label (e.g. Expertise)"
-                                            : humanizeKey(key)}
+                              : sectionId === "hero" && key === "endDate"
+                                ? "End Date"
+                                : sectionId === "hero" && key === "endTime"
+                                  ? "End Time"
+                                  : sectionId === "hero" && key === "date"
+                                    ? "Display Date Text"
+                                    : sectionId === "industry-segments" && key === "image"
+                                      ? "Main Image (Upload / URL)"
+                                      : sectionId === "industry-segments" && key === "iconImage"
+                                        ? "Top Image / Icon (Upload / URL)"
+                                        : sectionId === "awards-categories" && key === "image"
+                                          ? "Category Icon / Image (Upload / URL)"
+                                          : sectionId === "awards-grand-awards" && key === "image"
+                                            ? "Award Icon / Image (Upload / URL)"
+                                            : sectionId === "awards-process" && key === "image"
+                                              ? "Process Icon / Image (Upload / URL)"
+                                              : sectionId === "global-platform" && key === "image"
+                                                ? "Highlight Icon / Image (Upload)"
+                                                : sectionId === "global-platform" && key === "imageAlt"
+                                                  ? "Image Alt Text"
+                                                  : sectionId === "exhibition-hero" && key === "title"
+                                                    ? "Feature Value (e.g. 200+)"
+                                                    : sectionId === "exhibition-hero" && key === "subtitle"
+                                                      ? "Feature Label (e.g. Exhibitors Expected)"
+                                                      : sectionId === "nominate-hero" && key === "title"
+                                                        ? "Feature Label (e.g. Expertise)"
+                                                        : humanizeKey(key)}
                         </FieldLabel>
 
                         {key === "icon" && sectionId !== "journey-glimpse" ? (
@@ -561,40 +563,40 @@ export function SectionItemsEditor({
                                 ? `/uploads/icons/x${(index % 4) + 1}.png`
                                 : sectionId === "reasons-to-exhibit"
                                   ? [
-                                      "/uploads/icons/11og.webp",
-                                      "/uploads/icons/12og.webp",
-                                      "/uploads/icons/13og.webp",
-                                      "/uploads/icons/14og.webp",
-                                      "/uploads/icons/15og.webp",
-                                      "/uploads/icons/i6.png",
-                                    ][index % 6]
+                                    "/uploads/icons/11og.webp",
+                                    "/uploads/icons/12og.webp",
+                                    "/uploads/icons/13og.webp",
+                                    "/uploads/icons/14og.webp",
+                                    "/uploads/icons/15og.webp",
+                                    "/uploads/icons/i6.png",
+                                  ][index % 6]
                                   : sectionId === "why-visit-matters"
                                     ? [
-                                        "/uploads/icons/v1og.png",
-                                        "/uploads/icons/v2og.png",
-                                        "/uploads/icons/v3og.png",
-                                        "/uploads/icons/v4og.png",
-                                        "/uploads/icons/v5og.png",
-                                        "/uploads/icons/v6og.png",
-                                      ][index % 6]
+                                      "/uploads/icons/v1og.png",
+                                      "/uploads/icons/v2og.png",
+                                      "/uploads/icons/v3og.png",
+                                      "/uploads/icons/v4og.png",
+                                      "/uploads/icons/v5og.png",
+                                      "/uploads/icons/v6og.png",
+                                    ][index % 6]
                                     : sectionId === "industry-segments"
                                       ? key === "iconImage"
                                         ? [
-                                            "/uploads/icons/x1og.png",
-                                            "/uploads/icons/x2og.png",
-                                            "/uploads/icons/x3og.png",
-                                            "/uploads/icons/x4og.png",
-                                            "/uploads/icons/x5og.png",
-                                            "/uploads/icons/x6og.png",
-                                          ][index % 6]
+                                          "/uploads/icons/x1og.png",
+                                          "/uploads/icons/x2og.png",
+                                          "/uploads/icons/x3og.png",
+                                          "/uploads/icons/x4og.png",
+                                          "/uploads/icons/x5og.png",
+                                          "/uploads/icons/x6og.png",
+                                        ][index % 6]
                                         : [
-                                            "/uploads/icons/x1.webp",
-                                            "/uploads/icons/x2.webp",
-                                            "/uploads/icons/x3.webp",
-                                            "/uploads/icons/x4.webp",
-                                            "/uploads/icons/x5.webp",
-                                            "/uploads/icons/x6.webp",
-                                          ][index % 6]
+                                          "/uploads/icons/x1.webp",
+                                          "/uploads/icons/x2.webp",
+                                          "/uploads/icons/x3.webp",
+                                          "/uploads/icons/x4.webp",
+                                          "/uploads/icons/x5.webp",
+                                          "/uploads/icons/x6.webp",
+                                        ][index % 6]
                                       : undefined
                             }
                           />
@@ -647,7 +649,7 @@ export function SectionItemsEditor({
                             rows={3}
                             noLimit={sectionId === "why-visit-matters" || sectionId === "industry-segments"}
                           />
-                        )  : (
+                        ) : (
                           <TextInput
                             value={String(value)}
                             onChange={(next) => onChangeItem(index, key, next)}
