@@ -42,6 +42,10 @@ export function SectionItemsEditor({
   };
 
   const FIELD_ORDER_PRIORITY: Record<string, number> = {
+    startDate: 0.01,
+    startTime: 0.02,
+    endDate: 0.03,
+    endTime: 0.04,
     iconImage: 0.8,
     image: 0.9,
     img: 1.1,
@@ -164,7 +168,14 @@ export function SectionItemsEditor({
       <div className="space-y-3 pt-1">
         {items.map((item, index) => {
           let itemToEdit = { ...item };
-          if (sectionId === "expo-categories") {
+          if (sectionId === "hero") {
+            if (itemToEdit.isScheduled === undefined) itemToEdit.isScheduled = Boolean(item.isScheduled);
+            if (itemToEdit.startDate === undefined) itemToEdit.startDate = item.startDate || "";
+            if (itemToEdit.startTime === undefined) itemToEdit.startTime = item.startTime || "";
+            if (itemToEdit.endDate === undefined) itemToEdit.endDate = item.endDate || "";
+            if (itemToEdit.endTime === undefined) itemToEdit.endTime = item.endTime || "";
+            if (itemToEdit.date === undefined) itemToEdit.date = item.date || "19-21 FEBRUARY 2027";
+          } else if (sectionId === "expo-categories") {
             delete itemToEdit.icon;
             delete itemToEdit.desc;
             delete itemToEdit.color;
@@ -328,6 +339,7 @@ export function SectionItemsEditor({
                 key !== "_id" &&
                 key !== "img" &&
                 key !== "status" &&
+                !(sectionId === "hero" && (key === "startDate" || key === "startTime" || key === "endDate" || key === "endTime" || key === "isScheduled")) &&
                 !(sectionId === "why-exhibit-hero" && key === "icon") &&
                 !(sectionId === "expo-categories" && key === "icon") &&
                 !(sectionId === "industry-segments" && key === "icon") &&
@@ -343,7 +355,11 @@ export function SectionItemsEditor({
                   typeof value === "boolean" ||
                   (Array.isArray(value) && value.every((entry) => typeof entry === "string")))
             )
-            .sort(([a], [b]) => (FIELD_ORDER_PRIORITY[a] || 99) - (FIELD_ORDER_PRIORITY[b] || 99));
+            .sort(([a], [b]) => {
+              const priorityA = FIELD_ORDER_PRIORITY[a] ?? 99;
+              const priorityB = FIELD_ORDER_PRIORITY[b] ?? 99;
+              return priorityA - priorityB;
+            });
 
           const isOpen = openIndex === index;
 
@@ -383,15 +399,78 @@ export function SectionItemsEditor({
 
               {isOpen && (
                 <div className="p-[12px] grid grid-cols-2 gap-[10px] bg-white">
+                  {sectionId === "hero" && (
+                    <div className="col-span-2 flex flex-col gap-2 rounded-[6px] bg-[#f8fafc] p-[10px] border border-[#e2e8f0]">
+                      <div className="flex items-center gap-3">
+                        <span className="text-[12px] font-semibold text-[#1e293b]">Schedule</span>
+                        <Toggle
+                          checked={Boolean(itemToEdit.isScheduled)}
+                          onChange={(val) => onChangeItem(index, "isScheduled", val)}
+                        />
+                      </div>
+
+                      {Boolean(itemToEdit.isScheduled) && (
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-[8px] pt-1 border-t border-[#e2e8f0]">
+                          <div className="flex flex-col gap-1">
+                            <FieldLabel>Start Date</FieldLabel>
+                            <input
+                              type="date"
+                              value={String(itemToEdit.startDate || "")}
+                              onChange={(e) => onChangeItem(index, "startDate", e.target.value)}
+                              className="h-[34px] w-full rounded-[4px] border border-[#cbd5e1] bg-white px-[8px] text-[12px] font-medium text-[#1e293b] shadow-2xs transition focus:border-[#2563eb] focus:outline-none focus:ring-1 focus:ring-[#2563eb]"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <FieldLabel>Start Time</FieldLabel>
+                            <input
+                              type="time"
+                              value={String(itemToEdit.startTime || "")}
+                              onChange={(e) => onChangeItem(index, "startTime", e.target.value)}
+                              className="h-[34px] w-full rounded-[4px] border border-[#cbd5e1] bg-white px-[8px] text-[12px] font-medium text-[#1e293b] shadow-2xs transition focus:border-[#2563eb] focus:outline-none focus:ring-1 focus:ring-[#2563eb]"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <FieldLabel>End Date</FieldLabel>
+                            <input
+                              type="date"
+                              value={String(itemToEdit.endDate || "")}
+                              onChange={(e) => onChangeItem(index, "endDate", e.target.value)}
+                              className="h-[34px] w-full rounded-[4px] border border-[#cbd5e1] bg-white px-[8px] text-[12px] font-medium text-[#1e293b] shadow-2xs transition focus:border-[#2563eb] focus:outline-none focus:ring-1 focus:ring-[#2563eb]"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <FieldLabel>End Time</FieldLabel>
+                            <input
+                              type="time"
+                              value={String(itemToEdit.endTime || "")}
+                              onChange={(e) => onChangeItem(index, "endTime", e.target.value)}
+                              className="h-[34px] w-full rounded-[4px] border border-[#cbd5e1] bg-white px-[8px] text-[12px] font-medium text-[#1e293b] shadow-2xs transition focus:border-[#2563eb] focus:outline-none focus:ring-1 focus:ring-[#2563eb]"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {fieldEntries.map(([key, value]) => {
                     const isImageKey = IMAGE_KEY_PATTERN.test(key) && key !== "imageAlt";
                     const isVideoKey = VIDEO_KEY_PATTERN.test(key);
                     const isLong = (LONG_TEXT_KEY_PATTERN.test(key) || Array.isArray(value)) && !key.startsWith("feature");
+                    const isFullWidth = isImageKey || isVideoKey || isLong;
 
                     return (
-                      <div key={key} className={isImageKey || isVideoKey || isLong ? "col-span-2 w-full" : "col-span-1"}>
+                      <div key={key} className={isFullWidth ? "col-span-2 w-full" : "col-span-1"}>
                         <FieldLabel>
-                          {sectionId === "industry-segments" && key === "image"
+                          {sectionId === "hero" && key === "startDate"
+                            ? "Start Date"
+                            : sectionId === "hero" && key === "startTime"
+                              ? "Start Time"
+                            : sectionId === "hero" && key === "endDate"
+                              ? "End Date"
+                            : sectionId === "hero" && key === "endTime"
+                              ? "End Time"
+                            : sectionId === "hero" && key === "date"
+                              ? "Display Date Text"
+                            : sectionId === "industry-segments" && key === "image"
                             ? "Main Image (Upload / URL)"
                             : sectionId === "industry-segments" && key === "iconImage"
                               ? "Top Image / Icon (Upload / URL)"
@@ -568,10 +647,11 @@ export function SectionItemsEditor({
                             rows={3}
                             noLimit={sectionId === "why-visit-matters" || sectionId === "industry-segments"}
                           />
-                        ) : (
+                        )  : (
                           <TextInput
                             value={String(value)}
                             onChange={(next) => onChangeItem(index, key, next)}
+                            placeholder={sectionId === "hero" && key === "date" ? "e.g. 19-21 FEBRUARY 2027" : undefined}
                             maxLength={(sectionId === "why-visit-matters" || sectionId === "industry-segments") ? 5000 : 120}
                             hideLimit={sectionId === "why-visit-matters" || sectionId === "industry-segments"}
                           />
