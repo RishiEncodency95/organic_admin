@@ -171,8 +171,19 @@ export function PageSectionsPanel({
                               if (i !== sectionIndex) return sec;
                               const slides = [...(sec.slides ?? [])];
                               const blank = {
+                                isScheduled: false,
+                                startDate: "",
+                                startTime: "",
+                                endDate: "",
+                                endTime: "",
+                                date: "19-21 FEBRUARY 2027",
+                                tagline: "ORGANIC EXPO",
+                                titlePrimary: "NEW HERO",
+                                titleSecondary: "SLIDE",
                                 title: "NEW HERO SLIDE",
+                                subtitle: "Enter slide subtitle...",
                                 description: "Enter slide description...",
+                                location: "PRAGATI MAIDAN, NEW DELHI",
                                 image: "",
                                 alt: "Hero Banner Slide",
                                 buttonLabel: "Book Your Stall",

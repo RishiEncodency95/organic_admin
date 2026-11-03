@@ -65,6 +65,11 @@ export interface LandingHeroSlide {
   titleSecondary?: string;
   subtitle?: string;
   description: string;
+  isScheduled?: boolean;
+  startDate?: string;
+  startTime?: string;
+  endDate?: string;
+  endTime?: string;
   date?: string;
   location?: string;
   image: string;
