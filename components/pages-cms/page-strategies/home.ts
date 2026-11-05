@@ -1,6 +1,7 @@
 import { api } from "@/lib/api";
 import type { SectionsDraft, SetSectionsDraft } from "./types";
 import type { CmsJson } from "@/lib/cmsJson";
+import { validateSchedule } from "@/lib/heroSchedule";
 
 export function syncHomeSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft): void {
   api.get("/website/home/home-hero?all=true")
@@ -14,6 +15,7 @@ export function syncHomeSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft):
                   ...sec,
                   slides: data.map((d: any) => ({
                     isScheduled: Boolean(d.isScheduled),
+                    showContent: d.showContent !== false,
                     startDate: d.startDate || "",
                     startTime: d.startTime || "",
                     endDate: d.endDate || "",
@@ -371,6 +373,14 @@ export function syncHomeSectionsFromLiveApi(setSectionsDraft: SetSectionsDraft):
 
 export async function saveHomeSections(sectionsDraft: SectionsDraft): Promise<void> {
   const heroSec = sectionsDraft.find((s) => s.key === "hero");
+  // Stop the whole save (the page shows "Save Failed") if a slide's schedule can never work,
+  // e.g. its end is before its start.
+  if (heroSec && Array.isArray(heroSec.slides)) {
+    heroSec.slides.forEach((slide: Record<string, unknown>, index: number) => {
+      const problem = validateSchedule(slide);
+      if (problem) throw new Error(`Hero Slide ${index + 1}: ${problem}`);
+    });
+  }
   if (heroSec && Array.isArray(heroSec.slides) && heroSec.slides.length > 0) {
     try {
       await api.put("/website/home/home-hero", { slides: heroSec.slides });

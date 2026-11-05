@@ -172,6 +172,7 @@ export function PageSectionsPanel({
                               const slides = [...(sec.slides ?? [])];
                               const blank = {
                                 isScheduled: false,
+                                showContent: true,
                                 startDate: "",
                                 startTime: "",
                                 endDate: "",
