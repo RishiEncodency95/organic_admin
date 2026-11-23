@@ -94,6 +94,15 @@ export function SectionFieldsEditor({
               />
             </div>
             <div>
+              <FieldLabel>For Stall Booking (Phone)</FieldLabel>
+              <TextInput
+                value={String(section.stallBookingPhone || "")}
+                onChange={(next) => onFieldChange("stallBookingPhone", next)}
+                placeholder="+91 96549 00525"
+                hideLimit={true}
+              />
+            </div>
+            <div>
               <FieldLabel required>Contact Email</FieldLabel>
               <TextInput
                 value={String(section.contactEmail || "")}
