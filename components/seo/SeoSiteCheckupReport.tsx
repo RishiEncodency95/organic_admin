@@ -2,7 +2,7 @@
 
 import React from "react";
 import SeoCheckupFullReport from "./SeoCheckupFullReport";
-import type { PageSpeedSnapshot, ReportMetaOverride } from "@/lib/seoCheckupData";
+import type { PageSpeedSnapshot, ReportMetaOverride, SeoCheckupReportData } from "@/lib/seoCheckupData";
 
 export interface SeoCheckupReportProps {
   pageId: string;
@@ -11,8 +11,12 @@ export interface SeoCheckupReportProps {
   pagespeed?: PageSpeedSnapshot | null;
   strategy?: "mobile" | "desktop";
   onStrategyChange?: (strategy: "mobile" | "desktop") => void;
+  report?: SeoCheckupReportData | null;
   onClose?: () => void;
   onReAudit?: () => void;
+  onOpenIssues?: (route: string, issueType: string) => void;
+  /** "route::issueType" of every issue in the Issues to fix list */
+  issueKeys?: string[];
   onExportPdf?: () => void;
   onExportCsv?: () => void;
 }
@@ -28,8 +32,11 @@ export function SeoSiteCheckupReport({
   pagespeed,
   strategy,
   onStrategyChange,
+  report,
   onClose,
   onReAudit,
+  onOpenIssues,
+  issueKeys,
   onExportPdf,
   onExportCsv,
 }: SeoCheckupReportProps) {
@@ -44,8 +51,11 @@ export function SeoSiteCheckupReport({
       pagespeed={pagespeed}
       strategy={strategy}
       onStrategyChange={onStrategyChange}
+      report={report ?? undefined}
       onClose={onClose}
       onReAudit={onReAudit}
+      onOpenIssues={onOpenIssues}
+      issueKeys={issueKeys}
       onExportPdf={onExportPdf}
       onExportCsv={onExportCsv}
     />

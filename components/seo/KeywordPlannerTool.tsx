@@ -4,6 +4,8 @@ import { useState } from "react";
 import { KeyRound, Search, Globe, Cpu, TrendingUp, DollarSign, Check, Copy } from "lucide-react";
 import { api } from "@/lib/api";
 import Spinner from "@/components/ui/Spinner";
+import { errorMessage } from "@/lib/errorMessage";
+import UrlKeywordsPanel from "@/components/seo/UrlKeywordsPanel";
 
 interface KeywordItem {
   keyword: string;
@@ -14,7 +16,7 @@ interface KeywordItem {
   competition: string;
 }
 
-export default function KeywordPlannerTool() {
+function TopicKeywordPlanner() {
   const [seed, setSeed] = useState("");
   const [mode, setMode] = useState<"ai" | "google_ads">("ai");
   const [loading, setLoading] = useState(false);
@@ -33,25 +35,34 @@ export default function KeywordPlannerTool() {
     try {
       setLoading(true);
       setNotice(null);
-      const res = await api.post<{
+      type PlannerBody = {
         keywords?: KeywordItem[];
         primaryRecommendation?: string;
         lsiKeywords?: string[];
         requiresSetup?: boolean;
         message?: string;
-      }>("/seo/keyword-planner", {
+      };
+      const res = await api.post<PlannerBody & { data?: PlannerBody }>("/seo/keyword-planner", {
         seedKeyword: seed,
         mode,
       });
 
-      if (res && Array.isArray(res.keywords)) {
-        setData(res as any);
+      const kwList = Array.isArray(res?.keywords) ? res.keywords : Array.isArray(res?.data?.keywords) ? res.data.keywords : null;
+      const primary = res?.primaryRecommendation ?? res?.data?.primaryRecommendation ?? "";
+      const lsi = res?.lsiKeywords ?? res?.data?.lsiKeywords ?? [];
+
+      if (kwList) {
+        setData({
+          keywords: kwList,
+          primaryRecommendation: primary,
+          lsiKeywords: lsi,
+        });
         setNotice(null);
       } else if (res?.message) {
         setNotice(res.message);
       }
-    } catch (err: any) {
-      alert(err.message || "Failed to fetch keyword suggestions");
+    } catch (err) {
+      setNotice(errorMessage(err) || "Failed to fetch keyword suggestions");
     } finally {
       setLoading(false);
     }
@@ -68,7 +79,7 @@ export default function KeywordPlannerTool() {
       {/* Header */}
       <div className="p-5 border-b border-slate-200 bg-slate-50/60 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#23471d]">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#0b2a6b]">
             <KeyRound className="h-4 w-4" /> Search Intent & Volume Matrix
           </div>
           <h2 className="text-lg font-extrabold text-slate-900 mt-0.5">
@@ -118,14 +129,14 @@ export default function KeywordPlannerTool() {
               required
               value={seed}
               onChange={(e) => setSeed(e.target.value)}
-              placeholder="Enter seed topic (e.g. Organic Millet Exhibition, Ayurveda Exporter)..."
+              placeholder="Enter seed topic (e.g. Funeral Services Delhi, Asthi Visarjan Haridwar, International Repatriation)..."
               className="h-10 w-full rounded-lg border border-slate-300 bg-white pl-10 pr-3 text-xs font-medium text-slate-800 outline-none focus:border-emerald-600 shadow-xs"
             />
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="h-10 px-5 bg-[#23471d] text-white text-xs font-extrabold rounded-lg hover:bg-[#1b3716] transition flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
+            className="h-10 px-5 bg-[#0b2a6b] text-white text-xs font-extrabold rounded-lg hover:bg-[#081a42] transition flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
           >
             {loading ? <Spinner /> : <Search className="h-4 w-4" />}
             {loading ? "Discovering..." : "Generate Keywords"}
@@ -147,7 +158,7 @@ export default function KeywordPlannerTool() {
             <KeyRound className="h-10 w-10 text-slate-300 mx-auto mb-2" />
             <p className="text-xs font-bold text-slate-600">No Keyword Search Performed</p>
             <p className="text-[11px] text-slate-400 max-w-xs mx-auto mt-1">
-              Enter any organic farming, exhibitor, or product phrase above to plan your content strategy.
+              Enter any funeral, cremation, repatriation, or ritual topic above to plan your content strategy.
             </p>
           </div>
         ) : (
@@ -251,6 +262,38 @@ export default function KeywordPlannerTool() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Keyword planner: the keywords a page address really uses (measured), or ideas from a topic (AI estimate) */
+export default function KeywordPlannerTool() {
+  const [tab, setTab] = useState<"url" | "topic">("url");
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-indigo-100 bg-indigo-50/70 px-4 py-3">
+        <div className="mr-auto">
+          <h2 className="text-[0.9375rem] text-slate-800 [font-weight:500]">Keyword planner</h2>
+          <p className="text-[0.75rem] text-slate-500">Find the keywords of a page, or get ideas from a topic.</p>
+        </div>
+        <div className="flex gap-1 rounded-xl bg-white/80 p-1 text-[0.75rem] shadow-2xs">
+          {([
+            { id: "url", label: "From a page address" },
+            { id: "topic", label: "From a topic (AI estimate)" },
+          ] as const).map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              aria-pressed={tab === t.id}
+              onClick={() => setTab(t.id)}
+              className={`cursor-pointer rounded-lg px-3 py-1.5 transition ${tab === t.id ? "bg-indigo-600 text-white shadow-xs" : "text-slate-600 hover:bg-indigo-50"}`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">{tab === "url" ? <UrlKeywordsPanel /> : <TopicKeywordPlanner />}</div>
     </div>
   );
 }

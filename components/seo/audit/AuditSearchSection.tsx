@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import React from "react";
 import { Search, TrendingUp, Eye, MousePointer, Award } from "lucide-react";
 import { formatNumber } from "../SeoBadges";
+import { SITE_HOST } from "@/lib/siteConfig";
 import type { SeoPageDetail } from "@/lib/seoAuditApi";
 
 function SectionCard({ title, icon, children, note }: { title: string; icon: React.ReactNode; children: React.ReactNode; note?: string }) {
@@ -120,50 +122,13 @@ export default function AuditSearchSection({ search }: { search: SeoPageDetail["
 
       {/* Competitor SERP Gap Analysis Matrix */}
       <SectionCard title="Competitor Organic SERP Gap Matrix" icon={<Search className="w-5 h-5 text-blue-400" />}>
+        {/* The static rows that used to be here (inherited Bharat Organic / expo competitors with invented rank
+            positions) were not real measurements and have been removed. Real comparisons: /competitor-analyzer */}
         <div className="space-y-3 text-[12.5px]">
-          <div className="rounded-xl border border-blue-500/40 bg-blue-950/30 p-3.5 flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <span className="text-[10px] font-black uppercase tracking-wider text-blue-400 block">SERP Market Share Position</span>
-              <span className="text-[13.5px] font-bold text-white">Target Keyword Ranking: #1.4 Avg Position (Top Organic Spot)</span>
-            </div>
-            <span className="text-[10px] font-black bg-blue-950 text-blue-300 px-2.5 py-1 rounded-full border border-blue-700 uppercase">
-              Leading Market Share
-            </span>
-          </div>
-
-          <div className="overflow-x-auto rounded-xl border border-slate-700 bg-slate-900/90">
-            <table className="w-full text-[12px]">
-              <thead className="bg-slate-800 border-b border-slate-700 text-slate-200">
-                <tr>
-                  <th className="py-2.5 px-3.5 text-left font-extrabold">Domain / Site</th>
-                  <th className="py-2.5 px-3.5 text-center font-extrabold">Est. Rank</th>
-                  <th className="py-2.5 px-3.5 text-left font-extrabold">Schema Types</th>
-                  <th className="py-2.5 px-3.5 text-left font-extrabold">SERP Advantage</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800">
-                <tr className="bg-emerald-950/20 font-medium">
-                  <td className="py-2.5 px-3.5 font-bold text-emerald-400">
-                    bharatorganicexpo.com <span className="text-[10px] bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-800 ml-1">YOUR SITE</span>
-                  </td>
-                  <td className="py-2.5 px-3.5 text-center font-black text-emerald-400">#1.4</td>
-                  <td className="py-2.5 px-3.5 text-slate-300">Organization, Event, WebSite</td>
-                  <td className="py-2.5 px-3.5 text-emerald-300 font-bold">Comprehensive Event JSON-LD</td>
-                </tr>
-                <tr className="bg-slate-900/50">
-                  <td className="py-2.5 px-3.5 font-bold text-slate-300">worldorganicexpo.in</td>
-                  <td className="py-2.5 px-3.5 text-center font-bold text-slate-400">#4.2</td>
-                  <td className="py-2.5 px-3.5 text-slate-400">Organization</td>
-                  <td className="py-2.5 px-3.5 text-slate-400">Lacks Event Schema & Maps</td>
-                </tr>
-                <tr className="bg-slate-900/30">
-                  <td className="py-2.5 px-3.5 font-bold text-slate-300">biofach-india.com</td>
-                  <td className="py-2.5 px-3.5 text-center font-bold text-slate-400">#5.8</td>
-                  <td className="py-2.5 px-3.5 text-slate-400">WebPage</td>
-                  <td className="py-2.5 px-3.5 text-slate-400">Slower LCP (2.8s) & Short Meta</td>
-                </tr>
-              </tbody>
-            </table>
+          <div className="rounded-xl border border-slate-700 bg-slate-900/60 p-3.5 text-slate-300">
+            Ranking positions and SERP market share are not measured here. Use{" "}
+            <Link href="/competitor-analyzer" className="font-bold text-blue-300 underline">AI Competitor Analyzer</Link> for an
+            evidence-based comparison with real competitor websites.
           </div>
         </div>
       </SectionCard>

@@ -1,0 +1,15 @@
+# Competitor analyzer illustrations
+
+Generated with the built-in image generation tool on 14 November 2026. Both illustrations explain the product; their decorative charts are not measurements of any business. Accessible HTML captions provide the explanation independently of the images. Next.js serves responsive, optimized versions.
+
+## evidence-workflow.png
+
+Final prompt:
+
+> Use case: stylized-concept / educational illustration. Asset type: a wide 3:1 explanatory illustration for the Moksha Voyage competitor-analysis admin dashboard. Create an elegant tactile 3D editorial scene on a warm off-white (#f5f5f0) background: four distinct stages arranged left to right, connected by a thin restrained emerald path. Stage 1, several miniature ivory browser windows with a tiny globe, symbolising reading public websites. Stage 2, a beautifully rendered glass magnifier hovering above paper quotation snippets with small emerald check seals, symbolising verified evidence. Stage 3, a balanced pair of translucent emerald and slate comparison bars with small browser cards, symbolising comparison of websites. Stage 4, a neat ivory action checklist and a single upward emerald arrow, symbolising prioritised improvements. Use deep forest green #124d3f, sage #a5b5a2, warm cream, graphite and a little muted gold. Sophisticated real material rendering, fine paper texture, soft natural shadows, subtle depth, generous whitespace. Calm, respectful, premium business editorial aesthetic suitable for a bereavement-support brand. Each stage should remain legible in a small wide dashboard banner. Avoid any real company names, business scores, fabricated analytics, people, funerals, excessive shiny neon, random decorative blobs, crowded details. No text, letters, labels, numerals or watermarks anywhere; the app will provide accessible labels underneath. Wide landscape composition, white margins, all four stages complete.
+
+## chart-reading-guide.png
+
+Final prompt:
+
+> Use case: stylized-concept. Asset type: a compact educational illustration for an analytics admin dashboard explaining how to read website comparison charts. A refined tactile editorial 3D still life on warm ivory paper (#f5f5f0). An upright translucent emerald radar-chart plane with fine radial grid lines and a single gently irregular emerald polygon, beside three clean horizontal comparison bars in forest green, muted terracotta and slate blue; below them a small open paper source document with a realistic green verification seal and a tiny magnifying lens. The scene should communicate 'compare multiple dimensions, then check the source', not business growth. No axes numbers, no claims, no words, no letters, no labels, no floating UI text. Restrained premium design, real frosted glass and matte paper textures, quiet studio shadows, minimal composition, forest emerald #124d3f, sage green, muted gold details, neutral graphite. Wide 3:2 landscape framing with generous ivory whitespace around the objects. Calm and respectful business style to complement a funeral support company's research dashboard. No people, no funeral imagery, no neon, no glowing blobs, no logos, no watermarks.

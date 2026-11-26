@@ -49,14 +49,14 @@ export default function SeoActivityLogWidget() {
   };
 
   useEffect(() => {
-    fetchLogs();
+    queueMicrotask(() => void fetchLogs());
   }, []);
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
       <div className="p-5 border-b border-slate-200 bg-slate-50/60 flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#23471d]">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#0b2a6b]">
             <History className="h-4 w-4" /> Live Audit Trail
           </div>
           <h2 className="text-lg font-extrabold text-slate-900 mt-0.5">

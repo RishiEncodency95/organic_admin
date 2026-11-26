@@ -1,0 +1,55 @@
+.shell {
+  min-width: 0;
+  text-transform: capitalize;
+}
+
+.shell :global(.uppercase) {
+  text-transform: capitalize;
+}
+
+.shell :global(.normal-case),
+.shell input,
+.shell textarea,
+.shell code,
+.shell :global(.recharts-wrapper) {
+  text-transform: none;
+}
+
+.shell :global(.recharts-legend-wrapper) {
+  text-transform: none;
+}
+
+/* Keep the compact spacing while making small labels readable. Charts retain their own typography. */
+.shell [data-analyzer-card] :global(.text-\[8px\]),
+.shell [data-analyzer-card] :global(.text-\[9px\]),
+.shell [data-analyzer-card] :global(.text-\[10px\]) {
+  font-size: 0.6875rem;
+}
+
+.shell [data-analyzer-card] :global(.text-slate-400) {
+  color: #526174;
+}
+
+.shell [data-analyzer-card] [class*="text-[#7"],
+.shell [data-analyzer-card] [class*="text-[#8"],
+.shell [data-analyzer-card] [class*="text-[#9"],
+.shell [data-analyzer-card] [class*="text-[#a"] {
+  color: #4f6345;
+}
+
+.shell :is(button, a, summary, select, input, textarea):focus-visible {
+  outline: 2px solid #176047;
+  outline-offset: 3px;
+}
+
+.shell [data-analyzer-card] :is(a, button, summary) {
+  scroll-margin-top: 5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell *, .shell *::before, .shell *::after {
+    scroll-behavior: auto !important;
+    animation: none !important;
+    transition: none !important;
+  }
+}

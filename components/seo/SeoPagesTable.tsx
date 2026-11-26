@@ -334,7 +334,7 @@ const CATEGORY_OPTIONS = [
 ];
 
 const selectClass =
-  "h-[30px] rounded-[6px] border border-[#e5e7eb] bg-white px-2.5 text-[10.5px] font-semibold text-[#374151] outline-none transition hover:border-[#16a34a] focus:border-[#23471d] shadow-xs";
+  "h-[30px] rounded-[6px] border border-[#e5e7eb] bg-white px-2.5 text-[10.5px] font-semibold text-[#374151] outline-none transition hover:border-[#16a34a] focus:border-[#0b2a6b] shadow-xs";
 
 interface Props {
   onSelectPage: (pageId: string) => void;
@@ -455,7 +455,7 @@ export default function SeoPagesTable({ onSelectPage, onAuditStarted, selectedPa
     <div className="flex flex-col gap-2.5">
       <div className="flex flex-wrap items-end justify-between gap-2 border-b border-[#e5e7eb] px-1 pb-2.5">
         <div>
-          <h2 className="text-[14px] font-bold text-[#23471d]">Page Inventory</h2>
+          <h2 className="text-[14px] font-bold text-[#0b2a6b]">Page Inventory</h2>
           <p className="mt-0.5 text-[10px] text-[#6c7587]">Click any row to open its complete audit evidence and history.</p>
         </div>
         <div className="rounded-full bg-[#dcfce7] px-2.5 py-0.5 text-[10px] font-bold text-[#166534] border border-[#bbf7d0]">{meta.total} URLs</div>
@@ -651,8 +651,8 @@ export default function SeoPagesTable({ onSelectPage, onAuditStarted, selectedPa
       <div className="min-h-[360px] max-h-[calc(100vh-345px)] overflow-auto rounded-[8px] border border-[#e5e7eb] bg-white shadow-xs">
         <table className="w-full min-w-[980px] border-collapse text-[11px]">
           <thead>
-            <tr className="sticky top-0 z-20 border-b border-[#23471d] bg-[#23471d] text-white">
-              <th className="sticky left-0 z-30 bg-[#23471d] px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.06em] text-white">
+            <tr className="sticky top-0 z-20 border-b border-[#0b2a6b] bg-[#0b2a6b] text-white">
+              <th className="sticky left-0 z-30 bg-[#0b2a6b] px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.06em] text-white">
                 <button type="button" onClick={() => toggleSort("url")} className="hover:text-emerald-200">
                   Page
                 </button>

@@ -1,5 +1,6 @@
-import { api } from "./api";
+import { api, getApiBaseUrl } from "./api";
 import type { SeoCheckupReportData } from "./seoCheckupData";
+import { SITE_ID, SITE_ORIGIN, SITE_NAME } from "./siteConfig";
 
 export type SeoSeverity = "critical" | "warning" | "notice";
 
@@ -31,6 +32,365 @@ export interface SeoIssue {
   scope?: string;
   firstSeenAt: string;
   lastSeenAt: string;
+}
+
+export interface AutoFixPayload {
+  pageUrl: string;
+  route: string;
+  /** true: only return what would change (preview), save nothing */
+  dryRun?: boolean;
+  issueType?: "title" | "description" | "canonical" | "og" | "schema" | "robots" | "h1" | "redirect" | "image_alt" | "all";
+  options?: {
+    metaTitle?: string;
+    metaDescription?: string;
+    h1Heading?: string;
+    /** what the page's OTHER <h1> tags become once an H1 is saved (default h2) */
+    h1ExtraTag?: "h2" | "h3" | "h4" | "p" | "div";
+    canonicalUrl?: string;
+    fromUrl?: string;
+    toUrl?: string;
+    statusCode?: number;
+    imageSrc?: string;
+    altText?: string;
+    ogImage?: string;
+    schemaMarkup?: string;
+  };
+}
+
+export interface AutoFixResponse {
+  success: boolean;
+  message: string;
+  fixLog?: { _id?: string } & Record<string, unknown>;
+  fixLogs?: ({ _id?: string } & Record<string, unknown>)[];
+  appliedFixes?: string[];
+  /** Fixes that were not written, with the reason (for example { title: "ai_unavailable" }) */
+  skipped?: Record<string, string>;
+  seo?: Record<string, unknown>;
+  /** Preview only (dryRun): what would be written; nothing was saved */
+  dryRun?: boolean;
+  preview?: Array<{ type: string; before: unknown; after: unknown }>;
+}
+
+export interface AutoFixAllResponse {
+  success: boolean;
+  totalPages: number;
+  fixedCount: number;
+  failedCount: number;
+  truncated?: boolean;
+  logs: Record<string, unknown>[];
+}
+
+export type PendingIssueType = "title" | "description" | "canonical" | "h1" | "og" | "schema" | "image_alt" | "redirect" | "robots";
+
+export interface PendingIssue {
+  id: string;
+  route: string;
+  pageUrl: string;
+  issueType: PendingIssueType;
+  severity: SeoSeverity;
+  title: string;
+  detail: string;
+  currentValue: string | null;
+  imageSrc?: string;
+  actions: Array<"auto_fix" | "redirect" | "override_h1">;
+  awaitingDeploy?: boolean;
+}
+
+export interface PendingState {
+  hasAudit: boolean;
+  snapshotAt: string | null;
+  reportScore: number | null;
+  healthScoreAtAudit: number | null;
+  healthScore: number | null;
+  pending: PendingIssue[];
+  resolved: PendingIssue[];
+  counts: { pending: number; resolved: number; critical: number; warning: number; notice: number };
+  truncated: boolean;
+}
+
+export type AuditJobState = "waiting" | "active" | "completed" | "failed" | "not_found";
+
+export interface AuditJobStatus {
+  jobId: string;
+  state: AuditJobState;
+  progress: number;
+  step: string | null;
+  result?: unknown;
+  error?: string | null;
+  skipped?: boolean;
+  method: "bullmq" | "in_process_fallback";
+}
+
+export interface InternalLinkSuggestion {
+  _id: string;
+  fromPath: string;
+  toPath: string;
+  anchorText: string;
+  /** The anchor words really appear in the page text, so the link has a place on the website */
+  anchorPlaced?: boolean;
+  /** The sentence of the page that will carry the link (the anchor words are inside it) */
+  anchorContext?: string;
+  similarity: number;
+  sharedTerms: string[];
+  fromTitle?: string;
+  toTitle?: string;
+  fromExcerpt?: string;
+  toExcerpt?: string;
+  contextSnippets?: Array<{
+    term: string;
+    fromSentence?: string;
+    toSentence?: string;
+  }>;
+  status: "suggested" | "applied" | "dismissed";
+}
+
+export interface NotFoundEntry {
+  _id: string;
+  path: string;
+  hits: number;
+  referrers: Array<{ referrer: string; count: number }>;
+  status: "open" | "redirected" | "ignored";
+  resolvedTo?: string;
+  suggestion: { path: string; confidence: number } | null;
+}
+
+export interface OutreachDraftEntry {
+  _id: string;
+  mentionUrl: string;
+  mentionTitle: string;
+  subject: string;
+  body: string;
+  status: "draft" | "pushing" | "pushed" | "failed";
+  error?: string;
+}
+
+/** The API client returns the `data` of the {success, data} envelope when there is one */
+function unwrap<T>(res: unknown): T {
+  const r = res as { success?: boolean; data?: unknown } | null;
+  return (r && typeof r === "object" && "success" in r && "data" in r ? r.data : res) as T;
+}
+
+export interface RollbackResponse {
+  success: boolean;
+  message: string;
+  log?: Record<string, unknown>;
+}
+
+/** What a fix stored: plain text for a title or description, or a small object (canonical, schema, redirect, image alt) */
+export type FixValue = string | null | { metaTitle?: string; metaDescription?: string; canonicalUrl?: string; [key: string]: unknown };
+
+export interface FixLogEntry {
+  _id: string;
+  pageUrl: string;
+  route: string;
+  issueType: string;
+  previousValue: FixValue;
+  newValue: FixValue;
+  /** Audit-log vocabulary derived by the API */
+  fixedBy: "AUTO_PILOT_AI" | "ADMIN";
+  /** Who actually did it (an admin's email, or the auto-pilot label) */
+  fixedByUser?: string;
+  status: "SUCCESS" | "FAILED" | "REVERTED";
+  storedStatus?: string;
+  errorReason?: string;
+  reverted: boolean;
+  revertedAt?: string;
+  createdAt: string;
+}
+
+export interface FixLogsResponse {
+  success: boolean;
+  data: {
+    logs: FixLogEntry[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+}
+
+export interface SiteContentScanResponse {
+  success: boolean;
+  data: {
+    totalPages: number;
+    siteAiAverage: number;
+    siteOriginalityAverage: number;
+    totalImages: number;
+    missingAltImages: number;
+    aiSuspectImages: number;
+    pages: Array<{
+      route: string;
+      title: string;
+      wordCount: number;
+      aiScore: number;
+      originalityScore: number;
+      isAiDetected: boolean;
+      imagesCount: number;
+      genericAltCount?: number;
+      /** Pictures an AI picture check has judged on this page */
+      aiCheckedCount?: number;
+      /** Alt texts saved in the admin that the live page does not show yet */
+      savedAltWaiting?: number;
+      missingAltCount: number;
+      aiSuspectCount: number;
+      verdict: string;
+    }>;
+    /** Pages that could not be read this time; they are not in the numbers */
+    skippedRoutes?: string[];
+  };
+}
+
+export interface LiveContentScanResponse {
+  success: boolean;
+  data: {
+    pageUrl: string;
+    route: string;
+    title: string;
+    metaDescription: string;
+    wordCount: number;
+    h1: string[];
+    h2: string[];
+    images: Array<{
+      src: string;
+      alt: string;
+      hasAlt: boolean;
+      isAiSuspect: boolean;
+      /** hidden from screen readers (aria-hidden): an empty alt is correct */
+      isDecorative?: boolean;
+      /** an alt text saved from the admin */
+      savedAlt?: boolean;
+      status: string;
+      reason?: string;
+      recommendation?: string;
+    }>;
+    aiScore: number;
+    originalityScore: number;
+    isAiDetected: boolean;
+    verdict: string;
+    eeatReasons: string[];
+    flaggedPhrases: string[];
+    humanizationGuide: string[];
+    sampleText: string;
+    analyzedAt: string;
+    /** "ai_model" = scored by the configured LLM; "heuristic" = measured from robotic-phrase density only */
+    scoreSource?: "ai_model" | "heuristic";
+  };
+}
+
+/** One text field of a page, as stored in the website's CMS */
+export interface ContentBlock {
+  id: string;
+  section: string;
+  path: string[];
+  label: string;
+  kind: "heading" | "paragraph" | "short";
+  text: string;
+  words: number;
+  chars: number;
+  lineBreaks: number;
+  /** stiff or robotic phrases found in the text */
+  flagged: string[];
+}
+
+export interface ContentBlocksData {
+  route: string;
+  pageKey: string;
+  total: number;
+  flagged: number;
+  blocks: ContentBlock[];
+}
+
+export interface HumanizeBlockData {
+  blockId: string;
+  original: string;
+  humanized: string;
+  checks: { lengthChange: number; sameLineBreaks: boolean; noNewFacts: boolean; changed: boolean };
+}
+
+export interface HumanizeContentPayload {
+  text: string;
+  instructions?: string;
+  targetKeyword?: string;
+  route?: string;
+  saveToDb?: boolean;
+}
+
+export interface HumanizeContentResponse {
+  success: boolean;
+  data: {
+    originalText: string;
+    humanizedText: string;
+    originalityScore: number;
+    aiScore: number;
+    improvementsMade: string[];
+    suggestedH1?: string;
+    suggestedMetaTitle?: string;
+    suggestedMetaDescription?: string;
+    savedToDb?: boolean;
+    scoreSource?: "phrase_list";
+    /** Filler phrases from a fixed list still present in the rewrite (not a quality score) */
+    roboticPhrasesRemaining?: number;
+  };
+}
+
+export interface RedirectEntry {
+  _id: string;
+  fromUrl: string;
+  toUrl: string;
+  statusCode: number;
+  isActive: boolean;
+  hits: number;
+  lastUsedAt?: string;
+  createdAt: string;
+}
+
+export type AutoPilotItemStatus = "pending" | "applying" | "applied" | "rejected" | "stale" | "failed";
+
+export interface AutoPilotItem {
+  id: string;
+  route: string;
+  type: string;
+  before: unknown;
+  after: unknown;
+  status: AutoPilotItemStatus;
+  note: string | null;
+  decidedAt: string | null;
+  decidedBy: string | null;
+}
+
+export interface AutoPilotProposal {
+  id: string;
+  source: string;
+  state: "open" | "closed" | "superseded";
+  createdAt: string;
+  pagesChecked: number;
+  counts: Record<AutoPilotItemStatus, number>;
+  notProposed: Array<{ route: string; reason: string }>;
+  items?: AutoPilotItem[];
+}
+
+export interface AutoPilotOverview {
+  waiting: number;
+  current: (AutoPilotProposal & { items: AutoPilotItem[] }) | null;
+  recent: AutoPilotProposal[];
+}
+
+export interface AuditScheduleData {
+  usingRedis: boolean;
+  redisConnected: boolean;
+  isAuditInProgress: boolean;
+  /** Auto-Pilot suggestions waiting for an admin's approval */
+  approvalsWaiting?: number;
+  schedule: {
+    frequency: string;
+    intervalDays: number;
+    autoPilotEnabled: boolean;
+    lastRunAt?: string;
+    nextRunAt?: string;
+    webhookUrl?: string;
+  };
 }
 export interface SeoPageFilters {
   page?: number;
@@ -501,14 +861,99 @@ function labelForPath(path: string, id: string): string {
   return tail.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+// ─── Page insights: headings, social share tags, keywords of an address, AI pictures ───
+export interface PageHeadings {
+  route: string;
+  title: string;
+  counts: Record<"h1" | "h2" | "h3" | "h4" | "h5" | "h6", number>;
+  total: number;
+  headings: Array<{ level: number; text: string; issues: string[] }>;
+  problems: string[];
+  ok: boolean;
+  h1Override?: string | null;
+  awaitingDeploy?: boolean;
+}
+export type SocialField = "ogTitle" | "ogDescription" | "ogImage" | "ogImageAlt" | "twitterCard" | "twitterTitle" | "twitterDescription" | "twitterImage";
+export interface SocialData {
+  route: string;
+  pageUrl: string;
+  editable: boolean;
+  note: string | null;
+  saved: Record<SocialField, string>;
+  live: Record<SocialField, string | null>;
+  effective: Record<SocialField, string>;
+  checks: Array<{ ok: boolean; text: string }>;
+  limits: { ogTitle: number; ogDescription: number; twitterTitle: number; twitterDescription: number; ogImageAlt: number };
+  auditedAt: string | null;
+}
+export interface UrlKeywordsData {
+  url: string;
+  title: string;
+  metaDescription: string;
+  h1: string[];
+  wordCount: number;
+  keywords: Array<{ keyword: string; words: number; count: number; density: number; inTitle: boolean; inDescription: boolean; inH1: boolean; inH2: boolean; inUrl: boolean }>;
+  primaryRecommendation?: string | null;
+  lsiKeywords?: string[];
+  keywordVariations?: Array<{
+    keyword: string;
+    searchVolume: number;
+    difficulty: number;
+    cpc: number;
+    intent: string;
+    competition: string;
+    /** All the keyword's words are on the page (measured) */
+    onPage: boolean;
+    /** How many times the whole phrase is written on the page (measured) */
+    usedOnPage: number;
+  }>;
+  /** The AI analysis: saved in the database per page text; empty when no AI answered (nothing is made up) */
+  ai?: { available: boolean; cached: boolean; analysedAt: string | null; message: string | null };
+  searchVolume: { available: boolean; estimated?: boolean; note: string };
+}
+export interface AiImageRow {
+  src: string;
+  alt: string;
+  status: "checked" | "skipped" | "failed";
+  reason?: string;
+  bytes?: number;
+  metadataSignals: string[];
+  provenAi: boolean;
+  likelihood: number | null;
+  kind: string | null;
+  reasons: string[];
+  model: string | null;
+  cached: boolean;
+}
+export interface AiImagesData {
+  route: string;
+  auditedAt: string | null;
+  totalPictures: number;
+  skippedDecorative: number;
+  skippedVector: number;
+  notCheckedThisRun: number;
+  iconsAndLogos: number;
+  checked: number;
+  judged: number;
+  provenAi: number;
+  likelyAi: number;
+  percentAi: number | null;
+  averageLikelihood: number | null;
+  threshold: number;
+  rows: AiImageRow[];
+}
+
 export const seoAuditApi = {
   /** Real checkup report for one route from the backend's live audit engine. */
   checkupReport: async (route: string): Promise<SeoCheckupReportData | null> => {
     try {
-      const res = await api.get<SeoCheckupReportData | null>(
+      const res = await api.get<Partial<SeoCheckupReportData> | null>(
         `/seo-audit/report?route=${encodeURIComponent(route)}`,
       );
-      return res ?? null;
+      if (res && typeof res === "object" && Array.isArray(res.groups) && res.groups.length > 0) {
+        return res as SeoCheckupReportData;
+      }
+      return null;
     } catch {
       return null;
     }
@@ -533,7 +978,7 @@ export const seoAuditApi = {
     try {
       const res = await api.get<SeoOverview>("/seo-audit/overview");
       const overview = res as SeoOverview | null;
-      if (overview && (overview as any).site) {
+      if (overview && (overview as { site?: unknown }).site) {
         return {
           ...overview,
           hasData: true,
@@ -550,9 +995,9 @@ export const seoAuditApi = {
     } catch { /* fall through to no-data */ }
     return {
       site: {
-        id: "bharat-organic-expo",
-        url: "https://bharatorganicexpo.com",
-        label: "Bharat Organic Expo 2027",
+        id: SITE_ID,
+        url: SITE_ORIGIN,
+        label: SITE_NAME,
         type: "production",
         crawlSettings: {},
         schedule: {},
@@ -576,7 +1021,7 @@ export const seoAuditApi = {
   },
   score: async () => {
     const overview = await seoAuditApi.overview();
-    const scores = (overview as any)?.scores ?? null;
+    const scores = (overview as unknown as { scores?: Record<string, number | null> } | null)?.scores ?? null;
     if (!scores) {
       return { available: false, message: "No real audit data yet." };
     }
@@ -587,7 +1032,7 @@ export const seoAuditApi = {
         severityPenalty: { critical: 10, warning: 3, notice: 1 },
         sensitivity: 1,
         weights: { technical: 0.3, onPage: 0.3, content: 0.2, performance: 0.2 },
-        pagesConsidered: (overview as any)?.crawl?.stats?.pages ?? 0,
+        pagesConsidered: (overview as unknown as { crawl?: { stats?: { pages?: number } } } | null)?.crawl?.stats?.pages ?? 0,
         description: "Weighted score across the real automated checkup categories from the latest live audit run.",
       },
       categories: [
@@ -631,21 +1076,32 @@ export const seoAuditApi = {
     if (refresh) params.set("refresh", "1");
     try {
       const response = await fetch(`/pagespeed?${params.toString()}`, { cache: "no-store" });
-      const data = (await response.json()) as PageSpeedAudit;
-      return data;
-    } catch (caught) {
-      return {
-        ok: false,
-        message: caught instanceof Error ? caught.message : "PageSpeed Insights is unreachable",
-        url,
-        strategy,
-        fetchedAt: new Date().toISOString(),
-        cached: false,
-        scores: { performance: null, accessibility: null, bestPractices: null, seo: null },
-        metrics: { fcpMs: null, lcpMs: null, tbtMs: null, cls: null, siMs: null, ttfbMs: null, htmlKb: null, payloadKb: null, totalRequests: null, domNodes: null, imageRequests: null, javascriptKb: null, cssKb: null, fontKb: null, otherKb: null },
-        fieldData: { available: false, overall: null },
-      };
+      if (response.ok) {
+        const data = (await response.json()) as PageSpeedAudit;
+        if (data.ok) return data;
+        // Google said the quota is used up: asking the backend too would only spend more of it
+        if (/quota/i.test(data.message ?? "")) return data;
+      }
+    } catch {
+      // fallback to backend
     }
+    try {
+      const res = await api.get<{ success: boolean; data: PageSpeedAudit }>(`/seo-audit/pagespeed?${params.toString()}`);
+      if (res?.data) return res.data;
+    } catch {
+      // ignore
+    }
+    return {
+      ok: false,
+      message: "PageSpeed Insights is unreachable",
+      url,
+      strategy,
+      fetchedAt: new Date().toISOString(),
+      cached: false,
+      scores: { performance: null, accessibility: null, bestPractices: null, seo: null },
+      metrics: { fcpMs: null, lcpMs: null, tbtMs: null, cls: null, siMs: null, ttfbMs: null, htmlKb: null, payloadKb: null, totalRequests: null, domNodes: null, imageRequests: null, javascriptKb: null, cssKb: null, fontKb: null, otherKb: null },
+      fieldData: { available: false, overall: null },
+    };
   },
   brokenLinks: async (filters?: Record<string, unknown>) => {
     try {
@@ -673,59 +1129,44 @@ export const seoAuditApi = {
       };
     }
   },
-  competitors: async () => {
-    try {
-      return await api.get<SeoCompetitor[]>("/seo/competitors");
-    } catch {
-      return [];
-    }
+  // Retired: the backend never had /seo/competitors handlers — those paths fell into the SEO /{*page} wildcard
+  // (a POST there upserts SEO metadata for a page called "competitors"). Competitor work now lives in the
+  // AI Competitor Analyzer (/competitor-analyzer, backend /api/admin/competitor-analyzer). No inherited
+  // Bharat Organic fallback is returned any more.
+  competitors: async (): Promise<SeoCompetitor[]> => [],
+  competitorComparison: async (): Promise<SeoCompetitorComparison | null> => null,
+  unlockAudit: async () => {
+    return api.post<{ success: boolean; message?: string }>("/seo-audit/unlock", {});
   },
-  competitorComparison: async () => {
+  startAudit: async (options?: { force?: boolean; route?: string }) => {
+    const force = options?.force ?? true;
     try {
-      return await api.get<SeoCompetitorComparison>("/seo/competitors/comparison");
-    } catch {
-      try {
-        const overview = await seoAuditApi.overview();
-        const summaries = (overview as any)?.routeSummaries ?? [];
-        const totalWords = summaries.reduce((a: number, s: any) => a + (s.words ?? 0), 0);
-        return {
-          primary: {
-            label: "Bharat Organic Expo 2027",
-            url: "https://bharatorganicexpo.com",
-            observed: {
-              pagesCrawled: summaries.length,
-              averageWordCount: summaries.length ? Math.round(totalWords / summaries.length) : null,
-            },
-          },
-          competitors: [],
-        };
-      } catch {
-        return {
-          primary: {
-            label: "Bharat Organic Expo 2027",
-            url: "https://bharatorganicexpo.com",
-            observed: { pagesCrawled: null, averageWordCount: null },
-          },
-          competitors: [],
-        };
+      const res = await api.post<{ success: boolean; message?: string; data?: { generatedAt?: string } }>(
+        "/seo-audit/run",
+        { route: options?.route || "/", pageSpeed: true, llm: true, force },
+        { timeoutMs: 420000 },
+      );
+      const payload = res as { success?: boolean; data?: { generatedAt?: string }; message?: string } | null;
+      if (payload && (payload.success === true || payload.data)) {
+        return { crawlId: payload?.data?.generatedAt ?? null, status: "completed" };
       }
+      throw new Error(payload?.message || "The audit run failed.");
+    } catch (caught) {
+      const err = caught as { status?: number; statusCode?: number; message?: string } | null;
+      if (err?.status === 409 || err?.statusCode === 409 || String(err?.message || "").includes("already running")) {
+        await api.post("/seo-audit/unlock", {}).catch(() => undefined);
+        const retryRes = await api.post<{ success: boolean; message?: string; data?: { generatedAt?: string } }>(
+          "/seo-audit/run",
+          { route: options?.route || "/", pageSpeed: true, llm: true, force: true },
+          { timeoutMs: 420000 },
+        );
+        const retryPayload = retryRes as { success?: boolean; data?: { generatedAt?: string }; message?: string } | null;
+        if (retryPayload && (retryPayload.success === true || retryPayload.data)) {
+          return { crawlId: retryPayload?.data?.generatedAt ?? null, status: "completed" };
+        }
+      }
+      throw caught;
     }
-  },
-  /**
-   * Starts a REAL audit on the backend (live crawl of the sitemap routes).
-   * The call may take 1-3 minutes for a full site pass.
-   */
-  startAudit: async () => {
-    const res = await api.post<{ success: boolean; message?: string; data?: { generatedAt?: string } }>(
-      "/seo-audit/run",
-      { route: "/", pageSpeed: true, llm: true },
-      { timeoutMs: 420000 },
-    );
-    const payload = res as any;
-    if (payload && (payload.success === true || payload.data)) {
-      return { crawlId: payload?.data?.generatedAt ?? null, status: "completed" };
-    }
-    throw new Error(payload?.message || "The audit run failed.");
   },
   generateSiteRecommendation: async (force = false): Promise<SeoRecommendationResponse> => {
     try {
@@ -764,7 +1205,127 @@ export const seoAuditApi = {
     }
   },
   acknowledgeAlert: (id: string) => api.post(`/seo/alerts/${id}/acknowledge`, {}),
-  addCompetitor: (payload: { url: string; label: string }) => api.post<SeoCompetitor>("/seo/competitors", payload),
-  deleteCompetitor: (id: string) => api.delete<{ id: string }>(`/seo/competitors/${id}`),
-  auditCompetitor: (id: string) => api.post(`/seo/competitors/${id}/audit`, {}),
+  addCompetitor: async (_payload: { url: string; label: string }): Promise<SeoCompetitor> => {
+    throw new Error("Competitors are managed in AI Competitor Analyzer (/competitor-analyzer).");
+  },
+  deleteCompetitor: async (_id: string): Promise<{ id: string }> => {
+    throw new Error("Competitors are managed in AI Competitor Analyzer (/competitor-analyzer).");
+  },
+  auditCompetitor: async (_id: string): Promise<never> => {
+    throw new Error("Competitors are managed in AI Competitor Analyzer (/competitor-analyzer).");
+  },
+  autoFixPage: async (payload: AutoFixPayload): Promise<AutoFixResponse> => {
+    return await api.post<AutoFixResponse>("/seo-audit/auto-fix", payload);
+  },
+  /** Starts "Auto-Fix All" as a queued job: resolves with the job id (poll auditJobStatus). 409 = one is already running. */
+  startAutoFixAll: async (options: { maxPages?: number } = {}): Promise<{ jobId: string }> => {
+    return unwrap<{ jobId: string }>(await api.post<unknown>("/seo-audit/auto-fix-all", options.maxPages ? { maxPages: options.maxPages } : {}));
+  },
+  activeJob: async (): Promise<{ jobId: string; kind: string } | null> => {
+    return unwrap<{ jobId: string; kind: string } | null>(await api.get<unknown>("/seo-audit/active-job", { forceFresh: true }));
+  },
+  rollbackFix: async (fixLogId: string, force = false): Promise<RollbackResponse> => {
+    return await api.post<RollbackResponse>("/seo-audit/rollback", { fixLogId, force });
+  },
+  getFixLogs: async (params: { page?: number; limit?: number; route?: string; issueType?: string } = {}): Promise<FixLogsResponse> => {
+    const q = new URLSearchParams();
+    if (params.page) q.set("page", String(params.page));
+    if (params.limit) q.set("limit", String(params.limit));
+    if (params.route) q.set("route", params.route);
+    if (params.issueType) q.set("issueType", params.issueType);
+    const data = unwrap<FixLogsResponse["data"]>(await api.get<unknown>(`/seo-audit/fix-logs?${q.toString()}`, { forceFresh: true }));
+    return { success: true, data };
+  },
+  /** Queue a full audit; resolves with the job id to poll with auditJobStatus. */
+  triggerAudit: async (): Promise<{ jobId: string; method: string }> => {
+    return unwrap<{ jobId: string; method: string }>(await api.post<unknown>("/seo-audit/trigger", {}));
+  },
+  auditJobStatus: async (jobId: string): Promise<AuditJobStatus> => {
+    return unwrap<AuditJobStatus>(await api.get<unknown>(`/seo-audit/status/${encodeURIComponent(jobId)}`, { forceFresh: true }));
+  },
+  /** Pending / resolved issues and the live health score, from the latest audit and the current database state */
+  pendingIssues: async (): Promise<PendingState> => {
+    return unwrap<PendingState>(await api.get<unknown>("/seo-audit/pending", { forceFresh: true }));
+  },
+  getInternalLinks: async (status?: string): Promise<InternalLinkSuggestion[]> =>
+    unwrap<InternalLinkSuggestion[]>(await api.get<unknown>(`/seo-audit/internal-links${status ? `?status=${encodeURIComponent(status)}` : ""}`, { forceFresh: true })),
+  generateInternalLinks: async (): Promise<{ pagesAnalysed: number; created: number; message: string | null }> =>
+    unwrap(await api.post<unknown>("/seo-audit/internal-links/generate", {}, { timeoutMs: 60000 })),
+  setInternalLinkStatus: async (id: string, status: "applied" | "suggested" | "dismissed"): Promise<InternalLinkSuggestion> =>
+    unwrap(await api.post<unknown>(`/seo-audit/internal-links/${id}/status`, { status })),
+  getNotFoundLog: async (status?: string): Promise<NotFoundEntry[]> =>
+    unwrap<NotFoundEntry[]>(await api.get<unknown>(`/seo-audit/404-log${status ? `?status=${encodeURIComponent(status)}` : ""}`, { forceFresh: true })),
+  autoRedirectNotFound: async (): Promise<{ examined: number; created: number; unmatched: string[] }> =>
+    unwrap(await api.post<unknown>("/seo-audit/404-log/auto-redirect", {})),
+  getOutreachStatus: async (): Promise<{ mentionSourceConfigured: boolean; mentionSource: string | null; aiConfigured: boolean }> =>
+    unwrap(await api.get<unknown>("/seo-audit/outreach/status", { forceFresh: true })),
+  findUnlinkedMentions: async (): Promise<{ configured: boolean; message: string | null; mentions: Array<{ url: string; title: string; snippet: string }>; checked: number }> =>
+    unwrap(await api.post<unknown>("/seo-audit/outreach/mentions", {}, { timeoutMs: 120000 })),
+  createOutreachDraft: async (m: { url: string; title?: string; snippet?: string }): Promise<OutreachDraftEntry> =>
+    unwrap(await api.post<unknown>("/seo-audit/outreach/draft", m, { timeoutMs: 60000 })),
+  getOutreachDrafts: async (): Promise<OutreachDraftEntry[]> => unwrap(await api.get<unknown>("/seo-audit/outreach/drafts", { forceFresh: true })),
+  pushOutreachDraft: async (id: string): Promise<OutreachDraftEntry> => unwrap(await api.post<unknown>(`/seo-audit/outreach/drafts/${id}/push`, {})),
+  downloadExcelReport: async (): Promise<void> => {
+    const { blob, filename } = await api.getFile("/seo-audit/export-excel");
+    const blobUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = filename || "seo-audit.xlsx";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(blobUrl);
+  },
+  analyzeLiveContent: async (payload: { url?: string; route?: string }): Promise<LiveContentScanResponse> => {
+    const data = unwrap<LiveContentScanResponse["data"]>(await api.post<unknown>("/seo-audit/content-analyze-live", payload, { timeoutMs: 60000 }));
+    return { success: true, data };
+  },
+  getSiteContentScan: async (): Promise<SiteContentScanResponse> => {
+    const data = unwrap<SiteContentScanResponse["data"]>(await api.get<unknown>("/seo-audit/site-content-scan", { timeoutMs: 300000 }));
+    return { success: true, data };
+  },
+  humanizeContent: async (payload: HumanizeContentPayload): Promise<HumanizeContentResponse> => {
+    const data = unwrap<HumanizeContentResponse["data"]>(await api.post<unknown>("/seo-audit/humanize-content", payload, { timeoutMs: 90000 }));
+    return { success: true, data };
+  },
+  /** The page's real text from the CMS, block by block */
+  headings: async (): Promise<{ auditedAt: string | null; pages: PageHeadings[] }> =>
+    unwrap<{ auditedAt: string | null; pages: PageHeadings[] }>(await api.get<unknown>("/seo-audit/headings", { forceFresh: true })),
+  social: async (route: string): Promise<SocialData> =>
+    unwrap<SocialData>(await api.get<unknown>(`/seo-audit/social?route=${encodeURIComponent(route)}`, { forceFresh: true })),
+  /** Saves the share tags of one page (logged in the Fix history, can be undone) */
+  saveSocial: async (route: string, fields: Partial<Record<SocialField, string>>): Promise<{ changed: boolean; logId: string | null; social: SocialData }> =>
+    unwrap<{ changed: boolean; logId: string | null; social: SocialData }>(await api.put<unknown>("/seo-audit/social", { route, ...fields })),
+  keywordsFromUrl: async (url: string, refresh = false): Promise<UrlKeywordsData> =>
+    unwrap<UrlKeywordsData>(await api.post<unknown>("/seo-audit/keywords-from-url", { url, refresh }, { timeoutMs: 120000 })),
+  aiImages: async (route: string, opts: { limit?: number; force?: boolean } = {}): Promise<AiImagesData> =>
+    unwrap<AiImagesData>(await api.post<unknown>("/seo-audit/ai-images", { route, ...opts }, { timeoutMs: 300000 })),
+  contentBlocks: async (route: string): Promise<ContentBlocksData> =>
+    unwrap<ContentBlocksData>(await api.get<unknown>(`/seo-audit/content-blocks?route=${encodeURIComponent(route)}`, { forceFresh: true })),
+  /** Rewrites one block in the same format. Nothing is saved. */
+  humanizeBlock: async (route: string, blockId: string): Promise<HumanizeBlockData> =>
+    unwrap<HumanizeBlockData>(await api.post<unknown>("/seo-audit/content-blocks/humanize", { route, blockId }, { timeoutMs: 90000 })),
+  /** Saves the text into the same CMS field (logged, can be undone) */
+  applyBlock: async (payload: { route: string; blockId: string; original: string; text: string; edited?: boolean }): Promise<{ logId: string }> =>
+    unwrap<{ logId: string }>(await api.post<unknown>("/seo-audit/content-blocks/apply", payload)),
+  addRedirect: async (payload: { fromUrl: string; toUrl: string; statusCode?: number }): Promise<{ success: boolean; data: RedirectEntry }> => {
+    const data = unwrap<RedirectEntry>(await api.post<unknown>("/seo-audit/redirect", payload));
+    return { success: true, data };
+  },
+  getRedirects: async (): Promise<{ success: boolean; data: RedirectEntry[] }> => {
+    const data = unwrap<RedirectEntry[]>(await api.get<unknown>("/seo-audit/redirects", { forceFresh: true }));
+    return { success: true, data };
+  },
+  getAuditSchedule: async (): Promise<{ success: boolean; data: AuditScheduleData }> => {
+    const data = unwrap<AuditScheduleData>(await api.get<unknown>("/seo-audit/schedule", { forceFresh: true }));
+    return { success: true, data };
+  },
+  /** runAt: ISO date and time of the first run (the only run for frequency "once") */
+  updateAuditSchedule: async (payload: { frequency: string; intervalDays: number; autoPilotEnabled: boolean; webhookUrl?: string; runAt?: string }): Promise<{ success: boolean; data: unknown }> => {
+    const data = unwrap<unknown>(await api.post<unknown>("/seo-audit/schedule", payload));
+    return { success: true, data };
+  },
+  getAutoPilot: async (): Promise<AutoPilotOverview> => unwrap<AutoPilotOverview>(await api.get<unknown>("/seo-audit/autopilot", { forceFresh: true })),
+  decideAutoPilot: async (proposalId: string, approveIds: string[], rejectIds: string[]): Promise<{ results: Array<{ id: string; status: AutoPilotItemStatus; note: string | null }>; proposal: AutoPilotProposal & { items: AutoPilotItem[] } }> =>
+    unwrap(await api.post<unknown>("/seo-audit/autopilot/decide", { proposalId, approveIds, rejectIds })),
 };

@@ -27,14 +27,49 @@ const ALL_STATUSES: CaseStatus[] = [
   "CANCELLED",
 ];
 
+const DEFAULT_OVERVIEW: ReportsOverview = {
+  cases: {
+    total: 0,
+    open: 0,
+    critical: 0,
+    byStatus: {
+      NEW: 0,
+      UNDER_VERIFICATION: 0,
+      APPROVED: 0,
+      VOLUNTEER_ASSIGNED: 0,
+      TRANSPORT_ARRANGED: 0,
+      CREMATION_IN_PROGRESS: 0,
+      CREMATION_COMPLETED: 0,
+      DOCS_UPLOADED: 0,
+      CLOSED: 0,
+      REJECTED: 0,
+      CANCELLED: 0,
+    },
+  },
+  requests: { total: 0, pending: 0 },
+  volunteers: { total: 0, active: 0 },
+  donations: {
+    totalRaised: 0,
+    totalDonations: 0,
+    thisMonthRaised: 0,
+    thisMonthDonations: 0,
+    byCause: {},
+  },
+  expenses: { pendingAmount: 0, pendingCount: 0, approvedAmount: 0, approvedCount: 0 },
+};
+
 function shortDate(dateKey: string): string {
-  const [, m, d] = dateKey.split("-");
+  if (!dateKey || typeof dateKey !== "string") return "";
+  const parts = dateKey.split("-");
+  if (parts.length < 3) return dateKey;
+  const [, m, d] = parts;
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  return `${d} ${MONTHS[Number(m) - 1]}`;
+  const monthIdx = Number(m) - 1;
+  return `${d} ${MONTHS[monthIdx] ?? m}`;
 }
 
 export default function ReportsPage() {
-  const [overview, setOverview] = useState<ReportsOverview | null>(null);
+  const [overview, setOverview] = useState<ReportsOverview>(DEFAULT_OVERVIEW);
   const [snapshots, setSnapshots] = useState<ReportSnapshot[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState<"cases" | "donations" | null>(null);
@@ -42,10 +77,17 @@ export default function ReportsPage() {
   useEffect(() => {
     Promise.all([reportsApi.overview(), reportsApi.snapshots(30)])
       .then(([o, s]) => {
-        setOverview(o);
-        setSnapshots(s);
+        if (o && typeof o === "object" && !Array.isArray(o) && (o as ReportsOverview).cases?.byStatus) {
+          setOverview(o);
+        } else {
+          setOverview(DEFAULT_OVERVIEW);
+        }
+        setSnapshots(Array.isArray(s) ? s : []);
       })
-      .catch(() => {})
+      .catch(() => {
+        setOverview(DEFAULT_OVERVIEW);
+        setSnapshots([]);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -59,7 +101,7 @@ export default function ReportsPage() {
     }
   };
 
-  if (loading || !overview) {
+  if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center text-text-muted">
         <Loader2 className="h-5 w-5 animate-spin" />
@@ -67,15 +109,18 @@ export default function ReportsPage() {
     );
   }
 
-  const raisedTrend = snapshots.map((s) => ({ label: shortDate(s.date), value: s.donations.totalRaised }));
-  const openCasesTrend = snapshots.map((s) => ({ label: shortDate(s.date), value: s.cases.open }));
+  const safeSnapshots = Array.isArray(snapshots) ? snapshots : [];
+  const raisedTrend = safeSnapshots.map((s) => ({ label: shortDate(s.date), value: s.donations?.totalRaised ?? 0 }));
+  const openCasesTrend = safeSnapshots.map((s) => ({ label: shortDate(s.date), value: s.cases?.open ?? 0 }));
 
-  const statusData: MagnitudeDatum[] = ALL_STATUSES.filter((s) => overview.cases.byStatus[s] > 0).map((status) => ({
-    label: CASE_STATUS_META[status].label,
-    value: overview.cases.byStatus[status],
+  const byStatus = overview.cases?.byStatus ?? DEFAULT_OVERVIEW.cases.byStatus;
+  const statusData: MagnitudeDatum[] = ALL_STATUSES.filter((s) => (byStatus[s] ?? 0) > 0).map((status) => ({
+    label: CASE_STATUS_META[status]?.label ?? status,
+    value: byStatus[status] ?? 0,
   }));
 
-  const causeEntries = Object.entries(overview.donations.byCause).filter(([, v]) => v > 0);
+  const byCause = overview.donations?.byCause ?? {};
+  const causeEntries = Object.entries(byCause).filter(([, v]) => (v ?? 0) > 0);
   const causeData: DonutDatum[] = causeEntries.map(([cause, amount]) => ({
     key: cause,
     label: CAUSE_LABELS[cause] ?? cause,
@@ -104,29 +149,29 @@ export default function ReportsPage() {
         <StatCard
           icon={FolderKanban}
           label="Total Cases"
-          value={overview.cases.total}
-          hint={`${overview.cases.open} open`}
+          value={overview.cases?.total ?? 0}
+          hint={`${overview.cases?.open ?? 0} open`}
           accentColor={KPI_COLORS.cases}
         />
         <StatCard
           icon={HeartHandshake}
           label="Total Raised"
-          value={formatCurrency(overview.donations.totalRaised)}
+          value={formatCurrency(overview.donations?.totalRaised ?? 0)}
           accentColor={KPI_COLORS.donations}
         />
         <StatCard
           icon={Receipt}
           label="Expenses Approved"
-          value={formatCurrency(overview.expenses.approvedAmount)}
-          hint={`${overview.expenses.approvedCount} entries`}
+          value={formatCurrency(overview.expenses?.approvedAmount ?? 0)}
+          hint={`${overview.expenses?.approvedCount ?? 0} entries`}
           accentColor={KPI_COLORS.requests}
         />
         <StatCard
           icon={Receipt}
           label="Pending Approval"
-          value={formatCurrency(overview.expenses.pendingAmount)}
-          hint={`${overview.expenses.pendingCount} entries`}
-          tone={overview.expenses.pendingCount > 0 ? "danger" : "neutral"}
+          value={formatCurrency(overview.expenses?.pendingAmount ?? 0)}
+          hint={`${overview.expenses?.pendingCount ?? 0} entries`}
+          tone={(overview.expenses?.pendingCount ?? 0) > 0 ? "danger" : "neutral"}
         />
       </div>
 

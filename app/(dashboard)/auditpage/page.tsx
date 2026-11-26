@@ -1,57 +1,221 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import {
-  ArrowLeft,
-  FileSearch,
-  Link2,
-  Sparkles,
-  KeyRound,
-  History,
-  Activity,
-  Loader2,
-} from "lucide-react";
-import { seoAuditApi, type SeoOverview, type PageSpeedAudit } from "@/lib/seoAuditApi";
+import { Loader2, X } from "lucide-react";
+import { seoAuditApi, type SeoOverview, type PageSpeedAudit, type FixLogEntry } from "@/lib/seoAuditApi";
+import type { SeoCheckupReportData } from "@/lib/seoCheckupData";
 import { getSavedPageSpeed, savePageSpeed, getSavedPageSpeedMap } from "@/lib/pageSpeedBatch";
+import { SITE_ORIGIN, SITE_NAME } from "@/lib/siteConfig";
+import AuditHeader from "@/components/seo/AuditHeader";
+import AuditNav from "@/components/seo/AuditNav";
+import AutoFixMasterBar from "@/components/seo/AutoFixMasterBar";
+import ActiveIssuesList from "@/components/seo/ActiveIssuesList";
+import ResolvedIssuesHistory from "@/components/seo/ResolvedIssuesHistory";
+import AiContentInspectorTab from "@/components/seo/AiContentInspectorTab";
+import AiImageInspectorTab from "@/components/seo/AiImageInspectorTab";
+import InternalLinksTab from "@/components/seo/InternalLinksTab";
+import HeadingsAuditTab from "@/components/seo/HeadingsAuditTab";
+import SocialTagsTab from "@/components/seo/SocialTagsTab";
+import AiPictureCheckTab from "@/components/seo/AiPictureCheckTab";
+import NotFoundLogTab from "@/components/seo/NotFoundLogTab";
+import OutreachTab from "@/components/seo/OutreachTab";
+import { useSeoAuditRun } from "@/lib/useSeoAuditRun";
+import { useSeoPending } from "@/lib/useSeoPending";
 import SeoSiteCheckupReport from "@/components/seo/SeoSiteCheckupReport";
 import BacklinkManager from "@/components/seo/BacklinkManager";
 import AiContentAuditor from "@/components/seo/AiContentAuditor";
 import KeywordPlannerTool from "@/components/seo/KeywordPlannerTool";
 import SeoActivityLogWidget from "@/components/seo/SeoActivityLogWidget";
-
-interface RouteOption {
-  id: string;
-  label: string;
-  path: string;
-}
+import SemrushComparePanel from "@/components/seo/semrush/SemrushComparePanel";
+import AuditTasksPanel from "@/components/seo/semrush/AuditTasksPanel";
+import { useSemrushReport } from "@/lib/useSemrushReport";
+import { useAuditTasks } from "@/lib/useAuditTasks";
+import { errorMessage } from "@/lib/errorMessage";
+import AutoFixConfirmModal from "@/components/seo/modals/AutoFixConfirmModal";
+import AutoFixResultModal from "@/components/seo/modals/AutoFixResultModal";
+import AuditScheduleModal, { fromLocalInput, toLocalInput, type AuditScheduleState } from "@/components/seo/modals/AuditScheduleModal";
+import AutoPilotApprovalModal from "@/components/seo/modals/AutoPilotApprovalModal";
+import AuditRouteSelector, { type RouteOption } from "@/components/seo/audit/AuditRouteSelector";
 
 const HOME_OPTION: RouteOption = { id: "home", label: "Home Page", path: "/" };
 
 const routeUrl = (p: RouteOption) =>
-  p.id === "home" ? "https://bharatorganicexpo.com" : `https://bharatorganicexpo.com${p.path}`;
+  p.id === "home" ? SITE_ORIGIN : `${SITE_ORIGIN}${p.path.startsWith("/") ? "" : "/"}${p.path}`;
+
+/** "audit" is the three main views; every other id is a tool opened from the navigation (components/seo/AuditNav) */
+type SeoTabId = "audit" | "headings" | "social" | "ai_pictures" | "backlinks" | "ai_content" | "keyword_planner" | "activity_log" | "semrush" | "tasks" | "ai_inspector" | "image_inspector" | "internal_links" | "not_found" | "outreach";
 
 export default function SeoAuditedPagesPage() {
-  const [activeTab, setActiveTab] = useState<"audit" | "backlinks" | "ai_content" | "keyword_planner" | "activity_log">("backlinks");
-  const [overview, setOverview] = useState<SeoOverview | null>(null);
+  const [activeTab, setActiveTab] = useState<SeoTabId>("audit");
+  const [auditSubSection, setAuditSubSection] = useState<"matrix" | "issues" | "history">("issues");
+  const [imageInspectorTarget, setImageInspectorTarget] = useState<string>("/");
+  // the Page report can send the admin to one page / kind of issue of the Issues to fix list
+  const [issuesFocus, setIssuesFocus] = useState<{ route: string; type: string; key: number } | null>(null);
+  const semrush = useSemrushReport();
+  const auditTasks = useAuditTasks();
+  const [, setOverview] = useState<SeoOverview | null>(null);
   const [routes, setRoutes] = useState<RouteOption[]>([HOME_OPTION]);
-  const [routesError, setRoutesError] = useState<string | null>(null);
+  const [, setRoutesError] = useState<string | null>(null);
   const [selectedPageId, setSelectedPageId] = useState<string>("home");
   const [strategy, setStrategy] = useState<"mobile" | "desktop">("mobile");
   const [speed, setSpeed] = useState<{ pageId: string; strategy: "mobile" | "desktop"; data: PageSpeedAudit | null } | null>(null);
+  const [auditVersion, setAuditVersion] = useState(0);
+  const [auditReport, setAuditReport] = useState<SeoCheckupReportData | null>(null);
+  const [auditSettledKey, setAuditSettledKey] = useState<string | null>(null);
+  const auditKey = `${selectedPageId}#${auditVersion}`;
+  const auditLoading = auditSettledKey !== auditKey;
   const [reAuditing, setReAuditing] = useState(false);
   const [liveFetching, setLiveFetching] = useState(false);
   const prefetchStarted = useRef(false);
 
-  // Route picker is populated from the LIVE sitemap via the backend — never a
-  // static list, so newly published or removed pages show up automatically.
+  // Modals & Export States
+  const [downloadingExcel, setDownloadingExcel] = useState(false);
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [scheduleSaving, setScheduleSaving] = useState(false);
+  const [scheduleState, setScheduleState] = useState<AuditScheduleState>({
+    frequency: "weekly",
+    intervalDays: 7,
+    autoPilotEnabled: false,
+    webhookUrl: "",
+    usingRedis: false,
+    redisConnected: false,
+    lastRunAt: "",
+    nextRunAt: "",
+    runAt: "",
+    approvalsWaiting: 0,
+  });
+  const [approvalOpen, setApprovalOpen] = useState(false);
+  const [scheduleLoaded, setScheduleLoaded] = useState(false);
+  const [scheduleLoadError, setScheduleLoadError] = useState<string | null>(null);
+  const [autoFixConfirmOpen, setAutoFixConfirmOpen] = useState(false);
+  const [autoFixModal, setAutoFixModal] = useState<{
+    open: boolean;
+    totalPages: number;
+    fixedCount: number;
+    failedCount: number;
+    logs: FixLogEntry[];
+  } | null>(null);
+
+  const pending = useSeoPending();
+  const [historyKey, setHistoryKey] = useState(0);
+  const [scheduleVersion, setScheduleVersion] = useState(0);
+
+  const refreshAfterChange = () => {
+    void pending.reload();
+    setHistoryKey((k) => k + 1);
+    setAuditVersion((v) => v + 1);
+  };
+
+  const run = useSeoAuditRun((kind, result) => {
+    refreshAfterChange();
+    if (kind === "autofix_all" && result) {
+      setAutoFixModal({
+        open: true,
+        totalPages: Number(result.totalPages) || 0,
+        fixedCount: Number(result.fixedCount) || 0,
+        failedCount: Number(result.failedCount) || 0,
+        logs: (Array.isArray(result.fixes) ? result.fixes : []) as unknown as FixLogEntry[],
+      });
+    }
+    if (kind === "audit") {
+      seoAuditApi.overview().then(setOverview).catch(() => undefined);
+      seoAuditApi.auditRoutes().then((list) => list.length > 0 && setRoutes(list)).catch(() => undefined);
+    }
+  });
+
+  const [notice, setNotice] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
+
+  const executeAutoFixAll = () => {
+    setAutoFixConfirmOpen(false);
+    void run.runAutoFix();
+  };
+
+  const handleDownloadExcel = async () => {
+    try {
+      setDownloadingExcel(true);
+      await seoAuditApi.downloadExcelReport();
+    } catch (err) {
+      setNotice({ tone: "error", text: errorMessage(err) || "Failed to download the Excel report." });
+    } finally {
+      setDownloadingExcel(false);
+    }
+  };
+
+  const openScheduleModal = async () => {
+    setScheduleModalOpen(true);
+    setScheduleLoaded(false);
+    setScheduleLoadError(null);
+    try {
+      const res = await seoAuditApi.getAuditSchedule();
+      if (res && res.data) {
+        setScheduleState({
+          frequency: res.data.schedule?.frequency || "weekly",
+          intervalDays: res.data.schedule?.intervalDays || 7,
+          autoPilotEnabled: Boolean(res.data.schedule?.autoPilotEnabled),
+          webhookUrl: res.data.schedule?.webhookUrl || "",
+          usingRedis: Boolean(res.data.usingRedis),
+          redisConnected: Boolean(res.data.redisConnected),
+          lastRunAt: res.data.schedule?.lastRunAt || "",
+          nextRunAt: res.data.schedule?.nextRunAt || "",
+          // the saved next run is shown in the date box, so saving again keeps the chosen time
+          runAt: res.data.schedule?.frequency === "on_demand" ? "" : toLocalInput(res.data.schedule?.nextRunAt),
+          approvalsWaiting: res.data.approvalsWaiting ?? 0,
+        });
+        setScheduleLoaded(true);
+      } else {
+        setScheduleLoadError("The saved schedule could not be read.");
+      }
+    } catch (err) {
+      setScheduleLoadError(err instanceof Error ? err.message : "The saved schedule could not be loaded.");
+    }
+  };
+
+  const saveSchedule = async () => {
+    if (!scheduleLoaded || scheduleSaving) return;
+    try {
+      setScheduleSaving(true);
+      await seoAuditApi.updateAuditSchedule({
+        frequency: scheduleState.frequency,
+        intervalDays: scheduleState.intervalDays,
+        autoPilotEnabled: scheduleState.autoPilotEnabled,
+        webhookUrl: scheduleState.webhookUrl,
+        runAt: scheduleState.frequency === "on_demand" ? undefined : fromLocalInput(scheduleState.runAt),
+      });
+      setNotice({ tone: "ok", text: "Audit schedule saved." });
+      setScheduleModalOpen(false);
+      setScheduleVersion((v) => v + 1);
+    } catch (err) {
+      setNotice({ tone: "error", text: errorMessage(err) || "Failed to save the schedule." });
+    } finally {
+      setScheduleSaving(false);
+    }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    seoAuditApi
+      .checkupReport(selectedPageId)
+      .then((data) => {
+        if (!cancelled) setAuditReport(data);
+      })
+      .catch(() => {
+        if (!cancelled) setAuditReport(null);
+      })
+      .finally(() => {
+        if (!cancelled) setAuditSettledKey(`${selectedPageId}#${auditVersion}`);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPageId, auditVersion]);
+
   useEffect(() => {
     seoAuditApi.overview().then(setOverview).catch(() => undefined);
     seoAuditApi
       .auditRoutes()
       .then((list) => {
         if (list.length > 0) setRoutes(list);
-        else setRoutesError("The live sitemap could not be reached, so only the home route is listed. Re-run a live audit when the site is reachable.");
+        else setRoutesError("The live sitemap could not be reached, so only the home route is listed.");
       })
       .catch(() => {
         setRoutesError("The live sitemap could not be reached, so only the home route is listed.");
@@ -60,21 +224,23 @@ export default function SeoAuditedPagesPage() {
 
   const ALL_SITE_PAGES = routes;
 
-  // PageSpeed for the selected route & strategy. A cached run (localStorage, 6h TTL) is
-  // shown instantly — the live refresh keeps running in the background and only
-  // replaces the numbers when it lands. Route switching never blanks the page.
   useEffect(() => {
     const pageObj = ALL_SITE_PAGES.find((p) => p.id === selectedPageId) || ALL_SITE_PAGES[0];
     if (!pageObj) return;
     const targetUrl = routeUrl(pageObj);
     const cacheKey = `${targetUrl}:${strategy}`;
 
-    const cached = getSavedPageSpeed(cacheKey) || getSavedPageSpeed(targetUrl);
-    if (cached) setSpeed({ pageId: pageObj.id, strategy, data: cached });
-    else setSpeed(null);
-
+    const cached = getSavedPageSpeed(targetUrl);
     let cancelled = false;
-    setLiveFetching(true);
+    queueMicrotask(() => {
+      if (cancelled) return;
+      if (cached && cached.strategy === strategy) {
+        setSpeed({ pageId: pageObj.id, strategy, data: cached });
+      } else {
+        setSpeed(null);
+      }
+      setLiveFetching(true);
+    });
     seoAuditApi
       .pagespeed(targetUrl, strategy, false)
       .then((data) => {
@@ -82,7 +248,6 @@ export default function SeoAuditedPagesPage() {
         setSpeed({ pageId: pageObj.id, strategy, data });
         if (data?.ok) {
           savePageSpeed(cacheKey, data);
-          if (strategy === "mobile") savePageSpeed(targetUrl, data);
         }
       })
       .catch(() => {
@@ -98,26 +263,27 @@ export default function SeoAuditedPagesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPageId, routes, strategy]);
 
-  // Warm PageSpeed for every route in the background (once), so switching
-  // routes later is instant instead of waiting on a fresh Lighthouse pass.
-  // Starts after a short delay so it never competes with the first route load.
   useEffect(() => {
     if (prefetchStarted.current || routes.length < 2) return;
     prefetchStarted.current = true;
     const saved = getSavedPageSpeedMap();
-    const pending = routes.filter((r) => !saved.has(routeUrl(r)));
-    if (pending.length === 0) return;
+    const pendingRoutes = routes.filter((r) => !saved.has(routeUrl(r)));
+    if (pendingRoutes.length === 0) return;
 
     let stopped = false;
     const timer = setTimeout(() => {
       void (async () => {
-        for (const r of pending) {
+        for (const r of pendingRoutes) {
           if (stopped) return;
           try {
-            const audit = await seoAuditApi.pagespeed(routeUrl(r), "mobile", false);
-            if (!stopped && audit?.ok) savePageSpeed(routeUrl(r), audit);
+            const auditMobile = await seoAuditApi.pagespeed(routeUrl(r), "mobile", false);
+            if (!stopped && auditMobile?.ok) savePageSpeed(routeUrl(r), auditMobile);
+            // Google refused (quota, site not reachable): stop here instead of spending more of the daily quota
+            if (!auditMobile?.ok) return;
+            const auditDesktop = await seoAuditApi.pagespeed(routeUrl(r), "desktop", false);
+            if (!stopped && auditDesktop?.ok) savePageSpeed(routeUrl(r), auditDesktop);
           } catch {
-            // skip this route — it will be fetched on demand when selected
+            // skip this route
           }
         }
       })();
@@ -130,175 +296,174 @@ export default function SeoAuditedPagesPage() {
   }, [routes]);
 
   const selectedPageObj = ALL_SITE_PAGES.find((p) => p.id === selectedPageId) || ALL_SITE_PAGES[0];
-  const pageSpeed = speed?.pageId === selectedPageObj.id ? speed.data : null;
+  const pageSpeed = speed?.pageId === selectedPageObj.id && speed?.strategy === strategy ? speed.data : null;
   const updating = liveFetching || reAuditing;
+  const pendingCount = pending.data?.counts.pending ?? 0;
 
   return (
-    <div className="min-h-screen bg-slate-100 p-4 lg:p-6 space-y-6 text-slate-900">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b-2 border-[#23471d] pb-4 bg-white p-4 rounded-xl shadow-xs">
-        <div>
-          <div className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-emerald-600">
-            <FileSearch className="h-4 w-4" /> Bharat Organic SEO Command Intelligence
-          </div>
-          <h1 className="text-xl font-extrabold text-[#23471d]">
-            Deep Page Audit & SEO Matrix Suite
-          </h1>
-          <p className="text-xs font-medium text-slate-500 mt-0.5">
-            Complete suite: Page-by-Page Audit, Backlinks Excel Tracker, AI Content Originality Guard, Dual-Mode Keyword Planner, and Audit Trail.
-          </p>
+    <div className="min-h-screen bg-slate-100 p-4 lg:p-6 lg:pr-20 space-y-4 text-slate-900">
+      {/* Top Header */}
+      <AuditHeader
+        siteName={SITE_NAME}
+        run={run}
+        onRunNow={run.runNow}
+        onDownloadExcel={handleDownloadExcel}
+        downloading={downloadingExcel}
+        onOpenScheduleSettings={openScheduleModal}
+        onOpenApprovals={() => setApprovalOpen(true)}
+        scheduleVersion={scheduleVersion}
+      />
+
+      {notice && (
+        <div
+          role="status"
+          className={`flex items-center justify-between rounded-xl border px-4 py-2.5 text-xs font-bold ${
+            notice.tone === "ok" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-700"
+          }`}
+        >
+          <span>{notice.text}</span>
+          <button type="button" onClick={() => setNotice(null)} className="cursor-pointer text-current opacity-70 hover:opacity-100">
+            <X className="h-4 w-4" />
+          </button>
         </div>
+      )}
 
-        <div className="flex items-center gap-3">
-          <Link
-            href="/seo"
-            className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3.5 text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-xs transition"
-          >
-            <ArrowLeft className="h-4 w-4 text-emerald-600" /> Command Center
-          </Link>
-        </div>
-      </div>
-
-      {/* Main Suite Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:thin] bg-white p-2 rounded-xl border border-slate-200 shadow-xs">
-        <button
-          type="button"
-          onClick={() => setActiveTab("audit")}
-          className={`px-4 py-2 rounded-lg text-xs font-black transition flex items-center gap-2 cursor-pointer ${
-            activeTab === "audit"
-              ? "bg-[#23471d] text-white shadow-xs"
-              : "text-slate-600 hover:bg-slate-100"
-          }`}
-        >
-          <Activity className="h-4 w-4" /> 1. Page SEO Audit
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("backlinks")}
-          className={`px-4 py-2 rounded-lg text-xs font-black transition flex items-center gap-2 cursor-pointer ${
-            activeTab === "backlinks"
-              ? "bg-[#23471d] text-white shadow-xs"
-              : "text-slate-600 hover:bg-slate-100"
-          }`}
-        >
-          <Link2 className="h-4 w-4" /> 2. Backlinks & Excel Tracker
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("ai_content")}
-          className={`px-4 py-2 rounded-lg text-xs font-black transition flex items-center gap-2 cursor-pointer ${
-            activeTab === "ai_content"
-              ? "bg-[#23471d] text-white shadow-xs"
-              : "text-slate-600 hover:bg-slate-100"
-          }`}
-        >
-          <Sparkles className="h-4 w-4" /> 3. AI Content & Copy Guard
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("keyword_planner")}
-          className={`px-4 py-2 rounded-lg text-xs font-black transition flex items-center gap-2 cursor-pointer ${
-            activeTab === "keyword_planner"
-              ? "bg-[#23471d] text-white shadow-xs"
-              : "text-slate-600 hover:bg-slate-100"
-          }`}
-        >
-          <KeyRound className="h-4 w-4" /> 4. Keyword Planner (Google & AI)
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("activity_log")}
-          className={`px-4 py-2 rounded-lg text-xs font-black transition flex items-center gap-2 cursor-pointer ${
-            activeTab === "activity_log"
-              ? "bg-[#23471d] text-white shadow-xs"
-              : "text-slate-600 hover:bg-slate-100"
-          }`}
-        >
-          <History className="h-4 w-4" /> 5. SEO Activity Logs
-        </button>
-      </div>
+      {/* Navigation: three main views, then the other tools grouped by purpose */}
+      <AuditNav
+        activeTab={activeTab}
+        view={auditSubSection}
+        pendingCount={pendingCount}
+        onOpenView={(v) => {
+          setActiveTab("audit");
+          setAuditSubSection(v);
+        }}
+        onOpenTool={(id) => setActiveTab(id as SeoTabId)}
+      />
 
       {/* Tab 1: Page SEO Audit */}
       {activeTab === "audit" && (
-        <div className="space-y-6">
-          {/* Page Selection Bar */}
-          <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3 flex-1 min-w-[280px]">
-              <span className="text-xs font-extrabold uppercase text-slate-500 shrink-0">
-                Select Page Route:
-              </span>
-              <select
-                value={selectedPageId}
-                onChange={(e) => setSelectedPageId(e.target.value)}
-                className="h-10 w-full max-w-md rounded-lg border border-slate-300 bg-slate-50 px-3 text-xs font-bold text-slate-900 outline-none focus:border-emerald-600 focus:bg-white shadow-xs transition cursor-pointer"
-              >
-                {ALL_SITE_PAGES.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.label} ({p.path})
-                  </option>
-                ))}
-              </select>
-            </div>
+        <div className="space-y-5">
+          {/* Summary: issues, fix score, waiting for website, Auto-Fix All (the Page report has its own scores) */}
+          {auditSubSection !== "matrix" && (
+          <AutoFixMasterBar
+            loading={pending.loading && !pending.data}
+            error={pending.error && !pending.data ? pending.error : null}
+            hasAudit={Boolean(pending.data?.hasAudit)}
+            pendingCount={pendingCount}
+            resolvedCount={pending.data?.counts.resolved ?? 0}
+            criticalCount={pending.data?.counts.critical ?? 0}
+            warningCount={pending.data?.counts.warning ?? 0}
+            healthScore={pending.data?.healthScore ?? null}
+            healthScoreAtAudit={pending.data?.healthScoreAtAudit ?? null}
+            fixing={run.running && run.kind === "autofix_all"}
+            busyOther={run.running && run.kind !== "autofix_all"}
+            percent={run.percent}
+            step={run.step}
+            runError={run.kind === "autofix_all" ? run.error : null}
+            onAutoFixAll={() => setAutoFixConfirmOpen(true)}
+            onRetry={() => void pending.reload()}
+          />
+          )}
 
-            {/* Quick Page Filter Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1 [scrollbar-width:thin]">
-              {ALL_SITE_PAGES.slice(0, 7).map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setSelectedPageId(p.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition cursor-pointer whitespace-nowrap ${
-                    selectedPageId === p.id
-                      ? "bg-[#23471d] text-white shadow-xs"
-                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Sub-Section 1: Deep Page Audit Matrix */}
+          {auditSubSection === "matrix" && (
+            <div className="space-y-5 animate-in fade-in duration-150">
+              {/* Route Selector Bar */}
+              <AuditRouteSelector
+                routes={ALL_SITE_PAGES}
+                selectedPageId={selectedPageId}
+                onSelectRoute={(id) => setSelectedPageId(id)}
+                currentUrl={routeUrl(selectedPageObj)}
+              />
 
-          {/* Live PageSpeed status chip — non-blocking, the report stays visible */}
-          {updating && (
-            <div className="flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-bold text-emerald-700">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              {reAuditing
-                ? "Re-running live PageSpeed Insights for this page…"
-                : "Refreshing PageSpeed Insights in the background…"}
+              {/* Status indicator */}
+              {(updating || auditLoading) && (
+                <div className="flex items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-bold text-emerald-800 shadow-2xs">
+                  <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />
+                  {reAuditing
+                    ? "Running live audit on backend (crawling routes, checking tags, querying Google PageSpeed)..."
+                    : "Loading live SEO audit report…"}
+                </div>
+              )}
+
+              {/* Deep Page Checkup Report */}
+              <SeoSiteCheckupReport
+                issueKeys={pending.data?.pending.map((p) => `${p.route}::${p.issueType}`)}
+                onOpenIssues={(route, type) => {
+                  setIssuesFocus({ route, type, key: Date.now() });
+                  setActiveTab("audit");
+                  setAuditSubSection("issues");
+                }}
+                pageId={selectedPageObj.id}
+                url={routeUrl(selectedPageObj)}
+                pagespeed={pageSpeed}
+                strategy={strategy}
+                report={auditReport}
+                onStrategyChange={(s) => setStrategy(s)}
+                onReAudit={async () => {
+                  const targetUrl = routeUrl(selectedPageObj);
+                  const pageId = selectedPageObj.id;
+                  const cacheKey = `${targetUrl}:${strategy}`;
+                  setReAuditing(true);
+                  try {
+                    await seoAuditApi.startAudit({ force: true });
+                    const refreshedRoutes = await seoAuditApi.auditRoutes().catch(() => []);
+                    if (refreshedRoutes.length > 0) setRoutes(refreshedRoutes);
+                    const data = await seoAuditApi.pagespeed(targetUrl, strategy, true).catch(() => null);
+                    if (data) {
+                      setSpeed({ pageId, strategy, data });
+                      if (data?.ok) {
+                        savePageSpeed(cacheKey, data);
+                      }
+                    }
+                    const freshReport = await seoAuditApi.checkupReport(pageId).catch(() => null);
+                    setAuditReport(freshReport);
+                    setAuditVersion((v) => v + 1);
+                    await pending.reload().catch(() => undefined);
+                  } catch (err) {
+                    console.error("Audit run error:", err);
+                  } finally {
+                    setReAuditing(false);
+                  }
+                }}
+              />
             </div>
           )}
 
-          {/* The report always renders — route switching never blanks the page.
-              PageSpeed numbers update in place when the live run lands. */}
-          <SeoSiteCheckupReport
-            pageId={selectedPageObj.id}
-            url={routeUrl(selectedPageObj)}
-            pagespeed={pageSpeed}
-            strategy={strategy}
-            onStrategyChange={(s) => setStrategy(s)}
-            onReAudit={() => {
-              const targetUrl = routeUrl(selectedPageObj);
-              const pageId = selectedPageObj.id;
-              const cacheKey = `${targetUrl}:${strategy}`;
-              setReAuditing(true);
-              seoAuditApi
-                .pagespeed(targetUrl, strategy, true)
-                .then((data) => {
-                  setSpeed({ pageId, strategy, data });
-                  if (data?.ok) {
-                    savePageSpeed(cacheKey, data);
-                    if (strategy === "mobile") savePageSpeed(targetUrl, data);
-                  }
-                })
-                .catch(() => setSpeed({ pageId, strategy, data: null }))
-                .finally(() => setReAuditing(false));
-            }}
-          />
+          {/* Sub-Section 2: Active Issues Queue (With Route Filter and 1-Click Image Inspector) */}
+          {auditSubSection === "issues" && !pending.data?.hasAudit && (
+            <div className="rounded-xl border border-slate-200 bg-white px-4 py-8 text-center text-xs font-bold text-slate-500 shadow-xs">
+              {pending.loading ? "Loading issues…" : "No audit has been run yet. Press \"Run audit now\" at the top to find issues."}
+            </div>
+          )}
+
+          {auditSubSection === "issues" && pending.data?.hasAudit && (
+            <div className="space-y-5 animate-in fade-in duration-150">
+              <ActiveIssuesList
+                key={issuesFocus?.key ?? 0}
+                initialFilter={issuesFocus && issuesFocus.type !== "all" ? issuesFocus.type : undefined}
+                initialRoute={issuesFocus?.route}
+                issues={pending.data.pending}
+                loading={pending.loading}
+                error={pending.error}
+                onFixed={(issue) => {
+                  pending.removeIssue(issue.id);
+                  refreshAfterChange();
+                }}
+                onOpenImageInspector={(targetRoute) => {
+                  setImageInspectorTarget(targetRoute);
+                  setActiveTab("image_inspector");
+                }}
+              />
+            </div>
+          )}
+
+          {/* Sub-Section 3: Resolved Issues History & 1-Click Rollback */}
+          {auditSubSection === "history" && (
+            <div className="space-y-5 animate-in fade-in duration-150">
+              <ResolvedIssuesHistory refreshKey={historyKey} onUndone={refreshAfterChange} />
+            </div>
+          )}
         </div>
       )}
 
@@ -313,6 +478,91 @@ export default function SeoAuditedPagesPage() {
 
       {/* Tab 5: SEO Activity Logs */}
       {activeTab === "activity_log" && <SeoActivityLogWidget />}
+
+      {/* Tab 6: Semrush Compare */}
+      {activeTab === "semrush" && (
+        <SemrushComparePanel
+          comparison={semrush.data?.comparison ?? null}
+          loading={semrush.loading}
+          loadError={semrush.error}
+          uploading={semrush.uploading}
+          onUpload={semrush.upload}
+        />
+      )}
+
+      {/* Tab 7: Fix Tasks */}
+      {activeTab === "tasks" && (
+        <AuditTasksPanel data={auditTasks.data} loading={auditTasks.loading} error={auditTasks.error} onSetStatus={auditTasks.setStatus} />
+      )}
+
+      {/* Tab 8: AI Content Inspector */}
+      {activeTab === "ai_inspector" && <AiContentInspectorTab routes={routes} initialPath={selectedPageObj.path} />}
+
+      {/* Tab 9: AI Image Inspector */}
+      {activeTab === "image_inspector" && <AiImageInspectorTab routes={routes} initialPath={imageInspectorTarget || selectedPageObj.path} />}
+
+      {/* Headings audit, share cards, AI picture check */}
+      {activeTab === "headings" && (
+        <HeadingsAuditTab
+          onOpenIssues={(targetRoute) => {
+            setIssuesFocus({ route: targetRoute, type: "h1", key: Date.now() });
+            setActiveTab("audit");
+            setAuditSubSection("issues");
+          }}
+        />
+      )}
+      {activeTab === "social" && <SocialTagsTab routes={routes} initialPath={selectedPageObj.path} />}
+      {activeTab === "ai_pictures" && <AiPictureCheckTab routes={routes} initialPath={selectedPageObj.path} />}
+
+      {/* Tab 10: Internal Links */}
+      {activeTab === "internal_links" && <InternalLinksTab />}
+
+      {/* Tab 11: 404 Log */}
+      {activeTab === "not_found" && <NotFoundLogTab />}
+
+      {/* Tab 12: Outreach */}
+      {activeTab === "outreach" && <OutreachTab />}
+
+      {/* Auto-Fix Confirmation Modal */}
+      <AutoFixConfirmModal
+        isOpen={autoFixConfirmOpen}
+        pendingCount={pendingCount}
+        onConfirm={executeAutoFixAll}
+        onClose={() => setAutoFixConfirmOpen(false)}
+      />
+
+      {/* Auto-Fix Results Review Modal */}
+      <AutoFixResultModal
+        data={autoFixModal}
+        onClose={() => setAutoFixModal(null)}
+        onDownloadExcel={handleDownloadExcel}
+      />
+
+      {/* Audit Schedule & BullMQ Queue Modal */}
+      <AuditScheduleModal
+        isOpen={scheduleModalOpen}
+        scheduleLoaded={scheduleLoaded}
+        scheduleSaving={scheduleSaving}
+        scheduleLoadError={scheduleLoadError}
+        scheduleState={scheduleState}
+        onStateChange={setScheduleState}
+        onSave={saveSchedule}
+        onClose={() => setScheduleModalOpen(false)}
+        onReviewApprovals={() => {
+          setScheduleModalOpen(false);
+          setApprovalOpen(true);
+        }}
+      />
+
+      {/* Auto-Pilot suggestions: nothing is applied until the admin approves */}
+      <AutoPilotApprovalModal
+        isOpen={approvalOpen}
+        onClose={() => {
+          setApprovalOpen(false);
+          setScheduleVersion((v) => v + 1);
+        }}
+        onChanged={refreshAfterChange}
+      />
     </div>
   );
 }

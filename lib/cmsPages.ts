@@ -1,4 +1,5 @@
 export const PUBLIC_SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3002").replace(/\/$/, "");
+export const LIVE_SITE_URL = (process.env.NEXT_PUBLIC_LIVE_SITE_URL ?? "https://bharatorganicexpo.com").replace(/\/$/, "");
 
 export type PageStatus = "Published" | "Draft";
 

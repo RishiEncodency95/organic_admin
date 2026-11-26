@@ -85,6 +85,14 @@ export interface CheckupIssue {
   route?: string;
   group?: string;
   evidence?: string[];
+  /** The check this issue comes from */
+  testId?: string;
+  /** Who can fix it: the admin's Issues list, the page text, the website's code, or the server / Cloudflare */
+  fixKind?: "admin" | "content" | "developer" | "server";
+  /** For fixKind "admin": the kind of issue in the Issues list that fixes it */
+  adminIssueType?: string;
+  /** Fixed from the admin after this audit ran; the next audit confirms it */
+  fixedAfterAudit?: { at: string; by?: string };
 }
 
 export interface CheckupCategory {
@@ -143,6 +151,24 @@ export interface RouteSummary {
   searchConsole: SearchConsoleSummary;
 }
 
+export interface ChecklistEntry {
+  id: number;
+  name: string;
+  type: "ERROR" | "WARNING" | "NOTICE";
+  status: "passed" | "failed" | "warning" | "not_measured";
+  scope: "page" | "site";
+  summary: string;
+  evidence?: string[];
+  section: string;
+  owner: "developer" | "seo";
+  what: string;
+  why: string;
+  fix: string;
+  where: string;
+  affectedPages: string[];
+  affectedTotal: number;
+}
+
 export interface SeoCheckupReportData {
   scope: "site" | "page";
   route: string;
@@ -165,8 +191,11 @@ export interface SeoCheckupReportData {
   inputs: ReportInput[];
   issues: CheckupIssue[];
   groups: CheckupGroup[];
+  /** All 101 site audit checks for this route, in order, with their result. */
+  checklist?: ChecklistEntry[];
   generatedAt: string;
   pageSpeed?: PageSpeedSnapshot | null;
+  pageSpeedDesktop?: PageSpeedSnapshot | null;
   routeSummaries: RouteSummary[];
   site: {
     origin: string;
@@ -212,12 +241,14 @@ export interface PageSpeedSnapshot {
 }
 
 /** Live meta tags, only supplied when the caller read them from the CMS/API. */
+import { SITE_ORIGIN, SITE_HOST, SITE_NAME } from "./siteConfig";
+
 export interface ReportMetaOverride {
   title?: string | null;
   description?: string | null;
 }
 
-export const SITE_URL = "https://bharatorganicexpo.com";
+export const SITE_URL = SITE_ORIGIN;
 
 const SOURCE_LABEL: Record<CheckupSource, string> = {
   measured: "MEASURED",
@@ -242,8 +273,8 @@ function csvEscape(value: string | number): string {
 
 export function checkupReportToCsv(report: SeoCheckupReportData): string {
   const rows: Array<Array<string | number>> = [
-    ["Bharat Organic Expo 2027 — SEO Site Checkup Audit Report (real audit run)"],
-    ["Scope", report.scope === "site" ? "Domain (bharatorganicexpo.com)" : "Page"],
+    [`${SITE_NAME} — SEO Site Checkup Audit Report (real audit run)`],
+    ["Scope", report.scope === "site" ? `Domain (${SITE_HOST})` : "Page"],
     ["Route", report.route],
     ["URL", report.url],
     ["Generated", report.generatedAt],
@@ -286,6 +317,27 @@ export function checkupReportToCsv(report: SeoCheckupReportData): string {
     [],
     ["Priority", "Issue", "Detail"],
     ...report.issues.map((issue) => [issue.priority, issue.title, issue.detail ?? ""]),
+    [],
+    ...(report.checklist && report.checklist.length > 0
+      ? [
+          [],
+          ["Site audit checklist (101 checks)"],
+          ["#", "Check", "Section", "Priority", "Status", "Fixed by", "Result", "Pages with this problem", "Why it matters", "How to fix", "Where to fix"],
+          ...report.checklist.map((c) => [
+            c.id,
+            c.name,
+            c.section,
+            c.type === "ERROR" ? "High" : c.type === "WARNING" ? "Medium" : "Low",
+            c.status === "not_measured" ? "NOT MEASURED" : c.status.toUpperCase(),
+            c.owner === "developer" ? "Developer" : "SEO",
+            [c.summary, ...(c.evidence ?? [])].join(" | "),
+            c.affectedTotal > 0 ? `${c.affectedTotal} page(s): ${c.affectedPages.join(" ")}` : "",
+            c.why,
+            c.fix,
+            c.where,
+          ]),
+        ]
+      : []),
     [],
     ["Group", "Test", "Status", "Scope", "Source", "Benchmark", "Result"],
   ];

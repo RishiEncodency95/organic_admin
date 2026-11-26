@@ -5,6 +5,7 @@ import {
   BellRing,
   BookOpenText,
   Bot,
+  BrainCircuit,
   Briefcase,
   BriefcaseBusiness,
   Building2,
@@ -158,6 +159,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: "SEO Audit", href: "/seo", icon: SearchCheck, badge: "NEW" },
       { label: "Advanced SEO", href: "/advanced-seo", icon: FileCode, badge: "NEW" },
+      { label: "AI Competitor Analyzer", href: "/competitor-analyzer", icon: BrainCircuit, badge: "NEW" },
       { label: "Audited Pages", href: "/auditpage", icon: FileSearch },
       { label: "SEO Center", href: "/reports", icon: SearchCheck },
       { label: "Google Search Console", icon: BarChart3, disabled: true },

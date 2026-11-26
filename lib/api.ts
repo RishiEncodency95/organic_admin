@@ -843,15 +843,19 @@ async function requestBlob(path: string): Promise<Blob> {
 }
 
 export const api = {
-  get: <T>(path: string): Promise<T> => {
-    const cached = getCache.get(path);
-    if (cached && cached.expiresAt > Date.now()) return Promise.resolve(cached.value as T);
-    if (cached) getCache.delete(path);
+  get: <T>(path: string, options?: Pick<ApiRequestOptions, "timeoutMs"> & { forceFresh?: boolean }): Promise<T> => {
+    if (!options?.forceFresh) {
+      const cached = getCache.get(path);
+      if (cached && cached.expiresAt > Date.now()) return Promise.resolve(cached.value as T);
+      if (cached) getCache.delete(path);
 
-    const pending = getInFlight.get(path);
-    if (pending) return pending as Promise<T>;
+      const pending = getInFlight.get(path);
+      if (pending) return pending as Promise<T>;
+    } else {
+      getCache.delete(path);
+    }
 
-    const next = request<T>(path)
+    const next = request<T>(path, options)
       .then((value) => {
         getCache.set(path, { value, expiresAt: Date.now() + GET_CACHE_TTL_MS });
         return value;
@@ -877,4 +881,8 @@ export const api = {
     request<T>(path, { method: "PUT", body: formData, ...options }),
   getHtml: requestHtml,
   getBlob: requestBlob,
+  getFile: async (path: string): Promise<{ blob: Blob; filename: string }> => ({
+    blob: await requestBlob(path),
+    filename: path.split("/").pop() || "download",
+  }),
 };

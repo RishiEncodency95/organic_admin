@@ -5,6 +5,7 @@ import { X, Sparkles, CheckCircle2, AlertTriangle, HelpCircle, Code, Link as Lin
 import { formatDateTime } from "../SeoBadges";
 
 import { seoAuditApi } from "@/lib/seoAuditApi";
+import { SITE_ORIGIN, SITE_NAME, SITE_HOST } from "@/lib/siteConfig";
 import type { SeoPageDetail, SeoRecommendationResponse, SeoRecommendationItem } from "@/lib/seoAuditApi";
 
 export function OpenAiAuditModal({
@@ -80,11 +81,11 @@ export function OpenAiAuditModal({
       
       const newTitle = item.suggestedTitle && !item.suggestedTitle.startsWith("<")
         ? item.suggestedTitle
-        : `Bharat Organic Expo 2027 | ${cleanTitleName} & Bio-Agriculture`;
+        : `${SITE_NAME} | ${cleanTitleName} - Sacred Funeral & Repatriation Services`;
 
       const newDesc = item.suggestedDescription && !item.suggestedDescription.startsWith("<")
         ? item.suggestedDescription
-        : `Discover official ${cleanTitleName.toLowerCase()} details for Bharat Organic Expo 2027 at Pragati Maidan, New Delhi. Connect with certified organic food exporters and bio brands from India!`;
+        : `Dignified and compassionate ${cleanTitleName.toLowerCase()} services by ${SITE_NAME}. Sacred Hindu rituals, antim sanskar, asthi visarjan, and worldwide repatriation.`;
 
       await seoAuditApi.updateSeo(targetPageId, {
         metaTitle: newTitle,
@@ -155,7 +156,7 @@ export function OpenAiAuditModal({
                 SEO Audit: {page?.title || page?.path || "Route Analysis"}
               </h3>
               <span className="text-[11px] font-mono text-emerald-300/90 block mt-0.5">
-                {page?.url || `https://bharatorganicexpo.com${page?.path || ""}`}
+                {page?.url || `${SITE_ORIGIN}${page?.path || ""}`}
               </span>
             </div>
           </div>
@@ -262,11 +263,11 @@ export function OpenAiAuditModal({
 
                 <div className="rounded-lg border border-slate-800 bg-slate-950 p-3.5 space-y-1">
                   <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-mono truncate">
-                    <span className="text-emerald-400">https://bharatorganicexpo.com</span>
+                    <span className="text-emerald-400">{SITE_ORIGIN}</span>
                     <span>› {page?.path?.replace(/^\//, "") || "route"}</span>
                   </div>
                   <h4 className="text-[15px] font-bold text-[#8ab4f8] hover:underline cursor-pointer truncate">
-                    {page?.title || "Bharat Organic Expo 2027"}
+                    {page?.title || SITE_NAME}
                   </h4>
                   <p className="text-[12px] text-slate-300 leading-normal line-clamp-2">
                     {serpDescription}
@@ -457,7 +458,7 @@ export function OpenAiAuditModal({
                           <CheckCircle2 className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
                           <div>
                             <strong className="text-white font-bold block">1. Title Tag & Keyword Placement Audit:</strong>
-                            <span>Front-load targeted search keywords (&apos;Bharat Organic Expo 2027&apos;, &apos;Bio-Agriculture&apos;) within the opening 50 characters. Keep total length strictly between 50 and 60 characters to eliminate SERP truncation.</span>
+                            <span>Front-load targeted search keywords (&apos;{SITE_NAME}&apos;, &apos;Funeral Services&apos;) within the opening 50 characters. Keep total length strictly between 50 and 60 characters to eliminate SERP truncation.</span>
                           </div>
                         </div>
                         <div className="flex items-start gap-2">

@@ -16,7 +16,9 @@ import {
   FileSpreadsheet,
 } from "lucide-react";
 import { backlinkApi, type BacklinkItem, type BacklinkStats } from "@/lib/backlinkApi";
+import { SITE_NAME, SITE_HOST, SITE_ORIGIN } from "@/lib/siteConfig";
 import Spinner from "@/components/ui/Spinner";
+import { errorMessage } from "@/lib/errorMessage";
 
 export default function BacklinkManager() {
   const [backlinks, setBacklinks] = useState<BacklinkItem[]>([]);
@@ -42,6 +44,7 @@ export default function BacklinkManager() {
     status: "active" as "active" | "lost" | "broken",
     notes: "",
   });
+  const [statusMsg, setStatusMsg] = useState<{ text: string; type: "success" | "error" } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -65,7 +68,7 @@ export default function BacklinkManager() {
   };
 
   useEffect(() => {
-    fetchBacklinks();
+    queueMicrotask(() => void fetchBacklinks());
   }, [statusFilter]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -79,11 +82,12 @@ export default function BacklinkManager() {
 
     try {
       setUploading(true);
+      setStatusMsg(null);
       await backlinkApi.uploadExcel(file);
-      alert("Excel file uploaded successfully! Backlinks recorded.");
+      setStatusMsg({ text: "Excel file uploaded successfully! Backlinks recorded.", type: "success" });
       fetchBacklinks();
-    } catch (err: any) {
-      alert(err.message || "Failed to upload excel file");
+    } catch (err) {
+      setStatusMsg({ text: errorMessage(err) || "Failed to upload excel file", type: "error" });
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -93,11 +97,12 @@ export default function BacklinkManager() {
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newLink.targetUrl || !newLink.sourceUrl) {
-      alert("Please provide target and source URLs.");
+      setStatusMsg({ text: "Please provide target and source URLs.", type: "error" });
       return;
     }
 
     try {
+      setStatusMsg(null);
       await backlinkApi.create(newLink);
       setShowAddModal(false);
       setNewLink({
@@ -109,35 +114,44 @@ export default function BacklinkManager() {
         status: "active",
         notes: "",
       });
+      setStatusMsg({ text: "Backlink added successfully.", type: "success" });
       fetchBacklinks();
-    } catch (err: any) {
-      alert(err.message || "Failed to add backlink");
+    } catch (err) {
+      setStatusMsg({ text: errorMessage(err) || "Failed to add backlink", type: "error" });
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this backlink?")) return;
     try {
+      setStatusMsg(null);
       await backlinkApi.delete(id);
+      setStatusMsg({ text: "Backlink deleted.", type: "success" });
       fetchBacklinks();
-    } catch (err: any) {
-      alert(err.message || "Failed to delete backlink");
+    } catch (err) {
+      setStatusMsg({ text: errorMessage(err) || "Failed to delete backlink", type: "error" });
     }
   };
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+      {statusMsg && (
+        <div className={`p-3 text-xs flex items-center justify-between border-b ${statusMsg.type === "success" ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-rose-50 text-rose-800 border-rose-200"}`}>
+          <span>{statusMsg.text}</span>
+          <button type="button" onClick={() => setStatusMsg(null)} className="font-bold ml-2">✕</button>
+        </div>
+      )}
       {/* Top Header */}
       <div className="p-5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-4 bg-slate-50/60">
         <div>
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#23471d]">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#0b2a6b]">
             <Link2 className="h-4 w-4" /> Off-Page SEO Intelligence
           </div>
           <h2 className="text-lg font-extrabold text-slate-900 mt-0.5">
-            Backlinks of Bharat Organic Website
+            Backlinks of {SITE_NAME} Website
           </h2>
           <p className="text-xs font-medium text-slate-500">
-            See how many backlinks point to bharatorganicexpo.com, from where, and which ones are active, lost, or broken.
+            See how many backlinks point to {SITE_HOST}, from where, and which ones are active, lost, or broken.
           </p>
         </div>
 
@@ -155,7 +169,7 @@ export default function BacklinkManager() {
             type="button"
             disabled={uploading}
             onClick={() => fileInputRef.current?.click()}
-            className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#23471d] px-3.5 text-xs font-bold text-white hover:bg-[#1a3516] transition shadow-xs cursor-pointer disabled:opacity-50"
+            className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#0b2a6b] px-3.5 text-xs font-bold text-white hover:bg-[#1a3516] transition shadow-xs cursor-pointer disabled:opacity-50"
           >
             {uploading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
             Upload Excel Sheet
@@ -362,9 +376,9 @@ export default function BacklinkManager() {
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
           <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-lg w-full p-6 animate-in fade-in zoom-in-95 duration-150">
-            <h3 className="text-base font-extrabold text-[#23471d] mb-1">Add Single Backlink Record</h3>
+            <h3 className="text-base font-extrabold text-[#0b2a6b] mb-1">Add Single Backlink Record</h3>
             <p className="text-xs text-slate-500 mb-4">
-              Enter details for a single acquired backlink to store in the Bharat Organic SEO database.
+              Enter details for a single acquired backlink to store in the {SITE_NAME} SEO database.
             </p>
 
             <form onSubmit={handleAddSubmit} className="space-y-3.5 text-xs font-semibold">
@@ -373,7 +387,7 @@ export default function BacklinkManager() {
                 <input
                   type="text"
                   required
-                  placeholder="https://bharatorganicexpo.com/exhibitors"
+                  placeholder={`${SITE_ORIGIN}/services/cremation-antim-sanskar`}
                   value={newLink.targetUrl}
                   onChange={(e) => setNewLink({ ...newLink, targetUrl: e.target.value })}
                   className="h-9 w-full rounded-lg border border-slate-300 px-3 outline-none focus:border-emerald-600 font-normal"
@@ -385,7 +399,7 @@ export default function BacklinkManager() {
                 <input
                   type="text"
                   required
-                  placeholder="https://partner-portal.com/blog/organic-future"
+                  placeholder="https://partner-portal.com/blog/funeral-assistance"
                   value={newLink.sourceUrl}
                   onChange={(e) => setNewLink({ ...newLink, sourceUrl: e.target.value })}
                   className="h-9 w-full rounded-lg border border-slate-300 px-3 outline-none focus:border-emerald-600 font-normal"
@@ -397,7 +411,7 @@ export default function BacklinkManager() {
                   <label className="block text-slate-700 mb-1">Anchor Text</label>
                   <input
                     type="text"
-                    placeholder="e.g. Bharat Organic Expo"
+                    placeholder={`e.g. ${SITE_NAME}`}
                     value={newLink.anchorText}
                     onChange={(e) => setNewLink({ ...newLink, anchorText: e.target.value })}
                     className="h-9 w-full rounded-lg border border-slate-300 px-3 outline-none focus:border-emerald-600 font-normal"
@@ -422,7 +436,7 @@ export default function BacklinkManager() {
                   <label className="block text-slate-700 mb-1">Link Type</label>
                   <select
                     value={newLink.type}
-                    onChange={(e) => setNewLink({ ...newLink, type: e.target.value as any })}
+                    onChange={(e) => setNewLink({ ...newLink, type: e.target.value as BacklinkItem["type"] })}
                     className="h-9 w-full rounded-lg border border-slate-300 px-3 outline-none focus:border-emerald-600"
                   >
                     <option value="dofollow">Dofollow</option>
@@ -434,7 +448,7 @@ export default function BacklinkManager() {
                   <label className="block text-slate-700 mb-1">Link Status</label>
                   <select
                     value={newLink.status}
-                    onChange={(e) => setNewLink({ ...newLink, status: e.target.value as any })}
+                    onChange={(e) => setNewLink({ ...newLink, status: e.target.value as BacklinkItem["status"] })}
                     className="h-9 w-full rounded-lg border border-slate-300 px-3 outline-none focus:border-emerald-600"
                   >
                     <option value="active">Active</option>
@@ -454,7 +468,7 @@ export default function BacklinkManager() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-lg bg-[#23471d] text-white font-bold hover:bg-[#1a3516] transition shadow-xs"
+                  className="px-4 py-2 rounded-lg bg-[#0b2a6b] text-white font-bold hover:bg-[#1a3516] transition shadow-xs"
                 >
                   Save Backlink
                 </button>

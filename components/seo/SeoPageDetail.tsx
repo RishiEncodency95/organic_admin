@@ -408,8 +408,20 @@ export default function SeoPageDetail({ pageId, onClose }: { pageId: string; onC
                   <AuditPerformanceSection performance={detail.performance} />
                   <AuditBrowserHealthSection page={page} />
                   <AuditInfrastructureSection page={page} />
-                  <AuditIssuesSection issues={detail.issues || []} />
-                  <AuditAiFixesSection aiLoading={aiLoading} aiState={aiState} generateAi={generateAi} />
+                  <AuditIssuesSection
+                    issues={detail.issues || []}
+                    pageUrl={page?.url}
+                    route={page?.path || pageId}
+                    onFixed={load}
+                  />
+                  <AuditAiFixesSection
+                    aiLoading={aiLoading}
+                    aiState={aiState}
+                    generateAi={generateAi}
+                    pageUrl={page?.url}
+                    route={page?.path || pageId}
+                    onFixed={load}
+                  />
                   <AuditHistorySection history={detail.history || []} />
                 </>
               )}

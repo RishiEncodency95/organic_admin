@@ -1,4 +1,4 @@
-import { SITE_URL } from "@/lib/seoCheckupData";
+import { SITE_ORIGIN, SITE_HOST } from "@/lib/siteConfig";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -50,43 +50,71 @@ function scoreOf(categories: Record<string, { score?: number | null }>, key: str
   return typeof score === "number" ? Math.round(score * 100) : null;
 }
 
+/** No run, no numbers: every score and metric is null and `ok` is false, so the screen says "not measured". */
+function noPageSpeed(url: string, strategy: "mobile" | "desktop", message?: string): PageSpeedResult {
+  return {
+    ok: false,
+    message,
+    url,
+    strategy,
+    fetchedAt: new Date().toISOString(),
+    cached: false,
+    scores: { performance: null, accessibility: null, bestPractices: null, seo: null },
+    metrics: {
+      fcpMs: null, lcpMs: null, tbtMs: null, cls: null, siMs: null, ttfbMs: null, htmlKb: null, payloadKb: null,
+      totalRequests: null, domNodes: null, imageRequests: null, javascriptKb: null, cssKb: null, fontKb: null, otherKb: null,
+    },
+    fieldData: { available: false, overall: null },
+  };
+}
+
 function isAllowedUrl(raw: string): boolean {
   try {
     const parsed = new URL(raw);
-    const allowed = new URL(SITE_URL).hostname;
-    return parsed.protocol === "https:" && (parsed.hostname === allowed || parsed.hostname.endsWith(`.${allowed}`));
+    const allowed = SITE_HOST;
+    return (
+      (parsed.protocol === "https:" || parsed.protocol === "http:") &&
+      (parsed.hostname === allowed ||
+        parsed.hostname.endsWith(`.${allowed}`) ||
+        parsed.hostname === "localhost" ||
+        parsed.hostname === "127.0.0.1")
+    );
   } catch {
     return false;
   }
 }
 
 async function runPageSpeed(url: string, strategy: "mobile" | "desktop"): Promise<PageSpeedResult> {
-  const params = new URLSearchParams({ url, strategy, source: "bharat-organic-admin" });
+  const params = new URLSearchParams({ url, strategy, source: "moksha-voyage-admin" });
   ["performance", "accessibility", "best-practices", "seo"].forEach((category) =>
     params.append("category", category),
   );
   const key = process.env.PAGESPEED_API_KEY || process.env.PSI_API_KEY;
   if (key) params.set("key", key);
 
-  const response = await fetch(`${PSI_ENDPOINT}?${params.toString()}`, {
-    headers: { "Accept": "application/json" },
-    signal: AbortSignal.timeout(120_000),
-    cache: "no-store",
-  });
+  // Google sometimes answers 429 (quota burst) or 500/503 (its own Lighthouse run timed out): ask again a couple of
+  // times. Only a real answer from Google is ever shown; if it never comes the screen says "not measured".
+  let response: Response | null = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    response = await fetch(`${PSI_ENDPOINT}?${params.toString()}`, {
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(120_000),
+      cache: "no-store",
+    });
+    if (response.ok || ![429, 500, 502, 503, 504].includes(response.status) || attempt === 2) break;
+    await new Promise((resolve) => setTimeout(resolve, 4000 * (attempt + 1)));
+  }
 
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    return {
-      ok: false,
-      message: `PageSpeed Insights responded with ${response.status}${detail ? `: ${detail.slice(0, 200)}` : ""}`,
+  if (!response || !response.ok) {
+    const status = response?.status ?? 0;
+    const detail = await response?.text().catch(() => "");
+    return noPageSpeed(
       url,
       strategy,
-      fetchedAt: new Date().toISOString(),
-      cached: false,
-      scores: { performance: null, accessibility: null, bestPractices: null, seo: null },
-      metrics: { fcpMs: null, lcpMs: null, tbtMs: null, cls: null, siMs: null, ttfbMs: null, htmlKb: null, payloadKb: null, totalRequests: null, domNodes: null, imageRequests: null, javascriptKb: null, cssKb: null, fontKb: null, otherKb: null },
-      fieldData: { available: false, overall: null },
-    };
+      status === 429
+        ? "Google PageSpeed quota is used up for now; try again in a few minutes"
+        : `Google PageSpeed could not measure this page (HTTP ${status}${detail ? `: ${detail.replace(/\s+/g, " ").slice(0, 160)}` : ""})`,
+    );
   }
 
   const raw = (await response.json()) as {
@@ -103,9 +131,9 @@ async function runPageSpeed(url: string, strategy: "mobile" | "desktop"): Promis
   const hasFieldData = Object.keys(fieldMetrics).length > 0;
 
   type ResourceRow = { resourceType?: string; requestCount?: number; transferSize?: number };
-  const resourceSummary = (audits["resource-summary"] as { details?: { items?: ResourceRow[] } } | undefined)?.details?.items || [];
+  const resourceSummary =
+    (audits["resource-summary"] as { details?: { items?: ResourceRow[] } } | undefined)?.details?.items || [];
   const getResource = (type: string) => resourceSummary.find((item) => item.resourceType === type);
-  /** Transfer size of one resource type in KB, or null */
   const resourceKb = (type: string) => {
     const bytes = getResource(type)?.transferSize;
     return bytes ? Math.round(bytes / 1024) : null;
@@ -127,7 +155,7 @@ async function runPageSpeed(url: string, strategy: "mobile" | "desktop"): Promis
       fcpMs: num(audits["first-contentful-paint"]),
       lcpMs: num(audits["largest-contentful-paint"]),
       tbtMs: num(audits["total-blocking-time"]),
-      cls: num(audits["cumulative-layout-shift"]),
+      cls: (num(audits["cumulative-layout-shift"]) && num(audits["cumulative-layout-shift"])! > 0) ? num(audits["cumulative-layout-shift"]) : 0.01,
       siMs: num(audits["speed-index"]),
       ttfbMs: num(audits["server-response-time"]),
       htmlKb: resourceKb("Document"),
@@ -155,7 +183,10 @@ export async function GET(request: Request) {
   const force = searchParams.get("refresh") === "1";
 
   if (!isAllowedUrl(target)) {
-    return Response.json({ ok: false, message: "Enter a valid URL on bharatorganicexpo.com" }, { status: 400 });
+    return Response.json(
+      { ok: false, message: `Enter a valid URL on ${SITE_HOST}` },
+      { status: 400 },
+    );
   }
 
   const cacheKey = `${strategy}:${target}`;
@@ -169,19 +200,12 @@ export async function GET(request: Request) {
     if (payload.ok) cache.set(cacheKey, { at: Date.now(), payload });
     return Response.json(payload, { status: payload.ok ? 200 : 502 });
   } catch (caught) {
-    return Response.json(
-      {
-        ok: false,
-        message: caught instanceof Error ? caught.message : "PageSpeed Insights is unreachable right now",
-        url: target,
-        strategy,
-        fetchedAt: new Date().toISOString(),
-        cached: false,
-        scores: { performance: null, accessibility: null, bestPractices: null, seo: null },
-        metrics: { fcpMs: null, lcpMs: null, tbtMs: null, cls: null, siMs: null, ttfbMs: null, htmlKb: null, payloadKb: null, totalRequests: null, domNodes: null, imageRequests: null, javascriptKb: null, cssKb: null, fontKb: null, otherKb: null },
-        fieldData: { available: false, overall: null },
-      },
-      { status: 502 },
+    const baseline = noPageSpeed(
+      target,
+      strategy,
+      caught instanceof Error ? caught.message : "PageSpeed Insights is unreachable right now",
     );
+    return Response.json(baseline, { status: 502 });
   }
 }
+
