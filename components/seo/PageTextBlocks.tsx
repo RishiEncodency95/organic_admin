@@ -41,8 +41,10 @@ export default function PageTextBlocks({ route }: PageTextBlocksProps) {
     try {
       const d = await seoAuditApi.contentBlocks(route);
       if (mine !== seq.current) return;
-      setData(d);
-      setOnlyFlagged(d.flagged > 0);
+      const safeBlocks = Array.isArray(d?.blocks) ? d.blocks : [];
+      const normalized = { ...d, blocks: safeBlocks, total: d?.total ?? safeBlocks.length, flagged: d?.flagged ?? 0 };
+      setData(normalized);
+      setOnlyFlagged((normalized.flagged ?? 0) > 0);
       setPreviews({});
       setApplied({});
       setRowError({});
@@ -135,7 +137,7 @@ export default function PageTextBlocks({ route }: PageTextBlocksProps) {
     }
   };
 
-  const shown = useMemo(() => (data ? data.blocks.filter((b) => !onlyFlagged || b.flagged.length > 0 || previews[b.id] || applied[b.id]) : []), [data, onlyFlagged, previews, applied]);
+  const shown = useMemo(() => (data && Array.isArray(data.blocks) ? data.blocks.filter((b) => !onlyFlagged || b.flagged.length > 0 || previews[b.id] || applied[b.id]) : []), [data, onlyFlagged, previews, applied]);
 
   const humanizeAllFlagged = async () => {
     if (!data) return;

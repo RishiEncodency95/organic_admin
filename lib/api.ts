@@ -732,6 +732,10 @@ async function request<T>(path: string, options?: ApiRequestOptions, isRetry = f
     path.includes("/auth") ||
     path.includes("/system-services") ||
     path.includes("/seo-settings") ||
+    path.startsWith("/seo-audit") ||
+    path.startsWith("/seo") ||
+    path.startsWith("/admin/competitor-analyzer") ||
+    path.startsWith("/public/competitor-reports") ||
     path.includes("/careers") ||
     path.includes("/msme") ||
     path.includes("/awards/nominations") ||
