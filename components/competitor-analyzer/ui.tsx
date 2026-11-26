@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type DependencyList, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type DependencyList, type ReactNode } from "react";
+import { ExternalLink, Globe } from "lucide-react";
 import { ApiRequestError } from "@/lib/api";
 import type { Cite, EvidenceState } from "@/lib/competitorAnalyzerApi";
 import DisplayText from "./DisplayText";
@@ -148,3 +149,105 @@ export function useLoader<T>(fetcher: () => Promise<T>, deps: DependencyList, on
 }
 
 export const lines = (s: string) => s.split("\n").map((x) => x.trim()).filter(Boolean);
+
+export const SITE_COLORS = [
+  "#2563EB",
+  "#0B845C",
+  "#D97706",
+  "#DC2626",
+  "#7C3AED",
+  "#0891B2",
+  "#DB2777",
+  "#4F46E5",
+] as const;
+
+type SiteNameEntry = { domain: string; name?: string | null; label?: string | null; title?: string | null };
+
+const SiteNamesContext = createContext<(domain: string) => string>((domain) => domain);
+
+export function SiteNamesProvider({ sites, children }: { sites?: SiteNameEntry[] | null; children: ReactNode }) {
+  const labelOf = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const site of sites ?? []) {
+      const friendly = site.name || site.label || site.title || site.domain;
+      if (site.domain) map.set(site.domain, friendly);
+    }
+    return (domain: string) => map.get(domain) ?? domain;
+  }, [sites]);
+
+  return <SiteNamesContext.Provider value={labelOf}>{children}</SiteNamesContext.Provider>;
+}
+
+export function useSiteLabelOf() {
+  return useContext(SiteNamesContext);
+}
+
+export function SiteFavicon({ domain, size = 16, className = "" }: { domain: string; size?: number; className?: string }) {
+  const [failed, setFailed] = useState(false);
+  if (!domain || failed) {
+    return <Globe className={`shrink-0 text-slate-400 ${className}`} style={{ width: size, height: size }} aria-hidden />;
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=32`}
+      alt=""
+      width={size}
+      height={size}
+      onError={() => setFailed(true)}
+      className={`shrink-0 rounded-sm object-contain ${className}`}
+      style={{ width: size, height: size }}
+    />
+  );
+}
+
+export function SiteLabel({
+  domain,
+  color,
+  own = false,
+  wrap = false,
+  className = "",
+}: {
+  domain: string;
+  color?: string;
+  own?: boolean;
+  wrap?: boolean;
+  className?: string;
+}) {
+  const labelOf = useSiteLabelOf();
+  return (
+    <span className={`inline-flex items-center gap-1.5 text-xs font-medium text-[#111C3A] ${wrap ? "flex-wrap" : "whitespace-nowrap"} ${className}`}>
+      {color ? <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: color }} aria-hidden /> : null}
+      <span>{labelOf(domain)}</span>
+      {own ? <span className="rounded bg-[#2563EB] px-1 py-0.5 text-[9px] font-semibold uppercase leading-none text-white">You</span> : null}
+    </span>
+  );
+}
+
+export function SourceLink({ url, label, className = "" }: { url: string; label?: string; className?: string }) {
+  if (!url) return null;
+  let display = label;
+  if (!display) {
+    try {
+      const parsed = new URL(url);
+      display = parsed.hostname.replace(/^www\./, "");
+    } catch {
+      display = url;
+    }
+  }
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer noopener"
+      className={`inline-flex items-center gap-1 text-[11px] font-medium text-blue-700 hover:underline ${className}`}
+    >
+      <span className="truncate max-w-[220px]">{display}</span>
+      <ExternalLink className="size-3 shrink-0" aria-hidden />
+    </a>
+  );
+}
+
+export function siteNotice(message?: string | null): string {
+  return message ?? "";
+}
