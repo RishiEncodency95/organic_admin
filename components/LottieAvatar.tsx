@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState, type CSSProperties } from "react";
-import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import { DotLottieReact, setWasmUrl } from "@lottiefiles/dotlottie-react";
+
+// Same-origin runtime: the default CDN is blocked by this app's Content Security Policy.
+setWasmUrl('/wasm/dotlottie-player.wasm');
 
 const AVATAR_SRC = "/avatar-lottie.lottie";
 

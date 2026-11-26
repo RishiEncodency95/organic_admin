@@ -40,3 +40,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local analyzer verification caches
+.npm-cache/
+.package-repair/
+.next-analyzer-*/
+analyzer-*.log
+dependency-audit.json

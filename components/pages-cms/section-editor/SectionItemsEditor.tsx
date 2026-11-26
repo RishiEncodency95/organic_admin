@@ -1,11 +1,14 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ChevronRight, Plus, Trash2 } from "lucide-react";
+import { Calendar, ChevronRight, Clock, Plus, Trash2 } from "lucide-react";
+import Swal from "sweetalert2";
 import { FieldLabel, ImageUploadField, SelectField, TextInput, Textarea, Toggle, VideoUploadField } from "../fields";
 import RichTextEditor from "@/components/RichTextEditor";
 import { IMAGE_KEY_PATTERN, LONG_TEXT_KEY_PATTERN, VIDEO_KEY_PATTERN, humanizeKey } from "./sectionFieldHelpers";
 import type { CmsRecord } from "@/lib/cmsJson";
+import { findOverlaps, getScheduleWarning, getSlideStatus, validateSchedule } from "@/lib/heroSchedule";
+import { HeroScheduleOverview } from "./HeroScheduleOverview";
 
 /* =========================================================
    GENERIC SECTION ITEMS EDITOR
@@ -27,8 +30,55 @@ export function SectionItemsEditor({
   onRemoveItem: (index: number) => void;
   sectionId?: string;
 }) {
-  const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const [openIndex, setOpenIndex] = useState<number | null>(() => {
+    if (sectionId !== "hero") return 0;
+    const firstRunning = items.findIndex((entry) => getSlideStatus(entry).kind !== "expired");
+    return firstRunning >= 0 ? firstRunning : null;
+  });
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Hero slide scheduling (all times IST): status per slide, overlaps, and expired slides.
+  const isHero = sectionId === "hero";
+  const nowMs = Date.now();
+  const heroOverlaps = isHero ? findOverlaps(items, nowMs) : new Map<number, number[]>();
+  const expiredIndexes = isHero
+    ? items.map((entry, i) => (getSlideStatus(entry, nowMs).kind === "expired" ? i : -1)).filter((i) => i >= 0)
+    : [];
+
+  const handleDeleteExpired = async () => {
+    const result = await Swal.fire({
+      title: `Delete ${expiredIndexes.length} expired slide(s)?`,
+      text: "These slides will be permanently removed when you save the page.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Delete",
+      confirmButtonColor: "#dc2626",
+    });
+    if (!result.isConfirmed) return;
+    // Highest index first, so earlier removals don't shift the indexes still to be removed.
+    [...expiredIndexes].sort((a, b) => b - a).forEach((i) => onRemoveItem(i));
+    setOpenIndex(null);
+  };
+
+  // Hero: a newly added slide opens straight away (and scrolls into view) so its fields can be
+  // filled in without hunting for it at the bottom of the list.
+  const handleAddItem = () => {
+    const newIndex = items.length;
+    onAddItem();
+    if (sectionId === "hero") {
+      setOpenIndex(newIndex);
+      setTimeout(() => {
+        itemRefs.current[newIndex]?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  };
+
+  const openItem = (index: number) => {
+    setOpenIndex(index);
+    setTimeout(() => {
+      itemRefs.current[index]?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  };
 
   const handleToggle = (index: number) => {
     if (openIndex === index) {
@@ -42,6 +92,10 @@ export function SectionItemsEditor({
   };
 
   const FIELD_ORDER_PRIORITY: Record<string, number> = {
+    startDate: 0.01,
+    startTime: 0.02,
+    endDate: 0.03,
+    endTime: 0.04,
     iconImage: 0.8,
     image: 0.9,
     img: 1.1,
@@ -136,9 +190,9 @@ export function SectionItemsEditor({
                               sectionId === "buyer-seller-meet" ? "Matchmaking Process Steps" :
                                 sectionId === "testimonials-carousel" ? "Exhibitor & Visitor Reviews" :
                                   sectionId === "exhibition-hero" ? "Hero Features (Stats Bar)" :
-                                  sectionId === "nominate-hero" ? "Hero Features (Icon Row)" :
-                                  sectionId === "navbar" ? "Header Navigation Links" :
-                                    sectionId === "footer" ? "Footer Quick Links" : "Section Content Blocks"}
+                                    sectionId === "nominate-hero" ? "Hero Features (Icon Row)" :
+                                      sectionId === "navbar" ? "Header Navigation Links" :
+                                        sectionId === "footer" ? "Footer Quick Links" : "Section Content Blocks"}
           </span>
           <span className="rounded-full bg-blue-50 border border-blue-200 px-[7px] py-[1px] text-[8.5px] font-bold text-blue-700">
             {items.length} Total
@@ -148,7 +202,7 @@ export function SectionItemsEditor({
         {sectionId !== "audience-strip" && sectionId !== "beyond-exhibition" && sectionId !== "reasons-to-exhibit" && sectionId !== "industry-segments" && (
           <button
             type="button"
-            onClick={onAddItem}
+            onClick={handleAddItem}
             className="flex h-[24px] items-center gap-[4px] rounded-[4px] border border-blue-200 bg-white px-[8px] text-[9px] font-semibold text-blue-700 hover:bg-blue-50 transition-colors"
           >
             <Plus className="h-[10px] w-[10px]" />
@@ -157,6 +211,28 @@ export function SectionItemsEditor({
         )}
       </div>
 
+      {isHero && items.length > 0 && (
+        <HeroScheduleOverview items={items} labelFor={(entry, i) => getItemLabel(entry, i)} onOpenItem={openItem} />
+      )}
+
+      {isHero && expiredIndexes.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-[8px] rounded-[6px] border border-slate-200 bg-slate-50 px-[10px] py-[6px]">
+          <span className="text-[10px] font-medium text-slate-600">
+            {expiredIndexes.length} expired slide{expiredIndexes.length > 1 ? "s" : ""} (not shown on the website)
+          </span>
+          <div className="flex items-center gap-[8px]">
+            <button
+              type="button"
+              onClick={handleDeleteExpired}
+              className="flex items-center gap-[3px] text-[10px] font-semibold text-[#dc2626] hover:underline"
+            >
+              <Trash2 className="h-[11px] w-[11px]" />
+              Delete expired
+            </button>
+          </div>
+        </div>
+      )}
+
       {items.length === 0 && (
         <p className="text-[10px] font-medium text-[#8b929c]">No items added yet.</p>
       )}
@@ -164,7 +240,15 @@ export function SectionItemsEditor({
       <div className="space-y-3 pt-1">
         {items.map((item, index) => {
           let itemToEdit = { ...item };
-          if (sectionId === "expo-categories") {
+          if (sectionId === "hero") {
+            if (itemToEdit.isScheduled === undefined) itemToEdit.isScheduled = Boolean(item.isScheduled);
+            if (itemToEdit.showContent === undefined) itemToEdit.showContent = item.showContent !== false;
+            if (itemToEdit.startDate === undefined) itemToEdit.startDate = item.startDate || "";
+            if (itemToEdit.startTime === undefined) itemToEdit.startTime = item.startTime || "";
+            if (itemToEdit.endDate === undefined) itemToEdit.endDate = item.endDate || "";
+            if (itemToEdit.endTime === undefined) itemToEdit.endTime = item.endTime || "";
+            if (itemToEdit.date === undefined) itemToEdit.date = item.date || "19-21 FEBRUARY 2027";
+          } else if (sectionId === "expo-categories") {
             delete itemToEdit.icon;
             delete itemToEdit.desc;
             delete itemToEdit.color;
@@ -230,8 +314,8 @@ export function SectionItemsEditor({
             const currentFeatures = Array.isArray(item.features) && item.features.length > 0
               ? item.features
               : Array.isArray(item.points) && item.points.length > 0
-              ? item.points
-              : defaultFeatures[index % defaultFeatures.length];
+                ? item.points
+                : defaultFeatures[index % defaultFeatures.length];
 
             if (itemToEdit.feature1 === undefined) itemToEdit.feature1 = item.feature1 ?? currentFeatures[0] ?? "";
             if (itemToEdit.feature2 === undefined) itemToEdit.feature2 = item.feature2 ?? currentFeatures[1] ?? "";
@@ -328,6 +412,7 @@ export function SectionItemsEditor({
                 key !== "_id" &&
                 key !== "img" &&
                 key !== "status" &&
+                !(sectionId === "hero" && (key === "startDate" || key === "startTime" || key === "endDate" || key === "endTime" || key === "isScheduled" || key === "showContent")) &&
                 !(sectionId === "why-exhibit-hero" && key === "icon") &&
                 !(sectionId === "expo-categories" && key === "icon") &&
                 !(sectionId === "industry-segments" && key === "icon") &&
@@ -343,7 +428,11 @@ export function SectionItemsEditor({
                   typeof value === "boolean" ||
                   (Array.isArray(value) && value.every((entry) => typeof entry === "string")))
             )
-            .sort(([a], [b]) => (FIELD_ORDER_PRIORITY[a] || 99) - (FIELD_ORDER_PRIORITY[b] || 99));
+            .sort(([a], [b]) => {
+              const priorityA = FIELD_ORDER_PRIORITY[a] ?? 99;
+              const priorityB = FIELD_ORDER_PRIORITY[b] ?? 99;
+              return priorityA - priorityB;
+            });
 
           const isOpen = openIndex === index;
 
@@ -365,6 +454,20 @@ export function SectionItemsEditor({
                     {getItemLabel(item, index)}
                     {item.value ? <span className="ml-[6px] font-semibold text-[#1e293b]">({item.value})</span> : ""}
                   </span>
+                  {isHero && (() => {
+                    const status = getSlideStatus(item, nowMs);
+                    const tone =
+                      status.kind === "live"
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        : status.kind === "scheduled"
+                          ? "border-blue-200 bg-blue-50 text-blue-700"
+                          : status.kind === "expired"
+                            ? "border-slate-200 bg-slate-100 text-slate-500"
+                            : "border-emerald-100 bg-white text-emerald-600";
+                    return (
+                      <span className={`rounded-full border px-[7px] py-[1px] text-[8.5px] font-bold ${tone}`}>{status.label}</span>
+                    );
+                  })()}
                 </div>
 
                 {sectionId !== "reasons-to-exhibit" && sectionId !== "industry-segments" && (
@@ -383,35 +486,141 @@ export function SectionItemsEditor({
 
               {isOpen && (
                 <div className="p-[12px] grid grid-cols-2 gap-[10px] bg-white">
+                  {sectionId === "hero" && (
+                    <div className="col-span-2 overflow-hidden rounded-[6px] border border-[#e2e8f0] bg-white">
+                      <div className="flex items-center justify-between bg-[#f8fafc] px-[12px] py-[8px] border-b border-[#e2e8f0]">
+                        <span className="text-[12px] font-semibold text-[#1e293b]">Schedule Slide</span>
+                        <Toggle
+                          checked={Boolean(itemToEdit.isScheduled)}
+                          onChange={(val) => onChangeItem(index, "isScheduled", val)}
+                        />
+                      </div>
+
+                      {Boolean(itemToEdit.isScheduled) && (
+                        <div className="p-[10px] bg-white">
+                          <p className="mb-[6px] text-[9.5px] font-medium text-[#64748b]">
+                            Dates and times are in India Standard Time (IST). The slide appears and disappears on the website at exactly these times.
+                          </p>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-[8px]">
+                            <div className="flex flex-col gap-1">
+                              <FieldLabel>Start Date</FieldLabel>
+                              <input
+                                type="date"
+                                value={String(itemToEdit.startDate || "")}
+                                onChange={(e) => onChangeItem(index, "startDate", e.target.value)}
+                                className="h-[34px] w-full rounded-[4px] border border-[#cbd5e1] bg-white px-[8px] text-[12px] font-medium text-[#1e293b] shadow-2xs transition focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <FieldLabel>Start Time (IST)</FieldLabel>
+                              <input
+                                type="time"
+                                value={String(itemToEdit.startTime || "")}
+                                onChange={(e) => onChangeItem(index, "startTime", e.target.value)}
+                                className="h-[34px] w-full rounded-[4px] border border-[#cbd5e1] bg-white px-[8px] text-[12px] font-medium text-[#1e293b] shadow-2xs transition focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <FieldLabel>End Date</FieldLabel>
+                              <input
+                                type="date"
+                                value={String(itemToEdit.endDate || "")}
+                                onChange={(e) => onChangeItem(index, "endDate", e.target.value)}
+                                className="h-[34px] w-full rounded-[4px] border border-[#cbd5e1] bg-white px-[8px] text-[12px] font-medium text-[#1e293b] shadow-2xs transition focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <FieldLabel>End Time (IST)</FieldLabel>
+                              <input
+                                type="time"
+                                value={String(itemToEdit.endTime || "")}
+                                onChange={(e) => onChangeItem(index, "endTime", e.target.value)}
+                                className="h-[34px] w-full rounded-[4px] border border-[#cbd5e1] bg-white px-[8px] text-[12px] font-medium text-[#1e293b] shadow-2xs transition focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                              />
+                            </div>
+                          </div>
+                          {(() => {
+                            const blocking = validateSchedule(itemToEdit);
+                            const warning = getScheduleWarning(itemToEdit, nowMs);
+                            const overlapWith = heroOverlaps.get(index) ?? [];
+                            return (
+                              <div className="mt-[8px] flex flex-col gap-[4px]">
+                                {blocking && (
+                                  <p className="rounded-[4px] border border-red-200 bg-red-50 px-[8px] py-[4px] text-[10px] font-semibold text-red-700">
+                                    ⛔ {blocking} Fix this before saving.
+                                  </p>
+                                )}
+                                {warning && (
+                                  <p className="rounded-[4px] border border-amber-200 bg-amber-50 px-[8px] py-[4px] text-[10px] font-medium text-amber-800">
+                                    ⚠ {warning}
+                                  </p>
+                                )}
+                                {overlapWith.length > 0 && (
+                                  <p className="rounded-[4px] border border-amber-200 bg-amber-50 px-[8px] py-[4px] text-[10px] font-medium text-amber-800">
+                                    ⚠ This slide's window overlaps with Slide {overlapWith.map((n) => n + 1).join(", ")} — both will show in the carousel during the overlap.
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {sectionId === "hero" && (
+                    <div className="col-span-2 flex items-center justify-between rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] px-[12px] py-[8px]">
+                      <div className="flex flex-col">
+                        <span className="text-[12px] font-semibold text-[#1e293b]">Show left-side text &amp; buttons</span>
+                        <span className="text-[9.5px] font-medium text-[#64748b]">
+                          Turn off for banners that already have their own text — only the image will show.
+                        </span>
+                      </div>
+                      <Toggle
+                        checked={itemToEdit.showContent !== false}
+                        onChange={(val) => onChangeItem(index, "showContent", val)}
+                      />
+                    </div>
+                  )}
                   {fieldEntries.map(([key, value]) => {
                     const isImageKey = IMAGE_KEY_PATTERN.test(key) && key !== "imageAlt";
                     const isVideoKey = VIDEO_KEY_PATTERN.test(key);
                     const isLong = (LONG_TEXT_KEY_PATTERN.test(key) || Array.isArray(value)) && !key.startsWith("feature");
+                    const isFullWidth = isImageKey || isVideoKey || isLong;
 
                     return (
-                      <div key={key} className={isImageKey || isVideoKey || isLong ? "col-span-2 w-full" : "col-span-1"}>
+                      <div key={key} className={isFullWidth ? "col-span-2 w-full" : "col-span-1"}>
                         <FieldLabel>
-                          {sectionId === "industry-segments" && key === "image"
-                            ? "Main Image (Upload / URL)"
-                            : sectionId === "industry-segments" && key === "iconImage"
-                              ? "Top Image / Icon (Upload / URL)"
-                              : sectionId === "awards-categories" && key === "image"
-                                ? "Category Icon / Image (Upload / URL)"
-                                : sectionId === "awards-grand-awards" && key === "image"
-                                  ? "Award Icon / Image (Upload / URL)"
-                                  : sectionId === "awards-process" && key === "image"
-                                    ? "Process Icon / Image (Upload / URL)"
-                                    : sectionId === "global-platform" && key === "image"
-                                      ? "Highlight Icon / Image (Upload)"
-                                      : sectionId === "global-platform" && key === "imageAlt"
-                                        ? "Image Alt Text"
-                                        : sectionId === "exhibition-hero" && key === "title"
-                                          ? "Feature Value (e.g. 200+)"
-                                          : sectionId === "exhibition-hero" && key === "subtitle"
-                                            ? "Feature Label (e.g. Exhibitors Expected)"
-                                            : sectionId === "nominate-hero" && key === "title"
-                                              ? "Feature Label (e.g. Expertise)"
-                                            : humanizeKey(key)}
+                          {sectionId === "hero" && key === "startDate"
+                            ? "Start Date"
+                            : sectionId === "hero" && key === "startTime"
+                              ? "Start Time"
+                              : sectionId === "hero" && key === "endDate"
+                                ? "End Date"
+                                : sectionId === "hero" && key === "endTime"
+                                  ? "End Time"
+                                  : sectionId === "hero" && key === "date"
+                                    ? "Display Date Text"
+                                    : sectionId === "industry-segments" && key === "image"
+                                      ? "Main Image (Upload / URL)"
+                                      : sectionId === "industry-segments" && key === "iconImage"
+                                        ? "Top Image / Icon (Upload / URL)"
+                                        : sectionId === "awards-categories" && key === "image"
+                                          ? "Category Icon / Image (Upload / URL)"
+                                          : sectionId === "awards-grand-awards" && key === "image"
+                                            ? "Award Icon / Image (Upload / URL)"
+                                            : sectionId === "awards-process" && key === "image"
+                                              ? "Process Icon / Image (Upload / URL)"
+                                              : sectionId === "global-platform" && key === "image"
+                                                ? "Highlight Icon / Image (Upload)"
+                                                : sectionId === "global-platform" && key === "imageAlt"
+                                                  ? "Image Alt Text"
+                                                  : sectionId === "exhibition-hero" && key === "title"
+                                                    ? "Feature Value (e.g. 200+)"
+                                                    : sectionId === "exhibition-hero" && key === "subtitle"
+                                                      ? "Feature Label (e.g. Exhibitors Expected)"
+                                                      : sectionId === "nominate-hero" && key === "title"
+                                                        ? "Feature Label (e.g. Expertise)"
+                                                        : humanizeKey(key)}
                         </FieldLabel>
 
                         {key === "icon" && sectionId !== "journey-glimpse" ? (
@@ -477,45 +686,52 @@ export function SectionItemsEditor({
                           <ImageUploadField
                             value={String(value)}
                             onChange={(next) => onChangeItem(index, key, next)}
+                            hint={
+                              sectionId === "hero" && key === "image"
+                                ? itemToEdit.showContent === false
+                                  ? "Recommended size: 1400×526 px (or the same shape, e.g. 1200×450). Left-side text & buttons are OFF for this slide, so the image can carry its own text and design. \"Delete Image\" only removes it from the draft; it takes effect when you Save."
+                                  : "Recommended size: 1400×526 px (or the same shape, e.g. 1200×450). Left-side text & buttons are ON, so keep the left part of the image free of text — the website places the heading, subtitle and buttons there. \"Delete Image\" only removes it from the draft; it takes effect when you Save."
+                                : undefined
+                            }
                             defaultValue={
                               sectionId === "why-exhibit-hero"
                                 ? `/uploads/icons/x${(index % 4) + 1}.png`
                                 : sectionId === "reasons-to-exhibit"
                                   ? [
-                                      "/uploads/icons/11og.webp",
-                                      "/uploads/icons/12og.webp",
-                                      "/uploads/icons/13og.webp",
-                                      "/uploads/icons/14og.webp",
-                                      "/uploads/icons/15og.webp",
-                                      "/uploads/icons/i6.png",
-                                    ][index % 6]
+                                    "/uploads/icons/11og.webp",
+                                    "/uploads/icons/12og.webp",
+                                    "/uploads/icons/13og.webp",
+                                    "/uploads/icons/14og.webp",
+                                    "/uploads/icons/15og.webp",
+                                    "/uploads/icons/i6.png",
+                                  ][index % 6]
                                   : sectionId === "why-visit-matters"
                                     ? [
-                                        "/uploads/icons/v1og.png",
-                                        "/uploads/icons/v2og.png",
-                                        "/uploads/icons/v3og.png",
-                                        "/uploads/icons/v4og.png",
-                                        "/uploads/icons/v5og.png",
-                                        "/uploads/icons/v6og.png",
-                                      ][index % 6]
+                                      "/uploads/icons/v1og.png",
+                                      "/uploads/icons/v2og.png",
+                                      "/uploads/icons/v3og.png",
+                                      "/uploads/icons/v4og.png",
+                                      "/uploads/icons/v5og.png",
+                                      "/uploads/icons/v6og.png",
+                                    ][index % 6]
                                     : sectionId === "industry-segments"
                                       ? key === "iconImage"
                                         ? [
-                                            "/uploads/icons/x1og.png",
-                                            "/uploads/icons/x2og.png",
-                                            "/uploads/icons/x3og.png",
-                                            "/uploads/icons/x4og.png",
-                                            "/uploads/icons/x5og.png",
-                                            "/uploads/icons/x6og.png",
-                                          ][index % 6]
+                                          "/uploads/icons/x1og.png",
+                                          "/uploads/icons/x2og.png",
+                                          "/uploads/icons/x3og.png",
+                                          "/uploads/icons/x4og.png",
+                                          "/uploads/icons/x5og.png",
+                                          "/uploads/icons/x6og.png",
+                                        ][index % 6]
                                         : [
-                                            "/uploads/icons/x1.webp",
-                                            "/uploads/icons/x2.webp",
-                                            "/uploads/icons/x3.webp",
-                                            "/uploads/icons/x4.webp",
-                                            "/uploads/icons/x5.webp",
-                                            "/uploads/icons/x6.webp",
-                                          ][index % 6]
+                                          "/uploads/icons/x1.webp",
+                                          "/uploads/icons/x2.webp",
+                                          "/uploads/icons/x3.webp",
+                                          "/uploads/icons/x4.webp",
+                                          "/uploads/icons/x5.webp",
+                                          "/uploads/icons/x6.webp",
+                                        ][index % 6]
                                       : undefined
                             }
                           />
@@ -572,6 +788,7 @@ export function SectionItemsEditor({
                           <TextInput
                             value={String(value)}
                             onChange={(next) => onChangeItem(index, key, next)}
+                            placeholder={sectionId === "hero" && key === "date" ? "e.g. 19-21 FEBRUARY 2027" : undefined}
                             maxLength={(sectionId === "why-visit-matters" || sectionId === "industry-segments") ? 5000 : 120}
                             hideLimit={sectionId === "why-visit-matters" || sectionId === "industry-segments"}
                           />

@@ -1,6 +1,8 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useAppSelector } from '@/store/hooks';
+import { apiClient } from '@/components/infrastructure/lib/client';
 import Link from "next/link";
 import {
   usePathname,
@@ -54,10 +56,21 @@ function SidebarContent({
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const admin = useAppSelector(state=>state.auth.admin);
+  const [analyzerAccess,setAnalyzerAccess] = useState(false);
+  useEffect(()=>{
+    setAnalyzerAccess(false);
+    if(!admin?.id)return;
+    const controller=new AbortController();
+    apiClient.request<{read:boolean}>({method:'GET',path:'/competitor-analyzer/capabilities',signal:controller.signal})
+      .then(result=>{if(!controller.signal.aborted)setAnalyzerAccess(result.read);}).catch(()=>undefined);
+    return ()=>controller.abort();
+  },[admin?.id]);
   // Dropdown groups the admin opened/closed by hand; otherwise a group is open while one of its pages is
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
   const renderItem = (item: NavItem) => {
+    if(item.href === '/competitor-analyzer' && !analyzerAccess)return null;
     const Icon = item.icon;
 
     if (item.children?.length) {

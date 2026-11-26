@@ -18,7 +18,8 @@ export function proxy(request: NextRequest) {
   // Public authentication routes
   const isPublicRoute =
     pathname === "/login" ||
-    pathname.startsWith("/reset-password");
+    pathname.startsWith("/reset-password") ||
+    pathname.startsWith("/shared/competitor-report/");
 
   // Check for admin session cookie
   const authToken = request.cookies.get("ms_admin_token")?.value;

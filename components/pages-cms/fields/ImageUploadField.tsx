@@ -7,23 +7,62 @@ import { uploadApi } from "@/lib/uploadApi";
 import { ApiRequestError } from "@/lib/api";
 import { TextInput } from "./TextInput";
 
+/** Reads an image file's pixel size in the browser. */
+function readImageSize(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new window.Image();
+    img.onload = () => {
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+      URL.revokeObjectURL(objectUrl);
+    };
+    img.onerror = () => {
+      reject(new Error("Could not read the image."));
+      URL.revokeObjectURL(objectUrl);
+    };
+    img.src = objectUrl;
+  });
+}
+
 export function ImageUploadField({
   value,
   onChange,
   defaultValue,
+  requiredWidth,
+  requiredHeight,
+  hint,
 }: {
   value: string;
   onChange: (url: string) => void;
   defaultValue?: string;
+  /** Optional: only images of exactly this size can be uploaded (and a mismatch is flagged on the preview). */
+  requiredWidth?: number;
+  requiredHeight?: number;
+  /** Optional helper text shown under the field. */
+  hint?: string;
 }) {
   const [uploading, setUploading] = useState(false);
+  const [previewSize, setPreviewSize] = useState<{ width: number; height: number } | null>(null);
+  const requiredSize =
+    requiredWidth && requiredHeight ? { width: requiredWidth, height: requiredHeight } : undefined;
+  const sizeMismatch = Boolean(
+    requiredSize && previewSize && (previewSize.width !== requiredSize.width || previewSize.height !== requiredSize.height),
+  );
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
     try {
-      const res = await uploadApi.file(file, "bharat-organic/content");
+      if (requiredSize) {
+        const actual = await readImageSize(file);
+        if (actual.width !== requiredSize.width || actual.height !== requiredSize.height) {
+          throw new Error(
+            `Image is ${actual.width}×${actual.height}px. It must be exactly ${requiredSize.width}×${requiredSize.height}px.`,
+          );
+        }
+      }
+      const res = await uploadApi.file(file, "bharat-organic/content", requiredSize);
       const uploadedUrl = res?.url || (res as { data?: { url?: string } })?.data?.url;
       if (!uploadedUrl) throw new Error("Server did not return an image URL.");
       onChange(uploadedUrl);
@@ -118,6 +157,10 @@ export function ImageUploadField({
                 src={directUrl}
                 alt="Preview"
                 className="h-full w-full object-contain transition-transform group-hover:scale-105"
+                onLoad={(e) => {
+                  const img = e.currentTarget;
+                  setPreviewSize({ width: img.naturalWidth, height: img.naturalHeight });
+                }}
                 onError={(e) => {
                   const img = e.currentTarget;
                   if (img.src !== fullBackendUrl && !img.dataset.retry) {
@@ -165,6 +208,11 @@ export function ImageUploadField({
               <p className="text-[8.5px] text-[#64748b] truncate font-mono">
                 {value}
               </p>
+              {sizeMismatch && requiredSize && previewSize ? (
+                <p className="text-[9px] font-semibold text-amber-700">
+                  ⚠ Image is {previewSize.width}×{previewSize.height}px — it must be {requiredSize.width}×{requiredSize.height}px.
+                </p>
+              ) : null}
             </div>
           </div>
         );
@@ -186,6 +234,8 @@ export function ImageUploadField({
           )}
         </div>
       )}
+
+      {hint ? <p className="px-1 text-[9px] font-medium leading-snug text-[#64748b]">{hint}</p> : null}
     </div>
   );
 }

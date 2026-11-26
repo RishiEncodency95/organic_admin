@@ -429,6 +429,7 @@ export function mergeSectionWithSavedData(
     }
     if (merged.contactAddress === undefined) merged.contactAddress = "Hall 12, Pragati Maidan, New Delhi, India 110001";
     if (merged.phoneNumber === undefined) merged.phoneNumber = "+91 96549 00525";
+    if (merged.stallBookingPhone === undefined) merged.stallBookingPhone = "+91 96549 00525";
     if (merged.conferenceHelpline === undefined) merged.conferenceHelpline = "+91 98183 53841";
     if (merged.contactEmail === undefined) merged.contactEmail = "info@namogangewellness.com";
     if (merged.facebookUrl === undefined) merged.facebookUrl = "https://facebook.com/bharatorganicexpo";
