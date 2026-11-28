@@ -16,6 +16,7 @@ import typography from "./DashboardTypography.module.css";
 
 import {
   dashboardApi,
+  type DashboardRangeKey,
   type LiveDashboardOverview,
 } from "@/lib/dashboardApi";
 import { contactEnquiryApi, type ContactEnquiry } from "@/lib/contactEnquiryApi";
@@ -39,6 +40,7 @@ import {
   LockKeyhole,
   Menu,
   MousePointerClick,
+  RefreshCw,
   Search,
   ShieldCheck,
   Target,
@@ -737,6 +739,20 @@ export default function DashboardPage() {
       null,
     );
 
+  const [timeRange, setTimeRange] = useState<DashboardRangeKey>("7d");
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const RANGE_OPTIONS: Array<{ key: DashboardRangeKey; label: string }> = [
+    { key: "1h", label: "Last 1 Hour" },
+    { key: "24h", label: "Last 24 Hours" },
+    { key: "7d", label: "Last 7 Days" },
+    { key: "28d", label: "Last 28 Days" },
+    { key: "30d", label: "Last 30 Days" },
+    { key: "90d", label: "Last 90 Days" },
+    { key: "this_month", label: "This Month" },
+    { key: "prev_month", label: "Previous Month" },
+  ];
+
   const [
     openDropdown,
     setOpenDropdown,
@@ -749,7 +765,7 @@ export default function DashboardPage() {
     selectedWebsite,
     setSelectedWebsite,
   ] = useState(
-    "mokshasewa.org",
+    "bharatorganicexpo.com",
   );
 
   const [
@@ -777,7 +793,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     try {
-      const stored = window.localStorage.getItem("moksha-dashboard-pagespeed");
+      const stored = window.localStorage.getItem("organic-dashboard-pagespeed");
       // eslint-disable-next-line react-hooks/set-state-in-effect -- the cached copy is in localStorage, readable only after mount
       if (stored) setCachedPageSpeed(JSON.parse(stored));
     } catch {
@@ -788,7 +804,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const current = liveDashboard?.sources.pageSpeed;
     if (current?.status === "connected" && current.data) {
-      window.localStorage.setItem("moksha-dashboard-pagespeed", JSON.stringify(current.data));
+      window.localStorage.setItem("organic-dashboard-pagespeed", JSON.stringify(current.data));
     }
   }, [liveDashboard?.sources.pageSpeed]);
 
@@ -796,26 +812,34 @@ export default function DashboardPage() {
     let active = true;
 
     dashboardApi
-      .overview()
+      .overview(timeRange)
       .then((data) => {
         if (active) {
-          setLiveDashboard(
-            data,
-          );
+          setLiveDashboard(data);
         }
       })
       .catch(() => {
         if (active) {
-          setLiveDashboard(
-            null,
-          );
+          setLiveDashboard(null);
         }
+      })
+      .finally(() => {
+        if (active) setIsRefreshing(false);
       });
 
     return () => {
       active = false;
     };
-  }, []);
+  }, [timeRange]);
+
+  const handleManualRefresh = () => {
+    setIsRefreshing(true);
+    dashboardApi
+      .overview(timeRange, true)
+      .then((data) => setLiveDashboard(data))
+      .catch(() => {})
+      .finally(() => setIsRefreshing(false));
+  };
 
   useEffect(() => {
     if (
@@ -1396,6 +1420,51 @@ export default function DashboardPage() {
       },
     );
 
+  const activeRangeLabel =
+    RANGE_OPTIONS.find((opt) => opt.key === timeRange)?.label ?? "Last 7 Days";
+
+  const analyticsProvider = liveDashboard?.sources.analytics.provider;
+  const trafficBadge =
+    analyticsProvider === "cloudflare"
+      ? "Traffic: Cloudflare"
+      : analyticsProvider === "ga4"
+        ? "Traffic: Google Analytics 4"
+        : "Traffic: Site Tracker";
+
+  const gscBadge =
+    liveDashboard?.sources.searchConsole.status === "connected"
+      ? "GSC: Connected"
+      : liveDashboard?.sources.searchConsole.status === "error"
+        ? "GSC: Auth / Quota Error"
+        : "GSC: Not Connected";
+
+  const updatedTimeText = liveDashboard?.generatedAt
+    ? new Date(liveDashboard.generatedAt).toLocaleTimeString("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null;
+
+  const gscDaily = searchConsole?.daily ?? [];
+  const gscSamples =
+    gscDaily.length <= 5
+      ? gscDaily
+      : [0, 0.25, 0.5, 0.75, 1].map((r) => gscDaily[Math.round((gscDaily.length - 1) * r)]);
+  const gscMaxClicks = Math.max(1, ...gscSamples.map((d) => d.clicks));
+  const gscMaxImpr = Math.max(1, ...gscSamples.map((d) => d.impressions));
+  const gscChartPoints = gscSamples.map((d, idx) => {
+    const x = gscSamples.length <= 1 ? 215 : 44 + (idx * 342) / (gscSamples.length - 1);
+    const yClicks = 76 - (d.clicks / gscMaxClicks) * 52;
+    const yImpr = 80 - (d.impressions / gscMaxImpr) * 52;
+    const label =
+      d.date.length === 10
+        ? new Date(`${d.date}T00:00:00`).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })
+        : d.date;
+    return { x, yClicks, yImpr, label };
+  });
+
+  const maxLocationCount = Math.max(1, ...locationRows.map(([, count]) => Number(count) || 0));
+
   /* =========================================================
      TOP STATS LIVE DATA
   ========================================================= */
@@ -1471,10 +1540,9 @@ export default function DashboardPage() {
             ),
 
             note:
-              growthText(
-                internal.growth
-                  .posts,
-              ),
+              internal.growth.posts != null
+                ? growthText(internal.growth.posts)
+                : "Live from CMS",
           };
         }
 
@@ -1483,20 +1551,22 @@ export default function DashboardPage() {
           "INDEXED PAGES" &&
           indexCoverage
         ) {
+          const idxCount = indexCoverage.indexedPages ?? (indexCoverage.gscConnected ? indexCoverage.indexed : null);
+          const subCount = indexCoverage.submittedPages ?? indexCoverage.sitemapUrlCount ?? (indexCoverage.total || null);
           return {
             ...item,
-
-            value: `${indexCoverage.indexed}/${indexCoverage.total}`,
-
-            note: `${indexCoverage.total >
-              0
-              ? (
-                (indexCoverage.indexed /
-                  indexCoverage.total) *
-                100
-              ).toFixed(1)
-              : "0.0"
-              }% Indexed`,
+            value:
+              idxCount != null
+                ? String(idxCount)
+                : subCount != null
+                  ? String(subCount)
+                  : "—",
+            suffix: idxCount != null && subCount != null ? `/${subCount}` : "",
+            note: indexCoverage.gscConnected
+              ? "Indexed (GSC)"
+              : indexCoverage.sitemapValid
+                ? "Sitemap · GSC Not Connected"
+                : "Checking sitemap...",
           };
         }
 
@@ -1522,44 +1592,28 @@ export default function DashboardPage() {
         ) {
           return {
             ...item,
-
-            value: String(
-              internal.enquiriesMtd,
-            ),
-
+            title: `EXPO ENQUIRIES (${activeRangeLabel.toUpperCase()})`,
+            value: String(internal.enquiriesMtd),
             note:
-              growthText(
-                internal.growth
-                  .enquiriesMtd,
-              ),
+              internal.growth.enquiriesMtd != null
+                ? growthText(internal.growth.enquiriesMtd)
+                : "Live from database",
           };
         }
 
-        if (
-          item.title ===
-          "CONVERSION RATE" &&
-          analytics
-        ) {
+        if (item.title === "CONVERSION RATE") {
+          const visitors = analytics?.users ?? 0;
           const rate =
-            analytics.sessions >
-              0
-              ? (analytics.conversions /
-                analytics.sessions) *
-              100
-              : 0;
+            internal?.conversionRate != null
+              ? internal.conversionRate
+              : analytics && analytics.sessions > 0
+                ? (analytics.conversions / analytics.sessions) * 100
+                : 0;
 
           return {
             ...item,
-
-            value: `${rate.toFixed(
-              1,
-            )}%`,
-
-            note:
-              growthText(
-                analytics.growth
-                  .conversionRate,
-              ),
+            value: `${rate.toFixed(1)}%`,
+            note: visitors > 0 ? `${number(visitors)} visitors` : "No sessions yet",
           };
         }
 
@@ -1845,14 +1899,57 @@ export default function DashboardPage() {
           "
         >
           {/* DASHBOARD PAGE TITLE (ABOVE SEO HEALTH SCORE & STAT CARDS) */}
-          <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <h1 className="text-[26px] font-bold leading-tight tracking-tight text-slate-900">
-                Dashboard
-              </h1>
-              <p className="text-[16px] font-semibold text-slate-500">
-                Website performance &amp; activity
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-[26px] font-bold leading-tight tracking-tight text-slate-900">
+                  Dashboard
+                </h1>
+                <span className="rounded-full bg-[#eef2f6] px-2.5 py-0.5 text-[10px] font-bold text-[#1f3b64]">
+                  {activeRangeLabel}
+                </span>
+                <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700">
+                  {trafficBadge}
+                </span>
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                    liveDashboard?.sources.searchConsole.status === "connected"
+                      ? "bg-blue-50 text-blue-700"
+                      : "bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  {gscBadge}
+                </span>
+              </div>
+              <p className="mt-0.5 text-[13px] font-semibold text-slate-500">
+                Real-time website performance &amp; activity
+                {updatedTimeText ? ` · Updated ${updatedTimeText}` : ""}
               </p>
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                {RANGE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setTimeRange(opt.key)}
+                    className={`rounded-[6px] border px-2.5 py-1 text-[10.5px] font-bold transition ${
+                      timeRange === opt.key
+                        ? "border-[#2563eb] bg-[#2563eb] text-white"
+                        : "border-[#dce3ec] bg-white text-[#334666] hover:bg-[#f4f7fb]"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={handleManualRefresh}
+                  disabled={isRefreshing}
+                  className="inline-flex items-center gap-1 rounded-[6px] border border-[#dce3ec] bg-white px-2.5 py-1 text-[10.5px] font-bold text-[#13213d] transition hover:bg-[#f4f7fb] disabled:opacity-60"
+                >
+                  <RefreshCw className={`h-3 w-3 ${isRefreshing ? "animate-spin" : ""}`} />
+                  Refresh
+                </button>
+              </div>
             </div>
             <ServiceRenewalChips />
           </div>
@@ -2363,163 +2460,78 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="w-full min-h-0 px-3 pt-2 pb-1">
-                  <svg
-                    viewBox="0 0 520 120"
-                    preserveAspectRatio="none"
-                    className="block h-[90px] w-full overflow-visible"
-                  >
-                    <defs>
-                      <linearGradient
-                        id="sc-green-gradient"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset="0%"
-                          stopColor="#10b981"
-                          stopOpacity="0.28"
+                  {searchConsole && gscChartPoints.length > 0 ? (
+                    <svg
+                      viewBox="0 0 430 120"
+                      preserveAspectRatio="none"
+                      className="block h-[90px] w-full overflow-visible"
+                    >
+                      {[20, 50, 80].map((y) => (
+                        <line
+                          key={y}
+                          x1="12"
+                          x2="418"
+                          y1={y}
+                          y2={y}
+                          stroke="#e2e8f0"
+                          strokeWidth="1"
+                          strokeDasharray="3 3"
                         />
+                      ))}
 
-                        <stop
-                          offset="100%"
-                          stopColor="#10b981"
-                          stopOpacity="0"
-                        />
-                      </linearGradient>
+                      <line
+                        x1="12"
+                        x2="418"
+                        y1="90"
+                        y2="90"
+                        stroke="#cbd5e1"
+                        strokeWidth="1.2"
+                      />
 
-                      <linearGradient
-                        id="sc-blue-gradient"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset="0%"
-                          stopColor="#3b82f6"
-                          stopOpacity="0.22"
-                        />
-
-                        <stop
-                          offset="100%"
-                          stopColor="#3b82f6"
-                          stopOpacity="0"
-                        />
-                      </linearGradient>
-                    </defs>
-
-                    <g className="animate-grow-left">
-                      {[
-                        20,
-                        50,
-                        80,
-                      ].map(
-                        (y) => (
-                          <line
-                            key={
-                              y
-                            }
-                            x1="12"
-                            x2="508"
-                            y1={
-                              y
-                            }
-                            y2={
-                              y
-                            }
-                            stroke="#e2e8f0"
-                            strokeWidth="1"
-                            strokeDasharray="3 3"
+                      {gscChartPoints.length > 1 && (
+                        <>
+                          <polyline
+                            fill="none"
+                            stroke="#059669"
+                            strokeWidth="2.4"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            points={gscChartPoints.map((p) => `${p.x},${p.yImpr}`).join(" ")}
                           />
-                        ),
+                          <polyline
+                            fill="none"
+                            stroke="#2563eb"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            points={gscChartPoints.map((p) => `${p.x},${p.yClicks}`).join(" ")}
+                          />
+                        </>
                       )}
 
-                      <path
-                        d="M 12 40 C 40 22, 80 34, 136 18 C 180 36, 220 16, 260 28 C 300 14, 340 32, 384 18 C 424 30, 464 14, 508 10 L 508 90 L 12 90 Z"
-                        fill="url(#sc-green-gradient)"
-                      />
-
-                      <path
-                        d="M 12 76 C 40 64, 80 74, 136 58 C 180 72, 220 58, 260 68 C 300 58, 340 74, 384 60 C 424 72, 464 58, 508 52 L 508 90 L 12 90 Z"
-                        fill="url(#sc-blue-gradient)"
-                      />
-
-                      <path
-                        d="M 12 40 C 40 22, 80 34, 136 18 C 180 36, 220 16, 260 28 C 300 14, 340 32, 384 18 C 424 30, 464 14, 508 10"
-                        fill="none"
-                        stroke="#059669"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        className="animate-chart-line"
-                      />
-
-                      <path
-                        d="M 12 76 C 40 64, 80 74, 136 58 C 180 72, 220 58, 260 68 C 300 58, 340 74, 384 60 C 424 72, 464 58, 508 52"
-                        fill="none"
-                        stroke="#2563eb"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        className="animate-chart-line"
-                      />
-                    </g>
-
-                    <text
-                      x="12"
-                      y="114"
-                      fontSize="11"
-                      fontWeight="600"
-                      fill="#2563eb"
-                      textAnchor="start"
-                    >
-                      03 May
-                    </text>
-
-                    <text
-                      x="136"
-                      y="114"
-                      fontSize="11"
-                      fontWeight="600"
-                      fill="#2563eb"
-                      textAnchor="middle"
-                    >
-                      10 May
-                    </text>
-
-                    <text
-                      x="260"
-                      y="114"
-                      fontSize="11"
-                      fontWeight="600"
-                      fill="#2563eb"
-                      textAnchor="middle"
-                    >
-                      17 May
-                    </text>
-
-                    <text
-                      x="384"
-                      y="114"
-                      fontSize="11"
-                      fontWeight="600"
-                      fill="#2563eb"
-                      textAnchor="middle"
-                    >
-                      24 May
-                    </text>
-
-                    <text
-                      x="508"
-                      y="114"
-                      fontSize="11"
-                      fontWeight="600"
-                      fill="#2563eb"
-                      textAnchor="end"
-                    >
-                      31 May
-                    </text>
-                  </svg>
+                      {gscChartPoints.map((p, idx) => (
+                        <g key={`${p.label}-${idx}`}>
+                          <circle cx={p.x} cy={p.yClicks} r="3" fill="#2563eb" stroke="#fff" strokeWidth="1" />
+                          <circle cx={p.x} cy={p.yImpr} r="2.6" fill="#059669" stroke="#fff" strokeWidth="1" />
+                          <text
+                            x={p.x}
+                            y="114"
+                            fontSize="10.5"
+                            fontWeight="600"
+                            fill="#2563eb"
+                            textAnchor="middle"
+                          >
+                            {p.label}
+                          </text>
+                        </g>
+                      ))}
+                    </svg>
+                  ) : (
+                    <div className="flex h-[90px] items-center justify-center rounded-[7px] border border-dashed border-slate-200 bg-slate-50/70 px-3 text-center text-[10px] font-semibold text-slate-500">
+                      {liveDashboard?.sources.searchConsole.message ??
+                        "Google Search Console not connected."}
+                    </div>
+                  )}
                 </div>
               </Panel>
 
@@ -3351,37 +3363,39 @@ export default function DashboardPage() {
                       [
                         "First Contentful Paint (FCP)",
 
-                        pageSpeed?.fcp !=
-                          null
-                          ? `${(
-                            pageSpeed.fcp /
-                            1000
-                          ).toFixed(
-                            1,
-                          )}s`
+                        pageSpeed?.fcp != null
+                          ? `${(pageSpeed.fcp / 1000).toFixed(1)}s`
                           : "—",
 
-                        "—",
+                        pageSpeed?.desktop?.fcp != null
+                          ? `${(pageSpeed.desktop.fcp / 1000).toFixed(1)}s`
+                          : "—",
                       ],
 
                       [
                         "Time to First Byte (TTFB)",
-                        "—",
-                        "—",
+
+                        pageSpeed?.ttfb != null
+                          ? `${Math.round(pageSpeed.ttfb)}ms`
+                          : "—",
+
+                        pageSpeed?.desktop?.ttfb != null
+                          ? `${Math.round(pageSpeed.desktop.ttfb)}ms`
+                          : "—",
+
                         "#2563eb",
                       ],
 
                       [
                         "Total Blocking Time (TBT)",
 
-                        pageSpeed?.tbt !=
-                          null
-                          ? `${Math.round(
-                            pageSpeed.tbt,
-                          )}ms`
+                        pageSpeed?.tbt != null
+                          ? `${Math.round(pageSpeed.tbt)}ms`
                           : "—",
 
-                        "—",
+                        pageSpeed?.desktop?.tbt != null
+                          ? `${Math.round(pageSpeed.desktop.tbt)}ms`
+                          : "—",
 
                         "#4B1426",
                       ],
@@ -3630,51 +3644,57 @@ export default function DashboardPage() {
                 </PanelTitle>
 
                 <div className="px-3 text-[9px]">
-                  {liveTopPages.map(
-                    (
-                      row,
-                      index,
-                    ) => (
-                      <div
-                        key={
-                          row[0]
-                        }
-                        className="
-                          grid
-                          grid-cols-[16px_1fr_76px_42px_14px]
-                          items-center
-                          gap-2
-                          py-1.5
-                          font-bold
-                        "
-                      >
-                        <span>
-                          {index +
-                            1}
-                          .
-                        </span>
-
-                        <span>
-                          {
-                            row[0]
+                  {liveTopPages.length === 0 ? (
+                    <div className="py-5 text-center text-[10px] font-semibold text-slate-400">
+                      No page traffic recorded in {activeRangeLabel}.
+                    </div>
+                  ) : (
+                    liveTopPages.map(
+                      (
+                        row,
+                        index,
+                      ) => (
+                        <div
+                          key={
+                            row[0] + index
                           }
-                        </span>
+                          className="
+                            grid
+                            grid-cols-[16px_1fr_76px_42px_14px]
+                            items-center
+                            gap-2
+                            py-1.5
+                            font-bold
+                          "
+                        >
+                          <span>
+                            {index +
+                              1}
+                            .
+                          </span>
 
-                        <span className="truncate text-[#4B1426]">
-                          {
-                            row[1]
-                          }
-                        </span>
+                          <span>
+                            {
+                              row[0]
+                            }
+                          </span>
 
-                        <span className="text-right">
-                          {
-                            row[2]
-                          }
-                        </span>
+                          <span className="truncate text-[#4B1426]">
+                            {
+                              row[1]
+                            }
+                          </span>
 
-                        <Search className="h-3 w-3 text-[#9aa5b4]" />
-                      </div>
-                    ),
+                          <span className="text-right">
+                            {
+                              row[2]
+                            }
+                          </span>
+
+                          <Search className="h-3 w-3 text-[#9aa5b4]" />
+                        </div>
+                      ),
+                    )
                   )}
                 </div>
               </Panel>
@@ -3716,40 +3736,48 @@ export default function DashboardPage() {
                     Position
                   </span>
 
-                  {liveKeywordRows.map(
-                    (row) => (
-                      <div
-                        className="contents"
-                        key={
-                          row[0]
-                        }
-                      >
-                        <span className="py-[3px]">
-                          {
+                  {liveKeywordRows.length === 0 ? (
+                    <div className="col-span-4 py-4 text-center text-[10px] font-semibold text-slate-400">
+                      {searchConsole
+                        ? `No keyword rankings in ${activeRangeLabel}.`
+                        : "Connect Google Search Console for live keyword rankings."}
+                    </div>
+                  ) : (
+                    liveKeywordRows.map(
+                      (row) => (
+                        <div
+                          className="contents"
+                          key={
                             row[0]
                           }
-                        </span>
+                        >
+                          <span className="py-[3px]">
+                            {
+                              row[0]
+                            }
+                          </span>
 
-                        <span className="py-[3px]">
-                          {
-                            row[1]
-                          }
-                        </span>
+                          <span className="py-[3px]">
+                            {
+                              row[1]
+                            }
+                          </span>
 
-                        <span className="py-[3px]">
-                          {
-                            row[2]
-                          }
-                        </span>
+                          <span className="py-[3px]">
+                            {
+                              row[2]
+                            }
+                          </span>
 
-                        <span className="py-[3px] text-emerald-700">
-                          {
-                            row[3]
-                          }{" "}
-                          ↑
-                        </span>
-                      </div>
-                    ),
+                          <span className="py-[3px] text-emerald-700">
+                            {
+                              row[3]
+                            }{" "}
+                            ↑
+                          </span>
+                        </div>
+                      ),
+                    )
                   )}
                 </div>
               </Panel>
@@ -3776,62 +3804,63 @@ export default function DashboardPage() {
                 </PanelTitle>
 
                 <div className="space-y-3 px-3 pt-1 pb-1">
-                  {locationRows.map(
-                    (
-                      [
-                        name,
-                        count,
-                        pct,
-                      ],
-
-                      index,
-                    ) => (
-                      <div
-                        key={String(
+                  {locationRows.length === 0 ? (
+                    <div className="py-5 text-center text-[10px] font-semibold text-slate-400">
+                      No enquiry city data in {activeRangeLabel}.
+                    </div>
+                  ) : (
+                    locationRows.map(
+                      (
+                        [
                           name,
-                        )}
-                        className="
-                          grid
-                          grid-cols-[62px_1fr_28px_42px]
-                          items-center
-                          gap-1.5
-                          text-[9px]
-                          font-bold
-                        "
-                      >
-                        <span className="text-[#4B1426]">
-                          {
-                            name
-                          }
-                        </span>
+                          count,
+                          pct,
+                        ],
+                      ) => (
+                        <div
+                          key={String(
+                            name,
+                          )}
+                          className="
+                            grid
+                            grid-cols-[62px_1fr_28px_42px]
+                            items-center
+                            gap-1.5
+                            text-[9px]
+                            font-bold
+                          "
+                        >
+                          <span className="truncate text-[#4B1426]">
+                            {
+                              name
+                            }
+                          </span>
 
-                        <div className="h-1.5 rounded-full bg-[#edf2f8]">
-                          <div
-                            className="h-full rounded-full bg-[#4B1426]"
-                            style={{
-                              width: `${88 -
-                                index *
-                                14
-                                }%`,
-                            }}
-                          />
+                          <div className="h-1.5 rounded-full bg-[#edf2f8]">
+                            <div
+                              className="h-full rounded-full bg-[#4B1426]"
+                              style={{
+                                width: `${Math.max(8, Math.round(((Number(count) || 0) / maxLocationCount) * 100))}%`,
+                              }}
+                            />
+                          </div>
+
+                          <span className="text-right">
+                            {
+                              count
+                            }
+                          </span>
+
+                          <span className="text-right text-emerald-700">
+                            (
+                            {
+                              pct
+                            }
+                            )
+                          </span>
                         </div>
-
-                        <span className="text-right">
-                          {
-                            count
-                          }
-                        </span>
-
-                        <span className="text-right text-emerald-700">
-                          (
-                          {
-                            pct
-                          }
-                          )
-                        </span>
-                      </div>
-                    ),
+                      ),
+                    )
                   )}
                 </div>
               </Panel>
@@ -3858,30 +3887,36 @@ export default function DashboardPage() {
 
                 <div className="px-3 pt-2 space-y-2 text-[9px] font-semibold">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
-                    <span className="text-slate-600 font-medium">Total Submitted</span>
-                    <span className="font-bold text-slate-900">{indexCoverage?.total ?? 42} Pages</span>
+                    <span className="text-slate-600 font-medium">Sitemap URLs</span>
+                    <span className="font-bold text-slate-900">
+                      {indexCoverage?.submittedPages ?? indexCoverage?.sitemapUrlCount ?? indexCoverage?.total ?? "—"} Pages
+                    </span>
                   </div>
                   <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
-                    <span className="text-slate-600 font-medium">Indexed Pages</span>
-                    <span className="font-bold text-emerald-700">
-                      {indexCoverage?.indexed ?? 42} (
-                      {indexCoverage?.total
-                        ? Math.round(((indexCoverage.indexed ?? 42) / indexCoverage.total) * 100)
-                        : 100}
-                      %)
+                    <span className="text-slate-600 font-medium">Indexed Pages (GSC)</span>
+                    <span className={`font-bold ${indexCoverage?.gscConnected ? "text-emerald-700" : "text-slate-500"}`}>
+                      {indexCoverage?.gscConnected
+                        ? `${indexCoverage.indexedPages ?? indexCoverage.indexed}`
+                        : "Not Connected"}
                     </span>
                   </div>
                   <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                     <span className="text-slate-600 font-medium">Crawl Errors</span>
-                    <span className="font-bold text-slate-900">{indexCoverage?.notIndexed ?? 0}</span>
+                    <span className="font-bold text-slate-900">
+                      {indexCoverage?.gscConnected ? (indexCoverage.crawlErrors ?? indexCoverage.notIndexed ?? 0) : "—"}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                     <span className="text-slate-600 font-medium">Sitemap Status</span>
-                    <span className="font-bold text-emerald-700">Indexed ✓</span>
+                    <span className={`font-bold ${indexCoverage?.sitemapValid ? "text-emerald-700" : "text-amber-600"}`}>
+                      {indexCoverage?.sitemapValid ? "Live ✓" : indexCoverage?.sitemapValid === false ? "Unavailable" : "Checking..."}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-600 font-medium">Robots.txt</span>
-                    <span className="font-bold text-emerald-700">Valid ✓</span>
+                    <span className={`font-bold ${indexCoverage?.robotsValid ? "text-emerald-700" : "text-amber-600"}`}>
+                      {indexCoverage?.robotsValid ? "Valid ✓" : indexCoverage?.robotsValid === false ? "Unavailable" : "Checking..."}
+                    </span>
                   </div>
                 </div>
               </Panel>
